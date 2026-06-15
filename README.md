@@ -114,6 +114,10 @@ Main page :
 
 Job creation window :  
 <img width="1268" height="1496" alt="image" src="https://github.com/user-attachments/assets/e7217eda-fcb7-4dad-acec-a7fbe85dd3de" />
+<img width="1240" height="1500" alt="image" src="https://github.com/user-attachments/assets/e337cdd1-c1ce-4fc3-9e02-986913233480" />
+
+Pool of jobs to be assigned :
+<img width="2766" height="904" alt="image" src="https://github.com/user-attachments/assets/8f75125b-9f68-4d02-ab55-d5e005b8c55d" />
 
 Admin page :  
 <img width="2810" height="1536" alt="image" src="https://github.com/user-attachments/assets/b2a3354e-6fce-4814-9c40-8ac8a8d96763" />
