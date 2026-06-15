@@ -1,0 +1,15 @@
+node_modules
+dist
+build
+coverage
+.cache
+.next
+.git
+*.log
+*.lock
+
+docker_data
+tmp
+vendor
+public/build
+storage/logs

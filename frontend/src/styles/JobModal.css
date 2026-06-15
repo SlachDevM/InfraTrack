@@ -1,0 +1,206 @@
+.job-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.job-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 560px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.job-modal h3 {
+  color: #1a472a;
+  margin: 0 0 1.5rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.job-modal h4 {
+  color: #1a472a;
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.job-modal label {
+  display: block;
+  color: #333;
+  margin-bottom: 1rem;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.job-modal input[type='text'],
+.job-modal input[type='date'],
+.job-modal input[type='time'],
+.job-modal input[type='file'],
+.job-modal select,
+.job-modal textarea {
+  display: block;
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  font-size: 1rem;
+  box-sizing: border-box;
+  margin-top: 0.35rem;
+  font-family: inherit;
+}
+
+.job-modal textarea {
+  resize: vertical;
+}
+
+.job-modal-section {
+  margin-bottom: 1rem;
+}
+
+.job-modal-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.job-types-fieldset {
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  padding: 0.75rem 1rem 1rem;
+  margin: 0 0 1rem;
+}
+
+.job-types-fieldset legend {
+  color: #333;
+  font-weight: 500;
+  padding: 0 0.25rem;
+  font-size: 0.95rem;
+}
+
+.job-types-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.job-type-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 400;
+  font-size: 0.9rem;
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+.job-type-option input {
+  width: auto;
+  margin: 0;
+}
+
+.job-modal-hint {
+  color: #888;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.job-modal-loading {
+  color: #666;
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.job-modal-error {
+  color: #dc3545;
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+}
+
+.photo-upload input[type='file'] {
+  padding: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.photo-preview {
+  display: block;
+  margin-top: 0.5rem;
+  max-width: 100%;
+  max-height: 120px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.job-modal-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.job-modal-actions button {
+  flex: 1;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.job-modal-actions button:first-child {
+  background-color: #2d6b4d;
+  color: white;
+}
+
+.job-modal-actions button:first-child:hover:not(:disabled) {
+  background-color: #1a472a;
+}
+
+.job-modal-actions button:first-child:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.job-modal-actions button:last-child {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.job-modal-actions button:last-child:hover:not(:disabled) {
+  background-color: #e0e0e0;
+}
+
+/* Shared header button – same on main & admin pages */
+.create-job-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 1rem;
+  font-family: inherit;
+  background-color: rgba(255, 255, 255, 0.25);
+  color: white;
+  transition: background-color 0.2s;
+}
+
+.create-job-btn:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+@media (max-width: 480px) {
+  .job-types-grid,
+  .job-modal-row {
+    grid-template-columns: 1fr;
+  }
+}

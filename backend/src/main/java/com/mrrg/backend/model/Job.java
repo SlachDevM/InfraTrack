@@ -1,0 +1,205 @@
+package com.mrrg.backend.model;
+
+import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table(name = "jobs")
+public class Job {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    private String clientName;
+
+    @Column(nullable = false)
+    private String clientPhone;
+
+    @Column(nullable = false)
+    private String clientAddress;
+
+    @Column(name = "job_types", nullable = false, columnDefinition = "TEXT")
+    private String jobTypes;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private JobStatus status;
+
+    @Column(name = "job_date")
+    private Long jobDate;
+
+    @Column(name = "job_start_hour")
+    private String jobStartHour;
+
+    @Column(columnDefinition = "TEXT")
+    private String assignedWorkers;
+
+    @Column(columnDefinition = "TEXT")
+    private String details;
+
+    @Lob
+    private byte[] beforePhoto;
+
+    @Lob
+    private byte[] afterPhoto;
+
+    @Column(columnDefinition = "TEXT")
+    private String notes;
+
+    @Column(nullable = false)
+    private Integer priorityLevel;
+
+    @Column(name = "created_by")
+    private Long createdBy;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Long createdAt;
+
+    @Column(name = "updated_at")
+    private Long updatedAt;
+
+    public Job() {
+        this.status = JobStatus.PENDING;
+        this.priorityLevel = 1;
+        this.createdAt = System.currentTimeMillis();
+        this.updatedAt = System.currentTimeMillis();
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getClientName() {
+        return clientName;
+    }
+
+    public void setClientName(String clientName) {
+        this.clientName = clientName;
+    }
+
+    public String getClientPhone() {
+        return clientPhone;
+    }
+
+    public void setClientPhone(String clientPhone) {
+        this.clientPhone = clientPhone;
+    }
+
+    public String getClientAddress() {
+        return clientAddress;
+    }
+
+    public void setClientAddress(String clientAddress) {
+        this.clientAddress = clientAddress;
+    }
+
+    public String getJobTypes() {
+        return jobTypes;
+    }
+
+    public void setJobTypes(String jobTypes) {
+        this.jobTypes = jobTypes;
+    }
+
+    public JobStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(JobStatus status) {
+        this.status = status;
+    }
+
+    public Long getJobDate() {
+        return jobDate;
+    }
+
+    public void setJobDate(Long jobDate) {
+        this.jobDate = jobDate;
+    }
+
+    public String getJobStartHour() {
+        return jobStartHour;
+    }
+
+    public void setJobStartHour(String jobStartHour) {
+        this.jobStartHour = jobStartHour;
+    }
+
+    public String getAssignedWorkers() {
+        return assignedWorkers;
+    }
+
+    public void setAssignedWorkers(String assignedWorkers) {
+        this.assignedWorkers = assignedWorkers;
+    }
+
+    public String getDetails() {
+        return details;
+    }
+
+    public void setDetails(String details) {
+        this.details = details;
+    }
+
+    public byte[] getBeforePhoto() {
+        return beforePhoto;
+    }
+
+    public void setBeforePhoto(byte[] beforePhoto) {
+        this.beforePhoto = beforePhoto;
+    }
+
+    public byte[] getAfterPhoto() {
+        return afterPhoto;
+    }
+
+    public void setAfterPhoto(byte[] afterPhoto) {
+        this.afterPhoto = afterPhoto;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
+    public Integer getPriorityLevel() {
+        return priorityLevel;
+    }
+
+    public void setPriorityLevel(Integer priorityLevel) {
+        this.priorityLevel = priorityLevel;
+    }
+
+    public Long getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(Long createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public Long getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Long createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Long getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Long updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+}

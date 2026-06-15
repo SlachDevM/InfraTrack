@@ -1,0 +1,323 @@
+import { useState, useEffect } from 'react';
+
+import { useNavigate } from 'react-router-dom';
+
+import { useAuth } from '../context/AuthContext';
+
+import WeekView from '../components/WeekView';
+
+import JobList from '../components/JobList';
+
+import JobModal from '../components/JobModal';
+
+import '../styles/Dashboard.css';
+
+import '../styles/JobModal.css';
+
+
+
+const API_BASE = 'http://localhost:4000';
+
+
+
+export default function MainDashboard() {
+
+  const navigate = useNavigate();
+
+  const { auth, logout } = useAuth();
+
+  const [jobs, setJobs] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+
+  const [showJobModal, setShowJobModal] = useState(false);
+
+  const [selectedJob, setSelectedJob] = useState(null);
+
+  const [prefilledDate, setPrefilledDate] = useState(null);
+
+  const [weekRefreshKey, setWeekRefreshKey] = useState(0);
+
+  const [selectedWeekStart, setSelectedWeekStart] = useState(getMonday(new Date()));
+
+
+
+  const canManage = auth?.user?.role === 'MANAGER' || auth?.user?.role === 'ADMIN';
+
+
+
+  useEffect(() => {
+
+    if (!auth) {
+
+      navigate('/login');
+
+      return;
+
+    }
+
+    fetchJobs();
+
+  }, [auth, navigate]);
+
+
+
+  function getMonday(date) {
+
+    const d = new Date(date);
+
+    const day = d.getDay();
+
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+
+    return new Date(d.setDate(diff));
+
+  }
+
+
+
+  const fetchJobs = async () => {
+
+    try {
+
+      const response = await fetch(`${API_BASE}/api/jobs/pending`, {
+
+        headers: { Authorization: `Bearer ${auth.token}` },
+
+      });
+
+      const data = await response.json();
+
+      setJobs(data);
+
+    } catch (err) {
+
+      console.error('Failed to fetch jobs:', err);
+
+    } finally {
+
+      setLoading(false);
+
+    }
+
+  };
+
+
+
+  const openCreateModal = () => {
+
+    setSelectedJob(null);
+
+    setPrefilledDate(null);
+
+    setShowJobModal(true);
+
+  };
+
+
+
+  const openEditModal = (job) => {
+
+    setSelectedJob(job);
+
+    setPrefilledDate(null);
+
+    setShowJobModal(true);
+
+  };
+
+
+
+  const handleJobSaved = (savedJob) => {
+
+    if (savedJob.status === 'PENDING' || savedJob.status === 'TO_BE_FIXED') {
+
+      setJobs((prev) => {
+
+        const exists = prev.some((j) => j.id === savedJob.id);
+
+        if (exists) {
+
+          return prev.map((j) => (j.id === savedJob.id ? savedJob : j));
+
+        }
+
+        return [savedJob, ...prev];
+
+      });
+
+    } else {
+
+      setJobs((prev) => prev.filter((j) => j.id !== savedJob.id));
+
+    }
+
+    setWeekRefreshKey((k) => k + 1);
+
+  };
+
+
+
+  const handleJobAssigned = () => {
+
+    fetchJobs();
+
+    setWeekRefreshKey((k) => k + 1);
+
+  };
+
+
+
+  const handleLogout = () => {
+
+    logout();
+
+    navigate('/login');
+
+  };
+
+
+
+  if (loading) {
+
+    return <div className="loading">Loading dashboard...</div>;
+
+  }
+
+
+
+  return (
+
+    <div className="dashboard">
+
+      <header className="dashboard-header">
+
+        <img
+
+          src="https://static.wixstatic.com/media/4c239c_3d5b277894a042ef8d75ecd3fdacfdda~mv2.png/v1/fill/w_378,h_174,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/RE-GUTTERS_edited.png"
+
+          alt="RE-GUTTERS"
+
+          className="dashboard-logo"
+
+        />
+
+        <div className="header-info">
+
+          <span>Welcome, {auth.user.name}</span>
+
+          <span className="role-badge">{auth.user.role}</span>
+
+        </div>
+
+        <div className="header-actions">
+
+          <button className="notification-btn" onClick={() => navigate('/notifications')}>
+
+            🔔 Notifications
+
+          </button>
+
+          {canManage && (
+
+            <button type="button" className="create-job-btn" onClick={openCreateModal}>
+
+              + Create Job
+
+            </button>
+
+          )}
+
+          {canManage && (
+
+            <button className="admin-btn" onClick={() => navigate('/admin')}>
+
+              ⚙️ Admin
+
+            </button>
+
+          )}
+
+          <button className="logout-btn" onClick={handleLogout}>
+
+            Logout
+
+          </button>
+
+        </div>
+
+      </header>
+
+
+
+      <main className="dashboard-content">
+
+        <div className="week-section">
+
+          <h2>Weekly Schedule</h2>
+
+          <WeekView
+
+            weekStart={selectedWeekStart}
+
+            onWeekChange={setSelectedWeekStart}
+
+            onJobAssigned={handleJobAssigned}
+
+            onJobClick={openEditModal}
+
+            token={auth.token}
+
+            refreshKey={weekRefreshKey}
+
+          />
+
+        </div>
+
+
+
+        <div className="jobs-section">
+
+          <h2>Pending & To Be Fixed Jobs</h2>
+
+          <JobList jobs={jobs} onJobClick={openEditModal} />
+
+        </div>
+
+      </main>
+
+
+
+      <JobModal
+
+        isOpen={showJobModal}
+
+        onClose={() => {
+
+          setShowJobModal(false);
+
+          setSelectedJob(null);
+
+          setPrefilledDate(null);
+
+        }}
+
+        onSuccess={handleJobSaved}
+
+        token={auth.token}
+
+        job={selectedJob}
+
+        prefilledDate={prefilledDate}
+
+        canManage={canManage}
+
+      />
+
+    </div>
+
+  );
+
+}
+
+
