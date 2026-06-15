@@ -103,3 +103,20 @@ MIT
 # API Documentation
 
 Swagger/OpenAPI documentation coming soon.
+
+# Screenshot
+
+Login page :  
+<img width="964" height="1256" alt="image" src="https://github.com/user-attachments/assets/f92cc585-5ecc-45de-891a-3712e4793f1d" />
+
+Main page :  
+<img width="2806" height="1516" alt="image" src="https://github.com/user-attachments/assets/bfff8102-8373-49c0-9a5f-240568bb75f7" />
+
+Job creation window :  
+<img width="1268" height="1496" alt="image" src="https://github.com/user-attachments/assets/e7217eda-fcb7-4dad-acec-a7fbe85dd3de" />
+
+Admin page :  
+<img width="2810" height="1536" alt="image" src="https://github.com/user-attachments/assets/b2a3354e-6fce-4814-9c40-8ac8a8d96763" />
+
+Notification page :  
+<img width="2838" height="1520" alt="image" src="https://github.com/user-attachments/assets/892aecab-3292-4e55-9307-4f2b672d347c" />
