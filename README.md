@@ -17,7 +17,8 @@ Employees can access their assigned jobs, upload before/after photos directly fr
 - Employee scheduling  
 - Job assignment management  
 - Task management linked to jobs  
-- Before/after photo uploads  
+- Before/after photo uploads
+- Download photos  
 - Job lifecycle and validation workflow  
 - Archived jobs management  
 - Re-open and priority escalation system  
@@ -82,8 +83,9 @@ PostgreSQL is used to store:
 The user logs in through a login page where they can register or log in.
 Once logged in, the user lands on the main page of the app which shows the current week and a list of the pending jobs.  
 Employees can then see their jobs for the week. Once they arrive on site, they take photos of the job (before photos) and upload it to the assigned job. Once the job is completed, they take photos (after photo) and eventually add notes before clicking the "completed job" button.  
-The manager can then validate the job that will go to the archived section on the manager page that only them can access.  
+The manager can then validate the job that will go to the done section on the manager page that only them can access.  
 If a client calls back for a fix, the manager can "re-open" the job that will go on "To Be Fixed" status which brings the job back to the main page with the highest rank of priority so that this job can easily be scheduled as soon as possible.
+The manager can archive the job once it's concidered as fully finished with no chance of callback. (there is still a callback option to set the job back in the workflow once archived).
 
 # Roles
 There are 3 different roles : Admin, Manager and Employee.  
@@ -114,17 +116,44 @@ Login page :
 <img width="964" height="1256" alt="image" src="https://github.com/user-attachments/assets/f92cc585-5ecc-45de-891a-3712e4793f1d" />
 
 Main page :  
-<img width="2806" height="1516" alt="image" src="https://github.com/user-attachments/assets/bfff8102-8373-49c0-9a5f-240568bb75f7" />
+<img width="2812" height="1508" alt="image" src="https://github.com/user-attachments/assets/fc0c4112-7c68-4e2f-a8a6-fcdba8dd9fb0" />
 
 Job creation window :  
-<img width="1268" height="1496" alt="image" src="https://github.com/user-attachments/assets/e7217eda-fcb7-4dad-acec-a7fbe85dd3de" />
-<img width="1240" height="1500" alt="image" src="https://github.com/user-attachments/assets/e337cdd1-c1ce-4fc3-9e02-986913233480" />
+<img width="1244" height="1498" alt="image" src="https://github.com/user-attachments/assets/3ffd18d2-9cee-4aa4-8eff-304891b4b015" />
+<img width="1252" height="748" alt="image" src="https://github.com/user-attachments/assets/597f8859-3009-486e-ba8a-f8314f3d5fda" />
 
 Pool of jobs to be assigned :
-<img width="2766" height="904" alt="image" src="https://github.com/user-attachments/assets/8f75125b-9f68-4d02-ab55-d5e005b8c55d" />
+<img width="2786" height="914" alt="image" src="https://github.com/user-attachments/assets/76aea401-1154-41c7-9039-da9eff38b95e" />
 
-Admin page :  
-<img width="2810" height="1536" alt="image" src="https://github.com/user-attachments/assets/b2a3354e-6fce-4814-9c40-8ac8a8d96763" />
+Edit job window with photo managment :
+<img width="1254" height="1512" alt="image" src="https://github.com/user-attachments/assets/5e168306-3399-44d0-91d7-2e204a1d5795" />
+
+Main page with notifications up :
+<img width="2802" height="1518" alt="image" src="https://github.com/user-attachments/assets/2cd77d84-d5ea-46ba-bffc-45cf38de9652" />
 
 Notification page :  
-<img width="2838" height="1520" alt="image" src="https://github.com/user-attachments/assets/892aecab-3292-4e55-9307-4f2b672d347c" />
+<img width="2834" height="1520" alt="image" src="https://github.com/user-attachments/assets/2e0cde92-b1bd-48ba-9bcc-469d3b2dad62" />
+
+Job window for assigned worker on a job with completed job option :
+<img width="1242" height="1496" alt="image" src="https://github.com/user-attachments/assets/bdabb9ee-f46b-4ee6-9d16-2b3dd8708a37" />
+
+Job waiting for manager validation once marked as done by worker :
+<img width="480" height="526" alt="image" src="https://github.com/user-attachments/assets/ef45badd-fec5-443f-ae7c-cbec30dd3cf1" />
+
+Manager notification for validation : 
+<img width="2852" height="858" alt="image" src="https://github.com/user-attachments/assets/d6e601fd-8cfb-4fde-a07d-12372702b3d7" />
+
+Job window for manager (once waiting for validation) :
+<img width="1238" height="1504" alt="image" src="https://github.com/user-attachments/assets/47bfbb5d-ffea-401b-a0e6-08fa03a28f95" />
+
+Admin page :  
+<img width="2820" height="1440" alt="image" src="https://github.com/user-attachments/assets/38dcd062-3b27-42b7-a55a-cb248e71785f" />
+
+callback or archive option for done jobs :
+<img width="1250" height="1494" alt="image" src="https://github.com/user-attachments/assets/5a6c07cb-66c9-4b38-a5d6-6b7425c775b0" />
+
+Job back to pool waiting to be fixed after callback : 
+<img width="2702" height="874" alt="image" src="https://github.com/user-attachments/assets/1625b3a1-5683-46ad-871a-a9aa1ac5eec7" />
+
+Archived job :
+<img width="2822" height="1454" alt="image" src="https://github.com/user-attachments/assets/cc7d770a-cc77-4904-8007-b5ec89e1c0db" />
