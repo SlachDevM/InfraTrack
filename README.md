@@ -48,6 +48,7 @@ This platform centralizes those processes into a single application.
 | Containerization | Docker Compose |
 | Persistence | Spring Data JPA / Hibernate |
 | Architecture | MVC + Service Layer + Repository Pattern |
+| Testing | JUnit 5, Mockito |
 
 # Deployment Architecture
 
@@ -140,6 +141,17 @@ After starting the application:
 # API Documentation
 
 <img width="2844" height="1504" alt="image" src="https://github.com/user-attachments/assets/c97309c7-3d80-4515-a9c0-842f98f80fe2" />
+
+# Testing
+
+Backend services are covered with unit tests using JUnit 5 and Mockito.
+
+Tested areas include:
+- Authentication
+- Job workflow
+- Notifications
+- Users
+- Tasks
 
 # Additional screenshots 
 ## Job Management 
