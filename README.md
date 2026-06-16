@@ -2,7 +2,7 @@
 
 Roofing Business Management Platform
 
-Business management software built for Margaret River Re-Gutter.
+Business management software developed for Margaret River Re-Gutter.
 
 Built with Java 21, Spring Boot, React and PostgreSQL
 
@@ -167,7 +167,7 @@ docker compose up --build
 
 Swagger/OpenAPI integration is planned as part of the next development phase.
 
-# Other screenshots 
+# Additional screenshots 
 The following screenshots illustrate the main business workflows implemented by the application.
 
 Job Management :
