@@ -1,7 +1,7 @@
 package com.mrrg.backend.controller;
 
 import com.mrrg.backend.model.Task;
-import com.mrrg.backend.repository.TaskRepository;
+import com.mrrg.backend.service.TaskService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,40 +11,31 @@ import java.util.List;
 @CrossOrigin(origins = "http://localhost:3000")
 @RequestMapping("/api/tasks")
 public class TaskController {
-    private final TaskRepository repository;
 
-    public TaskController(TaskRepository repository) {
-        this.repository = repository;
+    private final TaskService taskService;
+
+    public TaskController(TaskService taskService) {
+        this.taskService = taskService;
     }
 
     @GetMapping
     public List<Task> listTasks() {
-        return repository.findAll();
+        return taskService.findAll();
     }
 
     @PostMapping
     public Task createTask(@RequestBody Task task) {
-        return repository.save(task);
+        return taskService.create(task);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Task> updateTask(@PathVariable("id") Long id, @RequestBody Task task) {
-        return repository.findById(id)
-                .map(existing -> {
-                    existing.setTitle(task.getTitle());
-                    existing.setCompleted(task.isCompleted());
-                    return ResponseEntity.ok(repository.save(existing));
-                })
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        return ResponseEntity.ok(taskService.update(id, task));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteTask(@PathVariable("id") Long id) {
-        return repository.findById(id)
-                .map(existing -> {
-                    repository.delete(existing);
-                    return ResponseEntity.noContent().build();
-                })
-                .orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<Void> deleteTask(@PathVariable("id") Long id) {
+        taskService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }
