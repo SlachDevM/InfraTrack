@@ -39,14 +39,18 @@ Employees can access their assigned jobs, upload before/after photos directly fr
 - Service-oriented backend architecture  
 
 # Stack
-Frontend : ReactJs (using the colors and logo of the Margaret River Re-Gutter website)  
+Frontend : 
+- ReactJs (using the colors and logo of the Margaret River Re-Gutter website)  
+
 backend :  
 - Java 21  
 - Spring Boot  
 - Spring Security  
 - Spring Data JPA  
-- REST API architecture  
-database : Postgres 
+- REST API architecture
+   
+database : 
+- Postgres 
 
 The application is fully containerized using Docker, with a dedicated image for the frontend, backend and database services.
 
