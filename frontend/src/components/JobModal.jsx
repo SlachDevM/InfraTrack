@@ -179,13 +179,11 @@ export default function JobModal({
 
   if (!isOpen) return null;
 
-  const permissions = getJobPermissions(job, { role: 'WORKER' }, isAssignedWorker);
   const isAssignedWorker = selectedWorkers.some(
     (name) => name.trim().toLowerCase() === currentUserName.trim().toLowerCase()
   );
-  const permissionsWithWorker = getJobPermissions(job, { role: 'WORKER' }, isAssignedWorker);
+  const permissions = getJobPermissions(job, { role: canManage ? 'MANAGER' : 'WORKER' }, isAssignedWorker);
   const {
-    canManage,
     isArchived,
     isDone,
     isCallbackOnly,
@@ -197,7 +195,7 @@ export default function JobModal({
     canComplete,
     canConfirm,
     canArchive,
-  } = permissionsWithWorker;
+  } = permissions;
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
