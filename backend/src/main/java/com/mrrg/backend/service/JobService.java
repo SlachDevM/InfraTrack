@@ -99,9 +99,14 @@ public class JobService {
             if (job.getStatus() == JobStatus.ARCHIVED || job.getStatus() == JobStatus.DONE) {
                 applyManagerSupplementaryUpdate(job, jobUpdate);
             } else {
+                boolean wasPending = (job.getJobDate() == null);
                 applyManagerJobUpdate(job, jobUpdate);
+                boolean isNowScheduled = (job.getJobDate() != null);
+                
                 if (jobUpdate.getAssignedWorkers() != null && !jobUpdate.getAssignedWorkers().isEmpty()) {
                     notifyAssignedWorkers(job, id, jobUpdate.getAssignedWorkers());
+                } else if (wasPending && isNowScheduled && job.getAssignedWorkers() != null && !job.getAssignedWorkers().isEmpty()) {
+                    notifyAssignedWorkers(job, id, job.getAssignedWorkers());
                 }
             }
         } else {
