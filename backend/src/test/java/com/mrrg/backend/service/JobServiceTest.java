@@ -522,8 +522,6 @@ class JobServiceTest {
         worker.setId(2L);
 
         when(jobRepository.findById(10L)).thenReturn(Optional.of(job));
-        when(userService.getById(2L)).thenReturn(worker);
-        when(userService.isManagerOrAdmin(2L)).thenReturn(false);
 
         assertThatThrownBy(() -> jobService.markReadyForConfirmation(10L, 2L))
                 .isInstanceOf(ResponseStatusException.class)
