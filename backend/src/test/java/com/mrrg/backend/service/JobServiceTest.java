@@ -353,4 +353,182 @@ class JobServiceTest {
         job.setCreatedBy(1L);
         return job;
     }
+
+    // ==================== IN_PROGRESS Feature Tests ====================
+
+    @Test
+    void update_shouldTransitionToInProgress_whenAssignedWorkerUploadsBeforePhotos() {
+        Job existingJob = sampleJob();
+        existingJob.setId(10L);
+        existingJob.setStatus(JobStatus.SCHEDULED);
+        existingJob.setAssignedWorkers("John Worker");
+
+        Job update = new Job();
+        update.setBeforePhotos(List.of("base64EncodedPhoto1", "base64EncodedPhoto2"));
+
+        User worker = new User("worker@test.com", "password", "John Worker", UserRole.EMPLOYEE);
+        worker.setId(2L);
+
+        when(jobRepository.findById(10L)).thenReturn(Optional.of(existingJob));
+        when(userService.getById(2L)).thenReturn(worker);
+        when(userService.isManagerOrAdmin(2L)).thenReturn(false);
+        when(jobRepository.save(any(Job.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Job result = jobService.update(10L, update, 2L);
+
+        assertThat(result.getStatus()).isEqualTo(JobStatus.IN_PROGRESS);
+        assertThat(result.getBeforePhotos()).hasSize(2);
+        verify(jobRepository).save(existingJob);
+    }
+
+    @Test
+    void update_shouldTransitionToInProgress_whenAssignedWorkerUploadsAfterPhotos() {
+        Job existingJob = sampleJob();
+        existingJob.setId(10L);
+        existingJob.setStatus(JobStatus.SCHEDULED);
+        existingJob.setAssignedWorkers("John Worker");
+
+        Job update = new Job();
+        update.setAfterPhotos(List.of("base64EncodedPhoto1"));
+
+        User worker = new User("worker@test.com", "password", "John Worker", UserRole.EMPLOYEE);
+        worker.setId(2L);
+
+        when(jobRepository.findById(10L)).thenReturn(Optional.of(existingJob));
+        when(userService.getById(2L)).thenReturn(worker);
+        when(userService.isManagerOrAdmin(2L)).thenReturn(false);
+        when(jobRepository.save(any(Job.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Job result = jobService.update(10L, update, 2L);
+
+        assertThat(result.getStatus()).isEqualTo(JobStatus.IN_PROGRESS);
+        assertThat(result.getAfterPhotos()).hasSize(1);
+        verify(jobRepository).save(existingJob);
+    }
+
+    @Test
+    void update_shouldTransitionToInProgress_whenAssignedWorkerAddsNotes() {
+        Job existingJob = sampleJob();
+        existingJob.setId(10L);
+        existingJob.setStatus(JobStatus.SCHEDULED);
+        existingJob.setAssignedWorkers("John Worker");
+
+        Job update = new Job();
+        update.setNotes("Job in progress, gutters cleaned");
+
+        User worker = new User("worker@test.com", "password", "John Worker", UserRole.EMPLOYEE);
+        worker.setId(2L);
+
+        when(jobRepository.findById(10L)).thenReturn(Optional.of(existingJob));
+        when(userService.getById(2L)).thenReturn(worker);
+        when(userService.isManagerOrAdmin(2L)).thenReturn(false);
+        when(jobRepository.save(any(Job.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Job result = jobService.update(10L, update, 2L);
+
+        assertThat(result.getStatus()).isEqualTo(JobStatus.IN_PROGRESS);
+        assertThat(result.getNotes()).isEqualTo("Job in progress, gutters cleaned");
+        verify(jobRepository).save(existingJob);
+    }
+
+    @Test
+    void update_shouldTransitionToInProgress_whenAssignedWorkerAddsPhotosAndNotes() {
+        Job existingJob = sampleJob();
+        existingJob.setId(10L);
+        existingJob.setStatus(JobStatus.SCHEDULED);
+        existingJob.setAssignedWorkers("John Worker");
+
+        Job update = new Job();
+        update.setBeforePhotos(List.of("base64Photo"));
+        update.setNotes("Starting job now");
+
+        User worker = new User("worker@test.com", "password", "John Worker", UserRole.EMPLOYEE);
+        worker.setId(2L);
+
+        when(jobRepository.findById(10L)).thenReturn(Optional.of(existingJob));
+        when(userService.getById(2L)).thenReturn(worker);
+        when(userService.isManagerOrAdmin(2L)).thenReturn(false);
+        when(jobRepository.save(any(Job.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Job result = jobService.update(10L, update, 2L);
+
+        assertThat(result.getStatus()).isEqualTo(JobStatus.IN_PROGRESS);
+        assertThat(result.getBeforePhotos()).hasSize(1);
+        assertThat(result.getNotes()).isEqualTo("Starting job now");
+        verify(jobRepository).save(existingJob);
+    }
+
+    @Test
+    void update_shouldNotTransitionToInProgress_whenJobNotScheduled() {
+        Job existingJob = sampleJob();
+        existingJob.setId(10L);
+        existingJob.setStatus(JobStatus.PENDING);
+        existingJob.setAssignedWorkers("John Worker");
+
+        Job update = new Job();
+        update.setBeforePhotos(List.of("base64Photo"));
+
+        User worker = new User("worker@test.com", "password", "John Worker", UserRole.EMPLOYEE);
+        worker.setId(2L);
+
+        when(jobRepository.findById(10L)).thenReturn(Optional.of(existingJob));
+        when(userService.getById(2L)).thenReturn(worker);
+        when(userService.isManagerOrAdmin(2L)).thenReturn(false);
+        when(jobRepository.save(any(Job.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Job result = jobService.update(10L, update, 2L);
+
+        // PENDING jobs don't transition to IN_PROGRESS
+        assertThat(result.getStatus()).isEqualTo(JobStatus.PENDING);
+        verify(jobRepository).save(existingJob);
+    }
+
+    @Test
+    void markReadyForConfirmation_shouldAcceptInProgressJobs() {
+        Job job = sampleJob();
+        job.setId(10L);
+        job.setStatus(JobStatus.IN_PROGRESS);
+        job.setAssignedWorkers("John Worker");
+        job.setCreatedBy(1L);
+
+        User worker = new User("worker@test.com", "password", "John Worker", UserRole.EMPLOYEE);
+        worker.setId(2L);
+
+        when(jobRepository.findById(10L)).thenReturn(Optional.of(job));
+        when(userService.getById(2L)).thenReturn(worker);
+        when(userService.isManagerOrAdmin(2L)).thenReturn(false);
+        when(jobRepository.save(any(Job.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Job result = jobService.markReadyForConfirmation(10L, 2L);
+
+        assertThat(result.getStatus()).isEqualTo(JobStatus.READY_FOR_CONFIRMATION);
+
+        verify(notificationService).create(
+                1L,
+                10L,
+                NotificationType.JOB_READY_FOR_CONFIRMATION,
+                "Job Test Client is ready for confirmation"
+        );
+    }
+
+    @Test
+    void markReadyForConfirmation_shouldThrowError_whenJobNotInProgressOrScheduled() {
+        Job job = sampleJob();
+        job.setId(10L);
+        job.setStatus(JobStatus.PENDING);
+        job.setAssignedWorkers("John Worker");
+
+        User worker = new User("worker@test.com", "password", "John Worker", UserRole.EMPLOYEE);
+        worker.setId(2L);
+
+        when(jobRepository.findById(10L)).thenReturn(Optional.of(job));
+        when(userService.getById(2L)).thenReturn(worker);
+        when(userService.isManagerOrAdmin(2L)).thenReturn(false);
+
+        assertThatThrownBy(() -> jobService.markReadyForConfirmation(10L, 2L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400");
+
+        verify(jobRepository, never()).save(any(Job.class));
+    }
 }
