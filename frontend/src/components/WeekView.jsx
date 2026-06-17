@@ -1,37 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDragClickGuard } from '../hooks/useDragClickGuard';
+import apiClient from '../services/apiClient';
+import { PRIORITY_COLORS, JOB_STATUSES, API_ENDPOINTS } from '../constants/jobConfig';
+import {
+  startOfDay,
+  endOfDay,
+  isSameDay,
+} from '../utils/dateUtils';
+import { formatWorkers } from '../utils/permissionUtils';
 import '../styles/WeekView.css';
 
-const API_BASE = 'http://localhost:4000';
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
-function startOfDay(date) {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d.getTime();
-}
-
-function endOfDay(date) {
-  const d = new Date(date);
-  d.setHours(23, 59, 59, 999);
-  return d.getTime();
-}
-
-function isSameDay(ts, dayDate) {
-  if (!ts) return false;
-  return startOfDay(new Date(ts)) === startOfDay(dayDate);
-}
-
-function formatWorkers(assignedWorkers) {
-  if (!assignedWorkers || !assignedWorkers.trim()) {
-    return 'No workers assigned';
-  }
-  return assignedWorkers.split(',').filter(Boolean).join(', ');
-}
 
 function ScheduledJobChip({ job, onJobClick, onDragStartRef, getPriorityColor }) {
   const { onMouseDown, onDragStart, onClick } = useDragClickGuard();
-  const awaitingConfirmation = job.status === 'READY_FOR_CONFIRMATION';
+  const awaitingConfirmation = job.status === JOB_STATUSES.READY_FOR_CONFIRMATION;
   const canDrag = !awaitingConfirmation;
 
   return (
@@ -92,17 +75,13 @@ export default function WeekView({
   useEffect(() => {
     const fetchScheduled = async () => {
       try {
+        apiClient.setToken(token);
         const weekStartMs = startOfDay(weekDays[0]);
         const weekEndMs = endOfDay(weekEnd);
-        const response = await fetch(
-          `${API_BASE}/api/jobs/scheduled?weekStart=${weekStartMs}&weekEnd=${weekEndMs}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+        const jobs = await apiClient.get(
+          `${API_ENDPOINTS.JOBS_SCHEDULED}?weekStart=${weekStartMs}&weekEnd=${weekEndMs}`
         );
-        if (response.ok) {
-          setScheduledJobs(await response.json());
-        } else {
-          console.error('Failed to fetch scheduled jobs:', response.status);
-        }
+        setScheduledJobs(jobs);
       } catch (err) {
         console.error('Failed to fetch scheduled jobs:', err);
       }
@@ -135,27 +114,17 @@ export default function WeekView({
 
   const scheduleJobOnDay = async (job, dayDate) => {
     try {
-      const response = await fetch(`${API_BASE}/api/jobs/${job.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          jobDate: startOfDay(dayDate),
-          jobStartHour: job.jobStartHour || '07:50',
-          status: 'SCHEDULED',
-        }),
+      const updated = await apiClient.put(`${API_ENDPOINTS.JOBS}/${job.id}`, {
+        jobDate: startOfDay(dayDate),
+        jobStartHour: job.jobStartHour || '07:50',
+        status: JOB_STATUSES.SCHEDULED,
       });
 
-      if (response.ok) {
-        const updated = await response.json();
-        onJobAssigned?.(job.id);
-        setScheduledJobs((prev) => {
-          const filtered = prev.filter((j) => j.id !== job.id);
-          return [...filtered, updated];
-        });
-      }
+      onJobAssigned?.(job.id);
+      setScheduledJobs((prev) => {
+        const filtered = prev.filter((j) => j.id !== job.id);
+        return [...filtered, updated];
+      });
     } catch (err) {
       console.error('Failed to schedule job:', err);
     }
@@ -183,8 +152,7 @@ export default function WeekView({
   };
 
   const getPriorityColor = (level) => {
-    const colors = { 1: '#28a745', 2: '#ffc107', 3: '#fd7e14', 4: '#dc3545' };
-    return colors[level] || '#999';
+    return PRIORITY_COLORS[level] || '#999';
   };
 
   const today = new Date();

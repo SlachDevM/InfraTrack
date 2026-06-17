@@ -1,20 +1,13 @@
 import { useState, useEffect } from 'react';
-
 import { useNavigate } from 'react-router-dom';
-
 import { useAuth } from '../context/AuthContext';
-
 import JobModal from '../components/JobModal';
-
 import NotificationButton from '../components/NotificationButton';
+import apiClient from '../services/apiClient';
+import { API_ENDPOINTS } from '../constants/jobConfig';
 import '../styles/AdminPage.css';
 import '../styles/Dashboard.css';
-
 import '../styles/JobModal.css';
-
-
-
-const API_BASE = 'http://localhost:4000';
 
 
 
@@ -39,63 +32,28 @@ export default function AdminPage() {
 
 
   useEffect(() => {
-
     if (!auth || (auth.user.role !== 'MANAGER' && auth.user.role !== 'ADMIN')) {
-
       navigate('/');
-
       return;
-
     }
-
+    apiClient.setToken(auth.token);
     fetchJobs();
-
   }, [auth, navigate]);
 
-
-
   const fetchJobs = async () => {
-
     try {
-
-      const [doneRes, archivedRes] = await Promise.all([
-
-        fetch(`${API_BASE}/api/jobs/done`, {
-
-          headers: { Authorization: `Bearer ${auth.token}` },
-
-        }),
-
-        fetch(`${API_BASE}/api/jobs/archived`, {
-
-          headers: { Authorization: `Bearer ${auth.token}` },
-
-        }),
-
+      const [done, archived] = await Promise.all([
+        apiClient.get(API_ENDPOINTS.JOBS_DONE),
+        apiClient.get(API_ENDPOINTS.JOBS_ARCHIVED),
       ]);
 
-
-
-      const done = await doneRes.json();
-
-      const archived = await archivedRes.json();
-
-
-
       setDoneJobs(done);
-
       setArchivedJobs(archived);
-
     } catch (err) {
-
       console.error('Failed to fetch jobs:', err);
-
     } finally {
-
       setLoading(false);
-
     }
-
   };
 
 

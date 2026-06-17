@@ -1,89 +1,27 @@
 import { useState, useEffect } from 'react';
 import '../styles/JobModal.css';
-
-const API_BASE = 'http://localhost:4000';
-
-export const JOB_TYPES = [
-  'FULL_REGUTTER',
-  'PARTIAL_REGUTTER',
-  'FULL_REFASCIA',
-  'PARTIAL_REFASCIA',
-  'RESCREW',
-  'PARTIAL_RESHEET',
-  'FULL_RESHEET',
-];
-
-const EMPTY_FORM = {
-  clientName: '',
-  clientPhone: '',
-  clientAddress: '',
-  details: '',
-  notes: '',
-  priorityLevel: '1',
-  jobDate: '',
-  jobStartHour: '07:50',
-};
-
-function formatJobTypeLabel(type) {
-  return type.replace(/_/g, ' ');
-}
-
-function timestampToDateInput(timestamp) {
-  if (!timestamp) return '';
-  const d = new Date(timestamp);
-  const offset = d.getTimezoneOffset();
-  const local = new Date(d.getTime() - offset * 60 * 1000);
-  return local.toISOString().split('T')[0];
-}
-
-function dateInputToTimestamp(dateStr) {
-  if (!dateStr) return null;
-  const [year, month, day] = dateStr.split('-').map(Number);
-  const d = new Date(year, month - 1, day);
-  return d.getTime();
-}
-
-function toPhotoSrc(photo) {
-  if (!photo) return null;
-  if (typeof photo === 'string') {
-    return photo.startsWith('data:') ? photo : `data:image/jpeg;base64,${photo}`;
-  }
-  return null;
-}
-
-function extractBase64(photo) {
-  if (!photo) return null;
-  if (typeof photo === 'string') {
-    return photo.startsWith('data:') ? photo.split(',')[1] : photo;
-  }
-  return null;
-}
-
-function photoEntryFromBase64(base64) {
-  const clean = extractBase64(base64);
-  return clean ? { preview: toPhotoSrc(clean), base64: clean } : null;
-}
-
-function parsePhotosFromJob(job, pluralKey, singularKey) {
-  const list = job[pluralKey];
-  if (Array.isArray(list) && list.length > 0) {
-    return list.map(photoEntryFromBase64).filter(Boolean);
-  }
-  const legacy = job[singularKey];
-  if (legacy) {
-    const entry = photoEntryFromBase64(legacy);
-    return entry ? [entry] : [];
-  }
-  return [];
-}
-
-function photosToPayload(photos) {
-  return photos.map((photo) => photo.base64);
-}
-
-function sanitizeClientName(name) {
-  return (name.trim() || 'Client').replace(/\s+/g, '_').replace(/[\\/:*?"<>|]/g, '');
-}
+import apiClient from '../services/apiClient';
+import {
+  JOB_TYPES,
+  PRIORITY_LEVELS,
+  JOB_STATUSES,
+  EMPTY_JOB_FORM,
+  API_ENDPOINTS,
+} from '../constants/jobConfig';
+import {
+  formatJobTypeLabel,
+  timestampToDateInput,
+  dateInputToTimestamp,
+} from '../utils/dateUtils';
+import {
+  toPhotoSrc,
+  extractBase64,
+  photoEntryFromBase64,
+  parsePhotosFromJob,
+  photosToPayload,
+  sanitizeClientName,
+} from '../utils/photoUtils';
+import { getJobPermissions, formatWorkers } from '../utils/permissionUtils';
 
 function PhotoGallery({ title, photoType, photos, canUpload, onUpload, onDelete, onDownload }) {
   return (
@@ -151,7 +89,7 @@ export default function JobModal({
   currentUserName = '',
 }) {
   const isEdit = Boolean(job?.id);
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState(EMPTY_JOB_FORM);
   const [selectedTypes, setSelectedTypes] = useState([]);
   const [selectedWorkers, setSelectedWorkers] = useState([]);
   const [workers, setWorkers] = useState([]);
@@ -172,26 +110,22 @@ export default function JobModal({
     const loadWorkers = async () => {
       if (!canManage) return;
       try {
-        const res = await fetch(`${API_BASE}/api/users/workers`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          setWorkers(await res.json());
-        }
+        const workers = await apiClient.get(API_ENDPOINTS.USERS_WORKERS);
+        setWorkers(workers);
       } catch (err) {
         console.error('Failed to load workers:', err);
       }
     };
 
     loadWorkers();
-  }, [isOpen, token, canManage]);
+  }, [isOpen, canManage]);
 
   useEffect(() => {
     if (!isOpen) return;
 
     const resetForm = () => {
       setForm({
-        ...EMPTY_FORM,
+        ...EMPTY_JOB_FORM,
         jobDate: prefilledDate ? timestampToDateInput(prefilledDate) : '',
       });
       setSelectedTypes([]);
@@ -209,11 +143,7 @@ export default function JobModal({
     const loadJob = async () => {
       setLoadingJob(true);
       try {
-        const res = await fetch(`${API_BASE}/api/jobs/${job.id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error('Failed to load job');
-        const fullJob = await res.json();
+        const fullJob = await apiClient.get(`${API_ENDPOINTS.JOBS}/${job.id}`);
 
         setForm({
           clientName: fullJob.clientName || '',
@@ -243,31 +173,31 @@ export default function JobModal({
     };
 
     loadJob();
-  }, [isOpen, isEdit, job?.id, prefilledDate, token]);
+  }, [isOpen, isEdit, job?.id, prefilledDate]);
+
+  apiClient.setToken(token);
 
   if (!isOpen) return null;
 
+  const permissions = getJobPermissions(job, { role: 'WORKER' }, isAssignedWorker);
   const isAssignedWorker = selectedWorkers.some(
     (name) => name.trim().toLowerCase() === currentUserName.trim().toLowerCase()
   );
-  const isArchived = jobStatus === 'ARCHIVED';
-  const isDone = jobStatus === 'DONE';
-  const isCallbackOnly = isArchived || isDone;
-  const awaitingConfirmation = jobStatus === 'READY_FOR_CONFIRMATION';
-  const isCoreReadOnly = !canManage || isCallbackOnly;
-  const canUploadPhotos = canManage || (isEdit && isAssignedWorker && !isCallbackOnly);
-  const canEditNotes = canManage || (isEdit && isAssignedWorker && !isCallbackOnly);
-  const canCallbackFix = isEdit && canManage && isCallbackOnly;
-  const canComplete =
-    isEdit &&
-    !canManage &&
-    isAssignedWorker &&
-    (jobStatus === 'SCHEDULED' || jobStatus === 'TO_BE_FIXED');
-  const canConfirm = isEdit && canManage && jobStatus === 'READY_FOR_CONFIRMATION';
-  const canArchive =
-    isEdit &&
-    canManage &&
-    !isArchived;
+  const permissionsWithWorker = getJobPermissions(job, { role: 'WORKER' }, isAssignedWorker);
+  const {
+    canManage,
+    isArchived,
+    isDone,
+    isCallbackOnly,
+    awaitingConfirmation,
+    isCoreReadOnly,
+    canUploadPhotos,
+    canEditNotes,
+    canCallbackFix,
+    canComplete,
+    canConfirm,
+    canArchive,
+  } = permissionsWithWorker;
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -312,24 +242,15 @@ export default function JobModal({
       payload.notes = form.notes.trim() || null;
     }
 
-    const response = await fetch(`${API_BASE}/api/jobs/${job.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
+    try {
+      const savedJob = await apiClient.put(`${API_ENDPOINTS.JOBS}/${job.id}`, payload);
+      setBeforePhotos(parsePhotosFromJob(savedJob, 'beforePhotos', 'beforePhoto'));
+      setAfterPhotos(parsePhotosFromJob(savedJob, 'afterPhotos', 'afterPhoto'));
+      onSuccess(savedJob);
+      return savedJob;
+    } catch (err) {
       throw new Error('Failed to save photos.');
     }
-
-    const savedJob = await response.json();
-    setBeforePhotos(parsePhotosFromJob(savedJob, 'beforePhotos', 'beforePhoto'));
-    setAfterPhotos(parsePhotosFromJob(savedJob, 'afterPhotos', 'afterPhoto'));
-    onSuccess(savedJob);
-    return savedJob;
   };
 
   const handleDeletePhoto = async (type, index) => {
@@ -399,21 +320,7 @@ export default function JobModal({
           afterPhotos: photosToPayload(afterPhotos),
         };
 
-        const response = await fetch(`${API_BASE}/api/jobs/${job.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-          setError('Failed to save changes.');
-          return;
-        }
-
-        const savedJob = await response.json();
+        const savedJob = await apiClient.put(`${API_ENDPOINTS.JOBS}/${job.id}`, payload);
         onSuccess(savedJob);
         onClose();
       } catch (err) {
@@ -461,24 +368,10 @@ export default function JobModal({
         payload.afterPhotos = photosToPayload(afterPhotos);
       }
 
-      const url = isEdit ? `${API_BASE}/api/jobs/${job.id}` : `${API_BASE}/api/jobs`;
-      const method = isEdit ? 'PUT' : 'POST';
+      const savedJob = isEdit
+        ? await apiClient.put(`${API_ENDPOINTS.JOBS}/${job.id}`, payload)
+        : await apiClient.post(API_ENDPOINTS.JOBS, payload);
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        setError(isEdit ? 'Failed to update job.' : 'Failed to create job.');
-        return;
-      }
-
-      const savedJob = await response.json();
       onSuccess(savedJob);
       onClose();
     } catch (err) {
@@ -511,17 +404,7 @@ export default function JobModal({
     setError('');
     setCompleting(true);
     try {
-      const response = await fetch(`${API_BASE}/api/jobs/${job.id}/complete`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) {
-        setError('Failed to complete job.');
-        return;
-      }
-
-      const savedJob = await response.json();
+      const savedJob = await apiClient.put(`${API_ENDPOINTS.JOBS}/${job.id}/complete`, {});
       onSuccess(savedJob);
       onClose();
     } catch (err) {
@@ -540,17 +423,7 @@ export default function JobModal({
     setError('');
     setArchiving(true);
     try {
-      const response = await fetch(`${API_BASE}/api/jobs/${job.id}/archive`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) {
-        setError('Failed to archive job.');
-        return;
-      }
-
-      const savedJob = await response.json();
+      const savedJob = await apiClient.put(`${API_ENDPOINTS.JOBS}/${job.id}/archive`, {});
       onSuccess(savedJob);
       onClose();
     } catch (err) {
@@ -572,21 +445,7 @@ export default function JobModal({
         payload.jobStartHour = form.jobStartHour || '07:50';
       }
 
-      const response = await fetch(`${API_BASE}/api/jobs/${job.id}/callback-fix`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        setError('Failed to callback fix job.');
-        return;
-      }
-
-      const savedJob = await response.json();
+      const savedJob = await apiClient.put(`${API_ENDPOINTS.JOBS}/${job.id}/callback-fix`, payload);
       onSuccess(savedJob);
       onClose();
     } catch (err) {
@@ -605,17 +464,7 @@ export default function JobModal({
     setError('');
     setConfirming(true);
     try {
-      const response = await fetch(`${API_BASE}/api/jobs/${job.id}/confirm`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) {
-        setError('Failed to confirm job.');
-        return;
-      }
-
-      const savedJob = await response.json();
+      const savedJob = await apiClient.put(`${API_ENDPOINTS.JOBS}/${job.id}/confirm`, {});
       onSuccess(savedJob);
       onClose();
     } catch (err) {
@@ -715,10 +564,9 @@ export default function JobModal({
             <label>
               Priority
               <select name="priorityLevel" value={form.priorityLevel} onChange={handleChange} disabled={isCoreReadOnly}>
-                <option value="1">1 - Low</option>
-                <option value="2">2 - Medium</option>
-                <option value="3">3 - High</option>
-                <option value="4">4 - Urgent</option>
+                {PRIORITY_LEVELS.map((level) => (
+                  <option key={level.value} value={level.value}>{level.label}</option>
+                ))}
               </select>
             </label>
 

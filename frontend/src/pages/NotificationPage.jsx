@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
+import apiClient from '../services/apiClient';
+import { API_ENDPOINTS } from '../constants/jobConfig';
 import '../styles/NotificationPage.css';
-
-const API_BASE = 'http://localhost:4000';
 
 const NOTIFICATION_TYPE_LABELS = {
   JOB_ASSIGNED: 'Assigned Job',
@@ -33,16 +33,14 @@ export default function NotificationPage() {
       navigate('/login');
       return;
     }
+    apiClient.setToken(auth.token);
     fetchNotifications();
     refreshUnreadCount();
   }, [auth?.token, navigate, refreshUnreadCount]);
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/notifications`, {
-        headers: { Authorization: `Bearer ${auth.token}` },
-      });
-      const data = await response.json();
+      const data = await apiClient.get(API_ENDPOINTS.NOTIFICATIONS);
       setNotifications(data);
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
@@ -53,48 +51,26 @@ export default function NotificationPage() {
 
   const handleMarkAsRead = async (notificationId) => {
     try {
-      const response = await fetch(`${API_BASE}/api/notifications/${notificationId}/read`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${auth.token}` },
-      });
-
-      if (response.ok) {
-        const wasUnread = notifications.some((n) => n.id === notificationId && !n.isRead);
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
-        );
-        if (wasUnread) {
-          decrementUnread();
-        }
-        return true;
+      await apiClient.put(`${API_ENDPOINTS.NOTIFICATIONS}/${notificationId}/read`, {});
+      const wasUnread = notifications.some((n) => n.id === notificationId && !n.isRead);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
+      );
+      if (wasUnread) {
+        decrementUnread();
       }
+      return true;
     } catch (err) {
       console.error('Failed to mark notification as read:', err);
-    }
-    return false;
-  };
-
-  const handleNotificationClick = async (notif) => {
-    if (!notif.isRead) {
-      await handleMarkAsRead(notif.id);
-    }
-
-    if (NAVIGABLE_TYPES.includes(notif.type) && notif.jobId) {
-      navigate(`/?jobId=${notif.jobId}`);
+      return false;
     }
   };
 
   const handleMarkAllAsRead = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/notifications/read-all`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${auth.token}` },
-      });
-
-      if (response.ok) {
-        clearUnread();
-        fetchNotifications();
-      }
+      await apiClient.put(`${API_ENDPOINTS.NOTIFICATIONS}/read-all`, {});
+      clearUnread();
+      fetchNotifications();
     } catch (err) {
       console.error('Failed to mark all as read:', err);
     }

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import apiClient from '../services/apiClient';
+import { API_ENDPOINTS } from '../constants/jobConfig';
 import '../styles/Login.css';
 
-const API_BASE = 'http://localhost:4000';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Login() {
@@ -30,33 +31,24 @@ export default function Login() {
       }
     }
 
-    const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
+    const endpoint = isRegister ? API_ENDPOINTS.AUTH_REGISTER : API_ENDPOINTS.AUTH_LOGIN;
     const body = isRegister
       ? { email: trimmedEmail, password: trimmedPassword, name, role }
       : { email: trimmedEmail, password: trimmedPassword };
 
     try {
-      const response = await fetch(`${API_BASE}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+      const data = isRegister
+        ? await apiClient.post(endpoint, body)
+        : await apiClient.post(endpoint, body);
 
-      if (!response.ok) {
-        if (!isRegister) {
-          setError('Email or password is incorrect.');
-          return;
-        }
-        const message = await response.text();
-        setError(message || 'Registration failed.');
-        return;
-      }
-
-      const data = await response.json();
       login(data, data.token);
       navigate('/');
     } catch (err) {
-      setError('Connection error: ' + err.message);
+      if (!isRegister) {
+        setError('Email or password is incorrect.');
+      } else {
+        setError(err.message || 'Registration failed.');
+      }
     }
   };
 

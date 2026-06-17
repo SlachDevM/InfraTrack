@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-
-const API_BASE = 'http://localhost:4000';
+import apiClient from '../services/apiClient';
+import { API_ENDPOINTS } from '../constants/jobConfig';
 
 const defaultNotificationContext = {
   unreadCount: 0,
@@ -25,13 +25,9 @@ export function NotificationProvider({ children }) {
     }
 
     try {
-      const res = await fetch(`${API_BASE}/api/notifications/unread-count`, {
-        headers: { Authorization: `Bearer ${auth.token}` },
-      });
-      if (res.ok) {
-        const count = await res.json();
-        setUnreadCount(typeof count === 'number' ? count : Number(count) || 0);
-      }
+      apiClient.setToken(auth.token);
+      const count = await apiClient.get(`${API_ENDPOINTS.NOTIFICATIONS}/unread-count`);
+      setUnreadCount(typeof count === 'number' ? count : Number(count) || 0);
     } catch (err) {
       console.error('Failed to fetch unread count:', err);
     }

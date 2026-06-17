@@ -1,29 +1,15 @@
 import { useState, useEffect } from 'react';
-
 import { useNavigate, useSearchParams } from 'react-router-dom';
-
 import { useAuth } from '../context/AuthContext';
-
 import WeekView from '../components/WeekView';
-
 import JobList from '../components/JobList';
-
 import JobModal from '../components/JobModal';
-
 import NotificationButton from '../components/NotificationButton';
+import apiClient from '../services/apiClient';
+import { JOB_STATUSES, API_ENDPOINTS } from '../constants/jobConfig';
+import { getMonday } from '../utils/dateUtils';
 import '../styles/Dashboard.css';
-
 import '../styles/JobModal.css';
-
-
-const API_BASE = 'http://localhost:4000';
-
-function getMonday(date) {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  return new Date(d.setDate(diff));
-}
 
 export default function MainDashboard() {
   const navigate = useNavigate();
@@ -44,6 +30,7 @@ export default function MainDashboard() {
       navigate('/login');
       return;
     }
+    apiClient.setToken(auth.token);
     fetchJobs();
   }, [auth, navigate]);
 
@@ -53,14 +40,9 @@ export default function MainDashboard() {
 
     const openJobFromParam = async () => {
       try {
-        const response = await fetch(`${API_BASE}/api/jobs/${jobId}`, {
-          headers: { Authorization: `Bearer ${auth.token}` },
-        });
-        if (response.ok) {
-          const job = await response.json();
-          setSelectedJob(job);
-          setShowJobModal(true);
-        }
+        const job = await apiClient.get(`${API_ENDPOINTS.JOBS}/${jobId}`);
+        setSelectedJob(job);
+        setShowJobModal(true);
       } catch (err) {
         console.error('Failed to open job from notification:', err);
       } finally {
@@ -71,21 +53,9 @@ export default function MainDashboard() {
     openJobFromParam();
   }, [searchParams, auth?.token, setSearchParams]);
 
-
-
   const fetchJobs = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/jobs/pending`, {
-        headers: { Authorization: `Bearer ${auth.token}` },
-      });
-
-      if (!response.ok) {
-        console.error('Failed to fetch jobs:', response.status);
-        setJobs([]);
-        return;
-      }
-
-      const data = await response.json();
+      const data = await apiClient.get(API_ENDPOINTS.JOBS_PENDING);
       setJobs(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to fetch jobs:', err);
@@ -120,35 +90,21 @@ export default function MainDashboard() {
 
 
   const handleJobSaved = (savedJob) => {
-
-    if (savedJob.status === 'PENDING' || savedJob.status === 'TO_BE_FIXED') {
-
+    if (savedJob.status === JOB_STATUSES.PENDING || savedJob.status === JOB_STATUSES.TO_BE_FIXED) {
       setJobs((prev) => {
-
         const exists = prev.some((j) => j.id === savedJob.id);
-
         if (exists) {
-
           return prev.map((j) => (j.id === savedJob.id ? savedJob : j));
-
         }
-
         return [savedJob, ...prev];
-
       });
-
-    } else if (savedJob.status === 'ARCHIVED') {
-
+    } else if (savedJob.status === JOB_STATUSES.ARCHIVED) {
       setJobs((prev) => prev.filter((j) => j.id !== savedJob.id));
-
-    } else if (savedJob.status !== 'READY_FOR_CONFIRMATION') {
-
+    } else if (savedJob.status !== JOB_STATUSES.READY_FOR_CONFIRMATION) {
       setJobs((prev) => prev.filter((j) => j.id !== savedJob.id));
-
     }
 
     setWeekRefreshKey((k) => k + 1);
-
   };
 
 
