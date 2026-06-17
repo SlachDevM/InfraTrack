@@ -257,6 +257,7 @@ export default function JobModal({
   const isCoreReadOnly = !canManage || isCallbackOnly;
   const canUploadPhotos = canManage || (isEdit && isAssignedWorker && !isCallbackOnly);
   const canEditNotes = canManage || (isEdit && isAssignedWorker && !isCallbackOnly);
+  const canCallbackFix = isEdit && canManage && isCallbackOnly;
   const canComplete =
     isEdit &&
     !canManage &&

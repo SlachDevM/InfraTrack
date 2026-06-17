@@ -74,29 +74,25 @@ export default function MainDashboard() {
 
 
   const fetchJobs = async () => {
-
     try {
-
       const response = await fetch(`${API_BASE}/api/jobs/pending`, {
-
         headers: { Authorization: `Bearer ${auth.token}` },
-
       });
 
+      if (!response.ok) {
+        console.error('Failed to fetch jobs:', response.status);
+        setJobs([]);
+        return;
+      }
+
       const data = await response.json();
-
-      setJobs(data);
-
+      setJobs(Array.isArray(data) ? data : []);
     } catch (err) {
-
       console.error('Failed to fetch jobs:', err);
-
+      setJobs([]);
     } finally {
-
       setLoading(false);
-
     }
-
   };
 
   const openCreateModal = () => {
