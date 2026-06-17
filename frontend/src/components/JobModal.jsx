@@ -256,7 +256,7 @@ export default function JobModal({
   const awaitingConfirmation = jobStatus === 'READY_FOR_CONFIRMATION';
   const isCoreReadOnly = !canManage || isCallbackOnly;
   const canUploadPhotos = canManage || (isEdit && isAssignedWorker && !isCallbackOnly);
-  const canCallbackFix = isEdit && canManage && isCallbackOnly;
+  const canEditNotes = canManage || (isEdit && isAssignedWorker && !isCallbackOnly);
   const canComplete =
     isEdit &&
     !canManage &&
@@ -302,17 +302,22 @@ export default function JobModal({
     });
   };
 
-  const persistPhotoLists = async (nextBefore, nextAfter) => {
+  const persistPhotoLists = async (nextBefore, nextAfter, includeNotes = false) => {
+    const payload = {
+      beforePhotos: photosToPayload(nextBefore),
+      afterPhotos: photosToPayload(nextAfter),
+    };
+    if (includeNotes) {
+      payload.notes = form.notes.trim() || null;
+    }
+
     const response = await fetch(`${API_BASE}/api/jobs/${job.id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        beforePhotos: photosToPayload(nextBefore),
-        afterPhotos: photosToPayload(nextAfter),
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
@@ -487,11 +492,11 @@ export default function JobModal({
     setError('');
     setSubmitting(true);
     try {
-      await persistPhotoLists(beforePhotos, afterPhotos);
+      await persistPhotoLists(beforePhotos, afterPhotos, true);
       onClose();
     } catch (err) {
       console.error(err);
-      setError('Failed to save photos.');
+      setError('Failed to save changes.');
     } finally {
       setSubmitting(false);
     }
@@ -736,7 +741,7 @@ export default function JobModal({
                 onChange={handleChange}
                 placeholder="Internal notes..."
                 rows={2}
-                disabled={!canManage}
+                disabled={!canEditNotes}
               />
             </label>
 
@@ -891,14 +896,14 @@ export default function JobModal({
                   {completing ? 'Completing...' : 'Complete Job'}
                 </button>
               )}
-              {canUploadPhotos && !canManage && isEdit && (
+              {!canManage && isEdit && canEditNotes && (
                 <button
                   type="button"
                   className="save-job-btn"
                   onClick={handleSavePhotos}
                   disabled={submitting || loadingJob || completing || confirming}
                 >
-                  {submitting ? 'Saving...' : 'Save Photos'}
+                  {submitting ? 'Saving...' : 'Save'}
                 </button>
               )}
               {canManage && (

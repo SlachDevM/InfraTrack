@@ -106,10 +106,10 @@ public class JobService {
             }
         } else {
             boolean hasPhotoUpdate =
-                    (jobUpdate.getBeforePhotos() != null && !jobUpdate.getBeforePhotos().isEmpty())
-                            || (jobUpdate.getAfterPhotos() != null && !jobUpdate.getAfterPhotos().isEmpty());
-            if (!hasPhotoUpdate) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No photos provided");
+                    jobUpdate.getBeforePhotos() != null || jobUpdate.getAfterPhotos() != null;
+            boolean hasNotesUpdate = jobUpdate.getNotes() != null;
+            if (!hasPhotoUpdate && !hasNotesUpdate) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No updates provided");
             }
             applyWorkerPhotoUpdate(job, jobUpdate);
         }
@@ -274,6 +274,10 @@ public class JobService {
 
     private void applyWorkerPhotoUpdate(Job job, Job jobUpdate) {
         applyPhotoListUpdate(job, jobUpdate);
+
+        if (jobUpdate.getNotes() != null) {
+            job.setNotes(jobUpdate.getNotes());
+        }
     }
 
     private void applyPhotoListUpdate(Job job, Job jobUpdate) {
