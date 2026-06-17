@@ -39,7 +39,7 @@ public class JobService {
         User user = userService.getById(userId);
         if (user.getRole() == UserRole.EMPLOYEE) {
             return jobRepository.findByStatusInOrderByPriorityLevelDesc(
-                    Arrays.asList(JobStatus.PENDING, JobStatus.SCHEDULED, JobStatus.TO_BE_FIXED)
+                    Arrays.asList(JobStatus.PENDING, JobStatus.SCHEDULED, JobStatus.IN_PROGRESS, JobStatus.TO_BE_FIXED)
             );
         }
         return jobRepository.findAll();
@@ -67,7 +67,7 @@ public class JobService {
     @Transactional(readOnly = true)
     public List<Job> getScheduledJobs(Long weekStart, Long weekEnd) {
         return jobRepository.findByStatusInAndJobDateBetweenOrderByJobStartHourAsc(
-                Arrays.asList(JobStatus.SCHEDULED, JobStatus.READY_FOR_CONFIRMATION),
+                Arrays.asList(JobStatus.SCHEDULED, JobStatus.IN_PROGRESS, JobStatus.READY_FOR_CONFIRMATION),
                 weekStart,
                 weekEnd
         );
@@ -133,6 +133,11 @@ public class JobService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No updates provided");
             }
             applyWorkerPhotoUpdate(job, jobUpdate);
+            
+            // Transition to IN_PROGRESS when worker adds photo or notes to a SCHEDULED job
+            if (job.getStatus() == JobStatus.SCHEDULED && (hasPhotoUpdate || hasNotesUpdate)) {
+                job.setStatus(JobStatus.IN_PROGRESS);
+            }
         }
 
         job.setUpdatedAt(System.currentTimeMillis());
@@ -151,7 +156,7 @@ public class JobService {
 
     public Job markReadyForConfirmation(Long id, Long userId) {
         Job job = getJobOrThrow(id);
-        if (job.getStatus() != JobStatus.SCHEDULED && job.getStatus() != JobStatus.TO_BE_FIXED) {
+        if (job.getStatus() != JobStatus.SCHEDULED && job.getStatus() != JobStatus.IN_PROGRESS && job.getStatus() != JobStatus.TO_BE_FIXED) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Job cannot be completed in its current state");
         }
 

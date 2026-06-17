@@ -22,7 +22,7 @@ public class DatabaseSchemaUpdater implements ApplicationListener<ApplicationRea
         jdbcTemplate.execute("ALTER TABLE jobs DROP CONSTRAINT IF EXISTS jobs_status_check");
         jdbcTemplate.execute(
                 "ALTER TABLE jobs ADD CONSTRAINT jobs_status_check CHECK (status IN ("
-                        + "'PENDING', 'SCHEDULED', 'READY_FOR_CONFIRMATION', 'DONE', 'TO_BE_FIXED', 'ARCHIVED'"
+                        + "'PENDING', 'SCHEDULED', 'IN_PROGRESS', 'READY_FOR_CONFIRMATION', 'DONE', 'TO_BE_FIXED', 'ARCHIVED'"
                         + "))"
         );
 

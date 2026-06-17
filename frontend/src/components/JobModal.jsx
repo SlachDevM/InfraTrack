@@ -186,6 +186,7 @@ export default function JobModal({
   const {
     isArchived,
     isDone,
+    isInProgress,
     isCallbackOnly,
     awaitingConfirmation,
     isCoreReadOnly,
@@ -732,6 +733,11 @@ export default function JobModal({
                 >
                   {confirming ? 'Confirming...' : 'Confirmed'}
                 </button>
+              )}
+              {!canManage && isEdit && isAssignedWorker && jobStatus === JOB_STATUSES.SCHEDULED && (
+                <p className="job-modal-hint" style={{ color: '#ff9800', fontWeight: 'bold' }}>
+                  📸 Add photos or notes to start the job (move to In Progress)
+                </p>
               )}
               {canComplete && (
                 <button

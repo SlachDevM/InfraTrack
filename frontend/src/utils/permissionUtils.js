@@ -4,6 +4,7 @@ export function getJobPermissions(job, user, isAssignedWorker) {
   const canManage = user?.role === 'MANAGER' || user?.role === 'ADMIN';
   const isArchived = job?.status === JOB_STATUSES.ARCHIVED;
   const isDone = job?.status === JOB_STATUSES.DONE;
+  const isInProgress = job?.status === JOB_STATUSES.IN_PROGRESS;
   const isCallbackOnly = isArchived || isDone;
   const awaitingConfirmation = job?.status === JOB_STATUSES.READY_FOR_CONFIRMATION;
 
@@ -12,6 +13,7 @@ export function getJobPermissions(job, user, isAssignedWorker) {
     isAssignedWorker,
     isArchived,
     isDone,
+    isInProgress,
     isCallbackOnly,
     awaitingConfirmation,
     isCoreReadOnly: !canManage || isCallbackOnly,
@@ -22,7 +24,7 @@ export function getJobPermissions(job, user, isAssignedWorker) {
       job?.id &&
       !canManage &&
       isAssignedWorker &&
-      (job?.status === JOB_STATUSES.SCHEDULED || job?.status === JOB_STATUSES.TO_BE_FIXED),
+      (job?.status === JOB_STATUSES.IN_PROGRESS || job?.status === JOB_STATUSES.TO_BE_FIXED),
     canConfirm: job?.id && canManage && job?.status === JOB_STATUSES.READY_FOR_CONFIRMATION,
     canArchive: job?.id && canManage && !isArchived,
     canDrag: !awaitingConfirmation,
