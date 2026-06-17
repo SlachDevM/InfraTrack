@@ -106,7 +106,8 @@ public class JobService {
             }
         } else {
             boolean hasPhotoUpdate =
-                    jobUpdate.getBeforePhotos() != null || jobUpdate.getAfterPhotos() != null;
+                    (jobUpdate.getBeforePhotos() != null && !jobUpdate.getBeforePhotos().isEmpty())
+                            || (jobUpdate.getAfterPhotos() != null && !jobUpdate.getAfterPhotos().isEmpty());
             boolean hasNotesUpdate = jobUpdate.getNotes() != null;
             if (!hasPhotoUpdate && !hasNotesUpdate) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No updates provided");
