@@ -80,9 +80,24 @@ public class JobService {
 
     public Job create(Job job, Long createdBy) {
         requireManagerOrAdmin(createdBy);
-        job.setStatus(JobStatus.PENDING);
+        
+        boolean hasDate = job.getJobDate() != null;
+        boolean hasWorkers = job.getAssignedWorkers() != null && !job.getAssignedWorkers().isBlank();
+        
+        if (hasDate) {
+            job.setStatus(JobStatus.SCHEDULED);
+        } else {
+            job.setStatus(JobStatus.PENDING);
+        }
+        
         job.setCreatedBy(createdBy);
-        return jobRepository.save(job);
+        Job savedJob = jobRepository.save(job);
+        
+        if (hasDate && hasWorkers) {
+            notifyAssignedWorkers(savedJob, savedJob.getId(), job.getAssignedWorkers());
+        }
+        
+        return savedJob;
     }
 
     public Job update(Long id, Job jobUpdate, Long userId) {

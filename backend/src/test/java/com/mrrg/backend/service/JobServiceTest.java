@@ -36,7 +36,7 @@ class JobServiceTest {
     private JobService jobService;
 
     @Test
-    void create_shouldCreatePendingJob_whenUserIsManager() {
+    void create_shouldCreatePendingJob_whenJobHasNoDateAndUserIsManager() {
         Job job = sampleJob();
 
         when(userService.isManagerOrAdmin(1L)).thenReturn(true);
@@ -48,6 +48,37 @@ class JobServiceTest {
         assertThat(result.getCreatedBy()).isEqualTo(1L);
 
         verify(jobRepository).save(job);
+    }
+
+    @Test
+    void create_shouldCreateScheduledJobAndNotifyWorkers_whenJobHasDateAndWorkersAndUserIsManager() {
+        Job job = sampleJob();
+        job.setJobDate(1710000000000L);
+        job.setJobStartHour("08:00");
+        job.setAssignedWorkers("John Worker");
+
+        User worker = new User("worker@test.com", "password", "John Worker", UserRole.EMPLOYEE);
+        worker.setId(2L);
+
+        when(userService.isManagerOrAdmin(1L)).thenReturn(true);
+        when(jobRepository.save(any(Job.class))).thenAnswer(invocation -> {
+            Job savedJob = invocation.getArgument(0);
+            savedJob.setId(10L);
+            return savedJob;
+        });
+        when(userService.findByName("John Worker")).thenReturn(List.of(worker));
+
+        Job result = jobService.create(job, 1L);
+
+        assertThat(result.getStatus()).isEqualTo(JobStatus.SCHEDULED);
+        assertThat(result.getJobDate()).isEqualTo(1710000000000L);
+
+        verify(notificationService).create(
+                2L,
+                10L,
+                NotificationType.JOB_ASSIGNED,
+                "You have been assigned to job: Test Client"
+        );
     }
 
     @Test
