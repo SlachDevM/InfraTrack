@@ -37,8 +37,7 @@ class UserControllerTest {
 
         FcmTokenRequest request = new FcmTokenRequest("new-fcm-token-abc123xyz");
 
-        JwtAuthenticationToken auth = new JwtAuthenticationToken();
-        auth.setUserId(1L);
+        JwtAuthenticationToken auth = new JwtAuthenticationToken(1L, "worker@test.com", true);
 
         when(userService.updateFcmToken(1L, "new-fcm-token-abc123xyz")).thenReturn(updatedUser);
 
@@ -57,8 +56,7 @@ class UserControllerTest {
         FcmTokenRequest request = new FcmTokenRequest();
         request.setToken(null);
 
-        JwtAuthenticationToken auth = new JwtAuthenticationToken();
-        auth.setUserId(1L);
+        JwtAuthenticationToken auth = new JwtAuthenticationToken(1L, "worker@test.com", true);
 
         ResponseEntity<User> response = userController.updateFcmToken(request, auth);
 
@@ -70,8 +68,7 @@ class UserControllerTest {
     void updateFcmToken_shouldReturnBadRequest_whenTokenIsBlank() {
         FcmTokenRequest request = new FcmTokenRequest("   ");
 
-        JwtAuthenticationToken auth = new JwtAuthenticationToken();
-        auth.setUserId(1L);
+        JwtAuthenticationToken auth = new JwtAuthenticationToken(1L, "worker@test.com", true);
 
         ResponseEntity<User> response = userController.updateFcmToken(request, auth);
 
@@ -87,8 +84,7 @@ class UserControllerTest {
 
         FcmTokenRequest request = new FcmTokenRequest("fcm-token-from-firebase-12345");
 
-        JwtAuthenticationToken auth = new JwtAuthenticationToken();
-        auth.setUserId(1L);
+        JwtAuthenticationToken auth = new JwtAuthenticationToken(1L, "worker@test.com", true);
 
         when(userService.updateFcmToken(1L, "fcm-token-from-firebase-12345")).thenReturn(updatedUser);
 
