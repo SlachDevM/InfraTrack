@@ -26,27 +26,16 @@ class UserControllerTest {
     private UserController userController;
 
     @Test
-    void updateFcmToken_shouldUpdateTokenAndReturnUser() {
-        User user = new User("worker@test.com", "password", "John Worker", UserRole.EMPLOYEE);
-        user.setId(1L);
-        user.setFcmToken("old-token-123");
-
-        User updatedUser = new User("worker@test.com", "password", "John Worker", UserRole.EMPLOYEE);
-        updatedUser.setId(1L);
-        updatedUser.setFcmToken("new-fcm-token-abc123xyz");
-
+    void updateFcmToken_shouldUpdateTokenAndReturnNoContent() {
         FcmTokenRequest request = new FcmTokenRequest("new-fcm-token-abc123xyz");
-
         JwtAuthenticationToken auth = new JwtAuthenticationToken(1L, "worker@test.com", true);
 
-        when(userService.updateFcmToken(1L, "new-fcm-token-abc123xyz")).thenReturn(updatedUser);
+        when(userService.updateFcmToken(1L, "new-fcm-token-abc123xyz")).thenReturn(new User());
 
-        ResponseEntity<User> response = userController.updateFcmToken(request, auth);
+        ResponseEntity<Void> response = userController.updateFcmToken(request, auth);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getFcmToken()).isEqualTo("new-fcm-token-abc123xyz");
-        assertThat(response.getBody().getId()).isEqualTo(1L);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(response.getBody()).isNull();
 
         verify(userService).updateFcmToken(1L, "new-fcm-token-abc123xyz");
     }
@@ -58,7 +47,7 @@ class UserControllerTest {
 
         JwtAuthenticationToken auth = new JwtAuthenticationToken(1L, "worker@test.com", true);
 
-        ResponseEntity<User> response = userController.updateFcmToken(request, auth);
+        ResponseEntity<Void> response = userController.updateFcmToken(request, auth);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         verify(userService, never()).updateFcmToken(anyLong(), anyString());
@@ -70,7 +59,7 @@ class UserControllerTest {
 
         JwtAuthenticationToken auth = new JwtAuthenticationToken(1L, "worker@test.com", true);
 
-        ResponseEntity<User> response = userController.updateFcmToken(request, auth);
+        ResponseEntity<Void> response = userController.updateFcmToken(request, auth);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         verify(userService, never()).updateFcmToken(anyLong(), anyString());
@@ -78,21 +67,15 @@ class UserControllerTest {
 
     @Test
     void updateFcmToken_shouldAcceptValidToken() {
-        User updatedUser = new User("worker@test.com", "password", "John Worker", UserRole.EMPLOYEE);
-        updatedUser.setId(1L);
-        updatedUser.setFcmToken("fcm-token-from-firebase-12345");
-
         FcmTokenRequest request = new FcmTokenRequest("fcm-token-from-firebase-12345");
-
         JwtAuthenticationToken auth = new JwtAuthenticationToken(1L, "worker@test.com", true);
 
-        when(userService.updateFcmToken(1L, "fcm-token-from-firebase-12345")).thenReturn(updatedUser);
+        when(userService.updateFcmToken(1L, "fcm-token-from-firebase-12345")).thenReturn(new User());
 
-        ResponseEntity<User> response = userController.updateFcmToken(request, auth);
+        ResponseEntity<Void> response = userController.updateFcmToken(request, auth);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getFcmToken()).isEqualTo("fcm-token-from-firebase-12345");
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(response.getBody()).isNull();
 
         verify(userService).updateFcmToken(1L, "fcm-token-from-firebase-12345");
     }

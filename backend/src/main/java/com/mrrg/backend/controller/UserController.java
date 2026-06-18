@@ -33,7 +33,7 @@ public class UserController {
     }
 
     @PutMapping("/me/fcm-token")
-    public ResponseEntity<User> updateFcmToken(
+    public ResponseEntity<Void> updateFcmToken(
             @RequestBody FcmTokenRequest request,
             Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
@@ -42,7 +42,7 @@ public class UserController {
             return ResponseEntity.badRequest().build();
         }
         
-        User updatedUser = userService.updateFcmToken(userId, request.getToken());
-        return ResponseEntity.ok(updatedUser);
+        userService.updateFcmToken(userId, request.getToken());
+        return ResponseEntity.noContent().build();
     }
 }
