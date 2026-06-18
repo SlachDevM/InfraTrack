@@ -5,19 +5,23 @@ import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
 import com.mrrg.backend.model.User;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @Slf4j
 public class FirebaseNotificationService {
 
-    private final FirebaseMessaging firebaseMessaging;
+    private final Optional<FirebaseMessaging> firebaseMessaging;
 
-    public FirebaseNotificationService(FirebaseMessaging firebaseMessaging) {
-        this.firebaseMessaging = firebaseMessaging;
+    public FirebaseNotificationService(
+            @Autowired(required = false) FirebaseMessaging firebaseMessaging
+    ) {
+        this.firebaseMessaging = Optional.ofNullable(firebaseMessaging);
     }
 
     /**
@@ -32,7 +36,7 @@ public class FirebaseNotificationService {
      * @param data optional data payload (notificationId, jobId, notificationType, etc.)
      */
     public void sendToUser(User user, String title, String body, Map<String, String> data) {
-        if (firebaseMessaging == null) {
+        if (!firebaseMessaging.isPresent()) {
             log.debug("Firebase not configured. Skipping push notification.");
             return;
         }
@@ -44,7 +48,7 @@ public class FirebaseNotificationService {
 
         try {
             Message message = buildMessage(user.getFcmToken(), title, body, data);
-            String messageId = firebaseMessaging.send(message);
+            String messageId = firebaseMessaging.get().send(message);
             log.info("Push notification sent to user {} with message ID: {}", user.getId(), messageId);
         } catch (Exception e) {
             log.error("Failed to send push notification to user {}: {}", user.getId(), e.getMessage(), e);
