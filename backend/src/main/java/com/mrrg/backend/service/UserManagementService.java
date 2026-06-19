@@ -183,8 +183,8 @@ public class UserManagementService {
      * Deactivates a user. Prevents the user from logging in.
      * Admins cannot deactivate their own account.
      *
-     * For a PENDING_ACTIVATION user, keeps them pending so they can still be resent activation link.
-     * For an ACTIVE user, marks them as DISABLED.
+     * For a PENDING_ACTIVATION user: invalidates activation tokens → status becomes DISABLED
+     * For an ACTIVE user: sets enabled=false → status becomes DISABLED
      *
      * @param userId the user to deactivate
      * @param requestingAdminId the ID of the admin making the request
@@ -205,15 +205,34 @@ public class UserManagementService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        // Always set enabled=false to prevent login
-        // Status will be computed based on:
-        // - If has valid activation token: PENDING_ACTIVATION
-        // - If no valid token: DISABLED
+        // Check current status to determine if we need to invalidate tokens
+        UserStatus currentStatus = computeStatus(user);
+
+        if (currentStatus == UserStatus.PENDING_ACTIVATION) {
+            // Invalidate all unused activation tokens for this pending user
+            // This ensures the old activation link will no longer work
+            // and the status transitions from PENDING_ACTIVATION to DISABLED
+            List<AccountActivationToken> pendingTokens = tokenRepository.findAll().stream()
+                    .filter(t -> t.getUser().getId().equals(userId) && !t.isUsed())
+                    .toList();
+            
+            pendingTokens.forEach(t -> {
+                t.setUsedAt(System.currentTimeMillis());
+            });
+            tokenRepository.saveAll(pendingTokens);
+            
+            log.info("Invalidated {} activation tokens for deactivated pending user {}", pendingTokens.size(), userId);
+        }
+
+        // Set enabled=false to prevent login
+        // Status will be computed as:
+        // - If PENDING was just deactivated: no valid tokens now → DISABLED
+        // - If ACTIVE is deactivated: no tokens → DISABLED
         user.setEnabled(false);
         user.setUpdatedAt(System.currentTimeMillis());
         userRepository.save(user);
 
-        log.info("User {} deactivated by admin {}", userId, requestingAdminId);
+        log.info("User {} deactivated by admin {}. New status: {}", userId, requestingAdminId, computeStatus(user));
     }
 
     /**
@@ -304,8 +323,19 @@ public class UserManagementService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         UserStatus status = computeStatus(user);
-        if (status != UserStatus.PENDING_ACTIVATION) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Activation link can only be resent for pending users");
+        boolean isNeverActivated = user.getPassword() == null || user.getPassword().isEmpty();
+
+        // Allow resend for:
+        // 1. PENDING_ACTIVATION users (normal case)
+        // 2. DISABLED users who never activated (deactivated-pending users)
+        if (status == UserStatus.PENDING_ACTIVATION) {
+            // Normal pending user - resend activation
+        } else if (status == UserStatus.DISABLED && isNeverActivated) {
+            // Deactivated-pending user (never set password) - allow resend
+        } else {
+            // ACTIVE users or DISABLED users who already activated
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                    "Activation link can only be resent for pending or never-activated users");
         }
 
         // Invalidate old tokens
