@@ -10,10 +10,12 @@ Business Management Platform for Margaret River Re-Gutter
 [![Backend CI](https://github.com/SlachDevM/MRRG/actions/workflows/backend-ci.yaml/badge.svg?branch=main)](https://github.com/SlachDevM/MRRG/actions)
 
 ### Login:  
-<img width="964" height="1256" alt="image" src="https://github.com/user-attachments/assets/f92cc585-5ecc-45de-891a-3712e4793f1d" />
+
+<img width="1012" height="1140" alt="image" src="https://github.com/user-attachments/assets/3ec89d35-c6ec-40b1-a15e-ba9955a12ab9" />
 
 ### Dashboard:  
-<img width="2812" height="1508" alt="image" src="https://github.com/user-attachments/assets/fc0c4112-7c68-4e2f-a8a6-fcdba8dd9fb0" />
+
+<img width="2840" height="1048" alt="image" src="https://github.com/user-attachments/assets/b5ae3e08-1ee0-4bd8-a6ed-bdd1d019da09" />
 
 ---
 
@@ -258,27 +260,41 @@ Tested areas include:
 
 ## Additional screenshots 
 ### Job Management 
+
 <img width="1244" height="1498" alt="image" src="https://github.com/user-attachments/assets/3ffd18d2-9cee-4aa4-8eff-304891b4b015" />
 <img width="1252" height="748" alt="image" src="https://github.com/user-attachments/assets/597f8859-3009-486e-ba8a-f8314f3d5fda" />
 <img width="1254" height="1512" alt="image" src="https://github.com/user-attachments/assets/5e168306-3399-44d0-91d7-2e204a1d5795" />
 
 ### Scheduling
+
 <img width="2786" height="914" alt="image" src="https://github.com/user-attachments/assets/76aea401-1154-41c7-9039-da9eff38b95e" />
 
 ### Notifications 
+
 <img width="2802" height="1518" alt="image" src="https://github.com/user-attachments/assets/2cd77d84-d5ea-46ba-bffc-45cf38de9652" />
 <img width="2834" height="1520" alt="image" src="https://github.com/user-attachments/assets/2e0cde92-b1bd-48ba-9bcc-469d3b2dad62" />
 
 ### Validation 
+
 <img width="1242" height="1496" alt="image" src="https://github.com/user-attachments/assets/bdabb9ee-f46b-4ee6-9d16-2b3dd8708a37" />
 <img width="480" height="526" alt="image" src="https://github.com/user-attachments/assets/ef45badd-fec5-443f-ae7c-cbec30dd3cf1" />
 <img width="2852" height="858" alt="image" src="https://github.com/user-attachments/assets/d6e601fd-8cfb-4fde-a07d-12372702b3d7" />
 <img width="1238" height="1504" alt="image" src="https://github.com/user-attachments/assets/47bfbb5d-ffea-401b-a0e6-08fa03a28f95" />
 
 ### Administration 
-<img width="2820" height="1440" alt="image" src="https://github.com/user-attachments/assets/38dcd062-3b27-42b7-a55a-cb248e71785f" />
+
+<img width="2838" height="1152" alt="image" src="https://github.com/user-attachments/assets/f31df653-4294-4a9c-8b62-226504c00c70" />
+<img width="2844" height="1024" alt="image" src="https://github.com/user-attachments/assets/67ead378-f46d-4cdb-9ab8-f4d45d9a4d6d" />
+
+### User Management
+
+<img width="1124" height="952" alt="image" src="https://github.com/user-attachments/assets/d6a942cd-39dc-48e5-9b65-73a7a5278198" />
+<img width="2844" height="1048" alt="image" src="https://github.com/user-attachments/assets/fee8ab90-3672-4d7f-a25c-2cc825438434" />
+<img width="1218" height="962" alt="image" src="https://github.com/user-attachments/assets/9ac2d67a-fff5-4a8a-a2b7-690b2e18d994" />
+<img width="2840" height="1048" alt="image" src="https://github.com/user-attachments/assets/a74e1b66-abe8-45eb-9ae3-0543111d217b" />
 
 ### Archive / Callback
+
 <img width="1250" height="1494" alt="image" src="https://github.com/user-attachments/assets/5a6c07cb-66c9-4b38-a5d6-6b7425c775b0" />
 <img width="2702" height="874" alt="image" src="https://github.com/user-attachments/assets/1625b3a1-5683-46ad-871a-a9aa1ac5eec7" />
 <img width="2822" height="1454" alt="image" src="https://github.com/user-attachments/assets/cc7d770a-cc77-4904-8007-b5ec89e1c0db" />
