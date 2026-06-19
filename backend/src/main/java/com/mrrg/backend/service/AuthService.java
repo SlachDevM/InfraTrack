@@ -5,6 +5,8 @@ import com.mrrg.backend.dto.LoginResponse;
 import com.mrrg.backend.dto.RegisterRequest;
 import com.mrrg.backend.model.User;
 import com.mrrg.backend.model.UserRole;
+import com.mrrg.backend.model.UserStatus;
+import com.mrrg.backend.repository.AccountActivationTokenRepository;
 import com.mrrg.backend.repository.UserRepository;
 import com.mrrg.backend.security.JwtTokenProvider;
 import org.springframework.http.HttpStatus;
@@ -19,17 +21,20 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
     private final ActivationService activationService;
+    private final AccountActivationTokenRepository tokenRepository;
 
     public AuthService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
             JwtTokenProvider tokenProvider,
-            ActivationService activationService
+            ActivationService activationService,
+            AccountActivationTokenRepository tokenRepository
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
         this.activationService = activationService;
+        this.tokenRepository = tokenRepository;
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -43,9 +48,15 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
         }
 
-        // Check if account is activated
+        // Check user status and provide appropriate error messages
         if (!user.getEnabled()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Account is not activated");
+            // Determine if user is pending activation or disabled
+            UserStatus status = computeUserStatus(user);
+            if (status == UserStatus.PENDING_ACTIVATION) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Account is not activated");
+            } else if (status == UserStatus.DISABLED) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Account is disabled");
+            }
         }
 
         return buildLoginResponse(user);
@@ -81,5 +92,24 @@ public class AuthService {
     public LoginResponse activateAccount(String token, String password) {
         User activatedUser = activationService.activateAccount(token, password);
         return buildLoginResponse(activatedUser);
+    }
+
+    /**
+     * Computes the user's status based on enabled flag and activation tokens.
+     * Used to provide more detailed error messages during login.
+     *
+     * @param user the user to compute status for
+     * @return UserStatus
+     */
+    private UserStatus computeUserStatus(User user) {
+        if (user.getEnabled()) {
+            return UserStatus.ACTIVE;
+        }
+
+        // Check if user has a valid (unused and not expired) activation token
+        boolean hasPendingToken = tokenRepository.findAll().stream()
+                .anyMatch(t -> t.getUser().getId().equals(user.getId()) && t.isValid());
+
+        return hasPendingToken ? UserStatus.PENDING_ACTIVATION : UserStatus.DISABLED;
     }
 }

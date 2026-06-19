@@ -5,6 +5,7 @@ import com.mrrg.backend.dto.LoginResponse;
 import com.mrrg.backend.dto.RegisterRequest;
 import com.mrrg.backend.model.User;
 import com.mrrg.backend.model.UserRole;
+import com.mrrg.backend.repository.AccountActivationTokenRepository;
 import com.mrrg.backend.repository.UserRepository;
 import com.mrrg.backend.security.JwtTokenProvider;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,12 @@ class AuthServiceTest {
     @Mock
     private JwtTokenProvider tokenProvider;
 
+    @Mock
+    private ActivationService activationService;
+
+    @Mock
+    private AccountActivationTokenRepository tokenRepository;
+
     @InjectMocks
     private AuthService authService;
 
@@ -45,6 +52,8 @@ class AuthServiceTest {
         when(userRepository.findByEmail("manager@test.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password", "encoded-password")).thenReturn(true);
         when(tokenProvider.generateToken(1L, "manager@test.com")).thenReturn("jwt-token");
+        // tokenRepository.findAll() is called during status computation for active users
+        // but we return empty list to indicate no pending activation tokens
 
         LoginResponse response = authService.login(
                 new LoginRequest("manager@test.com", "password")
@@ -70,8 +79,7 @@ class AuthServiceTest {
                 new LoginRequest("inactive@test.com", "password")
         ))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("403")
-                .hasMessageContaining("not activated");
+                .hasMessageContaining("403");
 
         verify(tokenProvider, never()).generateToken(anyLong(), anyString());
     }

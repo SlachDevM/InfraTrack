@@ -74,4 +74,35 @@ public class EmailService {
         // NOTE: The actual email body with the link should be sent via SMTP, not logged
         log.warn("Email sending not yet configured. Contact administrator. User: {}, Email: {}", userName, email);
     }
+
+    /**
+     * Sends a notification email when a user's email address is changed by an admin.
+     * This is a security notification to alert the user of the email change.
+     *
+     * @param oldEmail the previous email address
+     * @param newEmail the new email address
+     * @param userName the user's name
+     */
+    public void sendEmailChangeNotification(String oldEmail, String newEmail, String userName) {
+        if (isDevelopment()) {
+            logEmailChangeNotification(oldEmail, newEmail, userName);
+        } else {
+            sendEmailChangeViaSMTP(oldEmail, newEmail, userName);
+        }
+    }
+
+    private void logEmailChangeNotification(String oldEmail, String newEmail, String userName) {
+        log.info("═══════════════════════════════════════════════════════════════");
+        log.info("EMAIL CHANGE NOTIFICATION (Development Mode Only)");
+        log.info("═══════════════════════════════════════════════════════════════");
+        log.info("User: {}", userName);
+        log.info("Old Email: {}", oldEmail);
+        log.info("New Email: {}", newEmail);
+        log.info("═══════════════════════════════════════════════════════════════");
+    }
+
+    private void sendEmailChangeViaSMTP(String oldEmail, String newEmail, String userName) {
+        // TODO: Send email change notification to old email via SMTP
+        log.warn("Email change notification not yet configured for production. User: {}, Old: {}, New: {}", userName, oldEmail, newEmail);
+    }
 }

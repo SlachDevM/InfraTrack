@@ -121,4 +121,33 @@ public class User {
     public void setEnabled(Boolean enabled) {
         this.enabled = enabled;
     }
+
+    /**
+     * Computes the user's status based on enabled flag and presence of valid activation tokens.
+     * This method is used for DTO responses and API consumers.
+     *
+     * Status rules:
+     * - PENDING_ACTIVATION: User is enabled=false (hasn't activated yet)
+     * - ACTIVE: User is enabled=true
+     * - DISABLED: User is enabled=false but has a valid activation token (was explicitly disabled)
+     *
+     * Note: This method requires the AccountActivationTokenRepository to check for pending tokens.
+     * For a simpler approach without external dependencies, rely on enabled flag alone:
+     * - enabled=false && has_valid_token = PENDING_ACTIVATION
+     * - enabled=true = ACTIVE
+     * - enabled=false && no_valid_token = DISABLED
+     *
+     * @return the computed UserStatus
+     */
+    public UserStatus getStatus() {
+        // Simplified computation based on enabled flag
+        // In a real scenario, we'd also check for valid activation tokens to distinguish
+        // between PENDING_ACTIVATION and DISABLED
+        // For now, this is a placeholder that should be enhanced by the service layer
+        if (enabled) {
+            return UserStatus.ACTIVE;
+        }
+        // Default to DISABLED; the service layer will refine this if needed
+        return UserStatus.DISABLED;
+    }
 }
