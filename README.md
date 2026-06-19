@@ -9,11 +9,13 @@ Business Management Platform for Margaret River Re-Gutter
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-4169E1?logo=postgresql)
 [![Backend CI](https://github.com/SlachDevM/MRRG/actions/workflows/backend-ci.yaml/badge.svg?branch=main)](https://github.com/SlachDevM/MRRG/actions)
 
-### Login :  
+### Login:  
 <img width="964" height="1256" alt="image" src="https://github.com/user-attachments/assets/f92cc585-5ecc-45de-891a-3712e4793f1d" />
 
-### Dashboard :  
+### Dashboard:  
 <img width="2812" height="1508" alt="image" src="https://github.com/user-attachments/assets/fc0c4112-7c68-4e2f-a8a6-fcdba8dd9fb0" />
+
+---
 
 ## Overview
 
@@ -26,13 +28,23 @@ The backend is shared by two clients:
 - React Web application for managers and administrators
 - Android application (Jetpack Compose) for field workers
 
-MRRG-Mobile : https://github.com/SlachDevM/MRRG-Mobile
+---
+
+## Related Projects
+
+MRRG-Mobile – Android application for field workers.
+
+https://github.com/SlachDevM/MRRG-Mobile
+
+---
 
 ## Business Problem
 
 Before MRRG, job scheduling, communication and progress tracking relied primarily on manual coordination between managers and field workers.
 
 This platform centralizes those processes into a single application.
+
+---
 
 ## Key Features
 
@@ -48,6 +60,8 @@ This platform centralizes those processes into a single application.
 - Role-based access control  
 - Dynamic job status workflow  
 
+---
+
 ## Technology
 
 | Backend | Java 21, Spring Boot, Spring Security |
@@ -61,18 +75,39 @@ This platform centralizes those processes into a single application.
 | Architecture | MVC + Service Layer + Repository Pattern |
 | Testing | JUnit 5, Mockito |
 
+---
+
 ## Deployment Architecture
 
 ```text
-                 PostgreSQL
-                      ▲
-                      │
-              Spring Boot API
-                JWT / REST API
-               ▲             ▲
-               │             │
-          React Web     Android App
+                         ┌────────────────────────────┐
+                         │        PostgreSQL          │
+                         │      Persistent Data       │
+                         └────────────▲───────────────┘
+                                      │
+                                      ▼
+                         ┌────────────────────────────┐
+                         │      Spring Boot API       │
+                         │ Business Logic / JWT / FCM │
+                         └──────────┬───────┬─────────┘
+                                    │       │
+                             REST API│       │REST API
+                                    │       │
+                    ┌───────────────▼──┐   ┌▼─────────────────┐
+                    │   MRRG-Mobile    │   │ React Web Client │
+                    │  Field Workers   │   │ Managers/Admins  │
+                    └─────────┬────────┘   └──────────────────┘
+                              │
+                              ▼
+                    ┌──────────────────────┐
+                    │ Firebase Cloud       │
+                    │ Messaging            │
+                    └─────────▲────────────┘
+                              │
+                    Notification Delivery
 ```
+
+---
 
 ## Technical Decisions
 
@@ -82,6 +117,8 @@ This platform centralizes those processes into a single application.
 - Docker Compose for reproducible development and deployment environments.
 - Role-based authorization to enforce business rules.
 - User account lifecycle is modeled explicitly with `PENDING_ACTIVATION`, `ACTIVE` and `DISABLED` statuses.
+
+---
 
 ## Account Activation Workflow
 
@@ -113,6 +150,8 @@ ACTIVE
    ▼
 Login
 ```
+
+---
   
 ## Business Workflow
 
@@ -146,6 +185,8 @@ Callback
 - Validated jobs are archived.
 - Customer callbacks automatically restore archived jobs to the scheduling queue with elevated priority.
 
+---
+
 ## Roles
 
 ### Admin  
@@ -170,9 +211,13 @@ Callback
 - Add job notes
 - Mark assigned jobs as completed
 
+---
+
 ## Notifications
 - Managers are notified when employees complete assigned jobs.
 - Employees are notified when jobs are assigned or rescheduled.
+
+---
 
 ## Installation
 
@@ -189,9 +234,13 @@ After starting the application:
 - Frontend: `http://localhost:3000`
 - Swagger UI: `http://localhost:4000/swagger-ui/index.html`
 
+---
+
 ## API Documentation
 
 <img width="2844" height="1504" alt="image" src="https://github.com/user-attachments/assets/c97309c7-3d80-4515-a9c0-842f98f80fe2" />
+
+---
 
 ## Testing
 
@@ -204,6 +253,8 @@ Tested areas include:
 - Users
 - User management
 - Account activation
+
+---
 
 ## Additional screenshots 
 ### Job Management 
@@ -232,6 +283,12 @@ Tested areas include:
 <img width="2702" height="874" alt="image" src="https://github.com/user-attachments/assets/1625b3a1-5683-46ad-871a-a9aa1ac5eec7" />
 <img width="2822" height="1454" alt="image" src="https://github.com/user-attachments/assets/cc7d770a-cc77-4904-8007-b5ec89e1c0db" />
 
+---
+
 ## License
 
-MIT
+This repository is publicly available for demonstration and portfolio purposes.
+
+The MRRG application and its business logic were developed for the Margaret River Re-Gutter business and remain proprietary.
+
+Source code is published to showcase software engineering practices and architecture, but redistribution or commercial use of the application is not permitted without permission.
