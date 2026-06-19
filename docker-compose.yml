@@ -10,10 +10,16 @@ services:
       - SPRING_DATASOURCE_PASSWORD=mrrgpass
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
       - FIREBASE_SERVICE_ACCOUNT_PATH=/app/firebase-service-account.json
+      - SPRING_MAIL_HOST=mailpit
+      - SPRING_MAIL_PORT=1025
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=false
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=false
+      - SPRING_PROFILES_ACTIVE=prod
     volumes:
       - ./backend/firebase-service-account.json:/app/firebase-service-account.json:ro
     depends_on:
       - postgres
+      - mailpit
 
   frontend:
     build: ./frontend
@@ -35,5 +41,13 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mrrg-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+      
 volumes:
   pgdata:

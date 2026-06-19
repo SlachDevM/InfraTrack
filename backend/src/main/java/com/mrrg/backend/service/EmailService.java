@@ -1,15 +1,24 @@
 package com.mrrg.backend.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
 public class EmailService {
 
+    @Autowired(required = false)
+    private JavaMailSender mailSender;
+
     @Value("${app.activation-link-base-url:mrrg://activate-account}")
     private String activationLinkBaseUrl;
+
+    @Value("${spring.mail.from:noreply@mrrg.local}")
+    private String fromEmail;
 
     @Value("${spring.profiles.active:dev}")
     private String activeProfile;
@@ -69,10 +78,32 @@ public class EmailService {
     }
 
     private void sendEmailViaSMTP(String email, String link, String userName) {
-        // TODO: Implement Spring Mail integration for production
-        // This would use JavaMailSender or similar to send actual emails
-        // NOTE: The actual email body with the link should be sent via SMTP, not logged
-        log.warn("Email sending not yet configured. Contact administrator. User: {}, Email: {}", userName, email);
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(email);
+            message.setSubject("Account Activation - MRRG");
+            message.setText(buildActivationEmailBody(userName, link));
+            
+            mailSender.send(message);
+            log.info("Activation email sent successfully to: {}", email);
+        } catch (Exception e) {
+            log.error("Failed to send activation email to {}: {}", email, e.getMessage(), e);
+        }
+    }
+
+    private String buildActivationEmailBody(String userName, String link) {
+        return String.format(
+            "Hello %s,\n\n" +
+            "Welcome to MRRG! Your account has been created and is ready to activate.\n\n" +
+            "Please click the link below to activate your account:\n" +
+            "%s\n\n" +
+            "This link will expire in 24 hours.\n\n" +
+            "If you did not create this account, please contact an administrator.\n\n" +
+            "Best regards,\n" +
+            "MRRG Team",
+            userName, link
+        );
     }
 
     /**
@@ -102,7 +133,31 @@ public class EmailService {
     }
 
     private void sendEmailChangeViaSMTP(String oldEmail, String newEmail, String userName) {
-        // TODO: Send email change notification to old email via SMTP
-        log.warn("Email change notification not yet configured for production. User: {}, Old: {}, New: {}", userName, oldEmail, newEmail);
+        try {
+            // Send notification to old email
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(oldEmail);
+            message.setSubject("Email Address Changed - MRRG Account");
+            message.setText(buildEmailChangeNotificationBody(userName, oldEmail, newEmail));
+            
+            mailSender.send(message);
+            log.info("Email change notification sent to old email: {}", oldEmail);
+        } catch (Exception e) {
+            log.error("Failed to send email change notification to {}: {}", oldEmail, e.getMessage(), e);
+        }
+    }
+
+    private String buildEmailChangeNotificationBody(String userName, String oldEmail, String newEmail) {
+        return String.format(
+            "Hello %s,\n\n" +
+            "This is a security notification to inform you that your email address has been changed.\n\n" +
+            "Old Email: %s\n" +
+            "New Email: %s\n\n" +
+            "If you did not authorize this change, please contact an administrator immediately.\n\n" +
+            "Best regards,\n" +
+            "MRRG Team",
+            userName, oldEmail, newEmail
+        );
     }
 }
