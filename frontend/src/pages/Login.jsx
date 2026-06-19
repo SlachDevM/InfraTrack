@@ -13,9 +13,6 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [isRegister, setIsRegister] = useState(false);
-  const [name, setName] = useState('');
-  const [role, setRole] = useState('EMPLOYEE');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,31 +21,21 @@ export default function Login() {
     const trimmedEmail = email.trim();
     const trimmedPassword = password.trim();
 
-    if (!isRegister) {
-      if (!trimmedEmail || !trimmedPassword || !EMAIL_PATTERN.test(trimmedEmail)) {
-        setError('Please enter a valid email and password.');
-        return;
-      }
+    if (!trimmedEmail || !trimmedPassword || !EMAIL_PATTERN.test(trimmedEmail)) {
+      setError('Please enter a valid email and password.');
+      return;
     }
 
-    const endpoint = isRegister ? API_ENDPOINTS.AUTH_REGISTER : API_ENDPOINTS.AUTH_LOGIN;
-    const body = isRegister
-      ? { email: trimmedEmail, password: trimmedPassword, name, role }
-      : { email: trimmedEmail, password: trimmedPassword };
-
     try {
-      const data = isRegister
-        ? await apiClient.post(endpoint, body)
-        : await apiClient.post(endpoint, body);
+      const data = await apiClient.post(API_ENDPOINTS.AUTH_LOGIN, {
+        email: trimmedEmail,
+        password: trimmedPassword,
+      });
 
       login(data, data.token);
       navigate('/');
     } catch (err) {
-      if (!isRegister) {
-        setError('Email or password is incorrect.');
-      } else {
-        setError(err.message || 'Registration failed.');
-      }
+      setError('Email or password is incorrect.');
     }
   };
 
@@ -61,43 +48,19 @@ export default function Login() {
             alt="RE-GUTTERS"
             className="logo"
           />
-          <h1>{isRegister ? 'Create Account' : 'Login'}</h1>
+          <h1>Login</h1>
         </div>
 
         {error && <div className="error-message">{error}</div>}
 
-        <form onSubmit={handleSubmit} noValidate={!isRegister}>
-          {isRegister && (
-            <>
-              <div className="form-group">
-                <label>Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  placeholder="Full name"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Role</label>
-                <select value={role} onChange={(e) => setRole(e.target.value)}>
-                  <option value="EMPLOYEE">Employee</option>
-                  <option value="MANAGER">Manager</option>
-                  <option value="ADMIN">Admin</option>
-                </select>
-              </div>
-            </>
-          )}
-
+        <form onSubmit={handleSubmit} noValidate>
           <div className="form-group">
             <label>Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required={isRegister}
+              required
               placeholder="you@example.com"
             />
           </div>
@@ -108,27 +71,15 @@ export default function Login() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required={isRegister}
+              required
               placeholder="••••••••"
             />
           </div>
 
           <button type="submit" className="submit-button">
-            {isRegister ? 'Register' : 'Login'}
+            Login
           </button>
         </form>
-
-        <div className="toggle-auth">
-          {isRegister ? (
-            <p>
-              Already have an account? <button onClick={() => setIsRegister(false)}>Login</button>
-            </p>
-          ) : (
-            <p>
-              Don't have an account? <button onClick={() => setIsRegister(true)}>Register</button>
-            </p>
-          )}
-        </div>
       </div>
     </div>
   );

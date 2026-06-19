@@ -162,45 +162,29 @@ export default function MainDashboard() {
         </div>
 
         <div className="header-actions">
+          {canManage && (
+            <button type="button" className="create-job-btn" onClick={openCreateModal}>
+              + Create Job
+            </button>
+          )}
+
+          {canManage && (
+            <button type="button" className="users-btn" onClick={() => navigate('/users')}>
+              👥 Users
+            </button>
+          )}
+
+          {canManage && (
+            <button type="button" className="admin-btn" onClick={() => navigate('/admin')}>
+              ⚙️ Admin
+            </button>
+          )}
 
           <NotificationButton />
 
-          {canManage && (
-
-            <button type="button" className="create-job-btn" onClick={openCreateModal}>
-
-              + Create Job
-
-            </button>
-
-          )}
-
-          {canManage && (
-
-            <button className="admin-btn" onClick={() => navigate('/admin')}>
-
-              ⚙️ Admin
-
-            </button>
-
-          )}
-
-          {canManage && (
-
-            <button className="users-btn" onClick={() => navigate('/users')}>
-
-              👥 Users
-
-            </button>
-
-          )}
-
-          <button className="logout-btn" onClick={handleLogout}>
-
+          <button type="button" className="logout-btn" onClick={handleLogout}>
             Logout
-
           </button>
-
         </div>
 
       </header>

@@ -41,6 +41,12 @@
   background-color: rgba(255, 255, 255, 0.3);
 }
 
+.back-btn:focus-visible,
+.logout-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 2px;
+}
+
 .admin-content {
   max-width: 1200px;
   margin: 0 auto;

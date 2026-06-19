@@ -96,30 +96,3 @@
 .submit-button:active {
   transform: translateY(0);
 }
-
-.toggle-auth {
-  text-align: center;
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #e0e0e0;
-}
-
-.toggle-auth p {
-  margin: 0;
-  color: #666;
-  font-size: 0.95rem;
-}
-
-.toggle-auth button {
-  background: none;
-  border: none;
-  color: #2d6b4d;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0;
-  text-decoration: underline;
-}
-
-.toggle-auth button:hover {
-  color: #1a472a;
-}

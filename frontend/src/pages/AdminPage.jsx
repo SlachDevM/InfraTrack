@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import JobModal from '../components/JobModal';
 import NotificationButton from '../components/NotificationButton';
 import apiClient from '../services/apiClient';
+import jobApi from '../services/jobApi';
 import { API_ENDPOINTS } from '../constants/jobConfig';
 import '../styles/AdminPage.css';
 import '../styles/Dashboard.css';
@@ -125,37 +126,15 @@ export default function AdminPage() {
 
 
   const handleArchive = async (e, jobId) => {
-
     e.stopPropagation();
 
     try {
-
-      const response = await fetch(`${API_BASE}/api/jobs/${jobId}/archive`, {
-
-        method: 'PUT',
-
-        headers: { Authorization: `Bearer ${auth.token}` },
-
-      });
-
-
-
-      if (response.ok) {
-
-        const savedJob = await response.json();
-
-        setDoneJobs((prev) => prev.filter((j) => j.id !== jobId));
-
-        setArchivedJobs((prev) => [savedJob, ...prev.filter((j) => j.id !== jobId)]);
-
-      }
-
+      const savedJob = await jobApi.archiveJob(jobId);
+      setDoneJobs((prev) => prev.filter((j) => j.id !== jobId));
+      setArchivedJobs((prev) => [savedJob, ...prev.filter((j) => j.id !== jobId)]);
     } catch (err) {
-
       console.error('Failed to archive job:', err);
-
     }
-
   };
 
 

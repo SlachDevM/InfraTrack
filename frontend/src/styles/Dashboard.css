@@ -45,6 +45,7 @@
   gap: 1rem;
   overflow: visible;
 }
+
 .admin-btn,
 .logout-btn {
   padding: 0.5rem 1rem;
@@ -68,6 +69,15 @@
 .users-btn:hover,
 .create-job-btn:hover {
   background-color: rgba(255, 255, 255, 0.3);
+}
+
+.notification-btn:focus-visible,
+.admin-btn:focus-visible,
+.users-btn:focus-visible,
+.create-job-btn:focus-visible,
+.logout-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 2px;
 }
 
 .notification-btn {

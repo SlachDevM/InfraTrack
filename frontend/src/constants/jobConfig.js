@@ -53,6 +53,5 @@ export const API_ENDPOINTS = {
   JOBS_SCHEDULED: '/api/jobs/scheduled',
   USERS_WORKERS: '/api/users/workers',
   AUTH_LOGIN: '/api/auth/login',
-  AUTH_REGISTER: '/api/auth/register',
   NOTIFICATIONS: '/api/notifications',
 };
