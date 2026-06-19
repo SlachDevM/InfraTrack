@@ -190,7 +190,13 @@ export default function UserManagementPage() {
 
   return (
     <div className="user-management-page">
-      <header className="user-header">
+      <header 
+        className="user-header"
+        style={{
+          background: 'linear-gradient(135deg, #1a472a 0%, #2d6b4d 100%)',
+          color: 'white'
+        }}
+      >
         <button
           type="button"
           className="back-btn"
