@@ -183,6 +183,9 @@ public class UserManagementService {
      * Deactivates a user. Prevents the user from logging in.
      * Admins cannot deactivate their own account.
      *
+     * For a PENDING_ACTIVATION user, keeps them pending so they can still be resent activation link.
+     * For an ACTIVE user, marks them as DISABLED.
+     *
      * @param userId the user to deactivate
      * @param requestingAdminId the ID of the admin making the request
      */
@@ -202,6 +205,10 @@ public class UserManagementService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
+        // Always set enabled=false to prevent login
+        // Status will be computed based on:
+        // - If has valid activation token: PENDING_ACTIVATION
+        // - If no valid token: DISABLED
         user.setEnabled(false);
         user.setUpdatedAt(System.currentTimeMillis());
         userRepository.save(user);
@@ -210,8 +217,18 @@ public class UserManagementService {
     }
 
     /**
-     * Reactivates a user. If user was PENDING_ACTIVATION, status becomes PENDING_ACTIVATION again.
-     * If user was DISABLED, status becomes ACTIVE again.
+     * Reactivates a user.
+     *
+     * For a DISABLED user who was previously ACTIVE:
+     * - Sets enabled=true → status becomes ACTIVE
+     *
+     * For a DISABLED user who was previously PENDING (deactivated before ever activating):
+     * - Do NOT set enabled=true
+     * - Instead, reject and suggest using resend-activation
+     * - This preserves the pending activation flow
+     *
+     * For an ACTIVE user:
+     * - Throws error (already active)
      *
      * @param userId the user to reactivate
      * @param requestingAdminId the ID of the admin making the request
@@ -230,19 +247,41 @@ public class UserManagementService {
 
         UserStatus currentStatus = computeStatus(user);
 
-        if (currentStatus == UserStatus.PENDING_ACTIVATION) {
-            // User never activated; do not silently enable them
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot reactivate a pending user without activation. Use resend-activation instead.");
-        }
-
-        if (currentStatus == UserStatus.DISABLED) {
-            user.setEnabled(true);
-            user.setUpdatedAt(System.currentTimeMillis());
-            userRepository.save(user);
-            log.info("User {} reactivated by admin {}", userId, requestingAdminId);
-        } else if (currentStatus == UserStatus.ACTIVE) {
+        if (currentStatus == UserStatus.ACTIVE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User is already active");
         }
+
+        if (currentStatus == UserStatus.PENDING_ACTIVATION) {
+            // User never activated (still has valid token)
+            // Do not silently activate them
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                    "Cannot reactivate a pending user without activation. Use resend-activation instead.");
+        }
+
+        // currentStatus == DISABLED (enabled=false and no valid tokens)
+        // This could be from:
+        // 1. Admin deactivated an active user
+        // 2. Admin deactivated a pending user (before reactivating)
+        // 
+        // For case 1: set enabled=true to restore to ACTIVE
+        // For case 2: need to check if user has a password (was ever activated)
+        //
+        // If user has empty password, they never activated, so we need resend-activation
+        // If user has a password, they were previously activated, so we can reactivate them
+
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            // User never set a password (never completed activation)
+            // This is a deactivated-pending user
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                    "This user never completed activation. Use resend-activation instead.");
+        }
+
+        // User has a password, so they were previously active
+        // Safe to reactivate
+        user.setEnabled(true);
+        user.setUpdatedAt(System.currentTimeMillis());
+        userRepository.save(user);
+        log.info("User {} reactivated by admin {}", userId, requestingAdminId);
     }
 
     /**
