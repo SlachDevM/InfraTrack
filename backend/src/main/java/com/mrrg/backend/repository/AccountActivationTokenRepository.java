@@ -27,8 +27,9 @@ public interface AccountActivationTokenRepository extends JpaRepository<AccountA
      * Check if a user has any valid (unused and not expired) activation tokens.
      *
      * @param userId the user ID
+     * @param currentTime the current time in milliseconds
      * @return true if at least one valid token exists
      */
-    @Query("SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END FROM AccountActivationToken t WHERE t.user.id = :userId AND t.usedAt IS NULL AND t.expiresAt > CURRENT_TIMESTAMP")
-    boolean hasValidTokenByUserId(@Param("userId") Long userId);
+    @Query("SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END FROM AccountActivationToken t WHERE t.user.id = :userId AND t.usedAt IS NULL AND t.expiresAt > :currentTime")
+    boolean hasValidTokenByUserId(@Param("userId") Long userId, @Param("currentTime") Long currentTime);
 }
