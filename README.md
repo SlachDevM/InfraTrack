@@ -15,7 +15,7 @@ Business Management Platform for Margaret River Re-Gutter
 
 ### Dashboard:  
 
-<img width="2840" height="1048" alt="image" src="https://github.com/user-attachments/assets/b5ae3e08-1ee0-4bd8-a6ed-bdd1d019da09" />
+<img width="2838" height="1508" alt="image" src="https://github.com/user-attachments/assets/47af2e86-5bb0-4d9c-9fab-714d30fc2230" />
 
 ---
 
