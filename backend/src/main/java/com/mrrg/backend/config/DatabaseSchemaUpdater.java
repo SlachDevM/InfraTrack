@@ -32,9 +32,12 @@ public class DatabaseSchemaUpdater implements ApplicationListener<ApplicationRea
         jdbcTemplate.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS fcm_token TEXT");
         
         // Ensure existing users remain enabled (backward compatibility)
+        // The DEFAULT TRUE handles any NEW users created by JPA without explicit enabled value
         jdbcTemplate.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS enabled BOOLEAN DEFAULT TRUE");
-        // Update any existing users that might have NULL enabled to TRUE
-        jdbcTemplate.execute("UPDATE users SET enabled = TRUE WHERE enabled IS NULL OR enabled = FALSE");
+        // CRITICAL: Only migrate NULL values (existing users from before this feature)
+        // Do NOT reactivate users that were explicitly disabled (enabled = FALSE)
+        // This preserves the intended disabled state of any manually disabled accounts
+        jdbcTemplate.execute("UPDATE users SET enabled = TRUE WHERE enabled IS NULL");
 
         migrateLegacyPhotoColumn("before_photo", "before_photos");
         migrateLegacyPhotoColumn("after_photo", "after_photos");

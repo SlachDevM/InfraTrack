@@ -42,7 +42,7 @@ class DatabaseSchemaUpdaterTest {
     }
 
     @Test
-    void onApplicationEvent_ensuresExistingUsersRemainEnabled() {
+    void onApplicationEvent_migratesOnlyNullEnabledToTrue() {
         ApplicationReadyEvent event = mock(ApplicationReadyEvent.class);
 
         schemaUpdater.onApplicationEvent(event);
@@ -56,8 +56,29 @@ class DatabaseSchemaUpdaterTest {
                 .orElse(null);
 
         assertThat(updateExistingUsers)
-                .as("Should update existing users to enabled=TRUE to preserve backward compatibility")
-                .isNotNull();
+                .as("Should update only NULL enabled values to preserve intentionally disabled users")
+                .isNotNull()
+                .contains("WHERE enabled IS NULL")
+                .doesNotContain("enabled = FALSE");
+    }
+
+    @Test
+    void onApplicationEvent_preservesIntentionallyDisabledUsers() {
+        ApplicationReadyEvent event = mock(ApplicationReadyEvent.class);
+
+        schemaUpdater.onApplicationEvent(event);
+
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate, atLeastOnce()).execute(sqlCaptor.capture());
+
+        String migrationSql = sqlCaptor.getAllValues().stream()
+                .filter(sql -> sql.contains("UPDATE users SET enabled = TRUE"))
+                .findFirst()
+                .orElse(null);
+
+        assertThat(migrationSql)
+                .as("Migration should NOT include 'enabled = FALSE' to avoid reactivating explicitly disabled users")
+                .doesNotContain("enabled = FALSE");
     }
 
     @Test
