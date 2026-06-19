@@ -81,6 +81,38 @@ This platform centralizes those processes into a single application.
 - PostgreSQL to ensure transactional consistency.
 - Docker Compose for reproducible development and deployment environments.
 - Role-based authorization to enforce business rules.
+- User account lifecycle is modeled explicitly with `PENDING_ACTIVATION`, `ACTIVE` and `DISABLED` statuses.
+
+## Account Activation Workflow
+
+Users are not created through public registration.
+
+All users are created by an administrator from the React web application.
+
+```text
+Admin
+   │
+   ▼
+Create User
+   │
+   ▼
+PENDING_ACTIVATION
+   │
+   ▼
+Activation Email
+   │
+   ▼
+Android Deep Link
+   │
+   ▼
+Choose Password
+   │
+   ▼
+ACTIVE
+   │
+   ▼
+Login
+```
   
 ## Business Workflow
 
@@ -172,7 +204,6 @@ Tested areas include:
 - Users
 - User management
 - Account activation
-- Authentication
 
 ## Additional screenshots 
 ### Job Management 
