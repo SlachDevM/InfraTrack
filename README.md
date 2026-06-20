@@ -40,6 +40,22 @@ https://github.com/SlachDevM/MRRG-Mobile
 
 ---
 
+## Documentation
+
+Additional project documentation is available in the `docs/` directory.
+
+| Document | Description |
+|----------|-------------|
+| Project Philosophy | Design principles and development philosophy |
+| Software Architecture | High-level architecture of the MRRG ecosystem |
+| Security | Security model and authentication strategy |
+| Installation Guide | Local development environment setup |
+| Maintenance Guide | Guidance for maintaining and extending the project |
+| Administrator Guide | Business administration workflows |
+| User Manual | Android application guide for field workers |
+
+---
+
 ## Business Problem
 
 Before MRRG, job scheduling, communication and progress tracking relied primarily on manual coordination between managers and field workers.
