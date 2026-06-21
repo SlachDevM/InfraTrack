@@ -18,6 +18,8 @@ Before the first login, new users must activate their account using the activati
 
 After activation, the application can be accessed using the assigned email address and chosen password.
 
+<img width="426" height="902" alt="image" src="https://github.com/user-attachments/assets/f52333d7-cbbe-4412-a2c3-4173bf1cdca9" />
+
 ---
 
 ## Dashboard
@@ -34,7 +36,10 @@ Jobs are grouped by day and include the information required before arriving on 
 
 Workers can switch between the 3-day and weekly views depending on their planning needs.
 
-> *(Insert Dashboard screenshot)*
+Pulling down on the dashboard refreshes job information and updates the application when a network connection is available.
+
+<img width="440" height="900" alt="image" src="https://github.com/user-attachments/assets/9400897d-bf05-4df5-8c5e-6a44e47cd58c" />
+<img width="442" height="902" alt="image" src="https://github.com/user-attachments/assets/8aef3748-3640-4d60-b6c9-16cfd3afc505" />
 
 ---
 
@@ -62,6 +67,12 @@ Workers update the job as work progresses.
 
 Once the required work has been completed, the job is submitted for manager validation.
 
+<img width="370" height="136" alt="image" src="https://github.com/user-attachments/assets/f94c3f96-330b-43c8-91f2-281407b59456" />
+<img width="436" height="904" alt="image" src="https://github.com/user-attachments/assets/d129c94b-bbd1-45e6-8f08-3498ab5281ef" />
+<img width="366" height="140" alt="image" src="https://github.com/user-attachments/assets/13d8d4a2-efd7-47ff-9ca6-641e4867a295" />
+<img width="422" height="888" alt="image" src="https://github.com/user-attachments/assets/c914c43f-7317-49cc-a79d-b0a650e6ef13" />
+<img width="370" height="140" alt="image" src="https://github.com/user-attachments/assets/466dce59-e2f1-4e9b-9975-ac6807a8a122" />
+
 ---
 
 ## Before and After Photos
@@ -74,17 +85,22 @@ After photos should be taken once the work has been completed.
 
 These images are attached to the job and reviewed during manager validation.
 
+Clear photographs help managers validate completed work more efficiently.
+
+<img width="416" height="886" alt="image" src="https://github.com/user-attachments/assets/d22085ff-0499-4b34-bb4e-e4fc88224862" />
+<img width="426" height="898" alt="image" src="https://github.com/user-attachments/assets/a326bb9e-cb3a-4385-984a-3d1d25306ade" />
+
 ---
 
-## Offline Operation
+## Working Offline
 
 MRRG-Mobile continues to operate even when network connectivity is unavailable.
 
-Previously synchronized jobs remain accessible and work performed while offline is stored locally.
+Previously downloaded jobs remain accessible even without an internet connection.
 
-Once connectivity is restored, pending changes can be synchronized with the backend.
+Once connectivity is restored, pending work is automatically sent to the office.
 
-The application indicates when displayed information originates from the local cache.
+The application indicates when displayed information may not be up to date because the device is offline.
 
 ---
 
@@ -96,13 +112,19 @@ The application notifies workers when:
 - schedules change;
 - important updates are available.
 
-Notifications remain accessible from the notification centre even if they were previously dismissed from the device.
+Notifications remain available in the notification centre, allowing workers to review previous updates even after they have been opened or dismissed from the device.
 
 ---
 
 ## Profile and Settings
 
-Workers can review their profile information and access application settings from the navigation menu.
+The Profile section displays account information associated with the authenticated user.
+
+<img width="434" height="902" alt="image" src="https://github.com/user-attachments/assets/4809fda0-8544-4027-8de5-cebb6d82ac68" />
+
+The Settings section provides access to application preferences and application information.
+
+<img width="424" height="906" alt="image" src="https://github.com/user-attachments/assets/12f13458-203a-40ef-af11-51ef93ed9b7e" />
 
 ---
 
@@ -114,4 +136,5 @@ For the best experience:
 - capture clear before and after photographs;
 - review job information before travelling to site;
 - submit completed work promptly;
-- keep notifications enabled to receive scheduling updates.
+- keep notifications enabled to receive scheduling updates;
+- keep the application up to date;
