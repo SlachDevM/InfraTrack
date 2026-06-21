@@ -4,7 +4,7 @@
 
 MRRG is composed of a single backend shared by two client applications.
 
-The backend contains all business rules and is responsible for data consistency, authentication, authorization and notifications.
+The backend owns the business rules and is responsible for data consistency, authentication, authorization and notification management.
 
 Each client focuses on a specific audience while relying on the same REST API.
 
@@ -44,7 +44,7 @@ Each client focuses on a specific audience while relying on the same REST API.
 
 The backend is responsible for every business decision within the system.
 
-It validates requests, enforces permissions, manages job workflows, stores application data and creates notifications.
+It validates requests, enforces permissions, manages business workflows, coordinates data persistence and creates notifications.
 
 Neither client contains business logic that could lead to inconsistent behaviour.
 
@@ -54,7 +54,7 @@ Neither client contains business logic that could lead to inconsistent behaviour
 
 The React application is used by managers and administrators.
 
-It provides tools to manage users, schedule work, validate completed jobs and administer the business.
+It provides tools to manage users, schedule work, validate completed jobs and manage day-to-day operations.
 
 ---
 
@@ -70,7 +70,7 @@ The application remains lightweight by delegating business decisions to the back
 
 ### PostgreSQL
 
-PostgreSQL stores all persistent business data.
+PostgreSQL is the system of record for all persistent business data.
 
 Both clients access the same information through the backend, ensuring a single and consistent source of data.
 
@@ -105,23 +105,23 @@ All business operations follow the same principle.
 ```text
 User Action
 
-↓
+   ↓
 
 REST API
 
-↓
+   ↓
 
-Business Validation
+Business Rules
 
-↓
+   ↓
 
 Database
 
-↓
+   ↓
 
 Response
 
-↓
+   ↓
 
 Client Update
 ```
@@ -170,3 +170,4 @@ The architecture is guided by a small number of principles.
 - Android may cache data locally, but the backend always remains authoritative.
 - Push notifications are persisted before delivery.
 - Business behaviour remains identical regardless of the client being used.
+- Client applications never become sources of business truth.
