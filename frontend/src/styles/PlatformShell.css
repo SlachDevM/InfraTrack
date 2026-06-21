@@ -1,0 +1,124 @@
+.platform-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f5f5f5;
+}
+
+.platform-navbar {
+  background: white;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.navbar-brand {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.navbar-items {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.navbar-link {
+  color: #666;
+  cursor: pointer;
+  font-size: 0.95rem;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.navbar-link:hover {
+  background: #f0f0f0;
+}
+
+.navbar-link.logout {
+  color: #d32f2f;
+}
+
+.navbar-link.logout:hover {
+  background: #ffebee;
+}
+
+.platform-content {
+  flex: 1;
+  padding: 2rem;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.platform-welcome {
+  background: white;
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.platform-welcome h1 {
+  color: #333;
+  margin-top: 0;
+  font-size: 2rem;
+}
+
+.platform-welcome p {
+  color: #666;
+  line-height: 1.6;
+  margin: 0.5rem 0;
+}
+
+.platform-info {
+  margin-top: 2rem;
+}
+
+.feature-section {
+  margin: 1.5rem 0;
+  padding: 1.5rem;
+  background: #fafafa;
+  border-left: 4px solid #1a472a;
+  border-radius: 4px;
+}
+
+.feature-section h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.feature-section ul {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.feature-section li {
+  color: #666;
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
+.feature-section code {
+  background: #e0e0e0;
+  padding: 0.25rem 0.5rem;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+}
+
+.user-info {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: #e3f2fd;
+  border-radius: 4px;
+  color: #1565c0;
+}
+
+.user-info p {
+  margin: 0;
+}

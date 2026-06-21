@@ -1,7 +1,6 @@
 package com.mrrg.backend.service;
 
 import com.mrrg.backend.model.Notification;
-import com.mrrg.backend.model.NotificationType;
 import com.mrrg.backend.model.User;
 import com.mrrg.backend.repository.NotificationRepository;
 import com.mrrg.backend.repository.UserRepository;
@@ -66,12 +65,11 @@ public class NotificationService {
 
     public Notification create(
             Long userId,
-            Long jobId,
-            NotificationType type,
+            String title,
             String message
     ) {
         Notification notification =
-                new Notification(userId, jobId, type, message);
+                new Notification(userId, title, message);
 
         Notification savedNotification = notificationRepository.save(notification);
 
@@ -80,12 +78,7 @@ public class NotificationService {
             if (user != null) {
                 Map<String, String> data = new HashMap<>();
                 data.put("notificationId", String.valueOf(savedNotification.getId()));
-                data.put("notificationType", type.toString());
-                if (jobId != null) {
-                    data.put("jobId", String.valueOf(jobId));
-                }
 
-                String title = generateTitle(type);
                 firebaseNotificationService.sendToUser(user, title, message, data);
             }
         } catch (Exception e) {
@@ -93,14 +86,5 @@ public class NotificationService {
         }
 
         return savedNotification;
-    }
-
-    private String generateTitle(NotificationType type) {
-        return switch (type) {
-            case JOB_ASSIGNED -> "Job Assigned";
-            case JOB_RESCHEDULED -> "Job Rescheduled";
-            case JOB_READY_FOR_CONFIRMATION -> "Job Ready for Confirmation";
-            case JOB_CONFIRMED -> "Job Confirmed";
-        };
     }
 }

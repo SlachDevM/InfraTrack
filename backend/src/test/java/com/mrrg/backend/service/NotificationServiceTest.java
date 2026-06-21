@@ -1,7 +1,6 @@
 package com.mrrg.backend.service;
 
 import com.mrrg.backend.model.Notification;
-import com.mrrg.backend.model.NotificationType;
 import com.mrrg.backend.repository.NotificationRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,12 +36,7 @@ class NotificationServiceTest {
 
     @Test
     void markAsRead_shouldSetNotificationAsRead() {
-        Notification notification = new Notification(
-                1L,
-                100L,
-                NotificationType.JOB_ASSIGNED,
-                "Job assigned"
-        );
+        Notification notification = new Notification(1L, "Test Title", "Test message");
         notification.setId(5L);
         notification.setIsRead(false);
 
@@ -71,8 +65,7 @@ class NotificationServiceTest {
 
         Notification result = notificationService.create(
                 1L,
-                100L,
-                NotificationType.JOB_ASSIGNED,
+                "Test Title",
                 "You have been assigned"
         );
 
@@ -82,8 +75,7 @@ class NotificationServiceTest {
         Notification saved = captor.getValue();
 
         assertThat(saved.getUserId()).isEqualTo(1L);
-        assertThat(saved.getJobId()).isEqualTo(100L);
-        assertThat(saved.getType()).isEqualTo(NotificationType.JOB_ASSIGNED);
+        assertThat(saved.getTitle()).isEqualTo("Test Title");
         assertThat(saved.getMessage()).isEqualTo("You have been assigned");
         assertThat(saved.getIsRead()).isFalse();
 
@@ -92,8 +84,8 @@ class NotificationServiceTest {
 
     @Test
     void markAllAsRead_shouldMarkEveryUnreadNotificationAsRead() {
-        Notification first = new Notification(1L, 100L, NotificationType.JOB_ASSIGNED, "First");
-        Notification second = new Notification(1L, 101L, NotificationType.JOB_RESCHEDULED, "Second");
+        Notification first = new Notification(1L, "Title 1", "First");
+        Notification second = new Notification(1L, "Title 2", "Second");
 
         when(notificationRepository.findByUserIdAndIsReadFalseOrderByCreatedAtDesc(1L))
                 .thenReturn(List.of(first, second));

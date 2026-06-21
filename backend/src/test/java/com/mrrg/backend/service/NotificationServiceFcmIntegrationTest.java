@@ -1,9 +1,6 @@
 package com.mrrg.backend.service;
 
-import com.google.firebase.messaging.FirebaseMessaging;
-import com.google.firebase.messaging.Message;
 import com.mrrg.backend.model.Notification;
-import com.mrrg.backend.model.NotificationType;
 import com.mrrg.backend.model.User;
 import com.mrrg.backend.model.UserRole;
 import com.mrrg.backend.repository.NotificationRepository;
@@ -42,17 +39,17 @@ class NotificationServiceFcmIntegrationTest {
         user.setId(1L);
         user.setFcmToken("valid-fcm-token");
 
-        Notification notification = new Notification(1L, 100L, NotificationType.JOB_ASSIGNED, "You have a new job");
+        Notification notification = new Notification(1L, "Test Notification", "You have a notification");
         notification.setId(1L);
 
         when(notificationRepository.save(any(Notification.class))).thenReturn(notification);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
-        Notification result = notificationService.create(1L, 100L, NotificationType.JOB_ASSIGNED, "You have a new job");
+        Notification result = notificationService.create(1L, "Test Notification", "You have a notification");
 
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(1L);
-        assertThat(result.getMessage()).isEqualTo("You have a new job");
+        assertThat(result.getMessage()).isEqualTo("You have a notification");
 
         verify(notificationRepository).save(any(Notification.class));
         verify(userRepository).findById(1L);
@@ -65,14 +62,14 @@ class NotificationServiceFcmIntegrationTest {
         user.setId(1L);
         user.setFcmToken("valid-fcm-token");
 
-        Notification notification = new Notification(1L, 100L, NotificationType.JOB_ASSIGNED, "You have a new job");
+        Notification notification = new Notification(1L, "Test Notification", "You have a notification");
         notification.setId(1L);
 
         when(notificationRepository.save(any(Notification.class))).thenReturn(notification);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         doThrow(new RuntimeException("Firebase error")).when(firebaseNotificationService).sendToUser(any(User.class), anyString(), anyString(), anyMap());
 
-        Notification result = notificationService.create(1L, 100L, NotificationType.JOB_ASSIGNED, "You have a new job");
+        Notification result = notificationService.create(1L, "Test Notification", "You have a notification");
 
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(1L);
@@ -83,13 +80,13 @@ class NotificationServiceFcmIntegrationTest {
 
     @Test
     void create_shouldSkipFcmIfUserNotFound() {
-        Notification notification = new Notification(1L, 100L, NotificationType.JOB_ASSIGNED, "You have a new job");
+        Notification notification = new Notification(1L, "Test Notification", "You have a notification");
         notification.setId(1L);
 
         when(notificationRepository.save(any(Notification.class))).thenReturn(notification);
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
-        Notification result = notificationService.create(1L, 100L, NotificationType.JOB_ASSIGNED, "You have a new job");
+        Notification result = notificationService.create(1L, "Test Notification", "You have a notification");
 
         assertThat(result).isNotNull();
 
@@ -98,18 +95,18 @@ class NotificationServiceFcmIntegrationTest {
     }
 
     @Test
-    void create_shouldIncludeJobIdInDataPayload() {
+    void create_shouldSendCustomTitleAndMessage() {
         User user = new User("user@test.com", "password", "Test User", UserRole.EMPLOYEE);
         user.setId(1L);
         user.setFcmToken("valid-fcm-token");
 
-        Notification notification = new Notification(1L, 100L, NotificationType.JOB_READY_FOR_CONFIRMATION, "Job ready for confirmation");
+        Notification notification = new Notification(1L, "Custom Title", "Custom notification message");
         notification.setId(2L);
 
         when(notificationRepository.save(any(Notification.class))).thenReturn(notification);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
-        notificationService.create(1L, 100L, NotificationType.JOB_READY_FOR_CONFIRMATION, "Job ready for confirmation");
+        notificationService.create(1L, "Custom Title", "Custom notification message");
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         ArgumentCaptor<String> titleCaptor = ArgumentCaptor.forClass(String.class);
@@ -117,30 +114,7 @@ class NotificationServiceFcmIntegrationTest {
 
         verify(firebaseNotificationService).sendToUser(userCaptor.capture(), titleCaptor.capture(), bodyCaptor.capture(), anyMap());
 
-        assertThat(titleCaptor.getValue()).isNotEmpty();
-        assertThat(bodyCaptor.getValue()).isEqualTo("Job ready for confirmation");
-    }
-
-    @Test
-    void create_shouldGenerateProperTitleForEachNotificationType() {
-        User user = new User("user@test.com", "password", "Test User", UserRole.EMPLOYEE);
-        user.setId(1L);
-        user.setFcmToken("valid-fcm-token");
-
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-
-        for (NotificationType type : NotificationType.values()) {
-            Notification notification = new Notification(1L, 100L, type, "Message for " + type);
-            notification.setId((long) type.ordinal());
-
-            when(notificationRepository.save(any(Notification.class))).thenReturn(notification);
-
-            notificationService.create(1L, 100L, type, "Message for " + type);
-
-            ArgumentCaptor<String> titleCaptor = ArgumentCaptor.forClass(String.class);
-            verify(firebaseNotificationService, atLeastOnce()).sendToUser(eq(user), titleCaptor.capture(), anyString(), anyMap());
-
-            assertThat(titleCaptor.getValue()).isNotBlank();
-        }
+        assertThat(titleCaptor.getValue()).isEqualTo("Custom Title");
+        assertThat(bodyCaptor.getValue()).isEqualTo("Custom notification message");
     }
 }

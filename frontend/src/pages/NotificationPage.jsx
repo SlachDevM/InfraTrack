@@ -3,23 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import apiClient from '../services/apiClient';
-import { API_ENDPOINTS } from '../constants/jobConfig';
 import '../styles/NotificationPage.css';
-
-const NOTIFICATION_TYPE_LABELS = {
-  JOB_ASSIGNED: 'Assigned Job',
-  JOB_RESCHEDULED: 'Rescheduled Job',
-  JOB_READY_FOR_CONFIRMATION: 'Job Ready for Confirmation',
-  JOB_CONFIRMED: 'Job Confirmed',
-};
-
-const NAVIGABLE_TYPES = ['JOB_ASSIGNED', 'JOB_READY_FOR_CONFIRMATION'];
-
-function getActionHint(type) {
-  if (type === 'JOB_ASSIGNED') return 'Click to view job details';
-  if (type === 'JOB_READY_FOR_CONFIRMATION') return 'Click to review and confirm';
-  return null;
-}
 
 export default function NotificationPage() {
   const navigate = useNavigate();
@@ -40,7 +24,7 @@ export default function NotificationPage() {
 
   const fetchNotifications = async () => {
     try {
-      const data = await apiClient.get(API_ENDPOINTS.NOTIFICATIONS);
+      const data = await apiClient.get('/api/notifications');
       setNotifications(data);
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
@@ -51,7 +35,7 @@ export default function NotificationPage() {
 
   const handleMarkAsRead = async (notificationId) => {
     try {
-      await apiClient.put(`${API_ENDPOINTS.NOTIFICATIONS}/${notificationId}/read`, {});
+      await apiClient.put(`/api/notifications/${notificationId}/read`, {});
       const wasUnread = notifications.some((n) => n.id === notificationId && !n.isRead);
       setNotifications((prev) =>
         prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
@@ -68,11 +52,17 @@ export default function NotificationPage() {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await apiClient.put(`${API_ENDPOINTS.NOTIFICATIONS}/read-all`, {});
+      await apiClient.put('/api/notifications/read-all', {});
       clearUnread();
       fetchNotifications();
     } catch (err) {
       console.error('Failed to mark all as read:', err);
+    }
+  };
+
+  const handleNotificationClick = (notif) => {
+    if (!notif.isRead) {
+      handleMarkAsRead(notif.id);
     }
   };
 
@@ -83,10 +73,6 @@ export default function NotificationPage() {
 
   if (loading) {
     return <div className="loading">Loading notifications...</div>;
-  }
-
-  function formatNotificationType(type) {
-    return NOTIFICATION_TYPE_LABELS[type] || type.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
   }
 
   return (
@@ -113,38 +99,33 @@ export default function NotificationPage() {
           </div>
         ) : (
           <div className="notification-list">
-            {notifications.map((notif) => {
-              const actionHint = getActionHint(notif.type);
-
-              return (
-                <div
-                  key={notif.id}
-                  className={`notification-item ${notif.isRead ? 'read' : 'unread'} clickable`}
-                  onClick={() => handleNotificationClick(notif)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleNotificationClick(notif);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <div className="notification-content">
-                    <div className="notification-header-row">
-                      <span className="notification-type">{formatNotificationType(notif.type)}</span>
-                      <span className="notification-time">
-                        {new Date(notif.createdAt).toLocaleString()}
-                      </span>
-                    </div>
-                    <p className="notification-message">{notif.message}</p>
-                    {actionHint && (
-                      <p className="notification-action-hint">{actionHint}</p>
+            {notifications.map((notif) => (
+              <div
+                key={notif.id}
+                className={`notification-item ${notif.isRead ? 'read' : 'unread'} clickable`}
+                onClick={() => handleNotificationClick(notif)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleNotificationClick(notif);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+              >
+                <div className="notification-content">
+                  <div className="notification-header-row">
+                    {notif.title && (
+                      <span className="notification-title">{notif.title}</span>
                     )}
+                    <span className="notification-time">
+                      {new Date(notif.createdAt).toLocaleString()}
+                    </span>
                   </div>
+                  <p className="notification-message">{notif.message}</p>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         )}
       </main>

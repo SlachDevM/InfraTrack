@@ -12,12 +12,8 @@ public class Notification {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(name = "job_id", nullable = false)
-    private Long jobId;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private NotificationType type;
+    @Column(name = "title", columnDefinition = "TEXT")
+    private String title;
 
     @Column(columnDefinition = "TEXT")
     private String message;
@@ -33,10 +29,9 @@ public class Notification {
         this.createdAt = System.currentTimeMillis();
     }
 
-    public Notification(Long userId, Long jobId, NotificationType type, String message) {
+    public Notification(Long userId, String title, String message) {
         this.userId = userId;
-        this.jobId = jobId;
-        this.type = type;
+        this.title = title;
         this.message = message;
         this.isRead = false;
         this.createdAt = System.currentTimeMillis();
@@ -58,20 +53,12 @@ public class Notification {
         this.userId = userId;
     }
 
-    public Long getJobId() {
-        return jobId;
+    public String getTitle() {
+        return title;
     }
 
-    public void setJobId(Long jobId) {
-        this.jobId = jobId;
-    }
-
-    public NotificationType getType() {
-        return type;
-    }
-
-    public void setType(NotificationType type) {
-        this.type = type;
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public String getMessage() {

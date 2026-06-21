@@ -2,8 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import Login from './pages/Login';
-import MainDashboard from './pages/MainDashboard';
-import AdminPage from './pages/AdminPage';
+import PlatformShell from './pages/PlatformShell';
 import NotificationPage from './pages/NotificationPage';
 import UserManagementPage from './pages/UserManagementPage';
 import './App.css';
@@ -29,15 +28,7 @@ function App() {
               path="/"
               element={
                 <PrivateRoute>
-                  <MainDashboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <PrivateRoute>
-                  <AdminPage />
+                  <PlatformShell />
                 </PrivateRoute>
               }
             />

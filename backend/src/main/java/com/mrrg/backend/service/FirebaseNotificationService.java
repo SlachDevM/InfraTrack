@@ -33,7 +33,7 @@ public class FirebaseNotificationService {
      * @param user the user to send the notification to
      * @param title the notification title
      * @param body the notification body
-     * @param data optional data payload (notificationId, jobId, notificationType, etc.)
+     * @param data optional data payload (notificationId, etc.)
      */
     public void sendToUser(User user, String title, String body, Map<String, String> data) {
         if (!firebaseMessaging.isPresent()) {

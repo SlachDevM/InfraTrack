@@ -34,7 +34,6 @@ class FirebaseNotificationServiceTest {
 
         Map<String, String> data = new HashMap<>();
         data.put("notificationId", "123");
-        data.put("jobId", "456");
 
         when(firebaseMessaging.send(any(Message.class))).thenReturn("message-id-12345");
 
@@ -116,8 +115,6 @@ class FirebaseNotificationServiceTest {
 
         Map<String, String> data = new HashMap<>();
         data.put("notificationId", "123");
-        data.put("jobId", "456");
-        data.put("notificationType", "JOB_ASSIGNED");
 
         when(firebaseMessaging.send(any(Message.class))).thenReturn("message-id-12345");
 
