@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The Business Platform Template is a production-ready foundation for building professional business applications. It is extracted from MRRG after its architecture has been validated in real-world business use.
+The Business Platform Template is a production-ready foundation for building professional business applications. It is extracted from a real production application after its architecture has been validated in business use.
 
 The project is designed to provide proven infrastructure while remaining straightforward to understand, maintain and extend. Every technical decision prioritizes infrastructure needs over business-specific concerns.
 
@@ -10,7 +10,7 @@ The project is designed to provide proven infrastructure while remaining straigh
 
 ## Simplicity Before Abstraction
 
-MRRG favors simple and explicit solutions over architectural complexity.
+The Business Platform Template favors simple and explicit solutions over architectural complexity.
 
 Abstractions are introduced only after an existing problem has demonstrated the need for them. If a design adds indirection without providing a measurable benefit, it is intentionally avoided.
 
@@ -32,7 +32,7 @@ The codebase should represent the current needs of the business, not every idea 
 
 Business rules are centralized within the Spring Boot backend.
 
-The React web application and the Android application focus on presenting information and interacting with users, while the backend remains responsible for enforcing permissions, validation and workflow consistency.
+The React web application focuses on presenting information and interacting with users, while the backend remains responsible for enforcing permissions, validation and workflow consistency.
 
 This approach guarantees consistent business behavior across every client.
 
@@ -40,7 +40,7 @@ This approach guarantees consistent business behavior across every client.
 
 ## Build Only What Is Needed
 
-MRRG evolves incrementally.
+The Business Platform Template evolves incrementally.
 
 New technologies, libraries and architectural patterns are introduced only when justified by the current size and complexity of the project.
 
@@ -62,9 +62,9 @@ Long-term maintainability is considered more valuable than short-term technical 
 
 ## Consistency Across the Ecosystem
 
-MRRG consists of a shared backend, a React web application and an Android application.
+The Business Platform Template is designed to be extended with business-specific functionality by multiple applications.
 
-Although each client serves a different audience, they are expected to implement the same business workflows consistently. Business workflows, permissions and data should produce the same results regardless of the client being used.
+Although each application will serve different audiences, they should implement the same platform infrastructure consistently. Business workflows, permissions and data should produce the same results regardless of the client being used.
 
 ---
 

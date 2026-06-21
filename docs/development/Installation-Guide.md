@@ -49,13 +49,6 @@ Local development uses:
 - **Firebase**: Optional (configure `firebase-service-account.json` if needed)
 - **Profiles**: `dev` profile active by default
 
-### Android Development
-
-When using the Android emulator, use this API base URL:
-```
-http://10.0.2.2:4000
-```
-
 ---
 
 ## Production Readiness
@@ -146,8 +139,8 @@ docker compose up --build
 - Check database credentials in `docker-compose.yml`
 
 **API not responding:**
-- Verify backend container logs: `docker logs mrrg-backend-1`
-- Check database is healthy: `docker logs mrrg-postgres-1`
+- Verify backend container logs: `docker logs app-backend-1`
+- Check database is healthy: `docker logs app-postgres-1`
 
 **Firebase issues:**
 - Verify Firebase service account file is present at `backend/firebase-service-account.json`
@@ -187,4 +180,3 @@ docker compose up --build
 
 - Backend: [Software Architecture](../architecture/Software-Architecture.md)
 - Security: [Security Guide](../architecture/Security.md)
-- User Guide: [Administrator Guide](../user/Administrator-Guide.md)

@@ -2,21 +2,21 @@
 
 ## Overview
 
-MRRG follows a centralized security model where every business operation is validated by the backend.
+The Business Platform Template follows a centralized security model where every business operation is validated by the backend.
 
-Neither the React web application nor the Android application is trusted to enforce permissions or business rules. Client applications authenticate users, submit requests and display responses, while the backend remains responsible for every security decision.
+Client applications authenticate users, submit requests and display responses, while the backend remains responsible for every security decision.
 
-This approach guarantees consistent behaviour across the entire MRRG ecosystem.
+This approach guarantees consistent behaviour across the entire ecosystem.
 
 ---
 
 ## Authentication
 
-MRRG uses JWT authentication for both client applications.
+The Business Platform Template uses JWT authentication for client applications.
 
 After a successful login, the backend issues a JSON Web Token that is included in subsequent requests.
 
-The same authentication mechanism is used by both the React web application and the Android application, providing a consistent security model regardless of the client being used.
+The same authentication mechanism is used by all clients, providing a consistent security model regardless of the client platform being used.
 
 ---
 
@@ -55,10 +55,6 @@ Activation Email
 
 ↓
 
-Android Deep Link
-
-↓
-
 Choose Password
 
 ↓
@@ -81,7 +77,6 @@ Every business operation is validated by the backend before application data is 
 Examples include:
 
 * validating user permissions;
-* enforcing job workflow transitions;
 * controlling account activation;
 * protecting administrative operations.
 
@@ -91,7 +86,7 @@ Client applications are responsible only for presenting information and collecti
 
 ## Notifications
 
-Notifications are created and stored by the backend before being delivered to Android devices.
+Notifications are created and stored by the backend before being delivered to client devices.
 
 Firebase Cloud Messaging is used exclusively as a delivery mechanism.
 
@@ -119,7 +114,7 @@ These principles reduce the risk of inconsistent behaviour between clients while
 
 ## Security Principles
 
-The security model of MRRG is based on a small number of consistent principles.
+The security model of the Business Platform Template is based on a small number of consistent principles.
 
 * Authentication is centralized.
 * Authorization is enforced by the backend.

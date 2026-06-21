@@ -42,15 +42,15 @@ Future contributors should preserve this philosophy unless the size and scope of
 
 ## Extend Existing Workflows
 
-New functionality should integrate with existing business workflows whenever possible.
+New functionality should integrate with existing platform infrastructure whenever possible.
 
 For example:
 
-- extend the job lifecycle instead of creating parallel workflows;
-- reuse notifications rather than introducing additional messaging systems;
-- extend existing user roles before creating new authorization models.
+- reuse notification infrastructure rather than introducing additional messaging systems;
+- extend existing user roles before creating new authorization models;
+- integrate with existing backend patterns (Controller → Service → Repository).
 
-Maintaining coherent workflows reduces long-term maintenance costs.
+Maintaining coherent architecture reduces long-term maintenance costs.
 
 ---
 

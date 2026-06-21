@@ -57,15 +57,15 @@ Then the file is missing or path is incorrect.
    Response: 204 No Content
    ```
 
-2. **Notification is created** (via job events, etc.)
+2. **Notification is created** (via business events)
    - Saved to PostgreSQL database
    - FCM message sent to user's device
    - If FCM fails, notification still persists in DB
 
-3. **Android app receives push notification**
-   - Notification title (e.g., "Job Assigned")
+3. **Client receives push notification**
+   - Notification title
    - Notification body (message text)
-   - Data payload with: notificationId, jobId, notificationType
+   - Data payload with: notificationId
 
 ## Troubleshooting
 

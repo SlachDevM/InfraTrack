@@ -14,7 +14,7 @@ Production-ready foundation for building professional business applications.
 
 The Business Platform Template is a reusable, production-ready foundation for building professional business applications. It provides proven infrastructure for authentication, user management, notifications, and deployment while remaining intentionally free of business-specific logic.
 
-This template is extracted from a real production application (MRRG) after its architecture, workflows and production configuration have been validated. Only infrastructure that proved to be reusable is retained.
+This template is extracted from a real production application after its architecture and production configuration have been validated in business use. Only infrastructure that proved to be reusable is retained.
 
 The backend is designed to support multiple client applications:
 
@@ -22,12 +22,6 @@ The backend is designed to support multiple client applications:
 - Additional clients (mobile, desktop, etc.) share the same REST API
 
 ---
-
-## Related Projects
-
-This is the platform template. Original MRRG-Mobile (Android) repository:
-
-https://github.com/SlachDevM/MRRG-Mobile
 
 ---
 
@@ -245,6 +239,6 @@ See documentation in `docs/` directory for details.
 
 ## License
 
-This Business Platform Template is a production-ready foundation extracted from MRRG after validation in real-world business use.
+This Business Platform Template is a production-ready foundation extracted from a real business application after validation in production use.
 
 It is provided as a template for building custom business applications.

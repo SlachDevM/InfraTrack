@@ -2,7 +2,7 @@
 
 ## Overview
 
-MRRG is composed of a single backend shared by two client applications.
+The Business Platform Template is composed of a single backend and one or more client applications.
 
 The backend owns the business rules and is responsible for data consistency, authentication, authorization and notification management.
 
@@ -18,22 +18,14 @@ Each client focuses on a specific audience while relying on the same REST API.
                          ┌────────────────────────────┐
                          │      Spring Boot API       │
                          │ Business Rules / Security  │
-                         └──────────┬───────┬─────────┘
-                                    │       │
-                             REST API│       │REST API
-                                    │       │
-                    ┌───────────────▼──┐   ┌▼─────────────────┐
-                    │   MRRG-Mobile    │   │ React Web Client │
-                    │  Field Workers   │   │ Managers/Admins  │
-                    └─────────┬────────┘   └──────────────────┘
-                              │
-                              ▼
-                    ┌──────────────────────┐
-                    │ Firebase Cloud       │
-                    │ Messaging            │
-                    └─────────▲────────────┘
-                              │
-                    Notification Delivery
+                         └─────────────┬──────────────┘
+                                       │
+                                REST API│
+                                       │
+                    ┌──────────────────▼──────────────────┐
+                    │   React Web Client                 │
+                    │   Managers/Admins                  │
+                    └──────────────────────────────────────┘
 ```
 
 ---
@@ -46,7 +38,7 @@ The backend is responsible for every infrastructure and business decision within
 
 It validates requests, enforces permissions, manages business workflows, coordinates data persistence and creates notifications.
 
-Neither client contains business logic that could lead to inconsistent behaviour.
+Client applications never contain business logic that could lead to inconsistent behaviour.
 
 ---
 
@@ -81,8 +73,7 @@ If delivery fails, the notification remains available inside the application.
 | Component | Responsibility |
 |-----------|----------------|
 | Backend | Business rules, authentication, persistence, notifications |
-| React | Administration and business management |
-| Android | Field operations and offline access |
+| React | Administration and management interface |
 | PostgreSQL | Persistent storage |
 | Firebase | Push notification delivery |
 
@@ -116,7 +107,7 @@ Response
 Client Update
 ```
 
-Because every request passes through the backend, both clients always follow the same business rules.
+Because every request passes through the backend, all clients always follow the same business rules.
 
 ---
 
@@ -137,11 +128,11 @@ Save Notification
 
 ↓
 
-Send FCM
+Send FCM (optional)
 
 ↓
 
-Android Device
+Client Device
 ```
 
 The backend remains the owner of the notification lifecycle.
@@ -155,9 +146,8 @@ Firebase only delivers notifications and does not store application data.
 The architecture is guided by a small number of principles.
 
 - A single backend owns every business rule.
-- Both clients share the same REST API.
+- All clients share the same REST API.
 - PostgreSQL is the only persistent data store.
-- Android may cache data locally, but the backend always remains authoritative.
 - Push notifications are persisted before delivery.
 - Business behaviour remains identical regardless of the client being used.
 - Client applications never become sources of business truth.
