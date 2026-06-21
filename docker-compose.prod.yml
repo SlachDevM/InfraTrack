@@ -11,6 +11,8 @@
 
 version: '3.8'
 
+name: business-platform-template
+
 services:
   backend:
     build:
@@ -66,7 +68,7 @@ services:
         condition: service_healthy
     
     networks:
-      - mrrg-network
+      - business-platform-network
 
   frontend:
     build:
@@ -86,7 +88,7 @@ services:
       - backend
     
     networks:
-      - mrrg-network
+      - business-platform-network
 
   postgres:
     image: postgres:16-alpine
@@ -112,14 +114,14 @@ services:
       retries: 5
     
     networks:
-      - mrrg-network
+      - business-platform-network
 
 volumes:
   postgres-data:
     driver: local
 
 networks:
-  mrrg-network:
+  business-platform-network:
     driver: bridge
 
 # Production Deployment Notes:
