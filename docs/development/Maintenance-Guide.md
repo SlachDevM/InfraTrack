@@ -26,7 +26,7 @@ MRRG consists of two client applications serving different users.
 
 Although their interfaces differ, both clients must produce identical business behaviour.
 
-Any feature implemented for one client should be evaluated to determine whether equivalent support is required in the other.
+Any feature introduced in one client should be evaluated to determine whether equivalent business support is required in the other.
 
 ---
 
@@ -96,6 +96,7 @@ Before introducing significant changes, verify that:
 - both clients continue to behave consistently;
 - existing workflows remain coherent;
 - documentation is updated where necessary;
-- obsolete code has been removed.
+- obsolete code has been removed;
+- new code follows the existing project philosophy;
 
 Maintaining these practices helps ensure that the project remains understandable as it grows.
