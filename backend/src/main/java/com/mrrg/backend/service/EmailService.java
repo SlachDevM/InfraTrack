@@ -14,10 +14,10 @@ public class EmailService {
     @Autowired(required = false)
     private JavaMailSender mailSender;
 
-    @Value("${app.activation-link-base-url:mrrg://activate-account}")
+    @Value("${app.activation-link-base-url:app://activate-account}")
     private String activationLinkBaseUrl;
 
-    @Value("${spring.mail.from:noreply@mrrg.local}")
+    @Value("${spring.mail.from:noreply@businessplatform.local}")
     private String fromEmail;
 
     @Value("${spring.profiles.active:dev}")
@@ -82,7 +82,7 @@ public class EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
             message.setTo(email);
-            message.setSubject("Account Activation - MRRG");
+            message.setSubject("Account Activation - Business Platform");
             message.setText(buildActivationEmailBody(userName, link));
             
             mailSender.send(message);
@@ -95,13 +95,13 @@ public class EmailService {
     private String buildActivationEmailBody(String userName, String link) {
         return String.format(
             "Hello %s,\n\n" +
-            "Welcome to MRRG! Your account has been created and is ready to activate.\n\n" +
+            "Welcome to the Business Platform! Your account has been created and is ready to activate.\n\n" +
             "Please click the link below to activate your account:\n" +
             "%s\n\n" +
             "This link will expire in 24 hours.\n\n" +
             "If you did not create this account, please contact an administrator.\n\n" +
             "Best regards,\n" +
-            "MRRG Team",
+            "Business Platform Team",
             userName, link
         );
     }
@@ -156,7 +156,7 @@ public class EmailService {
             "New Email: %s\n\n" +
             "If you did not authorize this change, please contact an administrator immediately.\n\n" +
             "Best regards,\n" +
-            "MRRG Team",
+            "Business Platform Team",
             userName, oldEmail, newEmail
         );
     }

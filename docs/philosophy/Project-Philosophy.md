@@ -2,11 +2,9 @@
 
 ## Introduction
 
-MRRG is a business management platform developed for Margaret River Re-Gutter, a roofing company based in Western Australia.
+The Business Platform Template is a production-ready foundation for building professional business applications. It is extracted from MRRG after its architecture has been validated in real-world business use.
 
-The project is designed to solve real operational needs while remaining straightforward to understand, maintain and evolve. Every technical decision is driven by current business requirements rather than anticipated future complexity.
-
-This document describes the engineering principles that guide the evolution of the project.
+The project is designed to provide proven infrastructure while remaining straightforward to understand, maintain and extend. Every technical decision prioritizes infrastructure needs over business-specific concerns.
 
 ---
 

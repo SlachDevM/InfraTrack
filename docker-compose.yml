@@ -5,9 +5,9 @@ services:
       - '4000:4000'
     restart: unless-stopped
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mrrg
-      - SPRING_DATASOURCE_USERNAME=mrrg
-      - SPRING_DATASOURCE_PASSWORD=mrrgpass
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/businessplatform
+      - SPRING_DATASOURCE_USERNAME=appuser
+      - SPRING_DATASOURCE_PASSWORD=apppass
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
       - JWT_SECRET=local-dev-secret-change-me
       - FIREBASE_SERVICE_ACCOUNT_PATH=/app/firebase-service-account.json
@@ -36,15 +36,15 @@ services:
     ports:
       - '5432:5432'
     environment:
-      POSTGRES_DB: mrrg
-      POSTGRES_USER: mrrg
-      POSTGRES_PASSWORD: mrrgpass
+      POSTGRES_DB: businessplatform
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: apppass
     volumes:
       - pgdata:/var/lib/postgresql/data
 
   mailpit:
     image: axllent/mailpit:latest
-    container_name: mrrg-mailpit
+    container_name: app-mailpit
     restart: unless-stopped
     ports:
       - "1025:1025"

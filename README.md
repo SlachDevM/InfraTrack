@@ -1,40 +1,31 @@
-# MRRG
+# Business Platform Template
 
-Business Management Platform for Margaret River Re-Gutter
+Production-ready foundation for building professional business applications.
 
 ![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)
 ![React](https://img.shields.io/badge/React-Frontend-61DAFB?logo=react)
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-Backend-6DB33F?logo=springboot)
 ![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-4169E1?logo=postgresql)
-[![Backend CI](https://github.com/SlachDevM/MRRG/actions/workflows/backend-ci.yaml/badge.svg?branch=main)](https://github.com/SlachDevM/MRRG/actions)
-
-### Login:  
-
-<img width="1012" height="1140" alt="image" src="https://github.com/user-attachments/assets/3ec89d35-c6ec-40b1-a15e-ba9955a12ab9" />
-
-### Dashboard:  
-
-<img width="2838" height="1508" alt="image" src="https://github.com/user-attachments/assets/47af2e86-5bb0-4d9c-9fab-714d30fc2230" />
 
 ---
 
 ## Overview
 
-MRRG is a roofing business management platform developed for Margaret River Re-Gutter, a roofing company based in Western Australia.
+The Business Platform Template is a reusable, production-ready foundation for building professional business applications. It provides proven infrastructure for authentication, user management, notifications, and deployment while remaining intentionally free of business-specific logic.
 
-The application centralizes scheduling, employee assignment, field reporting, manager validation, notifications and job archiving. While built for a real business, it also serves as my portfolio, demonstrating how I design and develop maintainable business software with Java, Spring Boot and React.
+This template is extracted from a real production application (MRRG) after its architecture, workflows and production configuration have been validated. Only infrastructure that proved to be reusable is retained.
 
-The backend is shared by two clients:
+The backend is designed to support multiple client applications:
 
-- React Web application for managers and administrators
-- Android application (Jetpack Compose) for field workers
+- React Web application for administrators and managers
+- Additional clients (mobile, desktop, etc.) share the same REST API
 
 ---
 
 ## Related Projects
 
-MRRG-Mobile – Android application for field workers.
+This is the platform template. Original MRRG-Mobile (Android) repository:
 
 https://github.com/SlachDevM/MRRG-Mobile
 
@@ -42,285 +33,218 @@ https://github.com/SlachDevM/MRRG-Mobile
 
 ## Documentation
 
-Additional project documentation is available in the `docs/` directory.
+Additional documentation is available in the `docs/` directory.
 
 | Document | Description |
 |----------|-------------|
-| Project Philosophy | Design principles and development philosophy |
-| Software Architecture | High-level architecture of the MRRG ecosystem |
-| Security | Security model and authentication strategy |
+| Project Philosophy | Design principles emphasizing simplicity and maintainability |
+| Software Architecture | Platform architecture and design patterns |
+| Security | Authentication, authorization, and security model |
 | Installation Guide | Local development environment setup |
-| Maintenance Guide | Guidance for maintaining and extending the project |
-| Administrator Guide | Business administration workflows |
-| User Manual | Android application guide for field workers |
+| Maintenance Guide | Guidance for maintaining and extending the platform |
+| FCM Setup Guide | Firebase Cloud Messaging configuration |
 
 ---
 
-## Business Problem
+## What the Platform Provides
 
-Before MRRG, job scheduling, communication and progress tracking relied primarily on manual coordination between managers and field workers.
+The Business Platform Template provides only infrastructure that has demonstrated value across business applications.
 
-This platform centralizes those processes into a single application.
+**Backend:**
+- Spring Boot configuration
+- JWT authentication
+- Spring Security with role-based access control
+- User management and lifecycle (invitation, activation, deactivation)
+- Email infrastructure (development and production modes)
+- Notification infrastructure with Firebase integration
+- PostgreSQL configuration
+- Docker development and production setup
+- Environment variable strategy
+- Error handling and logging
+- OpenAPI/Swagger documentation
+
+**Frontend:**
+- Authentication and protected routing
+- User management interface
+- Notification center
+- Admin shell
+- HTTP API client with JWT token management
+- Environment-based configuration
+
+**Infrastructure:**
+- Development environment (Docker Compose with Mailpit)
+- Production environment (Docker Compose with security best practices)
+- PostgreSQL database
+- Environment variable strategy
+- Production-grade configuration
 
 ---
 
-## Key Features
+## What the Platform Does NOT Provide
 
-- User invitation and account activation
-- Employee scheduling  
-- Job assignment management  
-- Before/after photo uploads
-- Download photos  
-- Job lifecycle and validation workflow  
-- Archived jobs management  
-- Re-open and priority escalation system  
-- Real-time notifications  
-- Role-based access control  
-- Dynamic job status workflow  
+Intentionally excluded:
+
+- Business entities (projects, jobs, orders, tickets, etc.)
+- Business workflows
+- Fake CRUD examples
+- Customer-specific branding
+- Customer documentation
+
+Each application built from this template must create its own business domain.
 
 ---
 
-## Technology
+## Quick Start
 
-| Backend | Java 21, Spring Boot, Spring Security |
-|----------|---------------------------------------|
-| Frontend | React |
-| Frontend (Mobile) | Kotlin + Jetpack Compose |
-| Database | PostgreSQL |
-| Authentication | JWT |
+```bash
+git clone <repository-url>
+cd business-platform-template
+docker compose up --build
+```
+
+After starting:
+
+- Frontend: `http://localhost:3000`
+- Swagger API: `http://localhost:4000/swagger-ui/index.html`
+- Mailpit (dev email): `http://localhost:8025`
+
+---
+
+## Architecture
+
+The platform follows a simple, proven architecture:
+
+**Backend:**
+```
+Controller → Service → Repository
+```
+
+**Frontend:**
+```
+UI → API Client → Backend
+```
+
+**Database:**
+- PostgreSQL (system of record)
+- All clients access the same data through the backend
+
+**Notifications:**
+- Database persistence first
+- Firebase Cloud Messaging for push delivery
+- Backend owns notification lifecycle
+
+---
+
+## Technology Stack
+
+| Component | Technology |
+|-----------|-----------|
+| Backend | Java 21, Spring Boot 3.2, Spring Security |
+| Frontend | React, Vite |
+| Database | PostgreSQL 16 |
+| Authentication | JWT (JSON Web Tokens) |
+| Notifications | Firebase Cloud Messaging |
 | Containerization | Docker Compose |
-| Persistence | Spring Data JPA / Hibernate |
-| Architecture | MVC + Service Layer + Repository Pattern |
 | Testing | JUnit 5, Mockito |
 
 ---
 
-## Deployment Architecture
+## Authentication Flow
 
-```text
-                         ┌────────────────────────────┐
-                         │        PostgreSQL          │
-                         │      Persistent Data       │
-                         └────────────▲───────────────┘
-                                      │
-                                      ▼
-                         ┌────────────────────────────┐
-                         │      Spring Boot API       │
-                         │ Business Logic / JWT / FCM │
-                         └──────────┬───────┬─────────┘
-                                    │       │
-                             REST API│       │REST API
-                                    │       │
-                    ┌───────────────▼──┐   ┌▼─────────────────┐
-                    │   MRRG-Mobile    │   │ React Web Client │
-                    │  Field Workers   │   │ Managers/Admins  │
-                    └─────────┬────────┘   └──────────────────┘
-                              │
-                              ▼
-                    ┌──────────────────────┐
-                    │ Firebase Cloud       │
-                    │ Messaging            │
-                    └─────────▲────────────┘
-                              │
-                    Notification Delivery
-```
+1. User logs in with email and password
+2. Backend validates credentials and returns JWT token
+3. Frontend stores token in localStorage
+4. Subsequent requests include JWT in Authorization header
+5. Backend validates token and extracts user identity
+
+**Account Activation:**
+- Administrator creates user account
+- User receives activation email with secure token
+- User clicks activation link and sets password
+- Account becomes ACTIVE and user can login
 
 ---
 
-## Technical Decisions
+## User Roles
 
-- Layered architecture (Controller → Service → Repository) to keep business logic isolated from REST controllers.
-- JWT authentication for stateless API security.
-- PostgreSQL to ensure transactional consistency.
-- Docker Compose for reproducible development and deployment environments.
-- Role-based authorization to enforce business rules.
-- User account lifecycle is modeled explicitly with `PENDING_ACTIVATION`, `ACTIVE` and `DISABLED` statuses.
+- **ADMIN** — Full user management, all platform capabilities
+- **MANAGER** — Can manage business entities and other users (role-dependent)
+- **EMPLOYEE** — Can access assigned work and their profile
 
 ---
 
-## Account Activation Workflow
+## Configuration
 
-Users are not created through public registration.
+All configuration is externalized via environment variables. See `application.properties` for available options.
 
-All users are created by an administrator from the React web application.
-
-```text
-Admin
-   │
-   ▼
-Create User
-   │
-   ▼
-PENDING_ACTIVATION
-   │
-   ▼
-Activation Email
-   │
-   ▼
-Android Deep Link
-   │
-   ▼
-Choose Password
-   │
-   ▼
-ACTIVE
-   │
-   ▼
-Login
-```
-
----
-  
-## Business Workflow
-
-```text
-Pending
-   │
-   ▼
-Scheduled
-   │
-   ▼
-In Progress
-   │
-   ▼
-Waiting Manager Validation
-   │
-   ▼
-Completed
-   │
-   ▼
-Archived
-   ▲
-   │
-Callback
-```
-
-- Managers create roofing jobs.
-- Jobs are scheduled and assigned to employees.
-- Employees upload before photos directly from the field.
-- Employees complete the work and upload after photos.
-- Managers validate completed jobs.
-- Validated jobs are archived.
-- Customer callbacks automatically restore archived jobs to the scheduling queue with elevated priority.
-
----
-
-## Roles
-
-### Admin  
-- Full user management
-- Create users
-- Update users
-- Deactivate users
-- Reactivate users
-- Resend activation emails
-- All manager capabilities
-
-### Manager   
-- Create and update jobs
-- Schedule work
-- Assign employees
-- Validate completed jobs
-- Archive and restore jobs
-
-### Employee 
-- View assigned work
-- Upload before/after photos
-- Add job notes
-- Mark assigned jobs as completed
-
----
-
-## Notifications
-- Managers are notified when employees complete assigned jobs.
-- Employees are notified when jobs are assigned or rescheduled.
-
----
-
-## Installation
-
+**Development:**
 ```bash
-git clone https://github.com/SlachDevM/MRRG.git
-
-cd MRRG
-
-docker compose up --build
+docker compose up
 ```
 
-After starting the application:
-
-- Frontend: `http://localhost:3000`
-- Swagger UI: `http://localhost:4000/swagger-ui/index.html`
+**Production:**
+```bash
+cp .env.example .env
+# Edit .env with production values
+docker compose -f docker-compose.prod.yml up -d
+```
 
 ---
 
-## API Documentation
+## Building a New Application
 
-<img width="2844" height="1504" alt="image" src="https://github.com/user-attachments/assets/c97309c7-3d80-4515-a9c0-842f98f80fe2" />
+1. Clone this template
+2. Rename the project
+3. Update package names (`com.mrrg.backend` → `com.yourcompany.backend`)
+4. Replace branding (app name, colors, logos)
+5. Create your first business entity (inherit the platform architecture)
+6. Implement your business workflows
+7. Deploy using the provided Docker configuration
+
+The platform requires minimal modification for new applications.
+
+---
+
+## Design Philosophy
+
+The platform follows these principles:
+
+- **Simplicity before abstraction** — Explicit code over clever patterns
+- **Business before technology** — Backend owns business rules
+- **Remove instead of generalize** — Delete MRRG-specific code, don't create fake examples
+- **Production-ready** — Proven architecture and deployment strategy
+- **Long-term maintainability** — Code understandable years later
+
+See `docs/philosophy/Project-Philosophy.md` for the complete philosophy.
 
 ---
 
 ## Testing
 
-Backend services are covered with unit tests using JUnit 5 and Mockito.
+Backend services include unit tests:
 
-Tested areas include:
-- Authentication
-- Job workflow
-- Notifications
-- Users
-- User management
-- Account activation
+```bash
+cd backend
+mvn clean test
+```
 
 ---
 
-## Additional screenshots 
-### Job Management 
+## Production Deployment
 
-<img width="1244" height="1498" alt="image" src="https://github.com/user-attachments/assets/3ffd18d2-9cee-4aa4-8eff-304891b4b015" />
-<img width="1252" height="748" alt="image" src="https://github.com/user-attachments/assets/597f8859-3009-486e-ba8a-f8314f3d5fda" />
-<img width="1254" height="1512" alt="image" src="https://github.com/user-attachments/assets/5e168306-3399-44d0-91d7-2e204a1d5795" />
+Comprehensive deployment instructions including:
+- HTTPS/TLS configuration
+- Reverse proxy setup
+- Database backup strategy
+- Monitoring and logging
+- Scaling considerations
 
-### Scheduling
-
-<img width="2786" height="914" alt="image" src="https://github.com/user-attachments/assets/76aea401-1154-41c7-9039-da9eff38b95e" />
-
-### Notifications 
-
-<img width="2802" height="1518" alt="image" src="https://github.com/user-attachments/assets/2cd77d84-d5ea-46ba-bffc-45cf38de9652" />
-<img width="2834" height="1520" alt="image" src="https://github.com/user-attachments/assets/2e0cde92-b1bd-48ba-9bcc-469d3b2dad62" />
-
-### Validation 
-
-<img width="1242" height="1496" alt="image" src="https://github.com/user-attachments/assets/bdabb9ee-f46b-4ee6-9d16-2b3dd8708a37" />
-<img width="480" height="526" alt="image" src="https://github.com/user-attachments/assets/ef45badd-fec5-443f-ae7c-cbec30dd3cf1" />
-<img width="2852" height="858" alt="image" src="https://github.com/user-attachments/assets/d6e601fd-8cfb-4fde-a07d-12372702b3d7" />
-<img width="1238" height="1504" alt="image" src="https://github.com/user-attachments/assets/47bfbb5d-ffea-401b-a0e6-08fa03a28f95" />
-
-### Administration 
-
-<img width="2838" height="1152" alt="image" src="https://github.com/user-attachments/assets/f31df653-4294-4a9c-8b62-226504c00c70" />
-<img width="2844" height="1024" alt="image" src="https://github.com/user-attachments/assets/67ead378-f46d-4cdb-9ab8-f4d45d9a4d6d" />
-
-### User Management
-
-<img width="1124" height="952" alt="image" src="https://github.com/user-attachments/assets/d6a942cd-39dc-48e5-9b65-73a7a5278198" />
-<img width="2844" height="1048" alt="image" src="https://github.com/user-attachments/assets/fee8ab90-3672-4d7f-a25c-2cc825438434" />
-<img width="1218" height="962" alt="image" src="https://github.com/user-attachments/assets/9ac2d67a-fff5-4a8a-a2b7-690b2e18d994" />
-<img width="2840" height="1048" alt="image" src="https://github.com/user-attachments/assets/a74e1b66-abe8-45eb-9ae3-0543111d217b" />
-
-### Archive / Callback
-
-<img width="1250" height="1494" alt="image" src="https://github.com/user-attachments/assets/5a6c07cb-66c9-4b38-a5d6-6b7425c775b0" />
-<img width="2702" height="874" alt="image" src="https://github.com/user-attachments/assets/1625b3a1-5683-46ad-871a-a9aa1ac5eec7" />
-<img width="2822" height="1454" alt="image" src="https://github.com/user-attachments/assets/cc7d770a-cc77-4904-8007-b5ec89e1c0db" />
+See documentation in `docs/` directory for details.
 
 ---
 
 ## License
 
-This repository is publicly available for demonstration and portfolio purposes.
+This Business Platform Template is a production-ready foundation extracted from MRRG after validation in real-world business use.
 
-The MRRG application and its business logic were developed for the Margaret River Re-Gutter business and remain proprietary.
-
-Source code is published to showcase software engineering practices and architecture, but redistribution or commercial use of the application is not permitted without permission.
+It is provided as a template for building custom business applications.

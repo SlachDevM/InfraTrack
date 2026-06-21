@@ -43,12 +43,10 @@ export default function Login() {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <img
-            src="https://static.wixstatic.com/media/4c239c_3d5b277894a042ef8d75ecd3fdacfdda~mv2.png/v1/fill/w_378,h_174,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/RE-GUTTERS_edited.png"
-            alt="RE-GUTTERS"
-            className="logo"
-          />
-          <h1>Login</h1>
+          <div className="logo-placeholder">
+            <span className="logo-text">BP</span>
+          </div>
+          <h1>Business Platform</h1>
         </div>
 
         {error && <div className="error-message">{error}</div>}

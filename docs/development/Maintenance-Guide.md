@@ -2,11 +2,11 @@
 
 ## Introduction
 
-This document provides guidance for developers responsible for maintaining and evolving MRRG.
+This document provides guidance for developers responsible for maintaining and evolving the Business Platform Template.
 
 Rather than describing implementation details, it explains the principles that should be followed when introducing new features or modifying existing ones.
 
-The objective is to preserve consistency across the project while allowing the application to evolve with changing business requirements.
+The objective is to preserve consistency across the platform while allowing applications built from it to evolve with changing business requirements.
 
 ---
 
@@ -22,11 +22,11 @@ React and Android should remain responsible only for presenting information and 
 
 ## Maintain Client Consistency
 
-MRRG consists of two client applications serving different users.
+The platform supports multiple client applications serving different users.
 
-Although their interfaces differ, both clients must produce identical business behaviour.
+Although their interfaces differ, all clients must produce identical business behaviour when accessing the same backend.
 
-Any feature introduced in one client should be evaluated to determine whether equivalent business support is required in the other.
+Any feature introduced in one client should be evaluated to determine whether equivalent platform support is required.
 
 ---
 
@@ -34,9 +34,9 @@ Any feature introduced in one client should be evaluated to determine whether eq
 
 Additional libraries, frameworks or architectural patterns should only be introduced when they solve an existing problem.
 
-MRRG intentionally avoids unnecessary complexity.
+The Business Platform Template intentionally avoids unnecessary complexity.
 
-Future contributors should preserve this philosophy unless the size of the project clearly justifies a different approach.
+Future contributors should preserve this philosophy unless the size and scope of the application clearly justifies a different approach.
 
 ---
 

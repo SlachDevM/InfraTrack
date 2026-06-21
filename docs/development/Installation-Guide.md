@@ -10,8 +10,8 @@
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/SlachDevM/MRRG.git
-   cd MRRG
+   git clone <repository-url>
+   cd business-platform-template
    ```
 
 2. **Start local development environment:**
@@ -28,7 +28,7 @@
 
 3. **Login to the application:**
    - Navigate to http://localhost:3000
-   - Use credentials: `Mike@Admin.test` / `test` (admin user pre-created in dev database)
+   - Note: Create a test user through the admin panel or use pre-created test credentials if available
 
 ### Firebase Configuration (Optional)
 

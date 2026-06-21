@@ -42,7 +42,7 @@ Each client focuses on a specific audience while relying on the same REST API.
 
 ### Spring Boot Backend
 
-The backend is responsible for every business decision within the system.
+The backend is responsible for every infrastructure and business decision within the system.
 
 It validates requests, enforces permissions, manages business workflows, coordinates data persistence and creates notifications.
 
@@ -52,27 +52,17 @@ Neither client contains business logic that could lead to inconsistent behaviour
 
 ### React Web Application
 
-The React application is used by managers and administrators.
+The React application is used by administrators and managers.
 
-It provides tools to manage users, schedule work, validate completed jobs and manage day-to-day operations.
-
----
-
-### Android Application
-
-MRRG-Mobile is used by field workers.
-
-It provides access to assigned jobs, allows photo uploads, supports offline work and receives push notifications.
-
-The application remains lightweight by delegating business decisions to the backend.
+It provides an admin shell and tools for managing platform users.
 
 ---
 
 ### PostgreSQL
 
-PostgreSQL is the system of record for all persistent business data.
+PostgreSQL is the system of record for all persistent application data.
 
-Both clients access the same information through the backend, ensuring a single and consistent source of data.
+All clients access the same information through the backend, ensuring a single and consistent source of data.
 
 ---
 
@@ -80,7 +70,7 @@ Both clients access the same information through the backend, ensuring a single 
 
 Firebase Cloud Messaging is used exclusively to deliver push notifications.
 
-Notifications are first persisted by the backend before being sent to Android devices.
+Notifications are first persisted by the backend before being sent to client devices.
 
 If delivery fails, the notification remains available inside the application.
 
