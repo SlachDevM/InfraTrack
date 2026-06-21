@@ -1,126 +1,190 @@
-# Installation Guide
+# Installation and Deployment Guide
 
-## Introduction
+## Local Development
 
-This guide describes the steps required to deploy a local development instance of the MRRG ecosystem.
+### Prerequisites
+- Docker and Docker Compose
+- Git
 
-The project consists of a Spring Boot backend, a React web application and a PostgreSQL database. Docker Compose is used to simplify local deployment.
+### Quick Start
 
----
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/SlachDevM/MRRG.git
+   cd MRRG
+   ```
 
-## Prerequisites
+2. **Start local development environment:**
+   ```bash
+   docker compose up --build
+   ```
 
-Before starting, ensure the following software is available:
+   This brings up:
+   - **Backend**: http://localhost:4000 (Spring Boot API)
+   - **Frontend**: http://localhost:3000 (React app)
+   - **Database**: PostgreSQL on localhost:5432
+   - **Email**: Mailpit (local email testing) on http://localhost:8025
+   - **Swagger UI**: http://localhost:4000/swagger-ui/index.html
 
-* Docker
-* Docker Compose
-* Git
+3. **Login to the application:**
+   - Navigate to http://localhost:3000
+   - Use credentials: `Mike@Admin.test` / `test` (admin user pre-created in dev database)
 
-A Firebase service account is also required to enable push notification support.
+### Firebase Configuration (Optional)
 
----
-
-## Project Structure
-
-Clone the backend repository.
-
-```bash
-git clone https://github.com/SlachDevM/MRRG.git
-
-cd MRRG
-```
-
-Clone the Android application separately if mobile development is required.
-
-```bash
-git clone https://github.com/SlachDevM/MRRG-Mobile.git
-```
-
----
-
-## Firebase Configuration
-
-Place the Firebase service account JSON file inside the backend directory.
-
+For push notifications, place the Firebase service account JSON file:
 ```
 backend/
 └── firebase-service-account.json
 ```
 
-The Docker Compose configuration mounts this file automatically when the backend container starts.
+The Docker Compose configuration mounts this file automatically.
 
----
+### Local Configuration
 
-## Start the Environment
+Local development uses:
+- **Docker Compose**: `docker-compose.yml`
+- **Database**: Local PostgreSQL with auto-schema update (`ddl-auto=update`)
+- **Email**: Mailpit (development only, no real SMTP)
+- **Firebase**: Optional (configure `firebase-service-account.json` if needed)
+- **Profiles**: `dev` profile active by default
 
-Launch the complete development environment.
+### Android Development
 
-```bash
-docker compose up --build
-```
-
-The following services will be started:
-
-| Service         | Default Address                             |
-| --------------- | ------------------------------------------- |
-| React Web       | http://localhost:3000                       |
-| Spring Boot API | http://localhost:4000                       |
-| Swagger UI      | http://localhost:4000/swagger-ui/index.html |
-| PostgreSQL      | localhost:5432                              |
-
----
-
-## Email Testing
-
-For local development, account activation emails can be tested using Mailpit.
-
-When enabled in the Docker Compose configuration, Mailpit provides:
-
-| Service       | Default Address       |
-| ------------- | --------------------- |
-| SMTP          | localhost:1025        |
-| Web Interface | http://localhost:8025 |
-
-This allows account activation emails to be tested without an external SMTP provider.
-
----
-
-## Android Development
-
-The Android application communicates directly with the Spring Boot backend.
-
-When using the Android emulator, ensure that the API base URL points to the host machine using:
-
+When using the Android emulator, use this API base URL:
 ```
 http://10.0.2.2:4000
 ```
 
-instead of `localhost`.
+---
+
+## Production Readiness
+
+### Configuration Files
+
+Production deployment uses a separate configuration:
+- **Docker Compose**: `docker-compose.prod.yml`
+- **Environment Variables**: `.env` (based on `.env.example`)
+- **Backend Profile**: `application-prod.properties`
+
+### Before Production Deployment
+
+1. **Prepare environment file:**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Fill `.env` with real production values:**
+   - Database credentials (strong, secure passwords)
+   - JWT secret (generate a strong random value)
+   - SMTP provider configuration (SendGrid, AWS SES, etc.)
+   - Firebase service account path
+   - Frontend origin and activation link URL
+   - API base URLs
+
+3. **Ensure Firebase service account is secured:**
+   - Place `firebase-service-account.json` outside Git
+   - File is in `.gitignore` and will not be committed
+   - Mount securely in production Docker Compose
+
+4. **Set up HTTPS/TLS:**
+   - Use a reverse proxy (nginx, Caddy, Traefik)
+   - Terminate TLS at the proxy
+   - Proxy to backend:4000 and frontend:80 internally
+
+5. **Configure database:**
+   - Set `SPRING_JPA_HIBERNATE_DDL_AUTO=validate` in `.env`
+   - Implement proper database migration strategy (Flyway or Liquibase)
+   - Run migrations separately during deployment, not on startup
+   - Set up regular backups of PostgreSQL volumes
+
+6. **Configure SMTP:**
+   - Use a real SMTP provider (not Mailpit)
+   - Set `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, credentials in `.env`
+   - Test email delivery before production
+
+7. **Secure secrets:**
+   - All sensitive values must come from `.env`
+   - Use Docker secrets or secure vault for credentials
+   - Rotate secrets regularly
+
+### Production Start
+
+```bash
+docker compose -f docker-compose.prod.yml up -d
+```
+
+### Important Production Notes
+
+- **Database is not exposed publicly** (no port mapping)
+- **Mailpit is not included** in production (local dev only)
+- **All secrets come from environment variables** (no hardcoding)
+- **Hibernate DDL is set to validate** (requires migration strategy)
+- **CORS origin is configurable** via `FRONTEND_ORIGIN` variable
+- **Firebase, SMTP, and all integrations are environment-driven**
 
 ---
 
-## Initial Setup
+## Configuration Reference
 
-After the environment has started successfully:
-
-1. Verify that the backend is accessible through Swagger UI.
-2. Verify that the React application loads correctly.
-3. Create an administrator account if the database is empty.
-4. Create employee accounts from the administration interface.
-5. Complete account activation from the Android application.
-
-The system is now ready for development and testing.
+See `.env.example` for all available environment variables and their descriptions.
 
 ---
 
 ## Troubleshooting
 
-If the application does not start correctly, verify:
+### Local Development Issues
 
-* Docker containers are running.
-* PostgreSQL is accessible.
-* The Firebase service account file is present.
-* The configured API URL matches the running backend.
-* Mailpit is running when testing email activation.
+**Containers won't start:**
+```bash
+docker compose down -v
+docker compose up --build
+```
 
-Most local setup issues are caused by missing configuration rather than application errors.
+**Database connection error:**
+- Ensure PostgreSQL container is running: `docker ps`
+- Check database credentials in `docker-compose.yml`
+
+**API not responding:**
+- Verify backend container logs: `docker logs mrrg-backend-1`
+- Check database is healthy: `docker logs mrrg-postgres-1`
+
+**Firebase issues:**
+- Verify Firebase service account file is present at `backend/firebase-service-account.json`
+- Check file permissions are readable
+
+**Email testing:**
+- Access Mailpit UI at http://localhost:8025
+- Check docker logs for SMTP errors
+
+### Production Issues
+
+**Environment variables not loading:**
+- Ensure `.env` file is in the same directory as `docker-compose.prod.yml`
+- All required variables must be set
+- Use `docker compose -f docker-compose.prod.yml config` to validate
+
+**Database connection fails:**
+- Verify `SPRING_DATASOURCE_*` variables are set correctly in `.env`
+- Ensure PostgreSQL credentials match in all three places:
+  - `POSTGRES_*` variables
+  - `SPRING_DATASOURCE_*` variables
+  - Database connection string
+
+**Email not sending:**
+- Verify SMTP configuration in `.env`
+- Check mail server is accessible from production network
+- Review backend logs for SMTP errors
+
+**CORS errors:**
+- Verify `FRONTEND_ORIGIN` is set correctly in `.env`
+- Ensure it matches your production frontend domain
+- Backend logs will show CORS rejection details
+
+---
+
+## Additional Resources
+
+- Backend: [Software Architecture](../architecture/Software-Architecture.md)
+- Security: [Security Guide](../architecture/Security.md)
+- User Guide: [Administrator Guide](../user/Administrator-Guide.md)

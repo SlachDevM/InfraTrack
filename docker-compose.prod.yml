@@ -1,0 +1,163 @@
+# MRRG Production-Ready Docker Compose Configuration
+# This file is a template for production deployment
+# 
+# Before production deployment:
+# 1. Copy .env.example to .env
+# 2. Fill .env with real production values (secrets, domains, SMTP, etc.)
+# 3. Ensure Firebase service account file is securely mounted
+# 4. Configure proper HTTPS/reverse proxy (nginx, Caddy, etc.) externally
+# 5. Set up backup strategy for PostgreSQL volumes
+# 6. Configure monitoring and logging
+
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      # Database
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      
+      # Hibernate
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      
+      # Firebase
+      FIREBASE_SERVICE_ACCOUNT_PATH: ${FIREBASE_SERVICE_ACCOUNT_PATH}
+      
+      # Email (SMTP)
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE}
+      SPRING_MAIL_FROM: ${SPRING_MAIL_FROM}
+      
+      # Frontend CORS
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN}
+      
+      # Account Activation
+      ACTIVATION_LINK_BASE_URL: ${ACTIVATION_LINK_BASE_URL}
+      ACTIVATION_TOKEN_EXPIRATION_HOURS: ${ACTIVATION_TOKEN_EXPIRATION_HOURS}
+      
+      # Profile
+      SPRING_PROFILES_ACTIVE: prod
+    
+    ports:
+      # In production, typically port 4000 should be internal only
+      # Use reverse proxy on port 443 (HTTPS)
+      - "4000:4000"
+    
+    volumes:
+      # Firebase service account (read-only, outside Git)
+      # Note: FIREBASE_SERVICE_ACCOUNT_PATH must be set in .env for production
+      - ./backend/firebase-service-account.json:/app/firebase-service-account.json:ro
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+    
+    networks:
+      - mrrg-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Pass API URL to build process
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+    restart: unless-stopped
+    
+    ports:
+      # In production, typically port 80 should be internal only
+      # Use reverse proxy on port 443 (HTTPS)
+      - "80:80"
+    
+    depends_on:
+      - backend
+    
+    networks:
+      - mrrg-network
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    
+    # Production: DO NOT expose PostgreSQL publicly
+    # ports:
+    #   - "5432:5432"
+    
+    volumes:
+      # Persistent data storage
+      - postgres-data:/var/lib/postgresql/data
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    
+    networks:
+      - mrrg-network
+
+volumes:
+  postgres-data:
+    driver: local
+
+networks:
+  mrrg-network:
+    driver: bridge
+
+# Production Deployment Notes:
+# 
+# 1. HTTPS/TLS:
+#    - Use a reverse proxy (nginx, Caddy, Traefik) on port 443
+#    - Terminate TLS at the proxy
+#    - Proxy to backend:4000 and frontend:80 internally
+# 
+# 2. Database Security:
+#    - Do NOT expose PostgreSQL port 5432 publicly (commented out)
+#    - Connect only from backend service within the network
+#    - Use strong POSTGRES_PASSWORD in .env
+#    - Set up regular backups of postgres-data volume
+# 
+# 3. Secrets Management:
+#    - Use Docker secrets or environment variable files (.env not in Git)
+#    - Rotate SPRING_DATASOURCE_PASSWORD regularly
+#    - Rotate SPRING_MAIL_PASSWORD if using SMTP credentials
+#    - Generate strong FRONTEND_ORIGIN value
+# 
+# 4. Firebase Service Account:
+#    - Keep firebase-service-account.json outside Git
+#    - Mount it securely (read-only)
+#    - Restrict file permissions
+# 
+# 5. Email (SMTP):
+#    - Configure with a real SMTP provider (SendGrid, AWS SES, etc.)
+#    - Use strong credentials in .env
+#    - Set SPRING_MAIL_FROM to a valid sender address
+# 
+# 6. Frontend API URL:
+#    - VITE_API_BASE_URL must point to your production API domain
+#    - Should be HTTPS and match FRONTEND_ORIGIN in backend
+# 
+# 7. Database Migrations:
+#    - Set SPRING_JPA_HIBERNATE_DDL_AUTO=validate for safety
+#    - Implement proper migration strategy (Flyway/Liquibase) before final deployment
+#    - Run migrations separately during deployment, not auto on startup
+# 
+# 8. Monitoring & Logging:
+#    - Configure application logging (ELK, Splunk, etc.)
+#    - Monitor database performance
+#    - Set up alerts for errors and resource usage
