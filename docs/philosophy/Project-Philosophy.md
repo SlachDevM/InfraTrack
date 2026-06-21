@@ -14,7 +14,7 @@ This document describes the engineering principles that guide the evolution of t
 
 MRRG favors simple and explicit solutions over architectural complexity.
 
-Abstractions are introduced only when they solve an existing problem. If a design adds indirection without providing a measurable benefit, it is intentionally avoided.
+Abstractions are introduced only after an existing problem has demonstrated the need for them. If a design adds indirection without providing a measurable benefit, it is intentionally avoided.
 
 This principle influences every part of the project, from package organization to dependency management and feature design.
 
@@ -36,7 +36,7 @@ Business rules are centralized within the Spring Boot backend.
 
 The React web application and the Android application focus on presenting information and interacting with users, while the backend remains responsible for enforcing permissions, validation and workflow consistency.
 
-This approach guarantees identical behavior across every client.
+This approach guarantees consistent business behavior across every client.
 
 ---
 
@@ -47,6 +47,8 @@ MRRG evolves incrementally.
 New technologies, libraries and architectural patterns are introduced only when justified by the current size and complexity of the project.
 
 This philosophy has led to deliberately simple choices throughout the codebase, reducing maintenance costs while keeping the project easy to understand.
+
+Simplicity is considered a long-term advantage rather than a temporary compromise.
 
 ---
 
@@ -64,7 +66,7 @@ Long-term maintainability is considered more valuable than short-term technical 
 
 MRRG consists of a shared backend, a React web application and an Android application.
 
-Although each client serves a different audience, they are expected to behave consistently. Business workflows, permissions and data should produce the same results regardless of the client being used.
+Although each client serves a different audience, they are expected to implement the same business workflows consistently. Business workflows, permissions and data should produce the same results regardless of the client being used.
 
 ---
 
@@ -74,4 +76,4 @@ The project is continuously refined as new requirements emerge and better soluti
 
 Improving existing code, simplifying implementations and removing unnecessary technical debt are considered part of normal development rather than separate maintenance activities.
 
-The objective is not to build a perfect system from the beginning, but to build a system that remains understandable and maintainable as it grows.
+The objective is not to create a perfect architecture from the beginning, but to continuously improve a system that remains simple, understandable and maintainable as it evolves.
