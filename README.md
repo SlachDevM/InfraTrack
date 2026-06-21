@@ -189,7 +189,7 @@ docker compose -f docker-compose.prod.yml up -d
 
 1. Clone this template
 2. Rename the project
-3. Update package names (`com.mrrg.backend` → `com.yourcompany.backend`)
+3. Update package names (`com.company.backend` → `com.yourcompany.backend`)
 4. Replace branding (app name, colors, logos)
 5. Create your first business entity (inherit the platform architecture)
 6. Implement your business workflows
