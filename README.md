@@ -27,16 +27,25 @@ The backend is designed to support multiple client applications:
 
 ## Documentation
 
-Additional documentation is available in the `docs/` directory.
+InfraTrack documentation is organised by project phase in the [`docs/`](docs/) directory.
 
-| Document | Description |
-|----------|-------------|
-| Project Philosophy | Design principles emphasizing simplicity and maintainability |
-| Software Architecture | Platform architecture and design patterns |
-| Security | Authentication, authorization, and security model |
-| Installation Guide | Local development environment setup |
-| Maintenance Guide | Guidance for maintaining and extending the platform |
-| FCM Setup Guide | Firebase Cloud Messaging configuration |
+See [docs/README.md](docs/README.md) for the full structure and reading order.
+
+| Phase | Folder | Description |
+|-------|--------|-------------|
+| Business Discovery | [`docs/00-business-discovery/`](docs/00-business-discovery/) | Domain model, actors, workflows and business rules |
+| Functional Analysis | [`docs/01-functional-analysis/`](docs/01-functional-analysis/) | Use cases |
+| System Blueprint | [`docs/02-system-blueprint/`](docs/02-system-blueprint/) | Engineering standards and development workflow |
+| Architecture | [`docs/03-architecture/`](docs/03-architecture/) | Detailed architecture (in progress) |
+| API | [`docs/04-api/`](docs/04-api/) | API documentation (in progress) |
+| Deployment | [`docs/05-deployment/`](docs/05-deployment/) | Deployment and operations (in progress) |
+
+Key entry points:
+
+- [Development Philosophy](docs/00-business-discovery/00-development-philosophy.md)
+- [Domain Overview](docs/00-business-discovery/02-domain-overview.md)
+- [Functional Use Cases](docs/01-functional-analysis/functional-use-cases.md)
+- [System Blueprint](docs/02-system-blueprint/INFRATRACK_SYSTEM_BLUEPRINT_V1_SKELETON.md)
 
 ---
 
@@ -209,7 +218,7 @@ The platform follows these principles:
 - **Production-ready** — Proven architecture and deployment strategy
 - **Long-term maintainability** — Code understandable years later
 
-See `docs/philosophy/Project-Philosophy.md` for the complete philosophy.
+See [docs/00-business-discovery/00-development-philosophy.md](docs/00-business-discovery/00-development-philosophy.md) for the complete philosophy.
 
 ---
 
@@ -233,7 +242,7 @@ Comprehensive deployment instructions including:
 - Monitoring and logging
 - Scaling considerations
 
-See documentation in `docs/` directory for details.
+See [docs/README.md](docs/README.md) for details.
 
 ---
 
