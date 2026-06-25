@@ -380,6 +380,8 @@ A Field Employee or authorised Contractor performs an assigned Inspection and re
 
 An Issue is recorded when an Inspection identifies a defect, risk or operational concern.
 
+In InfraTrack V1, each completed Inspection may produce at most one Issue. If multiple concerns are observed, they are recorded together in the Issue description.
+
 ---
 
 ## UC-006 — Make Operational Decision

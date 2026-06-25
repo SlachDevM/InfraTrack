@@ -41,6 +41,10 @@ export function canPerformInspections(role) {
   return role === USER_ROLES.FIELD_EMPLOYEE || role === USER_ROLES.CONTRACTOR;
 }
 
+export function canRecordIssues(role) {
+  return canPerformInspections(role);
+}
+
 export function getRoleLabel(role) {
   return ROLE_LABELS[role] || role;
 }

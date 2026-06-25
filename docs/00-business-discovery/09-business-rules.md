@@ -108,6 +108,14 @@ It is not a maintenance activity.
 
 ---
 
+### BR-012a
+
+An Inspection may produce at most one Issue in InfraTrack V1.
+
+Multiple defects identified during the same Inspection should be described within that single Issue.
+
+---
+
 # 6. Operational Decision Rules
 
 ### BR-013
