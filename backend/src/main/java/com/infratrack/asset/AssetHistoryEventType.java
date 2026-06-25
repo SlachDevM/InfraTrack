@@ -1,5 +1,6 @@
 package com.infratrack.asset;
 
 public enum AssetHistoryEventType {
-    ASSET_REGISTERED
+    ASSET_REGISTERED,
+    BUSINESS_TRIGGER_CREATED
 }

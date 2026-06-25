@@ -8,6 +8,7 @@ import UserManagementPage from './pages/UserManagementPage';
 import DepartmentsPage from './pages/DepartmentsPage';
 import AssetCategoriesPage from './pages/AssetCategoriesPage';
 import AssetsPage from './pages/AssetsPage';
+import BusinessTriggersPage from './pages/BusinessTriggersPage';
 import './App.css';
 
 function PrivateRoute({ children }) {
@@ -72,6 +73,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <AssetsPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/business-triggers"
+              element={
+                <PrivateRoute>
+                  <BusinessTriggersPage />
                 </PrivateRoute>
               }
             />

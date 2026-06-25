@@ -29,6 +29,10 @@ export function canRegisterAssets(role) {
   return role === USER_ROLES.MANAGER || role === USER_ROLES.OPERATIONAL_COORDINATOR;
 }
 
+export function canCreateBusinessTriggers(role) {
+  return canRegisterAssets(role);
+}
+
 export function getRoleLabel(role) {
   return ROLE_LABELS[role] || role;
 }
