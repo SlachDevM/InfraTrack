@@ -57,7 +57,7 @@ Use Cases should remain technology-agnostic until the architecture phase.
 | UC-005 | Record Issue                        | Detailed |
 | UC-006 | Make Operational Decision           | Detailed |
 | UC-007 | Create Work Order                   | Detailed |
-| UC-008 | Assign Work Order                   | Planned  |
+| UC-008 | Assign Work Order                   | Detailed |
 | UC-009 | Complete Maintenance Activity       | Listed   |
 | UC-010 | Complete Review                     | Listed   |
 | UC-011 | View Asset History                  | Listed   |
@@ -769,7 +769,7 @@ Operational Coordinator
 11. InfraTrack records the Work Order in Asset History.
 12. InfraTrack confirms that the Work Order has been created.
 
-The Work Order is now available for UC-008 Assign Work Order when that capability is implemented.
+The Work Order is now available for assignment under UC-008 Assign Work Order.
 
 ---
 
@@ -839,7 +839,7 @@ Managers decide; Operational Coordinators create and coordinate execution.
 * The Operational Decision remains open and unchanged.
 * No Maintenance Activity is created.
 * Asset operational status is unchanged.
-* The Work Order is not yet assigned in V1 until UC-008 is implemented.
+* The Work Order status is created and the Work Order is not yet assigned.
 
 ---
 
@@ -942,6 +942,7 @@ If the actor is not an Operational Coordinator or other authorised coordinating 
 
 ## Postconditions
 
+* The Work Order status becomes assigned.
 * The Work Order records the assigned user.
 * The assigned user can access the assigned Work Order.
 * Asset History is updated when assignment is recorded.
@@ -958,14 +959,6 @@ If the actor is not an Operational Coordinator or other authorised coordinating 
 * Task assignment determines operational access.
 * Notifications inform users but do not replace the business record.
 * Assignment must preserve cross-department traceability when applicable.
-
----
-
-## Implementation Status
-
-This Use Case is the next planned capability after UC-007.
-
-It is documented here to preserve lifecycle continuity but is **not yet implemented** in InfraTrack V1.
 
 ---
 
@@ -1025,9 +1018,9 @@ Future detailed Use Cases should avoid introducing new business concepts unless 
 
 If a Use Case reveals ambiguity in the business model, Business Discovery should be updated before architecture or implementation begins.
 
-UC-004 through UC-007 are now detailed to reflect the implemented V1 behaviour.
+UC-004 through UC-008 are now detailed to reflect the implemented V1 behaviour.
 
-UC-008 is detailed as the next planned Use Case but remains unimplemented.
+UC-009 is the next listed Use Case to be expanded when implementation begins.
 
 ## Known V1 Limitations
 
@@ -1045,8 +1038,8 @@ This document defines the Functional Analysis phase for InfraTrack.
 
 It translates the approved Business Discovery model into functional Use Cases.
 
-UC-001 through UC-007 are detailed to reflect implemented or approved V1 behaviour.
+UC-001 through UC-008 are detailed to reflect implemented or approved V1 behaviour.
 
-UC-008 is documented as the next planned Use Case.
+UC-009 is documented as the next planned Use Case.
 
 Remaining Use Cases are intentionally listed and will be expanded incrementally as each business capability approaches implementation.
