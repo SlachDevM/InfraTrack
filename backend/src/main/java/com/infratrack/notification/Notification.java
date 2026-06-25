@@ -1,4 +1,4 @@
-package com.infratrack.model;
+package com.infratrack.notification;
 
 import jakarta.persistence.*;
 

@@ -1,8 +1,6 @@
-package com.infratrack.service;
+package com.infratrack.notification;
 
-import com.infratrack.model.Notification;
 import com.infratrack.user.User;
-import com.infratrack.repository.NotificationRepository;
 import com.infratrack.user.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

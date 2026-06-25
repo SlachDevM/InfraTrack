@@ -1,7 +1,4 @@
-package com.infratrack.service;
-
-import com.infratrack.model.Notification;
-import com.infratrack.repository.NotificationRepository;
+package com.infratrack.notification;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;

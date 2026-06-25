@@ -1,6 +1,4 @@
-package com.infratrack.repository;
-
-import com.infratrack.model.Notification;
+package com.infratrack.notification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

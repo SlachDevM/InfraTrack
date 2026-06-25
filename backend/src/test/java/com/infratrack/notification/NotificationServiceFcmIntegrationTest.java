@@ -1,9 +1,7 @@
-package com.infratrack.service;
+package com.infratrack.notification;
 
-import com.infratrack.model.Notification;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
-import com.infratrack.repository.NotificationRepository;
 import com.infratrack.user.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

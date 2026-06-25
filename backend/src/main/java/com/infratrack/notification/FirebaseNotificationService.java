@@ -1,4 +1,4 @@
-package com.infratrack.service;
+package com.infratrack.notification;
 
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.Message;

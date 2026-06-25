@@ -1,8 +1,6 @@
-package com.infratrack.controller;
+package com.infratrack.notification;
 
-import com.infratrack.model.Notification;
 import com.infratrack.security.JwtAuthenticationToken;
-import com.infratrack.service.NotificationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
