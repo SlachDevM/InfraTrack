@@ -34,7 +34,8 @@ class ApiClient {
       const response = await fetch(url, config);
 
       if (!response.ok) {
-        const error = new Error(`API request failed: ${response.status}`);
+        const text = await response.text();
+        const error = new Error(text || `API request failed: ${response.status}`);
         error.status = response.status;
         error.statusText = response.statusText;
 
@@ -44,6 +45,8 @@ class ApiClient {
           error.type = 'FORBIDDEN';
         } else if (response.status === 404) {
           error.type = 'NOT_FOUND';
+        } else if (response.status === 409) {
+          error.type = 'CONFLICT';
         } else if (response.status >= 500) {
           error.type = 'SERVER_ERROR';
         }
@@ -51,8 +54,16 @@ class ApiClient {
         throw error;
       }
 
-      const data = await response.json();
-      return data;
+      if (response.status === 204) {
+        return null;
+      }
+
+      const text = await response.text();
+      if (!text) {
+        return null;
+      }
+
+      return JSON.parse(text);
     } catch (err) {
       if (err instanceof TypeError) {
         err.type = 'NETWORK_ERROR';

@@ -5,6 +5,9 @@ import Login from './pages/Login';
 import PlatformShell from './pages/PlatformShell';
 import NotificationPage from './pages/NotificationPage';
 import UserManagementPage from './pages/UserManagementPage';
+import DepartmentsPage from './pages/DepartmentsPage';
+import AssetCategoriesPage from './pages/AssetCategoriesPage';
+import AssetsPage from './pages/AssetsPage';
 import './App.css';
 
 function PrivateRoute({ children }) {
@@ -45,6 +48,30 @@ function App() {
               element={
                 <PrivateRoute>
                   <UserManagementPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/departments"
+              element={
+                <PrivateRoute>
+                  <DepartmentsPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/asset-categories"
+              element={
+                <PrivateRoute>
+                  <AssetCategoriesPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/assets"
+              element={
+                <PrivateRoute>
+                  <AssetsPage />
                 </PrivateRoute>
               }
             />

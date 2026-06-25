@@ -100,4 +100,18 @@ class DatabaseSchemaUpdaterTest {
                 .as("Should add fcm_token column for Firebase Cloud Messaging")
                 .isNotNull();
     }
+
+    @Test
+    void onApplicationEvent_migratesLegacyUserRoles() {
+        ApplicationReadyEvent event = mock(ApplicationReadyEvent.class);
+
+        schemaUpdater.onApplicationEvent(event);
+
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate, atLeastOnce()).execute(sqlCaptor.capture());
+
+        assertThat(sqlCaptor.getAllValues())
+                .anyMatch(sql -> sql.contains("role = 'ADMINISTRATOR'") && sql.contains("role = 'ADMIN'"))
+                .anyMatch(sql -> sql.contains("role = 'FIELD_EMPLOYEE'") && sql.contains("role = 'EMPLOYEE'"));
+    }
 }

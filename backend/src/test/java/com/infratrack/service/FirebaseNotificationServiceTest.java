@@ -28,7 +28,7 @@ class FirebaseNotificationServiceTest {
 
     @Test
     void sendToUser_shouldSendMessageWhenUserHasValidToken() throws Exception {
-        User user = new User("user@test.com", "password", "Test User", UserRole.EMPLOYEE);
+        User user = new User("user@test.com", "password", "Test User", UserRole.FIELD_EMPLOYEE);
         user.setId(1L);
         user.setFcmToken("valid-fcm-token-12345");
 
@@ -48,7 +48,7 @@ class FirebaseNotificationServiceTest {
 
     @Test
     void sendToUser_shouldSkipWhenUserHasNullToken() throws Exception {
-        User user = new User("user@test.com", "password", "Test User", UserRole.EMPLOYEE);
+        User user = new User("user@test.com", "password", "Test User", UserRole.FIELD_EMPLOYEE);
         user.setId(1L);
         user.setFcmToken(null);
 
@@ -60,7 +60,7 @@ class FirebaseNotificationServiceTest {
 
     @Test
     void sendToUser_shouldSkipWhenUserHasBlankToken() throws Exception {
-        User user = new User("user@test.com", "password", "Test User", UserRole.EMPLOYEE);
+        User user = new User("user@test.com", "password", "Test User", UserRole.FIELD_EMPLOYEE);
         user.setId(1L);
         user.setFcmToken("   ");
 
@@ -80,7 +80,7 @@ class FirebaseNotificationServiceTest {
 
     @Test
     void sendToUser_shouldContinueWhenFirebaseThrowsException() throws Exception {
-        User user = new User("user@test.com", "password", "Test User", UserRole.EMPLOYEE);
+        User user = new User("user@test.com", "password", "Test User", UserRole.FIELD_EMPLOYEE);
         user.setId(1L);
         user.setFcmToken("valid-fcm-token-12345");
 
@@ -98,7 +98,7 @@ class FirebaseNotificationServiceTest {
     @Test
     void sendToUser_shouldHandleNullFirebaseMessaging() {
         FirebaseNotificationService service = new FirebaseNotificationService(null);
-        User user = new User("user@test.com", "password", "Test User", UserRole.EMPLOYEE);
+        User user = new User("user@test.com", "password", "Test User", UserRole.FIELD_EMPLOYEE);
         user.setId(1L);
         user.setFcmToken("valid-fcm-token-12345");
 
@@ -109,7 +109,7 @@ class FirebaseNotificationServiceTest {
 
     @Test
     void sendToUser_shouldIncludeDataPayload() throws Exception {
-        User user = new User("user@test.com", "password", "Test User", UserRole.EMPLOYEE);
+        User user = new User("user@test.com", "password", "Test User", UserRole.FIELD_EMPLOYEE);
         user.setId(1L);
         user.setFcmToken("valid-fcm-token-12345");
 

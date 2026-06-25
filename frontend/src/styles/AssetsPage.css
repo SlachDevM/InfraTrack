@@ -1,0 +1,46 @@
+.assets-content {
+  max-width: 1100px;
+}
+
+.asset-form-section,
+.asset-list-section {
+  margin-bottom: 2rem;
+}
+
+.asset-form-section h2,
+.asset-list-section h2 {
+  margin-bottom: 1rem;
+}
+
+.asset-form {
+  display: grid;
+  gap: 1rem;
+  background: white;
+  padding: 1.25rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.form-row {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.form-row input,
+.form-row select {
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.success-message {
+  background: #e8f5ea;
+  color: #1a472a;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.assets-table td {
+  vertical-align: top;
+}

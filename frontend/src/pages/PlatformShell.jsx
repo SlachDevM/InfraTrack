@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import NotificationButton from '../components/NotificationButton';
+import { canManageUsers, getRoleLabel } from '../constants/userRoles';
 import '../styles/PlatformShell.css';
 
 export default function PlatformShell() {
@@ -17,9 +18,20 @@ export default function PlatformShell() {
       <nav className="platform-navbar">
         <div className="navbar-brand">InfraTrack</div>
         <div className="navbar-items">
-          <div className="navbar-link" onClick={() => navigate('/users')}>
-            Users
+          <div className="navbar-link" onClick={() => navigate('/assets')}>
+            Assets
           </div>
+          <div className="navbar-link" onClick={() => navigate('/departments')}>
+            Departments
+          </div>
+          <div className="navbar-link" onClick={() => navigate('/asset-categories')}>
+            Categories
+          </div>
+          {canManageUsers(auth?.user?.role) && (
+            <div className="navbar-link" onClick={() => navigate('/users')}>
+              Users
+            </div>
+          )}
           <NotificationButton />
           <div className="navbar-link logout" onClick={handleLogout}>
             Logout
@@ -76,7 +88,7 @@ export default function PlatformShell() {
             </div>
 
             <div className="user-info">
-              <p>Logged in as: <strong>{auth?.user?.email}</strong> ({auth?.user?.role})</p>
+              <p>Logged in as: <strong>{auth?.user?.email}</strong> ({getRoleLabel(auth?.user?.role)})</p>
             </div>
           </div>
         </div>

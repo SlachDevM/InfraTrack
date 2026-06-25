@@ -68,7 +68,7 @@ class AuthServiceTest {
 
     @Test
     void login_shouldThrowForbidden_whenAccountNotActivated() {
-        User user = new User("inactive@test.com", "encoded-password", "Inactive User", UserRole.EMPLOYEE);
+        User user = new User("inactive@test.com", "encoded-password", "Inactive User", UserRole.FIELD_EMPLOYEE);
         user.setId(3L);
         user.setEnabled(false);
 
@@ -86,7 +86,7 @@ class AuthServiceTest {
 
     @Test
     void login_shouldThrowUnauthorized_whenPasswordIsInvalid() {
-        User user = new User("worker@test.com", "encoded-password", "Worker", UserRole.EMPLOYEE);
+        User user = new User("worker@test.com", "encoded-password", "Worker", UserRole.FIELD_EMPLOYEE);
         user.setId(2L);
         user.setEnabled(true);
 
@@ -129,12 +129,12 @@ class AuthServiceTest {
         assertThat(savedUser.getEmail()).isEqualTo("new@test.com");
         assertThat(savedUser.getPassword()).isEqualTo("encoded-password");
         assertThat(savedUser.getName()).isEqualTo("New User");
-        assertThat(savedUser.getRole()).isEqualTo(UserRole.EMPLOYEE);
+        assertThat(savedUser.getRole()).isEqualTo(UserRole.FIELD_EMPLOYEE);
         // New registrations via public endpoint must be activated via email (enabled = false)
         assertThat(savedUser.getEnabled()).isFalse();
 
         assertThat(response.getToken()).isEqualTo("jwt-token");
-        assertThat(response.getRole()).isEqualTo(UserRole.EMPLOYEE);
+        assertThat(response.getRole()).isEqualTo(UserRole.FIELD_EMPLOYEE);
     }
 
     @Test

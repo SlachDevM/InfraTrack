@@ -28,7 +28,7 @@ class UserControllerTest {
 
     @Test
     void getCurrentUser_shouldReturnUserProfileResponse_forAuthenticatedUser() {
-        User user = new User("employee@test.com", "password", "John Doe", UserRole.EMPLOYEE);
+        User user = new User("employee@test.com", "password", "John Doe", UserRole.FIELD_EMPLOYEE);
         user.setId(1L);
 
         JwtAuthenticationToken auth = new JwtAuthenticationToken(1L, "employee@test.com", true);
@@ -42,7 +42,7 @@ class UserControllerTest {
         assertThat(response.getBody().getId()).isEqualTo(1L);
         assertThat(response.getBody().getName()).isEqualTo("John Doe");
         assertThat(response.getBody().getEmail()).isEqualTo("employee@test.com");
-        assertThat(response.getBody().getRole()).isEqualTo(UserRole.EMPLOYEE);
+        assertThat(response.getBody().getRole()).isEqualTo(UserRole.FIELD_EMPLOYEE);
 
         verify(userService).getById(1L);
     }
@@ -69,7 +69,13 @@ class UserControllerTest {
 
     @Test
     void getCurrentUser_shouldWorkForAllUserRoles() {
-        UserRole[] roles = {UserRole.EMPLOYEE, UserRole.MANAGER, UserRole.ADMIN};
+        UserRole[] roles = {
+                UserRole.ADMINISTRATOR,
+                UserRole.MANAGER,
+                UserRole.OPERATIONAL_COORDINATOR,
+                UserRole.FIELD_EMPLOYEE,
+                UserRole.CONTRACTOR
+        };
 
         for (UserRole role : roles) {
             User user = new User("user@test.com", "password", "Test User", role);

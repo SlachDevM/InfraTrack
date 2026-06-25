@@ -32,29 +32,26 @@ public class UserController {
     }
 
     /**
-     * Lists all users for MANAGER and ADMIN.
-     * Managers see read-only list.
-     * Admins see editable list.
+     * Lists all users. Only administrators can access.
      */
     @GetMapping
     public ResponseEntity<List<UserManagementResponse>> listUsers(Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
-        if (!userService.isManagerOrAdmin(userId)) {
+        if (!userService.isAdministrator(userId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         return ResponseEntity.ok(userManagementService.listAllUsers());
     }
 
     /**
-     * Gets a single user by ID.
-     * Only MANAGER and ADMIN can access.
+     * Gets a single user by ID. Only administrators can access.
      */
     @GetMapping("/{id}")
     public ResponseEntity<UserManagementResponse> getUser(
             @PathVariable Long id,
             Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
-        if (!userService.isManagerOrAdmin(userId)) {
+        if (!userService.isAdministrator(userId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         return ResponseEntity.ok(userManagementService.getUserById(id));
@@ -65,10 +62,9 @@ public class UserController {
             @RequestBody CreateEmployeeRequest request,
             Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
-        
-        // Validate admin permission
+
         userManagementService.validateAdminInvitationPermission(userId, request.getRole());
-        
+
         User invitedUser = activationService.createEmployeeInvitation(
                 userId,
                 request.getName(),
@@ -86,8 +82,7 @@ public class UserController {
     }
 
     /**
-     * Updates a user's name and/or email.
-     * Only ADMIN can update users.
+     * Updates a user's name and/or email. Only administrators can update users.
      */
     @PutMapping("/{id}")
     public ResponseEntity<UserManagementResponse> updateUser(
@@ -100,8 +95,7 @@ public class UserController {
     }
 
     /**
-     * Deactivates a user. User will not be able to log in.
-     * Only ADMIN can deactivate users.
+     * Deactivates a user. Only administrators can deactivate users.
      */
     @PostMapping("/{id}/deactivate")
     public ResponseEntity<Void> deactivateUser(
@@ -113,8 +107,7 @@ public class UserController {
     }
 
     /**
-     * Reactivates a user. User will be able to log in again.
-     * Only ADMIN can reactivate users.
+     * Reactivates a user. Only administrators can reactivate users.
      */
     @PostMapping("/{id}/reactivate")
     public ResponseEntity<Void> reactivateUser(
@@ -126,9 +119,7 @@ public class UserController {
     }
 
     /**
-     * Resends activation link to a pending user.
-     * Only ADMIN can resend activation links.
-     * Only works for users with PENDING_ACTIVATION status.
+     * Resends activation link to a pending user. Only administrators can resend activation links.
      */
     @PostMapping("/{id}/resend-activation")
     public ResponseEntity<Void> resendActivationLink(
@@ -155,7 +146,9 @@ public class UserController {
     @GetMapping("/workers")
     public ResponseEntity<List<UserSummary>> getWorkers(Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
-        if (!userService.isManagerOrAdmin(userId)) {
+        if (!userService.isAdministrator(userId)
+                && !userService.isManager(userId)
+                && !userService.isOperationalCoordinator(userId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         return ResponseEntity.ok(userService.getWorkers());
@@ -166,11 +159,11 @@ public class UserController {
             @RequestBody FcmTokenRequest request,
             Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
-        
+
         if (request.getToken() == null || request.getToken().isBlank()) {
             return ResponseEntity.badRequest().build();
         }
-        
+
         userService.updateFcmToken(userId, request.getToken());
         return ResponseEntity.noContent().build();
     }

@@ -35,7 +35,7 @@ class NotificationServiceFcmIntegrationTest {
 
     @Test
     void create_shouldPersistNotificationAndSendFcm() {
-        User user = new User("user@test.com", "password", "Test User", UserRole.EMPLOYEE);
+        User user = new User("user@test.com", "password", "Test User", UserRole.FIELD_EMPLOYEE);
         user.setId(1L);
         user.setFcmToken("valid-fcm-token");
 
@@ -58,7 +58,7 @@ class NotificationServiceFcmIntegrationTest {
 
     @Test
     void create_shouldPersistNotificationEvenIfFcmFails() {
-        User user = new User("user@test.com", "password", "Test User", UserRole.EMPLOYEE);
+        User user = new User("user@test.com", "password", "Test User", UserRole.FIELD_EMPLOYEE);
         user.setId(1L);
         user.setFcmToken("valid-fcm-token");
 
@@ -96,7 +96,7 @@ class NotificationServiceFcmIntegrationTest {
 
     @Test
     void create_shouldSendCustomTitleAndMessage() {
-        User user = new User("user@test.com", "password", "Test User", UserRole.EMPLOYEE);
+        User user = new User("user@test.com", "password", "Test User", UserRole.FIELD_EMPLOYEE);
         user.setId(1L);
         user.setFcmToken("valid-fcm-token");
 

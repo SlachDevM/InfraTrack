@@ -166,11 +166,15 @@ UI → API Client → Backend
 
 ## User Roles
 
-Platform roles (InfraTrack business roles will be aligned in a later step):
+InfraTrack uses five business roles aligned with the actor model:
 
-- **ADMIN** — Full user management, all platform capabilities
-- **MANAGER** — Can manage users and access management features
-- **EMPLOYEE** — Can access assigned work and their profile
+- **ADMINISTRATOR** — Configures the platform and manages user accounts
+- **MANAGER** — Makes operational decisions and validates completion reviews
+- **OPERATIONAL_COORDINATOR** — Coordinates operational work and assignments
+- **FIELD_EMPLOYEE** — Performs inspections and executes internal maintenance
+- **CONTRACTOR** — Executes assigned external work
+
+Administrative permissions do not automatically grant operational authority.
 
 ---
 

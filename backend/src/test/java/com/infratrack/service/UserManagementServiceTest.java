@@ -42,7 +42,7 @@ class UserManagementServiceTest {
 
     @Test
     void listAllUsers_shouldReturnAllUsers() {
-        User user1 = new User("user1@test.com", "password", "User 1", UserRole.EMPLOYEE);
+        User user1 = new User("user1@test.com", "password", "User 1", UserRole.FIELD_EMPLOYEE);
         user1.setId(1L);
         user1.setEnabled(true);
 
@@ -57,7 +57,7 @@ class UserManagementServiceTest {
 
     @Test
     void getUserById_shouldReturnUser() {
-        User user = new User("user@test.com", "password", "Test User", UserRole.EMPLOYEE);
+        User user = new User("user@test.com", "password", "Test User", UserRole.FIELD_EMPLOYEE);
         user.setId(1L);
         user.setEnabled(true);
 
@@ -86,40 +86,40 @@ class UserManagementServiceTest {
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(nonAdmin));
 
-        assertThatThrownBy(() -> userManagementService.validateAdminInvitationPermission(1L, UserRole.EMPLOYEE))
+        assertThatThrownBy(() -> userManagementService.validateAdminInvitationPermission(1L, UserRole.FIELD_EMPLOYEE))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
     }
 
     @Test
     void validateAdminInvitationPermission_shouldThrowWhenInvitingAdmin() {
-        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMIN);
+        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMINISTRATOR);
         admin.setId(1L);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
 
-        assertThatThrownBy(() -> userManagementService.validateAdminInvitationPermission(1L, UserRole.ADMIN))
+        assertThatThrownBy(() -> userManagementService.validateAdminInvitationPermission(1L, UserRole.ADMINISTRATOR))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
     }
 
     @Test
     void validateAdminInvitationPermission_shouldSucceedForAdmin() {
-        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMIN);
+        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMINISTRATOR);
         admin.setId(1L);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
 
         assertThatNoException().isThrownBy(() ->
-                userManagementService.validateAdminInvitationPermission(1L, UserRole.EMPLOYEE));
+                userManagementService.validateAdminInvitationPermission(1L, UserRole.FIELD_EMPLOYEE));
     }
 
     @Test
     void updateUser_shouldUpdateFields() {
-        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMIN);
+        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMINISTRATOR);
         admin.setId(1L);
 
-        User user = new User("user@test.com", "password", "Old", UserRole.EMPLOYEE);
+        User user = new User("user@test.com", "password", "Old", UserRole.FIELD_EMPLOYEE);
         user.setId(2L);
         user.setEnabled(true);
 
@@ -141,10 +141,10 @@ class UserManagementServiceTest {
 
     @Test
     void updateUser_shouldThrowOnDuplicateEmail() {
-        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMIN);
+        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMINISTRATOR);
         admin.setId(1L);
 
-        User user = new User("user@test.com", "password", "User", UserRole.EMPLOYEE);
+        User user = new User("user@test.com", "password", "User", UserRole.FIELD_EMPLOYEE);
         user.setId(2L);
 
         UpdateUserRequest request = new UpdateUserRequest();
@@ -161,10 +161,10 @@ class UserManagementServiceTest {
 
     @Test
     void updateUser_shouldThrowOnNullFields() {
-        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMIN);
+        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMINISTRATOR);
         admin.setId(1L);
 
-        User user = new User("user@test.com", "password", "User", UserRole.EMPLOYEE);
+        User user = new User("user@test.com", "password", "User", UserRole.FIELD_EMPLOYEE);
         user.setId(2L);
 
         UpdateUserRequest request = new UpdateUserRequest();
@@ -181,10 +181,10 @@ class UserManagementServiceTest {
 
     @Test
     void deactivateUser_shouldSetEnabledFalse() {
-        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMIN);
+        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMINISTRATOR);
         admin.setId(1L);
 
-        User activeUser = new User("user@test.com", "password", "User", UserRole.EMPLOYEE);
+        User activeUser = new User("user@test.com", "password", "User", UserRole.FIELD_EMPLOYEE);
         activeUser.setId(2L);
         activeUser.setEnabled(true);
 
@@ -202,10 +202,10 @@ class UserManagementServiceTest {
 
     @Test
     void deactivateUser_shouldInvalidateTokensForPending() {
-        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMIN);
+        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMINISTRATOR);
         admin.setId(1L);
 
-        User pendingUser = new User("user@test.com", "", "User", UserRole.EMPLOYEE);
+        User pendingUser = new User("user@test.com", "", "User", UserRole.FIELD_EMPLOYEE);
         pendingUser.setId(2L);
         pendingUser.setEnabled(false);
 
@@ -225,7 +225,7 @@ class UserManagementServiceTest {
 
     @Test
     void deactivateUser_shouldThrowWhenSelfDeactivate() {
-        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMIN);
+        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMINISTRATOR);
         admin.setId(1L);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
@@ -237,10 +237,10 @@ class UserManagementServiceTest {
 
     @Test
     void reactivateUser_shouldRestoreActiveUser() {
-        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMIN);
+        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMINISTRATOR);
         admin.setId(1L);
 
-        User disabledUser = new User("user@test.com", "hashed", "User", UserRole.EMPLOYEE);
+        User disabledUser = new User("user@test.com", "hashed", "User", UserRole.FIELD_EMPLOYEE);
         disabledUser.setId(2L);
         disabledUser.setEnabled(false);
 
@@ -258,10 +258,10 @@ class UserManagementServiceTest {
 
     @Test
     void reactivateUser_shouldThrowForPendingUser() {
-        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMIN);
+        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMINISTRATOR);
         admin.setId(1L);
 
-        User pendingUser = new User("user@test.com", "", "User", UserRole.EMPLOYEE);
+        User pendingUser = new User("user@test.com", "", "User", UserRole.FIELD_EMPLOYEE);
         pendingUser.setId(2L);
         pendingUser.setEnabled(false);
 
@@ -276,10 +276,10 @@ class UserManagementServiceTest {
 
     @Test
     void reactivateUser_shouldThrowForNeverActivatedUser() {
-        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMIN);
+        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMINISTRATOR);
         admin.setId(1L);
 
-        User neverActivated = new User("user@test.com", "", "User", UserRole.EMPLOYEE);
+        User neverActivated = new User("user@test.com", "", "User", UserRole.FIELD_EMPLOYEE);
         neverActivated.setId(2L);
         neverActivated.setEnabled(false);
 
@@ -294,10 +294,10 @@ class UserManagementServiceTest {
 
     @Test
     void reactivateUser_shouldThrowForAlreadyActiveUser() {
-        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMIN);
+        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMINISTRATOR);
         admin.setId(1L);
 
-        User activeUser = new User("user@test.com", "password", "User", UserRole.EMPLOYEE);
+        User activeUser = new User("user@test.com", "password", "User", UserRole.FIELD_EMPLOYEE);
         activeUser.setId(2L);
         activeUser.setEnabled(true);
 
@@ -312,10 +312,10 @@ class UserManagementServiceTest {
 
     @Test
     void resendActivationLink_shouldCreateNewToken() {
-        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMIN);
+        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMINISTRATOR);
         admin.setId(1L);
 
-        User pendingUser = new User("user@test.com", "", "User", UserRole.EMPLOYEE);
+        User pendingUser = new User("user@test.com", "", "User", UserRole.FIELD_EMPLOYEE);
         pendingUser.setId(2L);
         pendingUser.setEnabled(false);
 
@@ -337,10 +337,10 @@ class UserManagementServiceTest {
 
     @Test
     void resendActivationLink_shouldThrowForActiveUser() {
-        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMIN);
+        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMINISTRATOR);
         admin.setId(1L);
 
-        User activeUser = new User("user@test.com", "password", "User", UserRole.EMPLOYEE);
+        User activeUser = new User("user@test.com", "password", "User", UserRole.FIELD_EMPLOYEE);
         activeUser.setId(2L);
         activeUser.setEnabled(true);
 
@@ -355,10 +355,10 @@ class UserManagementServiceTest {
 
     @Test
     void resendActivationLink_shouldWorkForNeverActivatedDisabled() {
-        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMIN);
+        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMINISTRATOR);
         admin.setId(1L);
 
-        User neverActivated = new User("user@test.com", "", "User", UserRole.EMPLOYEE);
+        User neverActivated = new User("user@test.com", "", "User", UserRole.FIELD_EMPLOYEE);
         neverActivated.setId(2L);
         neverActivated.setEnabled(false);
 
@@ -376,7 +376,7 @@ class UserManagementServiceTest {
 
     @Test
     void computeStatus_shouldReturnActive() {
-        User user = new User("user@test.com", "password", "User", UserRole.EMPLOYEE);
+        User user = new User("user@test.com", "password", "User", UserRole.FIELD_EMPLOYEE);
         user.setId(1L);
         user.setEnabled(true);
 
@@ -389,7 +389,7 @@ class UserManagementServiceTest {
 
     @Test
     void computeStatus_shouldReturnPending() {
-        User user = new User("user@test.com", "", "User", UserRole.EMPLOYEE);
+        User user = new User("user@test.com", "", "User", UserRole.FIELD_EMPLOYEE);
         user.setId(1L);
         user.setEnabled(false);
 
@@ -402,7 +402,7 @@ class UserManagementServiceTest {
 
     @Test
     void computeStatus_shouldReturnDisabled() {
-        User user = new User("user@test.com", "password", "User", UserRole.EMPLOYEE);
+        User user = new User("user@test.com", "password", "User", UserRole.FIELD_EMPLOYEE);
         user.setId(1L);
         user.setEnabled(false);
 

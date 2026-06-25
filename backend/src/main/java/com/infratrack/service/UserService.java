@@ -16,9 +16,7 @@ public class UserService {
 
     private final UserRepository userRepository;
 
-    public UserService(
-            UserRepository userRepository
-    ) {
+    public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
@@ -28,12 +26,11 @@ public class UserService {
     }
 
     public List<UserSummary> getWorkers() {
-
         return userRepository
                 .findByRoleInOrderByNameAsc(
                         Arrays.asList(
-                                UserRole.EMPLOYEE,
-                                UserRole.MANAGER
+                                UserRole.FIELD_EMPLOYEE,
+                                UserRole.CONTRACTOR
                         )
                 )
                 .stream()
@@ -41,17 +38,24 @@ public class UserService {
                 .toList();
     }
 
-    public boolean isManagerOrAdmin(Long userId) {
-
-        User user = getById(userId);
-
-        return user.getRole() == UserRole.ADMIN
-                || user.getRole() == UserRole.MANAGER;
+    public boolean isAdministrator(Long userId) {
+        return getById(userId).getRole().isAdministrator();
     }
 
-    public boolean isAdmin(Long userId) {
+    public boolean isManager(Long userId) {
+        return getById(userId).getRole().isManager();
+    }
 
-        return getById(userId).getRole() == UserRole.ADMIN;
+    public boolean isOperationalCoordinator(Long userId) {
+        return getById(userId).getRole().isOperationalCoordinator();
+    }
+
+    public boolean isFieldEmployee(Long userId) {
+        return getById(userId).getRole().isFieldEmployee();
+    }
+
+    public boolean isContractor(Long userId) {
+        return getById(userId).getRole().isContractor();
     }
 
     public List<User> findByName(String name) {

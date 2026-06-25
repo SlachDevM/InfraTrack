@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import userApi from '../services/userApi';
+import { getRoleLabel } from '../constants/userRoles';
 
 export default function EditUserModal({ isOpen, onClose, onSuccess, user }) {
   const [formData, setFormData] = useState({
@@ -65,7 +66,7 @@ export default function EditUserModal({ isOpen, onClose, onSuccess, user }) {
             <label>Role</label>
             <input
               type="text"
-              value={user.role}
+              value={getRoleLabel(user.role)}
               disabled
               className="readonly-field"
             />

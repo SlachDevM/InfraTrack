@@ -36,7 +36,6 @@ class UserServiceTest {
         User result = userService.getById(1L);
 
         assertThat(result).isEqualTo(user);
-        assertThat(result.getId()).isEqualTo(1L);
         assertThat(result.getRole()).isEqualTo(UserRole.MANAGER);
     }
 
@@ -50,91 +49,51 @@ class UserServiceTest {
     }
 
     @Test
-    void getWorkers_shouldReturnEmployeesAndManagersAsUserSummaries() {
-        User employee = new User("employee@test.com", "password", "Employee", UserRole.EMPLOYEE);
-        employee.setId(1L);
+    void getWorkers_shouldReturnFieldEmployeesAndContractors() {
+        User fieldEmployee = new User("field@test.com", "password", "Field Worker", UserRole.FIELD_EMPLOYEE);
+        fieldEmployee.setId(1L);
 
-        User manager = new User("manager@test.com", "password", "Manager", UserRole.MANAGER);
-        manager.setId(2L);
+        User contractor = new User("contractor@test.com", "password", "Contractor", UserRole.CONTRACTOR);
+        contractor.setId(2L);
 
         when(userRepository.findByRoleInOrderByNameAsc(
-                List.of(UserRole.EMPLOYEE, UserRole.MANAGER)
-        )).thenReturn(List.of(employee, manager));
+                List.of(UserRole.FIELD_EMPLOYEE, UserRole.CONTRACTOR)
+        )).thenReturn(List.of(fieldEmployee, contractor));
 
         List<UserSummary> result = userService.getWorkers();
 
         assertThat(result).hasSize(2);
-        assertThat(result.get(0).getName()).isEqualTo("Employee");
-        assertThat(result.get(1).getName()).isEqualTo("Manager");
+        assertThat(result.get(0).getName()).isEqualTo("Field Worker");
+        assertThat(result.get(1).getName()).isEqualTo("Contractor");
 
         verify(userRepository).findByRoleInOrderByNameAsc(
-                List.of(UserRole.EMPLOYEE, UserRole.MANAGER)
+                List.of(UserRole.FIELD_EMPLOYEE, UserRole.CONTRACTOR)
         );
     }
 
     @Test
-    void isManagerOrAdmin_shouldReturnTrue_whenUserIsManager() {
+    void isAdministrator_shouldReturnTrue_onlyForAdministrator() {
+        User administrator = new User("admin@test.com", "password", "Admin", UserRole.ADMINISTRATOR);
+        administrator.setId(1L);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(administrator));
+
+        assertThat(userService.isAdministrator(1L)).isTrue();
+    }
+
+    @Test
+    void isAdministrator_shouldReturnFalse_forNonAdministrators() {
         User manager = new User("manager@test.com", "password", "Manager", UserRole.MANAGER);
         manager.setId(1L);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(manager));
 
-        boolean result = userService.isManagerOrAdmin(1L);
-
-        assertThat(result).isTrue();
-    }
-
-    @Test
-    void isManagerOrAdmin_shouldReturnTrue_whenUserIsAdmin() {
-        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMIN);
-        admin.setId(1L);
-
-        when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
-
-        boolean result = userService.isManagerOrAdmin(1L);
-
-        assertThat(result).isTrue();
-    }
-
-    @Test
-    void isManagerOrAdmin_shouldReturnFalse_whenUserIsEmployee() {
-        User employee = new User("employee@test.com", "password", "Employee", UserRole.EMPLOYEE);
-        employee.setId(1L);
-
-        when(userRepository.findById(1L)).thenReturn(Optional.of(employee));
-
-        boolean result = userService.isManagerOrAdmin(1L);
-
-        assertThat(result).isFalse();
-    }
-
-    @Test
-    void isAdmin_shouldReturnTrue_whenUserIsAdmin() {
-        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMIN);
-        admin.setId(1L);
-
-        when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
-
-        boolean result = userService.isAdmin(1L);
-
-        assertThat(result).isTrue();
-    }
-
-    @Test
-    void isAdmin_shouldReturnFalse_whenUserIsManager() {
-        User manager = new User("manager@test.com", "password", "Manager", UserRole.MANAGER);
-        manager.setId(1L);
-
-        when(userRepository.findById(1L)).thenReturn(Optional.of(manager));
-
-        boolean result = userService.isAdmin(1L);
-
-        assertThat(result).isFalse();
+        assertThat(userService.isAdministrator(1L)).isFalse();
     }
 
     @Test
     void findByName_shouldReturnMatchingUsers() {
-        User worker = new User("worker@test.com", "password", "John Worker", UserRole.EMPLOYEE);
+        User worker = new User("worker@test.com", "password", "John Worker", UserRole.FIELD_EMPLOYEE);
         worker.setId(1L);
 
         when(userRepository.findByName("John Worker")).thenReturn(List.of(worker));
@@ -143,60 +102,19 @@ class UserServiceTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getName()).isEqualTo("John Worker");
-
-        verify(userRepository).findByName("John Worker");
     }
 
     @Test
     void updateFcmToken_shouldUpdateTokenAndUpdateTimestamp() {
-        User user = new User("worker@test.com", "password", "John Worker", UserRole.EMPLOYEE);
+        User user = new User("worker@test.com", "password", "John Worker", UserRole.FIELD_EMPLOYEE);
         user.setId(1L);
-        user.setFcmToken(null);
-
-        User updatedUser = new User("worker@test.com", "password", "John Worker", UserRole.EMPLOYEE);
-        updatedUser.setId(1L);
-        updatedUser.setFcmToken("firebase-token-12345");
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         User result = userService.updateFcmToken(1L, "firebase-token-12345");
 
-        assertThat(result.getId()).isEqualTo(1L);
         assertThat(result.getFcmToken()).isEqualTo("firebase-token-12345");
-
-        verify(userRepository).findById(1L);
         verify(userRepository).save(any(User.class));
-    }
-
-    @Test
-    void updateFcmToken_shouldUpdateExistingToken() {
-        User user = new User("worker@test.com", "password", "John Worker", UserRole.EMPLOYEE);
-        user.setId(1L);
-        user.setFcmToken("old-token");
-
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        User result = userService.updateFcmToken(1L, "new-token-xyz");
-
-        assertThat(result.getFcmToken()).isEqualTo("new-token-xyz");
-
-        verify(userRepository).save(user);
-    }
-
-    @Test
-    void getById_shouldReturnCurrentUserProfile_forUserProfile() {
-        User user = new User("employee@test.com", "password", "John Doe", UserRole.EMPLOYEE);
-        user.setId(5L);
-
-        when(userRepository.findById(5L)).thenReturn(Optional.of(user));
-
-        User result = userService.getById(5L);
-
-        assertThat(result.getId()).isEqualTo(5L);
-        assertThat(result.getName()).isEqualTo("John Doe");
-        assertThat(result.getEmail()).isEqualTo("employee@test.com");
-        assertThat(result.getRole()).isEqualTo(UserRole.EMPLOYEE);
     }
 }

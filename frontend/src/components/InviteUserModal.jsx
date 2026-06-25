@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import userApi from '../services/userApi';
+import { INVITABLE_ROLES, ROLE_LABELS, USER_ROLES } from '../constants/userRoles';
 
 export default function InviteUserModal({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    role: 'EMPLOYEE',
+    role: USER_ROLES.FIELD_EMPLOYEE,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -72,8 +73,11 @@ export default function InviteUserModal({ isOpen, onClose, onSuccess }) {
               onChange={handleChange}
               disabled={loading}
             >
-              <option value="EMPLOYEE">Employee</option>
-              <option value="MANAGER">Manager</option>
+              {INVITABLE_ROLES.map((role) => (
+                <option key={role} value={role}>
+                  {ROLE_LABELS[role]}
+                </option>
+              ))}
             </select>
           </div>
 

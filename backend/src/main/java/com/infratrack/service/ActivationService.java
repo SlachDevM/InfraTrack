@@ -43,8 +43,8 @@ public class ActivationService {
     }
 
     /**
-     * Creates an employee invitation and sends an activation email.
-     * Only managers and admins can invite employees.
+     * Creates a user invitation and sends an activation email.
+     * Only administrators can invite users.
      *
      * @param creatorId the ID of the manager/admin creating the invitation
      * @param name the employee's name
@@ -136,21 +136,12 @@ public class ActivationService {
     }
 
     private void validateCreatorPermissions(User creator, UserRole requestedRole) {
-        boolean isAdmin = creator.getRole() == UserRole.ADMIN;
-        boolean isManager = creator.getRole() == UserRole.MANAGER;
-
-        if (!isAdmin && !isManager) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only managers and admins can create employee invitations");
+        if (!creator.getRole().isAdministrator()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only administrators can create user invitations");
         }
 
-        // Managers can only create EMPLOYEE accounts
-        if (isManager && requestedRole != UserRole.EMPLOYEE) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Managers can only create employee accounts");
-        }
-
-        // Admins can create EMPLOYEE or MANAGER accounts, but not other ADMIN accounts
-        if (isAdmin && requestedRole == UserRole.ADMIN) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot create admin accounts via invitation");
+        if (requestedRole == UserRole.ADMINISTRATOR) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot create administrator accounts via invitation");
         }
     }
 

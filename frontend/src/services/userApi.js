@@ -26,7 +26,7 @@ export const userApi = {
   },
 
   /**
-   * Invite a new user (ADMIN only)
+   * Invite a new user (administrator only)
    * @param {Object} request - { name, email, role }
    */
   inviteUser: (request) => {
@@ -34,7 +34,7 @@ export const userApi = {
   },
 
   /**
-   * Update user name and/or email (ADMIN only)
+   * Update user name and/or email (administrator only)
    * @param {number} userId - User ID
    * @param {Object} request - { name, email }
    */
@@ -43,21 +43,21 @@ export const userApi = {
   },
 
   /**
-   * Deactivate a user (ADMIN only)
+   * Deactivate a user (administrator only)
    */
   deactivateUser: (userId) => {
     return apiClient.post(USER_API_ENDPOINTS.USER_DEACTIVATE(userId), {});
   },
 
   /**
-   * Reactivate a user (ADMIN only)
+   * Reactivate a user (administrator only)
    */
   reactivateUser: (userId) => {
     return apiClient.post(USER_API_ENDPOINTS.USER_REACTIVATE(userId), {});
   },
 
   /**
-   * Resend activation link to pending user (ADMIN only)
+   * Resend activation link to pending user (administrator only)
    */
   resendActivation: (userId) => {
     return apiClient.post(USER_API_ENDPOINTS.USER_RESEND_ACTIVATION(userId), {});

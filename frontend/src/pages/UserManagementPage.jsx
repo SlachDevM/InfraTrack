@@ -7,6 +7,7 @@ import NotificationButton from '../components/NotificationButton';
 import InviteUserModal from '../components/InviteUserModal';
 import EditUserModal from '../components/EditUserModal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { canManageUsers, getRoleLabel } from '../constants/userRoles';
 import '../styles/UserManagementPage.css';
 
 const STATUS_LABELS = {
@@ -47,7 +48,7 @@ export default function UserManagementPage() {
 
   // Check authorization
   useEffect(() => {
-    if (!auth || (auth.user.role !== 'MANAGER' && auth.user.role !== 'ADMIN')) {
+    if (!auth || !canManageUsers(auth.user.role)) {
       navigate('/');
       return;
     }
@@ -172,7 +173,7 @@ export default function UserManagementPage() {
     navigate('/login');
   };
 
-  const isAdmin = auth?.user.role === 'ADMIN';
+  const isAdministrator = canManageUsers(auth?.user.role);
   const getConfirmMessage = () => {
     if (confirmAction === 'deactivate') {
       return 'Are you sure you want to deactivate this user? They will not be able to log in.';
@@ -210,7 +211,7 @@ export default function UserManagementPage() {
         <div className="user-header-actions">
           <NotificationButton />
 
-          {isAdmin && (
+          {isAdministrator && (
             <button
               type="button"
               className="invite-btn"
@@ -266,7 +267,7 @@ export default function UserManagementPage() {
                   <th>Role</th>
                   <th>Status</th>
                   <th>Created</th>
-                  {isAdmin && <th>Actions</th>}
+                  {isAdministrator && <th>Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -276,7 +277,7 @@ export default function UserManagementPage() {
                     <td>{user.email}</td>
                     <td>
                       <span className="role-badge">
-                        {user.role}
+                        {getRoleLabel(user.role)}
                       </span>
                     </td>
                     <td>
@@ -291,7 +292,7 @@ export default function UserManagementPage() {
                         ? new Date(user.createdAt).toLocaleDateString()
                         : '-'}
                     </td>
-                    {isAdmin && (
+                    {isAdministrator && (
                       <td className="actions-cell">
                         <button
                           type="button"

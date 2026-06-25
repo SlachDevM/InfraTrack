@@ -40,8 +40,7 @@ public class UserManagementService {
     }
 
     /**
-     * Lists all users for Manager/Admin viewing.
-     * Only MANAGER and ADMIN can call this.
+     * Lists all users for administrator viewing.
      * Authorization must be enforced at the controller level.
      *
      * @return list of all users as UserManagementResponse DTOs
@@ -65,29 +64,29 @@ public class UserManagementService {
     }
 
     /**
-     * Restricts admin-only invite endpoint to ADMIN role only.
-     * Admins can invite EMPLOYEE or MANAGER but NOT ADMIN.
+     * Restricts user invitation to administrators.
+     * Administrators can invite operational roles but not another administrator.
      *
-     * @param adminId the ID of the admin making the invitation
-     * @param targetRole the role to invite (should be EMPLOYEE or MANAGER)
-     * @throws ResponseStatusException if caller is not an admin or tries to invite ADMIN
+     * @param adminId the ID of the administrator making the invitation
+     * @param targetRole the role to invite
+     * @throws ResponseStatusException if caller is not an administrator or tries to invite an administrator
      */
     public void validateAdminInvitationPermission(Long adminId, UserRole targetRole) {
         User admin = userRepository.findById(adminId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Admin not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Administrator not found"));
 
-        if (admin.getRole() != UserRole.ADMIN) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only ADMIN can invite users");
+        if (!admin.getRole().isAdministrator()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only administrators can invite users");
         }
 
-        if (targetRole == UserRole.ADMIN) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot invite ADMIN users through this endpoint");
+        if (targetRole == UserRole.ADMINISTRATOR) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot invite administrator users through this endpoint");
         }
     }
 
     /**
      * Updates a user's name and email. Email changes trigger notifications.
-     * Only ADMINs can update users.
+     * Only administrators can update users.
      *
      * @param userId the user to update
      * @param request the update request (name and email)
@@ -99,8 +98,8 @@ public class UserManagementService {
         User admin = userRepository.findById(requestingAdminId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Admin not found"));
 
-        if (admin.getRole() != UserRole.ADMIN) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only ADMIN can update users");
+        if (!admin.getRole().isAdministrator()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only administrators can update users");
         }
 
         User user = userRepository.findById(userId)
@@ -192,8 +191,8 @@ public class UserManagementService {
         User admin = userRepository.findById(requestingAdminId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Admin not found"));
 
-        if (admin.getRole() != UserRole.ADMIN) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only ADMIN can deactivate users");
+        if (!admin.getRole().isAdministrator()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only administrators can deactivate users");
         }
 
         if (userId.equals(requestingAdminId)) {
@@ -253,8 +252,8 @@ public class UserManagementService {
         User admin = userRepository.findById(requestingAdminId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Admin not found"));
 
-        if (admin.getRole() != UserRole.ADMIN) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only ADMIN can reactivate users");
+        if (!admin.getRole().isAdministrator()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only administrators can reactivate users");
         }
 
         User user = userRepository.findById(userId)
@@ -311,8 +310,8 @@ public class UserManagementService {
         User admin = userRepository.findById(requestingAdminId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Admin not found"));
 
-        if (admin.getRole() != UserRole.ADMIN) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only ADMIN can resend activation links");
+        if (!admin.getRole().isAdministrator()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only administrators can resend activation links");
         }
 
         User user = userRepository.findById(userId)

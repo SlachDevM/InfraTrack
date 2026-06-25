@@ -85,7 +85,7 @@ class AuthControllerTest {
         expectedResponse.setToken("jwt-token");
         expectedResponse.setUserId(1L);
         expectedResponse.setEmail("test@example.com");
-        expectedResponse.setRole(UserRole.EMPLOYEE);
+        expectedResponse.setRole(UserRole.FIELD_EMPLOYEE);
 
         when(authService.register(request)).thenReturn(expectedResponse);
 
@@ -106,7 +106,7 @@ class AuthControllerTest {
         expectedResponse.setToken("jwt-token");
         expectedResponse.setUserId(1L);
         expectedResponse.setEmail("test@example.com");
-        expectedResponse.setRole(UserRole.EMPLOYEE);
+        expectedResponse.setRole(UserRole.FIELD_EMPLOYEE);
 
         when(authService.login(request)).thenReturn(expectedResponse);
 
@@ -130,7 +130,7 @@ class AuthControllerTest {
         expectedResponse.setToken("jwt-token");
         expectedResponse.setUserId(1L);
         expectedResponse.setEmail("test@example.com");
-        expectedResponse.setRole(UserRole.EMPLOYEE);
+        expectedResponse.setRole(UserRole.FIELD_EMPLOYEE);
 
         when(authService.activateAccount("activation-token-12345", "newpassword")).thenReturn(expectedResponse);
 
