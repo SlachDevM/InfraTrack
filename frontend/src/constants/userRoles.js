@@ -33,6 +33,10 @@ export function canCreateBusinessTriggers(role) {
   return canRegisterAssets(role);
 }
 
+export function canAssignInspections(role) {
+  return role === USER_ROLES.OPERATIONAL_COORDINATOR;
+}
+
 export function getRoleLabel(role) {
   return ROLE_LABELS[role] || role;
 }

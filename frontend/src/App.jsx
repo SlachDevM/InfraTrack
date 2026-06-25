@@ -9,6 +9,7 @@ import DepartmentsPage from './pages/DepartmentsPage';
 import AssetCategoriesPage from './pages/AssetCategoriesPage';
 import AssetsPage from './pages/AssetsPage';
 import BusinessTriggersPage from './pages/BusinessTriggersPage';
+import InspectionsPage from './pages/InspectionsPage';
 import './App.css';
 
 function PrivateRoute({ children }) {
@@ -81,6 +82,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <BusinessTriggersPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/inspections"
+              element={
+                <PrivateRoute>
+                  <InspectionsPage />
                 </PrivateRoute>
               }
             />

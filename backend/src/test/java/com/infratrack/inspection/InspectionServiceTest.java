@@ -1,0 +1,320 @@
+package com.infratrack.inspection;
+
+import com.infratrack.asset.Asset;
+import com.infratrack.asset.AssetHistoryEvent;
+import com.infratrack.asset.AssetHistoryEventRepository;
+import com.infratrack.asset.AssetHistoryEventType;
+import com.infratrack.asset.AssetStatus;
+import com.infratrack.assetcategory.AssetCategory;
+import com.infratrack.businesstrigger.BusinessTrigger;
+import com.infratrack.businesstrigger.BusinessTriggerRepository;
+import com.infratrack.businesstrigger.BusinessTriggerType;
+import com.infratrack.department.Department;
+import com.infratrack.inspection.dto.AssignInspectionRequest;
+import com.infratrack.model.User;
+import com.infratrack.model.UserRole;
+import com.infratrack.service.UserService;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDate;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class InspectionServiceTest {
+
+    @Mock
+    private InspectionRepository inspectionRepository;
+
+    @Mock
+    private BusinessTriggerRepository businessTriggerRepository;
+
+    @Mock
+    private AssetHistoryEventRepository assetHistoryEventRepository;
+
+    @Mock
+    private UserService userService;
+
+    @InjectMocks
+    private InspectionService inspectionService;
+
+    @Test
+    void assignInspection_shouldCreateInspectionAndHistoryEvent_whenValid() {
+        AssignInspectionRequest request = validRequest();
+        BusinessTrigger trigger = businessTrigger(1L, false);
+        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(businessTriggerRepository.findById(1L)).thenReturn(Optional.of(trigger));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.existsByBusinessTriggerIdAndStatus(1L, InspectionStatus.ASSIGNED))
+                .thenReturn(false);
+        when(inspectionRepository.save(any(Inspection.class))).thenAnswer(invocation -> {
+            Inspection inspection = invocation.getArgument(0);
+            inspection.setId(100L);
+            return inspection;
+        });
+
+        var response = inspectionService.assignInspection(request, 10L);
+
+        assertThat(response.getId()).isEqualTo(100L);
+        assertThat(response.getAssetId()).isEqualTo(5L);
+        assertThat(response.getAssetName()).isEqualTo("Central Playground");
+        assertThat(response.getBusinessTriggerId()).isEqualTo(1L);
+        assertThat(response.getAssignedToUserId()).isEqualTo(20L);
+        assertThat(response.getAssignedByUserId()).isEqualTo(10L);
+        assertThat(response.getStatus()).isEqualTo(InspectionStatus.ASSIGNED);
+        assertThat(response.getPriority()).isEqualTo(InspectionPriority.NORMAL);
+
+        ArgumentCaptor<Inspection> inspectionCaptor = ArgumentCaptor.forClass(Inspection.class);
+        verify(inspectionRepository).save(inspectionCaptor.capture());
+        assertThat(inspectionCaptor.getValue().getAsset().getId()).isEqualTo(5L);
+        assertThat(inspectionCaptor.getValue().getBusinessTrigger().getId()).isEqualTo(1L);
+
+        ArgumentCaptor<AssetHistoryEvent> historyCaptor = ArgumentCaptor.forClass(AssetHistoryEvent.class);
+        verify(assetHistoryEventRepository).save(historyCaptor.capture());
+        assertThat(historyCaptor.getValue().getEventType()).isEqualTo(AssetHistoryEventType.INSPECTION_ASSIGNED);
+        assertThat(historyCaptor.getValue().getAsset().getId()).isEqualTo(5L);
+        assertThat(historyCaptor.getValue().getPerformedByUserId()).isEqualTo(10L);
+        assertThat(historyCaptor.getValue().getEventDate()).isEqualTo(LocalDate.now());
+    }
+
+    @Test
+    void assignInspection_shouldDefaultPriorityToUrgent_whenTriggerIsUrgent() {
+        AssignInspectionRequest request = validRequest();
+        request.setPriority(null);
+        BusinessTrigger trigger = businessTrigger(1L, true);
+        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        User contractor = user(20L, UserRole.CONTRACTOR);
+
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(businessTriggerRepository.findById(1L)).thenReturn(Optional.of(trigger));
+        when(userService.getById(20L)).thenReturn(contractor);
+        when(inspectionRepository.existsByBusinessTriggerIdAndStatus(1L, InspectionStatus.ASSIGNED))
+                .thenReturn(false);
+        when(inspectionRepository.save(any(Inspection.class))).thenAnswer(invocation -> {
+            Inspection inspection = invocation.getArgument(0);
+            inspection.setId(100L);
+            return inspection;
+        });
+
+        var response = inspectionService.assignInspection(request, 10L);
+
+        assertThat(response.getPriority()).isEqualTo(InspectionPriority.URGENT);
+        verify(inspectionRepository).save(argThat(inspection ->
+                inspection.getPriority() == InspectionPriority.URGENT));
+    }
+
+    @Test
+    void assignInspection_shouldRejectMissingBusinessTriggerId() {
+        AssignInspectionRequest request = validRequest();
+        request.setBusinessTriggerId(null);
+        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        when(userService.getById(10L)).thenReturn(coordinator);
+
+        assertThatThrownBy(() -> inspectionService.assignInspection(request, 10L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void assignInspection_shouldRejectInvalidBusinessTrigger() {
+        AssignInspectionRequest request = validRequest();
+        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(businessTriggerRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> inspectionService.assignInspection(request, 10L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void assignInspection_shouldRejectMissingAssignedUser() {
+        AssignInspectionRequest request = validRequest();
+        request.setAssignedToUserId(null);
+        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        BusinessTrigger trigger = businessTrigger(1L, false);
+
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(businessTriggerRepository.findById(1L)).thenReturn(Optional.of(trigger));
+
+        assertThatThrownBy(() -> inspectionService.assignInspection(request, 10L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void assignInspection_shouldRejectInvalidAssignedUser() {
+        AssignInspectionRequest request = validRequest();
+        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        BusinessTrigger trigger = businessTrigger(1L, false);
+
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(businessTriggerRepository.findById(1L)).thenReturn(Optional.of(trigger));
+        when(userService.getById(20L)).thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        assertThatThrownBy(() -> inspectionService.assignInspection(request, 10L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void assignInspection_shouldRejectAssignedUserWithInvalidRole() {
+        AssignInspectionRequest request = validRequest();
+        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        User manager = user(20L, UserRole.MANAGER);
+        BusinessTrigger trigger = businessTrigger(1L, false);
+
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(businessTriggerRepository.findById(1L)).thenReturn(Optional.of(trigger));
+        when(userService.getById(20L)).thenReturn(manager);
+
+        assertThatThrownBy(() -> inspectionService.assignInspection(request, 10L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+
+        verify(inspectionRepository, never()).save(any());
+    }
+
+    @Test
+    void assignInspection_shouldRejectManager() {
+        AssignInspectionRequest request = validRequest();
+        User manager = user(10L, UserRole.MANAGER);
+        when(userService.getById(10L)).thenReturn(manager);
+
+        assertThatThrownBy(() -> inspectionService.assignInspection(request, 10L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+
+        verify(inspectionRepository, never()).save(any());
+        verify(assetHistoryEventRepository, never()).save(any());
+    }
+
+    @Test
+    void assignInspection_shouldRejectAdministrator() {
+        AssignInspectionRequest request = validRequest();
+        User administrator = user(10L, UserRole.ADMINISTRATOR);
+        when(userService.getById(10L)).thenReturn(administrator);
+
+        assertThatThrownBy(() -> inspectionService.assignInspection(request, 10L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void assignInspection_shouldRejectFieldEmployee() {
+        AssignInspectionRequest request = validRequest();
+        User fieldEmployee = user(10L, UserRole.FIELD_EMPLOYEE);
+        when(userService.getById(10L)).thenReturn(fieldEmployee);
+
+        assertThatThrownBy(() -> inspectionService.assignInspection(request, 10L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void assignInspection_shouldRejectContractor() {
+        AssignInspectionRequest request = validRequest();
+        User contractor = user(10L, UserRole.CONTRACTOR);
+        when(userService.getById(10L)).thenReturn(contractor);
+
+        assertThatThrownBy(() -> inspectionService.assignInspection(request, 10L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void assignInspection_shouldRejectDuplicateActiveAssignment() {
+        AssignInspectionRequest request = validRequest();
+        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        BusinessTrigger trigger = businessTrigger(1L, false);
+
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(businessTriggerRepository.findById(1L)).thenReturn(Optional.of(trigger));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.existsByBusinessTriggerIdAndStatus(1L, InspectionStatus.ASSIGNED))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> inspectionService.assignInspection(request, 10L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+
+        verify(inspectionRepository, never()).save(any());
+    }
+
+    @Test
+    void assignInspection_shouldRejectExpectedCompletionDateInPast() {
+        AssignInspectionRequest request = validRequest();
+        request.setExpectedCompletionDate(LocalDate.now().minusDays(1));
+        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        BusinessTrigger trigger = businessTrigger(1L, false);
+
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(businessTriggerRepository.findById(1L)).thenReturn(Optional.of(trigger));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.existsByBusinessTriggerIdAndStatus(1L, InspectionStatus.ASSIGNED))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> inspectionService.assignInspection(request, 10L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+
+        verify(inspectionRepository, never()).save(any());
+    }
+
+    private AssignInspectionRequest validRequest() {
+        AssignInspectionRequest request = new AssignInspectionRequest();
+        request.setBusinessTriggerId(1L);
+        request.setAssignedToUserId(20L);
+        request.setPriority(InspectionPriority.NORMAL);
+        request.setExpectedCompletionDate(LocalDate.now().plusDays(7));
+        return request;
+    }
+
+    private BusinessTrigger businessTrigger(Long id, boolean urgent) {
+        Department department = new Department("Parks");
+        department.setId(1L);
+        AssetCategory category = new AssetCategory("Playground");
+        category.setId(2L);
+        Asset asset = new Asset(
+                "Central Playground",
+                department,
+                category,
+                "Memorial Park",
+                AssetStatus.ACTIVE,
+                LocalDate.of(2026, 6, 25),
+                10L
+        );
+        asset.setId(5L);
+        BusinessTrigger trigger = new BusinessTrigger(
+                asset,
+                BusinessTriggerType.CUSTOMER_REQUEST,
+                "Damaged equipment reported",
+                urgent,
+                10L
+        );
+        trigger.setId(id);
+        return trigger;
+    }
+
+    private User user(Long id, UserRole role) {
+        User user = new User("user@test.com", "password", "User", role);
+        user.setId(id);
+        user.setEnabled(true);
+        return user;
+    }
+}
