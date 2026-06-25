@@ -1,7 +1,6 @@
 package com.infratrack.user;
 
-import com.infratrack.auth.AccountActivationToken;
-import com.infratrack.auth.AccountActivationTokenRepository;
+import com.infratrack.auth.ActivationService;
 import com.infratrack.service.EmailService;
 import com.infratrack.user.dto.UpdateUserRequest;
 import com.infratrack.user.dto.UserManagementResponse;
@@ -14,7 +13,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,7 +27,7 @@ class UserManagementServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private AccountActivationTokenRepository tokenRepository;
+    private ActivationService activationService;
 
     @Mock
     private EmailService emailService;
@@ -44,7 +42,7 @@ class UserManagementServiceTest {
         user1.setEnabled(true);
 
         when(userRepository.findAll()).thenReturn(List.of(user1));
-        lenient().when(tokenRepository.hasValidTokenByUserId(anyLong(), anyLong())).thenReturn(false);
+        lenient().when(activationService.hasValidActivationToken(anyLong())).thenReturn(false);
 
         List<UserManagementResponse> result = userManagementService.listAllUsers();
 
@@ -59,7 +57,7 @@ class UserManagementServiceTest {
         user.setEnabled(true);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        lenient().when(tokenRepository.hasValidTokenByUserId(eq(1L), anyLong())).thenReturn(false);
+        lenient().when(activationService.hasValidActivationToken(1L)).thenReturn(false);
 
         UserManagementResponse result = userManagementService.getUserById(1L);
 
@@ -128,7 +126,7 @@ class UserManagementServiceTest {
         when(userRepository.findById(2L)).thenReturn(Optional.of(user));
         when(userRepository.findByEmail("new@test.com")).thenReturn(Optional.empty());
         when(userRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
-        lenient().when(tokenRepository.hasValidTokenByUserId(eq(2L), anyLong())).thenReturn(false);
+        lenient().when(activationService.hasValidActivationToken(2L)).thenReturn(false);
 
         UserManagementResponse result = userManagementService.updateUser(2L, request, 1L);
 
@@ -187,7 +185,7 @@ class UserManagementServiceTest {
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
         when(userRepository.findById(2L)).thenReturn(Optional.of(activeUser));
-        when(tokenRepository.hasValidTokenByUserId(eq(2L), anyLong())).thenReturn(false);
+        when(activationService.hasValidActivationToken(2L)).thenReturn(false);
         when(userRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
 
         userManagementService.deactivateUser(2L, 1L);
@@ -206,18 +204,14 @@ class UserManagementServiceTest {
         pendingUser.setId(2L);
         pendingUser.setEnabled(false);
 
-        AccountActivationToken token = new AccountActivationToken("token", pendingUser, System.currentTimeMillis() + 100000);
-        token.setId(1L);
-
         when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
         when(userRepository.findById(2L)).thenReturn(Optional.of(pendingUser));
-        when(tokenRepository.hasValidTokenByUserId(eq(2L), anyLong())).thenReturn(true);
-        when(tokenRepository.findUnusedByUserId(2L)).thenReturn(List.of(token));
+        when(activationService.hasValidActivationToken(2L)).thenReturn(true);
         when(userRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
 
         userManagementService.deactivateUser(2L, 1L);
 
-        verify(tokenRepository).saveAll(any());
+        verify(activationService).invalidateUnusedTokensForUser(2L);
     }
 
     @Test
@@ -243,7 +237,7 @@ class UserManagementServiceTest {
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
         when(userRepository.findById(2L)).thenReturn(Optional.of(disabledUser));
-        when(tokenRepository.hasValidTokenByUserId(eq(2L), anyLong())).thenReturn(false);
+        when(activationService.hasValidActivationToken(2L)).thenReturn(false);
         when(userRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
 
         userManagementService.reactivateUser(2L, 1L);
@@ -264,7 +258,7 @@ class UserManagementServiceTest {
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
         when(userRepository.findById(2L)).thenReturn(Optional.of(pendingUser));
-        when(tokenRepository.hasValidTokenByUserId(eq(2L), anyLong())).thenReturn(true);
+        when(activationService.hasValidActivationToken(2L)).thenReturn(true);
 
         assertThatThrownBy(() -> userManagementService.reactivateUser(2L, 1L))
                 .isInstanceOf(ResponseStatusException.class)
@@ -282,7 +276,7 @@ class UserManagementServiceTest {
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
         when(userRepository.findById(2L)).thenReturn(Optional.of(neverActivated));
-        when(tokenRepository.hasValidTokenByUserId(eq(2L), anyLong())).thenReturn(false);
+        when(activationService.hasValidActivationToken(2L)).thenReturn(false);
 
         assertThatThrownBy(() -> userManagementService.reactivateUser(2L, 1L))
                 .isInstanceOf(ResponseStatusException.class)
@@ -300,7 +294,7 @@ class UserManagementServiceTest {
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
         when(userRepository.findById(2L)).thenReturn(Optional.of(activeUser));
-        lenient().when(tokenRepository.hasValidTokenByUserId(eq(2L), anyLong())).thenReturn(false);
+        lenient().when(activationService.hasValidActivationToken(2L)).thenReturn(false);
 
         assertThatThrownBy(() -> userManagementService.reactivateUser(2L, 1L))
                 .isInstanceOf(ResponseStatusException.class)
@@ -316,20 +310,13 @@ class UserManagementServiceTest {
         pendingUser.setId(2L);
         pendingUser.setEnabled(false);
 
-        AccountActivationToken oldToken = new AccountActivationToken("old", pendingUser, System.currentTimeMillis() + 100000);
-        oldToken.setId(1L);
-
         when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
         when(userRepository.findById(2L)).thenReturn(Optional.of(pendingUser));
-        when(tokenRepository.findUnusedByUserId(2L)).thenReturn(List.of(oldToken));
-        when(tokenRepository.hasValidTokenByUserId(eq(2L), anyLong())).thenReturn(true);
-        when(tokenRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
+        when(activationService.hasValidActivationToken(2L)).thenReturn(true);
 
         userManagementService.resendActivationLink(2L, 1L);
 
-        verify(tokenRepository).saveAll(any());
-        verify(tokenRepository).save(any(AccountActivationToken.class));
-        verify(emailService).sendActivationEmail(anyString(), anyString(), anyString());
+        verify(activationService).resendActivationForUser(pendingUser);
     }
 
     @Test
@@ -343,7 +330,7 @@ class UserManagementServiceTest {
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
         when(userRepository.findById(2L)).thenReturn(Optional.of(activeUser));
-        lenient().when(tokenRepository.hasValidTokenByUserId(eq(2L), anyLong())).thenReturn(false);
+        lenient().when(activationService.hasValidActivationToken(2L)).thenReturn(false);
 
         assertThatThrownBy(() -> userManagementService.resendActivationLink(2L, 1L))
                 .isInstanceOf(ResponseStatusException.class)
@@ -361,14 +348,11 @@ class UserManagementServiceTest {
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
         when(userRepository.findById(2L)).thenReturn(Optional.of(neverActivated));
-        when(tokenRepository.findUnusedByUserId(2L)).thenReturn(new ArrayList<>());
-        when(tokenRepository.hasValidTokenByUserId(eq(2L), anyLong())).thenReturn(false);
-        when(tokenRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
+        when(activationService.hasValidActivationToken(2L)).thenReturn(false);
 
         userManagementService.resendActivationLink(2L, 1L);
 
-        verify(tokenRepository).save(any(AccountActivationToken.class));
-        verify(emailService).sendActivationEmail(anyString(), anyString(), anyString());
+        verify(activationService).resendActivationForUser(neverActivated);
     }
 
     @Test
@@ -377,7 +361,7 @@ class UserManagementServiceTest {
         user.setId(1L);
         user.setEnabled(true);
 
-        lenient().when(tokenRepository.hasValidTokenByUserId(eq(1L), anyLong())).thenReturn(false);
+        lenient().when(activationService.hasValidActivationToken(1L)).thenReturn(false);
 
         UserStatus status = userManagementService.computeStatus(user);
 
@@ -390,7 +374,7 @@ class UserManagementServiceTest {
         user.setId(1L);
         user.setEnabled(false);
 
-        when(tokenRepository.hasValidTokenByUserId(eq(1L), anyLong())).thenReturn(true);
+        when(activationService.hasValidActivationToken(1L)).thenReturn(true);
 
         UserStatus status = userManagementService.computeStatus(user);
 
@@ -403,7 +387,7 @@ class UserManagementServiceTest {
         user.setId(1L);
         user.setEnabled(false);
 
-        when(tokenRepository.hasValidTokenByUserId(eq(1L), anyLong())).thenReturn(false);
+        when(activationService.hasValidActivationToken(1L)).thenReturn(false);
 
         UserStatus status = userManagementService.computeStatus(user);
 

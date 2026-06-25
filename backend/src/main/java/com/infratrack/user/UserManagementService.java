@@ -1,7 +1,6 @@
 package com.infratrack.user;
 
-import com.infratrack.auth.AccountActivationToken;
-import com.infratrack.auth.AccountActivationTokenRepository;
+import com.infratrack.auth.ActivationService;
 import com.infratrack.service.EmailService;
 import com.infratrack.user.dto.UpdateUserRequest;
 import com.infratrack.user.dto.UserManagementResponse;
@@ -11,28 +10,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.security.SecureRandom;
-import java.util.Base64;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @Slf4j
 public class UserManagementService {
 
     private final UserRepository userRepository;
-    private final AccountActivationTokenRepository tokenRepository;
+    private final ActivationService activationService;
     private final EmailService emailService;
-
-    private static final SecureRandom secureRandom = new SecureRandom();
-    private static final int TOKEN_LENGTH = 32;
 
     public UserManagementService(
             UserRepository userRepository,
-            AccountActivationTokenRepository tokenRepository,
+            ActivationService activationService,
             EmailService emailService) {
         this.userRepository = userRepository;
-        this.tokenRepository = tokenRepository;
+        this.activationService = activationService;
         this.emailService = emailService;
     }
 
@@ -150,21 +143,7 @@ public class UserManagementService {
         UserStatus status = computeStatus(user);
 
         if (status == UserStatus.PENDING_ACTIVATION) {
-            // Invalidate old tokens for this user
-            List<AccountActivationToken> oldTokens = tokenRepository.findUnusedByUserId(user.getId());
-            oldTokens.forEach(t -> t.setUsedAt(System.currentTimeMillis()));
-            tokenRepository.saveAll(oldTokens);
-
-            // Generate and send new activation link to new email
-            String newToken = generateSecureToken();
-            AccountActivationToken activationToken = new AccountActivationToken(
-                    newToken,
-                    user,
-                    System.currentTimeMillis() + (24 * 60 * 60 * 1000) // 24 hours
-            );
-            tokenRepository.save(activationToken);
-            emailService.sendActivationEmail(user.getEmail(), newToken, user.getName());
-
+            activationService.resendActivationForUser(user);
             log.info("New activation link sent to user {} at new email address", user.getId());
         } else if (status == UserStatus.ACTIVE) {
             // Send notification to old email (optional but recommended)
@@ -203,17 +182,8 @@ public class UserManagementService {
         UserStatus currentStatus = computeStatus(user);
 
         if (currentStatus == UserStatus.PENDING_ACTIVATION) {
-            // Invalidate all unused activation tokens for this pending user
-            // This ensures the old activation link will no longer work
-            // and the status transitions from PENDING_ACTIVATION to DISABLED
-            List<AccountActivationToken> pendingTokens = tokenRepository.findUnusedByUserId(userId);
-            
-            pendingTokens.forEach(t -> {
-                t.setUsedAt(System.currentTimeMillis());
-            });
-            tokenRepository.saveAll(pendingTokens);
-            
-            log.info("Invalidated {} activation tokens for deactivated pending user {}", pendingTokens.size(), userId);
+            activationService.invalidateUnusedTokensForUser(userId);
+            log.info("Invalidated activation tokens for deactivated pending user {}", userId);
         }
 
         // Set enabled=false to prevent login
@@ -330,21 +300,7 @@ public class UserManagementService {
                     "Activation link can only be resent for pending or never-activated users");
         }
 
-        // Invalidate old tokens
-        List<AccountActivationToken> oldTokens = tokenRepository.findUnusedByUserId(userId);
-        oldTokens.forEach(t -> t.setUsedAt(System.currentTimeMillis()));
-        tokenRepository.saveAll(oldTokens);
-
-        // Generate and send new activation link
-        String newToken = generateSecureToken();
-        long expirationTime = System.currentTimeMillis() + (24 * 60 * 60 * 1000); // 24 hours
-        AccountActivationToken activationToken = new AccountActivationToken(
-                newToken,
-                user,
-                expirationTime
-        );
-        tokenRepository.save(activationToken);
-        emailService.sendActivationEmail(user.getEmail(), newToken, user.getName());
+        activationService.resendActivationForUser(user);
 
         log.info("Activation link resent for user {} by admin {}", userId, requestingAdminId);
     }
@@ -361,7 +317,7 @@ public class UserManagementService {
         }
 
         // Check if user has a valid (unused and not expired) activation token
-        boolean hasPendingToken = tokenRepository.hasValidTokenByUserId(user.getId(), System.currentTimeMillis());
+        boolean hasPendingToken = activationService.hasValidActivationToken(user.getId());
 
         return hasPendingToken ? UserStatus.PENDING_ACTIVATION : UserStatus.DISABLED;
     }
@@ -383,16 +339,5 @@ public class UserManagementService {
                 user.getCreatedAt(),
                 user.getUpdatedAt()
         );
-    }
-
-    /**
-     * Generates a secure random token for account activation.
-     *
-     * @return base64-encoded secure token
-     */
-    private String generateSecureToken() {
-        byte[] randomBytes = new byte[TOKEN_LENGTH];
-        secureRandom.nextBytes(randomBytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
     }
 }

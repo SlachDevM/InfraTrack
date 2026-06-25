@@ -77,17 +77,50 @@ public class ActivationService {
         newUser.setEnabled(false);
         User savedUser = userRepository.save(newUser);
 
-        // Generate and save activation token
-        String token = generateSecureToken();
-        long expirationTime = System.currentTimeMillis() + (tokenExpirationHours * 60 * 60 * 1000);
-        AccountActivationToken activationToken = new AccountActivationToken(token, savedUser, expirationTime);
-        tokenRepository.save(activationToken);
-
-        // Send activation email
-        emailService.sendActivationEmail(email, token, name);
+        createAndSendActivationToken(savedUser);
 
         log.info("Employee invitation created for email: {} by user: {}", email, creator.getId());
         return savedUser;
+    }
+
+    /**
+     * Returns whether the user has a valid (unused and not expired) activation token.
+     */
+    public boolean hasValidActivationToken(Long userId) {
+        return tokenRepository.hasValidTokenByUserId(userId, System.currentTimeMillis());
+    }
+
+    /**
+     * Marks all unused activation tokens for the user as used.
+     */
+    @Transactional
+    public void invalidateUnusedTokensForUser(Long userId) {
+        var unusedTokens = tokenRepository.findUnusedByUserId(userId);
+        unusedTokens.forEach(token -> token.setUsedAt(System.currentTimeMillis()));
+        if (!unusedTokens.isEmpty()) {
+            tokenRepository.saveAll(unusedTokens);
+        }
+    }
+
+    /**
+     * Creates a new activation token for the user and sends the activation email.
+     */
+    @Transactional
+    public void createAndSendActivationToken(User user) {
+        String token = generateSecureToken();
+        long expirationTime = System.currentTimeMillis() + (tokenExpirationHours * 60 * 60 * 1000);
+        AccountActivationToken activationToken = new AccountActivationToken(token, user, expirationTime);
+        tokenRepository.save(activationToken);
+        emailService.sendActivationEmail(user.getEmail(), token, user.getName());
+    }
+
+    /**
+     * Invalidates existing unused tokens and sends a new activation link to the user.
+     */
+    @Transactional
+    public void resendActivationForUser(User user) {
+        invalidateUnusedTokensForUser(user.getId());
+        createAndSendActivationToken(user);
     }
 
     /**
