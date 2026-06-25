@@ -1,6 +1,8 @@
 name: infratrack
 version: '3.8'
 
+# Local development stack — uses the dev Spring profile (see application.properties).
+
 services:
   backend:
     build: ./backend
@@ -18,7 +20,7 @@ services:
       - SPRING_MAIL_PORT=1025
       - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=false
       - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=false
-      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_PROFILES_ACTIVE=dev
     volumes:
       - ./backend/firebase-service-account.json:/app/firebase-service-account.json:ro
     depends_on:

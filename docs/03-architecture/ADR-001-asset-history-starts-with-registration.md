@@ -12,7 +12,7 @@ UC-001 Register Asset requires that:
 - Every operational event associated with an Asset contributes to its permanent operational history (BR-004).
 - Asset History is permanent and must not be removed (BR-026).
 
-At the same time, InfraTrack follows a vertical-slice delivery model. UC-011 View Asset History is not yet implemented, and the platform must avoid speculative abstractions such as a generic history framework or event sourcing.
+InfraTrack follows a vertical-slice delivery model and avoids speculative abstractions such as a generic history framework or event sourcing.
 
 ## Decision
 
@@ -25,23 +25,39 @@ The event records:
 - the business event date (`registrationDate` as `LocalDate`);
 - a technical `createdAt` timestamp.
 
-No separate history module, browsing API, or UI is introduced at this stage.
+Registration remains the first persisted Asset History event. Subsequent operational use cases append further events to the same permanent history.
 
 ## Consequences
 
 **Positive**
 
 - Operational traceability begins at registration, satisfying UC-001 and BR-004 at minimal cost.
-- The implementation stays explicit and feature-first under `com.infratrack.asset`.
-- Future UC-011 can expose existing persisted events without redesigning the registration flow.
+- The registration flow stays explicit and feature-first under `com.infratrack.asset`.
+- UC-011 View Asset History exposes existing persisted events through `com.infratrack.assethistory` without redesigning the registration flow.
+- Asset History browsing is available through `GET /api/assets/{id}/history` and a read-only slice on the Assets page.
+
+**Current state**
+
+Asset History now records the ten event types implemented across UC-001 to UC-010:
+
+- Asset Registered;
+- Business Trigger Created;
+- Inspection Assigned;
+- Inspection Completed;
+- Issue Recorded;
+- Operational Decision Made;
+- Work Order Created;
+- Work Order Assigned;
+- Maintenance Completed;
+- Completion Review Recorded.
+
+Asset History remains read-only. Viewing history does not create, modify or delete history entries.
 
 **Negative / deferred**
 
-- Asset History cannot yet be viewed in the application (deferred to UC-011).
-- Only registration events exist today; status changes and operational workflows will add further event types later.
-- No document or photo linkage is stored with the registration event (out of UC-001 scope).
+- No document or photo linkage is stored with history events (out of scope for UC-001 to UC-011).
 
 ## Related use cases
 
 - UC-001 Register Asset — implemented
-- UC-011 View Asset History — deferred
+- UC-011 View Asset History — implemented
