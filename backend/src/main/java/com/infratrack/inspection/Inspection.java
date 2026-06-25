@@ -5,6 +5,7 @@ import com.infratrack.businesstrigger.BusinessTrigger;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "inspections")
@@ -39,6 +40,22 @@ public class Inspection {
     @Column(name = "expected_completion_date")
     private LocalDate expectedCompletionDate;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "observed_condition")
+    private PhysicalCondition observedCondition;
+
+    @Column(columnDefinition = "TEXT")
+    private String observations;
+
+    @Column(name = "issue_identified", nullable = false)
+    private boolean issueIdentified;
+
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
+
+    @Column(name = "completed_by_user_id")
+    private Long completedByUserId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Long createdAt;
 
@@ -62,9 +79,25 @@ public class Inspection {
         this.status = InspectionStatus.ASSIGNED;
         this.priority = priority;
         this.expectedCompletionDate = expectedCompletionDate;
+        this.issueIdentified = false;
         long now = System.currentTimeMillis();
         this.createdAt = now;
         this.updatedAt = now;
+    }
+
+    public void complete(
+            PhysicalCondition observedCondition,
+            String observations,
+            boolean issueIdentified,
+            LocalDateTime completedAt,
+            Long completedByUserId) {
+        this.observedCondition = observedCondition;
+        this.observations = observations;
+        this.issueIdentified = issueIdentified;
+        this.completedAt = completedAt;
+        this.completedByUserId = completedByUserId;
+        this.status = InspectionStatus.COMPLETED;
+        this.updatedAt = System.currentTimeMillis();
     }
 
     public Long getId() {
@@ -101,6 +134,26 @@ public class Inspection {
 
     public LocalDate getExpectedCompletionDate() {
         return expectedCompletionDate;
+    }
+
+    public PhysicalCondition getObservedCondition() {
+        return observedCondition;
+    }
+
+    public String getObservations() {
+        return observations;
+    }
+
+    public boolean isIssueIdentified() {
+        return issueIdentified;
+    }
+
+    public LocalDateTime getCompletedAt() {
+        return completedAt;
+    }
+
+    public Long getCompletedByUserId() {
+        return completedByUserId;
     }
 
     public Long getCreatedAt() {

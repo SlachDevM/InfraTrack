@@ -7,6 +7,7 @@ import com.infratrack.asset.AssetHistoryEventType;
 import com.infratrack.businesstrigger.BusinessTrigger;
 import com.infratrack.businesstrigger.BusinessTriggerRepository;
 import com.infratrack.inspection.dto.AssignInspectionRequest;
+import com.infratrack.inspection.dto.CompleteInspectionRequest;
 import com.infratrack.inspection.dto.InspectionResponse;
 import com.infratrack.model.User;
 import com.infratrack.service.UserService;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -79,6 +81,30 @@ public class InspectionService {
 
         User assignedByUser = userService.getById(userId);
         return InspectionResponse.from(inspection, assignedToUser, assignedByUser);
+    }
+
+    @Transactional
+    public InspectionResponse completeInspection(Long inspectionId, CompleteInspectionRequest request, Long userId) {
+        Inspection inspection = findInspectionOrThrow(inspectionId);
+        User performer = requireAssignedPerformer(userId, inspection);
+        requireAssignedStatus(inspection);
+
+        PhysicalCondition observedCondition = validateObservedCondition(request.getObservedCondition());
+        String observations = normalizeObservations(request.getObservations());
+        boolean issueIdentified = request.getIssueIdentified() != null && request.getIssueIdentified();
+        LocalDateTime completedAt = validateCompletedAt(request.getCompletedAt());
+
+        inspection.complete(observedCondition, observations, issueIdentified, completedAt, performer.getId());
+        inspectionRepository.save(inspection);
+
+        assetHistoryEventRepository.save(new AssetHistoryEvent(
+                inspection.getAsset(),
+                AssetHistoryEventType.INSPECTION_COMPLETED,
+                performer.getId(),
+                completedAt.toLocalDate()
+        ));
+
+        return InspectionResponse.from(inspection, performer, null);
     }
 
     public void requireCanAssignInspections(Long userId) {
@@ -146,5 +172,54 @@ public class InspectionService {
             return InspectionPriority.URGENT;
         }
         return InspectionPriority.NORMAL;
+    }
+
+    private User requireAssignedPerformer(Long userId, Inspection inspection) {
+        User user = userService.getById(userId);
+        if (!user.getRole().isFieldEmployee() && !user.getRole().isContractor()) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Only field employees and contractors can perform inspections");
+        }
+        if (!inspection.getAssignedToUserId().equals(userId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Only the assigned user can perform this inspection");
+        }
+        return user;
+    }
+
+    private void requireAssignedStatus(Inspection inspection) {
+        if (inspection.getStatus() != InspectionStatus.ASSIGNED) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Only assigned inspections can be completed");
+        }
+    }
+
+    private PhysicalCondition validateObservedCondition(PhysicalCondition observedCondition) {
+        if (observedCondition == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Observed condition is required");
+        }
+        return observedCondition;
+    }
+
+    private String normalizeObservations(String observations) {
+        if (observations == null || observations.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Inspection observations are required");
+        }
+        return observations.trim();
+    }
+
+    private LocalDateTime validateCompletedAt(LocalDateTime completedAt) {
+        if (completedAt == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Completion date and time are required");
+        }
+        if (completedAt.isAfter(LocalDateTime.now())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Completion date and time cannot be in the future");
+        }
+        return completedAt;
     }
 }

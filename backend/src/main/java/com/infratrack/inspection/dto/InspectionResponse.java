@@ -4,9 +4,11 @@ import com.infratrack.businesstrigger.BusinessTriggerType;
 import com.infratrack.inspection.Inspection;
 import com.infratrack.inspection.InspectionPriority;
 import com.infratrack.inspection.InspectionStatus;
+import com.infratrack.inspection.PhysicalCondition;
 import com.infratrack.model.User;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class InspectionResponse {
 
@@ -22,6 +24,11 @@ public class InspectionResponse {
     private InspectionStatus status;
     private InspectionPriority priority;
     private LocalDate expectedCompletionDate;
+    private PhysicalCondition observedCondition;
+    private String observations;
+    private boolean issueIdentified;
+    private LocalDateTime completedAt;
+    private Long completedByUserId;
     private Long createdAt;
     private Long updatedAt;
 
@@ -43,6 +50,11 @@ public class InspectionResponse {
         response.status = inspection.getStatus();
         response.priority = inspection.getPriority();
         response.expectedCompletionDate = inspection.getExpectedCompletionDate();
+        response.observedCondition = inspection.getObservedCondition();
+        response.observations = inspection.getObservations();
+        response.issueIdentified = inspection.isIssueIdentified();
+        response.completedAt = inspection.getCompletedAt();
+        response.completedByUserId = inspection.getCompletedByUserId();
         response.createdAt = inspection.getCreatedAt();
         response.updatedAt = inspection.getUpdatedAt();
         return response;
@@ -94,6 +106,26 @@ public class InspectionResponse {
 
     public LocalDate getExpectedCompletionDate() {
         return expectedCompletionDate;
+    }
+
+    public PhysicalCondition getObservedCondition() {
+        return observedCondition;
+    }
+
+    public String getObservations() {
+        return observations;
+    }
+
+    public boolean isIssueIdentified() {
+        return issueIdentified;
+    }
+
+    public LocalDateTime getCompletedAt() {
+        return completedAt;
+    }
+
+    public Long getCompletedByUserId() {
+        return completedByUserId;
     }
 
     public Long getCreatedAt() {

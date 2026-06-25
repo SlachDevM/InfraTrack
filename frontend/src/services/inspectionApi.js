@@ -10,6 +10,7 @@ export const inspectionApi = {
   list: () => apiClient.get(ENDPOINTS.LIST),
   get: (id) => apiClient.get(ENDPOINTS.DETAIL(id)),
   assign: (request) => apiClient.post(ENDPOINTS.LIST, request),
+  complete: (id, request) => apiClient.post(`${ENDPOINTS.DETAIL(id)}/complete`, request),
   listWorkers: () => apiClient.get(ENDPOINTS.WORKERS),
 };
 

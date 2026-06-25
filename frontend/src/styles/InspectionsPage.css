@@ -33,3 +33,17 @@
 .inspections-table td {
   vertical-align: top;
 }
+
+.complete-form {
+  margin-bottom: 1.5rem;
+}
+
+.complete-form:last-child {
+  margin-bottom: 0;
+}
+
+.checkbox-row label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}

@@ -11,6 +11,7 @@ import com.infratrack.businesstrigger.BusinessTriggerRepository;
 import com.infratrack.businesstrigger.BusinessTriggerType;
 import com.infratrack.department.Department;
 import com.infratrack.inspection.dto.AssignInspectionRequest;
+import com.infratrack.inspection.dto.CompleteInspectionRequest;
 import com.infratrack.model.User;
 import com.infratrack.model.UserRole;
 import com.infratrack.service.UserService;
@@ -24,6 +25,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -274,6 +276,235 @@ class InspectionServiceTest {
                 .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
 
         verify(inspectionRepository, never()).save(any());
+    }
+
+    @Test
+    void completeInspection_shouldCompleteInspectionAndHistoryEvent_whenAssignedFieldEmployee() {
+        CompleteInspectionRequest request = validCompleteRequest();
+        Inspection inspection = assignedInspection(100L, 20L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.save(any(Inspection.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = inspectionService.completeInspection(100L, request, 20L);
+
+        assertThat(response.getStatus()).isEqualTo(InspectionStatus.COMPLETED);
+        assertThat(response.getObservedCondition()).isEqualTo(PhysicalCondition.GOOD);
+        assertThat(response.getObservations()).isEqualTo("Equipment inspected and operating normally");
+        assertThat(response.isIssueIdentified()).isFalse();
+        assertThat(response.getCompletedByUserId()).isEqualTo(20L);
+
+        ArgumentCaptor<AssetHistoryEvent> historyCaptor = ArgumentCaptor.forClass(AssetHistoryEvent.class);
+        verify(assetHistoryEventRepository).save(historyCaptor.capture());
+        assertThat(historyCaptor.getValue().getEventType()).isEqualTo(AssetHistoryEventType.INSPECTION_COMPLETED);
+        assertThat(historyCaptor.getValue().getAsset().getId()).isEqualTo(5L);
+        assertThat(historyCaptor.getValue().getPerformedByUserId()).isEqualTo(20L);
+    }
+
+    @Test
+    void completeInspection_shouldAllowAssignedContractor() {
+        CompleteInspectionRequest request = validCompleteRequest();
+        Inspection inspection = assignedInspection(100L, 30L);
+        User contractor = user(30L, UserRole.CONTRACTOR);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(30L)).thenReturn(contractor);
+        when(inspectionRepository.save(any(Inspection.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = inspectionService.completeInspection(100L, request, 30L);
+
+        assertThat(response.getStatus()).isEqualTo(InspectionStatus.COMPLETED);
+    }
+
+    @Test
+    void completeInspection_shouldRecordIssueIdentifiedWithoutCreatingIssue() {
+        CompleteInspectionRequest request = validCompleteRequest();
+        request.setIssueIdentified(true);
+        Inspection inspection = assignedInspection(100L, 20L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.save(any(Inspection.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = inspectionService.completeInspection(100L, request, 20L);
+
+        assertThat(response.isIssueIdentified()).isTrue();
+        verify(inspectionRepository).save(argThat(saved -> saved.isIssueIdentified()));
+    }
+
+    @Test
+    void completeInspection_shouldRejectNonAssignedUser() {
+        CompleteInspectionRequest request = validCompleteRequest();
+        Inspection inspection = assignedInspection(100L, 20L);
+        User otherFieldEmployee = user(99L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(99L)).thenReturn(otherFieldEmployee);
+
+        assertThatThrownBy(() -> inspectionService.completeInspection(100L, request, 99L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+
+        verify(inspectionRepository, never()).save(any());
+    }
+
+    @Test
+    void completeInspection_shouldRejectManager() {
+        CompleteInspectionRequest request = validCompleteRequest();
+        Inspection inspection = assignedInspection(100L, 20L);
+        User manager = user(20L, UserRole.MANAGER);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(manager);
+
+        assertThatThrownBy(() -> inspectionService.completeInspection(100L, request, 20L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void completeInspection_shouldRejectOperationalCoordinator() {
+        CompleteInspectionRequest request = validCompleteRequest();
+        Inspection inspection = assignedInspection(100L, 20L);
+        User coordinator = user(20L, UserRole.OPERATIONAL_COORDINATOR);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(coordinator);
+
+        assertThatThrownBy(() -> inspectionService.completeInspection(100L, request, 20L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void completeInspection_shouldRejectAdministrator() {
+        CompleteInspectionRequest request = validCompleteRequest();
+        Inspection inspection = assignedInspection(100L, 20L);
+        User administrator = user(20L, UserRole.ADMINISTRATOR);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(administrator);
+
+        assertThatThrownBy(() -> inspectionService.completeInspection(100L, request, 20L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void completeInspection_shouldRejectWhenNotAssignedStatus() {
+        CompleteInspectionRequest request = validCompleteRequest();
+        Inspection inspection = assignedInspection(100L, 20L);
+        inspection.complete(
+                PhysicalCondition.GOOD,
+                "Already done",
+                false,
+                LocalDateTime.now().minusHours(1),
+                20L
+        );
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        assertThatThrownBy(() -> inspectionService.completeInspection(100L, request, 20L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void completeInspection_shouldRejectMissingObservations() {
+        CompleteInspectionRequest request = validCompleteRequest();
+        request.setObservations("  ");
+        Inspection inspection = assignedInspection(100L, 20L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        assertThatThrownBy(() -> inspectionService.completeInspection(100L, request, 20L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void completeInspection_shouldRejectMissingObservedCondition() {
+        CompleteInspectionRequest request = validCompleteRequest();
+        request.setObservedCondition(null);
+        Inspection inspection = assignedInspection(100L, 20L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        assertThatThrownBy(() -> inspectionService.completeInspection(100L, request, 20L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void completeInspection_shouldRejectMissingCompletedAt() {
+        CompleteInspectionRequest request = validCompleteRequest();
+        request.setCompletedAt(null);
+        Inspection inspection = assignedInspection(100L, 20L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        assertThatThrownBy(() -> inspectionService.completeInspection(100L, request, 20L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void completeInspection_shouldRejectFutureCompletedAt() {
+        CompleteInspectionRequest request = validCompleteRequest();
+        request.setCompletedAt(LocalDateTime.now().plusDays(1));
+        Inspection inspection = assignedInspection(100L, 20L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        assertThatThrownBy(() -> inspectionService.completeInspection(100L, request, 20L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void completeInspection_shouldRejectWhenInspectionNotFound() {
+        CompleteInspectionRequest request = validCompleteRequest();
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> inspectionService.completeInspection(100L, request, 20L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.NOT_FOUND);
+    }
+
+    private CompleteInspectionRequest validCompleteRequest() {
+        CompleteInspectionRequest request = new CompleteInspectionRequest();
+        request.setObservedCondition(PhysicalCondition.GOOD);
+        request.setObservations("Equipment inspected and operating normally");
+        request.setIssueIdentified(false);
+        request.setCompletedAt(LocalDateTime.now().minusMinutes(5));
+        return request;
+    }
+
+    private Inspection assignedInspection(Long id, Long assignedToUserId) {
+        BusinessTrigger trigger = businessTrigger(1L, false);
+        Inspection inspection = new Inspection(
+                trigger.getAsset(),
+                trigger,
+                assignedToUserId,
+                10L,
+                InspectionPriority.NORMAL,
+                LocalDate.now().plusDays(7)
+        );
+        inspection.setId(id);
+        return inspection;
     }
 
     private AssignInspectionRequest validRequest() {

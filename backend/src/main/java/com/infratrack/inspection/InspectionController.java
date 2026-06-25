@@ -1,6 +1,7 @@
 package com.infratrack.inspection;
 
 import com.infratrack.inspection.dto.AssignInspectionRequest;
+import com.infratrack.inspection.dto.CompleteInspectionRequest;
 import com.infratrack.inspection.dto.InspectionResponse;
 import com.infratrack.security.JwtAuthenticationToken;
 import org.springframework.http.HttpStatus;
@@ -38,5 +39,15 @@ public class InspectionController {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         InspectionResponse response = inspectionService.assignInspection(request, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/{id}/complete")
+    public ResponseEntity<InspectionResponse> completeInspection(
+            @PathVariable Long id,
+            @RequestBody CompleteInspectionRequest request,
+            Authentication authentication) {
+        Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+        InspectionResponse response = inspectionService.completeInspection(id, request, userId);
+        return ResponseEntity.ok(response);
     }
 }
