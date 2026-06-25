@@ -156,6 +156,14 @@ They do not normally make Operational Decisions.
 
 ---
 
+### BR-033
+
+One Issue may produce zero or one Operational Decision in InfraTrack V1.
+
+Future versions may extend this if required.
+
+---
+
 # 7. Work Order Rules
 
 ### BR-017
@@ -187,6 +195,22 @@ Following an approved Operational Decision, Work Orders are coordinated by an Op
 
 ---
 
+### BR-034
+
+One Operational Decision may produce zero or one Work Order in InfraTrack V1.
+
+Future versions may extend this if required.
+
+---
+
+### BR-038
+
+A completed Work Order must never be reopened.
+
+If further work is required, a new operational cycle must create a new Work Order.
+
+---
+
 # 8. Maintenance Rules
 
 ### BR-021
@@ -204,6 +228,14 @@ Examples include:
 * photographs;
 * notes;
 * completion reports.
+
+---
+
+### BR-035
+
+One Work Order may produce zero or one Maintenance Activity in InfraTrack V1.
+
+A Maintenance Activity represents one completed intervention.
 
 ---
 
@@ -227,6 +259,14 @@ Higher-risk or contractor-performed work may require managerial review before cl
 
 ---
 
+### BR-036
+
+One Maintenance Activity may receive zero or one Completion Review in InfraTrack V1.
+
+Completion Review remains optional.
+
+---
+
 # 10. Asset History Rules
 
 ### BR-026
@@ -242,6 +282,18 @@ Operational information must not be removed because work has been completed.
 Operational History records both actions and decisions.
 
 Understanding why work was performed is considered as important as understanding what work was performed.
+
+---
+
+### BR-037
+
+Asset History is read-only.
+
+Operational history records must never be edited or deleted.
+
+New operational events are appended.
+
+Existing events remain immutable.
 
 ---
 
@@ -262,6 +314,16 @@ Every operational event must be associated with a date and time.
 ### BR-030
 
 Operational evidence must remain linked to the corresponding Asset throughout its lifetime.
+
+---
+
+# 12. Asset Status Rules
+
+### BR-039
+
+Inspection, Operational Decision, Work Order, Maintenance Activity and Completion Review do not automatically change Asset Status in InfraTrack V1.
+
+Asset Status transitions are handled through dedicated business capabilities.
 
 ---
 
