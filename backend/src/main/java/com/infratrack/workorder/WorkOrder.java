@@ -142,6 +142,11 @@ public class WorkOrder {
         this.updatedAt = System.currentTimeMillis();
     }
 
+    public void complete() {
+        this.status = WorkOrderStatus.COMPLETED;
+        this.updatedAt = System.currentTimeMillis();
+    }
+
     public Long getCreatedAt() {
         return createdAt;
     }

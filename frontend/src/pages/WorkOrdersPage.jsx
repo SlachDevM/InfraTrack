@@ -5,7 +5,7 @@ import apiClient from '../services/apiClient';
 import workOrderApi from '../services/workOrderApi';
 import operationalDecisionApi from '../services/operationalDecisionApi';
 import NotificationButton from '../components/NotificationButton';
-import { canAssignWorkOrders, canCreateWorkOrders, USER_ROLES } from '../constants/userRoles';
+import { canAssignWorkOrders, canCompleteMaintenance, canCreateWorkOrders, USER_ROLES } from '../constants/userRoles';
 import { getOperationalDecisionOutcomeLabel } from '../constants/operationalDecisionOutcomes';
 import {
   WORK_ORDER_PRIORITIES,
@@ -31,6 +31,7 @@ export default function WorkOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [assigning, setAssigning] = useState(false);
+  const [completing, setCompleting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [formData, setFormData] = useState({
@@ -44,9 +45,16 @@ export default function WorkOrdersPage() {
     assignedToUserId: '',
     assignedAt: toDateTimeLocalValue(),
   });
+  const [completeFormData, setCompleteFormData] = useState({
+    workOrderId: '',
+    completionNotes: '',
+    completedAt: toDateTimeLocalValue(),
+  });
 
   const canCreate = canCreateWorkOrders(auth?.user?.role);
   const canAssign = canAssignWorkOrders(auth?.user?.role);
+  const canComplete = canCompleteMaintenance(auth?.user?.role);
+  const currentUserId = auth?.user?.userId;
 
   const eligibleDecisions = useMemo(() => {
     const decidedIds = new Set(workOrders.map((order) => order.operationalDecisionId));
@@ -81,6 +89,20 @@ export default function WorkOrdersPage() {
       : USER_ROLES.CONTRACTOR;
     return workers.filter((worker) => worker.role === requiredRole);
   }, [selectedAssignWorkOrder, workers]);
+
+  const assignedWorkOrdersForCurrentUser = useMemo(
+    () => workOrders.filter(
+      (order) => order.status === 'ASSIGNED'
+        && currentUserId
+        && order.assignedToUserId === currentUserId
+    ),
+    [workOrders, currentUserId]
+  );
+
+  const selectedCompleteWorkOrder = useMemo(
+    () => workOrders.find((order) => String(order.id) === String(completeFormData.workOrderId)),
+    [workOrders, completeFormData.workOrderId]
+  );
 
   useEffect(() => {
     if (!auth) {
@@ -184,6 +206,41 @@ export default function WorkOrdersPage() {
       }
     } finally {
       setAssigning(false);
+    }
+  };
+
+  const handleCompleteChange = (e) => {
+    const { name, value } = e.target;
+    setCompleteFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCompleteSubmit = async (e) => {
+    e.preventDefault();
+    if (!canComplete) return;
+
+    try {
+      setCompleting(true);
+      setError(null);
+      setSuccess(null);
+      await workOrderApi.completeMaintenance(Number(completeFormData.workOrderId), {
+        completionNotes: completeFormData.completionNotes,
+        completedAt: `${completeFormData.completedAt}:00`,
+      });
+      setSuccess('Maintenance activity completed successfully.');
+      setCompleteFormData({
+        workOrderId: '',
+        completionNotes: '',
+        completedAt: toDateTimeLocalValue(),
+      });
+      await loadPageData();
+    } catch (err) {
+      if (err.status === 403) {
+        setError('You do not have permission to complete maintenance for this work order.');
+      } else {
+        setError(`Failed to complete maintenance: ${err.message}`);
+      }
+    } finally {
+      setCompleting(false);
     }
   };
 
@@ -401,6 +458,83 @@ export default function WorkOrdersPage() {
         ) : (
           <p className="read-only-note">
             Work order assignment is available to Operational Coordinators.
+          </p>
+        )}
+
+        {canComplete ? (
+          <section className="work-order-form-section">
+            <h2>Complete Maintenance Activity</h2>
+            <form className="work-order-form" onSubmit={handleCompleteSubmit}>
+              <div className="form-row">
+                <label htmlFor="completeWorkOrderId">Assigned Work Order</label>
+                <select
+                  id="completeWorkOrderId"
+                  name="workOrderId"
+                  value={completeFormData.workOrderId}
+                  onChange={handleCompleteChange}
+                  required
+                  disabled={completing || assignedWorkOrdersForCurrentUser.length === 0}
+                >
+                  <option value="">Select assigned work order</option>
+                  {assignedWorkOrdersForCurrentUser.map((workOrder) => (
+                    <option key={workOrder.id} value={workOrder.id}>
+                      #{workOrder.id} — {workOrder.assetName} ({getOperationalDecisionOutcomeLabel(workOrder.workType)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedCompleteWorkOrder && (
+                <div className="linked-decision-info">
+                  <strong>Asset:</strong> {selectedCompleteWorkOrder.assetName}
+                  <br />
+                  <strong>Description:</strong> {selectedCompleteWorkOrder.description}
+                </div>
+              )}
+
+              <div className="form-row">
+                <label htmlFor="completionNotes">Completion Notes</label>
+                <textarea
+                  id="completionNotes"
+                  name="completionNotes"
+                  value={completeFormData.completionNotes}
+                  onChange={handleCompleteChange}
+                  required
+                  disabled={completing}
+                  rows={3}
+                />
+              </div>
+
+              <div className="form-row">
+                <label htmlFor="completedAt">Completion Date & Time</label>
+                <input
+                  id="completedAt"
+                  name="completedAt"
+                  type="datetime-local"
+                  value={completeFormData.completedAt}
+                  onChange={handleCompleteChange}
+                  required
+                  disabled={completing}
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={completing || assignedWorkOrdersForCurrentUser.length === 0}
+              >
+                {completing ? 'Completing...' : 'Complete Maintenance'}
+              </button>
+            </form>
+            {assignedWorkOrdersForCurrentUser.length === 0 && (
+              <p className="read-only-note">
+                You have no assigned work orders awaiting maintenance completion.
+              </p>
+            )}
+          </section>
+        ) : (
+          <p className="read-only-note">
+            Maintenance completion is available to assigned Field Employees and Contractors.
           </p>
         )}
 

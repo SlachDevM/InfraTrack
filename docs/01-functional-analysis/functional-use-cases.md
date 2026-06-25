@@ -58,7 +58,7 @@ Use Cases should remain technology-agnostic until the architecture phase.
 | UC-006 | Make Operational Decision           | Detailed |
 | UC-007 | Create Work Order                   | Detailed |
 | UC-008 | Assign Work Order                   | Detailed |
-| UC-009 | Complete Maintenance Activity       | Listed   |
+| UC-009 | Complete Maintenance Activity       | Detailed |
 | UC-010 | Complete Review                     | Listed   |
 | UC-011 | View Asset History                  | Listed   |
 | UC-012 | Upload Operational Document         | Listed   |
@@ -850,7 +850,7 @@ Managers decide; Operational Coordinators create and coordinate execution.
 * Work Orders are created only for decisions that approve physical work in V1.
 * A Work Order exists to organise operational work; it is not proof that work has been completed (BR-019).
 * Work Orders are coordinated by an Operational Coordinator following an approved Operational Decision (BR-020).
-* Creating a Work Order must not create a Maintenance Activity (BR-021 applies later).
+* Creating a Work Order must not create a Maintenance Activity (Maintenance Activity creation is handled by UC-009.).
 * Work Orders are not created automatically by Operational Decisions.
 * Asset History must preserve operational traceability (BR-004, BR-027).
 
@@ -904,7 +904,7 @@ Operational Coordinator
 8. InfraTrack records the assignment in Asset History.
 9. InfraTrack confirms that the Work Order has been assigned.
 
-The assigned user may later perform maintenance under UC-009 Complete Maintenance Activity when that capability is implemented.
+The assigned user may complete maintenance under UC-009 Complete Maintenance Activity.
 
 ---
 
@@ -962,15 +962,172 @@ If the actor is not an Operational Coordinator or other authorised coordinating 
 
 ---
 
-# 12. Listed Use Cases
+# 12. UC-009 — Complete Maintenance Activity
 
-The following Use Cases remain listed and will be expanded when the corresponding business capability approaches implementation.
+## Purpose
+
+Record the maintenance work actually performed for an assigned Work Order.
+
+A Work Order organises approved operational work. A Maintenance Activity records the work actually performed.
+
+Completing maintenance creates a Maintenance Activity as evidence of execution. The Work Order status becomes completed, but the Maintenance Activity remains the operational proof that work was performed.
+
+This Use Case records field execution. It does not perform Completion Review, change Asset operational status, or validate completed work beyond recording the worker's completion record.
 
 ---
 
-## UC-009 — Complete Maintenance Activity
+## Primary Actor
 
-The assigned worker records the maintenance activity actually performed in the field.
+Assigned Field Employee or Assigned Contractor
+
+The actor must be the user currently assigned to the Work Order.
+
+For internal maintenance work, the assigned Field Employee completes maintenance.
+
+For contractor work, the assigned Contractor completes maintenance.
+
+---
+
+## Supporting Actors
+
+* Operational Coordinator;
+* Manager.
+
+---
+
+## Preconditions
+
+* The actor is authenticated.
+* A Work Order exists with status assigned.
+* The Work Order records an assigned user.
+* The actor is the assigned user on the Work Order.
+* The assignee role matches the Work Order work type:
+  * internal maintenance — assigned Field Employee;
+  * contractor work — assigned Contractor.
+* No Maintenance Activity has already been recorded for the Work Order.
+* The linked Asset exists.
+
+---
+
+## Main Flow
+
+1. The assigned worker opens the assigned Work Order.
+2. The actor reviews the Asset, Operational Decision, Issue and Work Order context.
+3. The actor starts the maintenance completion process.
+4. The actor records completion notes describing the work actually performed.
+5. The actor records the business completion date and time (`completedAt`) of the maintenance.
+6. InfraTrack validates the submitted information.
+7. InfraTrack creates a Maintenance Activity linked to the Work Order.
+8. InfraTrack records the completion notes and `completedAt` on the Maintenance Activity.
+9. InfraTrack updates the Work Order status to completed.
+10. InfraTrack records maintenance completion in Asset History.
+11. InfraTrack confirms that maintenance has been completed.
+
+The Maintenance Activity is now the evidence of work performed. Completion Review, if required, remains a separate process under UC-010 Complete Review.
+
+---
+
+## Alternative Flows
+
+### Work Order Not Found
+
+If the Work Order cannot be found, maintenance completion cannot proceed.
+
+---
+
+### Work Order Not Assigned
+
+If the Work Order is not in assigned status, InfraTrack rejects maintenance completion.
+
+Examples:
+
+* status is created;
+* status is completed;
+* status is cancelled.
+
+---
+
+### Maintenance Activity Already Exists
+
+If a Maintenance Activity has already been recorded for the Work Order, InfraTrack rejects completion.
+
+In V1, each Work Order produces at most one Maintenance Activity.
+
+---
+
+### Unauthorized User
+
+If the actor is not the assigned user on the Work Order, InfraTrack rejects maintenance completion.
+
+Managers and Operational Coordinators do not complete maintenance on behalf of assigned workers in V1.
+
+---
+
+### Assignee Role Does Not Match Work Type
+
+If the assigned user role does not match the Work Order work type, InfraTrack rejects maintenance completion.
+
+Examples:
+
+* a Contractor attempting to complete internal maintenance work;
+* a Field Employee attempting to complete contractor work.
+
+---
+
+### Missing Completion Notes
+
+If completion notes are missing or blank, InfraTrack rejects maintenance completion.
+
+---
+
+### Missing Completion Date and Time
+
+If `completedAt` is missing, InfraTrack rejects maintenance completion.
+
+---
+
+### Completion Date and Time Before Assignment
+
+If `completedAt` is before the Work Order was assigned, InfraTrack rejects maintenance completion.
+
+---
+
+### Completion Date and Time in the Future
+
+If `completedAt` is in the future, InfraTrack rejects maintenance completion.
+
+---
+
+## Postconditions
+
+* A Maintenance Activity exists and is linked to exactly one Work Order.
+* The Maintenance Activity records completion notes and `completedAt`.
+* The Maintenance Activity is the evidence that maintenance work was performed.
+* The Work Order status becomes completed.
+* Asset History is updated with maintenance completion.
+* No Completion Review is created automatically.
+* Asset operational status remains unchanged.
+* The Operational Decision remains unchanged.
+
+---
+
+## Business Rules
+
+* Every Maintenance Activity must be linked to a Work Order (BR-021).
+* Maintenance Activities must produce operational evidence (BR-022); in V1, completion notes satisfy this requirement.
+* A Work Order organises operational work; a Maintenance Activity proves that work was performed (BR-019).
+* Only the assigned Field Employee or assigned Contractor may complete maintenance for the Work Order (BR-018).
+* Maintenance completion requires an assigned Work Order; unassigned Work Orders cannot be completed.
+* `completedAt` is a business operational timestamp recording when maintenance was performed, not a system audit timestamp.
+* Completing a Work Order does not automatically perform Completion Review (BR-023, BR-024).
+* Work Order completion does not automatically change Asset operational status.
+* Asset History must preserve operational traceability (BR-004, BR-027).
+
+---
+
+# 13. Listed Use Cases
+
+The following Use Cases remain listed and will be expanded when the corresponding business capability approaches implementation.
 
 ---
 
@@ -1010,7 +1167,7 @@ A Manager or authorised role delegates temporary authority to another Manager or
 
 ---
 
-# 13. Notes for Future Expansion
+# 14. Notes for Future Expansion
 
 Each listed Use Case should be detailed only when its implementation becomes relevant.
 
@@ -1018,9 +1175,9 @@ Future detailed Use Cases should avoid introducing new business concepts unless 
 
 If a Use Case reveals ambiguity in the business model, Business Discovery should be updated before architecture or implementation begins.
 
-UC-004 through UC-008 are now detailed to reflect the implemented V1 behaviour.
+UC-004 through UC-009 are now detailed to reflect the implemented or approved V1 behaviour.
 
-UC-009 is the next listed Use Case to be expanded when implementation begins.
+UC-010 is the next listed Use Case to be expanded when implementation begins.
 
 ## Known V1 Limitations
 
@@ -1038,8 +1195,8 @@ This document defines the Functional Analysis phase for InfraTrack.
 
 It translates the approved Business Discovery model into functional Use Cases.
 
-UC-001 through UC-008 are detailed to reflect implemented or approved V1 behaviour.
+UC-001 through UC-009 are detailed to reflect implemented or approved V1 behaviour.
 
-UC-009 is documented as the next planned Use Case.
+UC-010 is documented as the next planned Use Case.
 
 Remaining Use Cases are intentionally listed and will be expanded incrementally as each business capability approaches implementation.
