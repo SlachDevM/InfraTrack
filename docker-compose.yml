@@ -1,4 +1,4 @@
-name: business-platform-template
+name: infratrack
 version: '3.8'
 
 services:
@@ -8,7 +8,7 @@ services:
       - '4000:4000'
     restart: unless-stopped
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/businessplatform
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/infratrack
       - SPRING_DATASOURCE_USERNAME=appuser
       - SPRING_DATASOURCE_PASSWORD=apppass
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
@@ -39,7 +39,7 @@ services:
     ports:
       - '5432:5432'
     environment:
-      POSTGRES_DB: businessplatform
+      POSTGRES_DB: infratrack
       POSTGRES_USER: appuser
       POSTGRES_PASSWORD: apppass
     volumes:

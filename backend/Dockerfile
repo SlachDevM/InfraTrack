@@ -7,6 +7,6 @@ RUN mvn clean package -DskipTests
 
 FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
-COPY --from=build /app/target/business-platform-backend-*.jar app.jar
+COPY --from=build /app/target/infratrack-backend-*.jar app.jar
 EXPOSE 4000
 CMD ["java", "-jar", "app.jar"]

@@ -1,6 +1,6 @@
-# Business Platform Template
+# InfraTrack
 
-Production-ready foundation for building professional business applications.
+Operational asset and field operations management platform for Australian Local Governments.
 
 ![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)
 ![React](https://img.shields.io/badge/React-Frontend-61DAFB?logo=react)
@@ -12,16 +12,15 @@ Production-ready foundation for building professional business applications.
 
 ## Overview
 
-The Business Platform Template is a reusable, production-ready foundation for building professional business applications. It provides proven infrastructure for authentication, user management, notifications, and deployment while remaining intentionally free of business-specific logic.
+InfraTrack is an enterprise software product for managing public infrastructure operations. The codebase is built on a proven platform foundation providing authentication, user management, notifications, email, and deployment infrastructure.
 
-This template is extracted from a real production application after its architecture and production configuration have been validated in business use. Only infrastructure that proved to be reusable is retained.
+Business domain features (assets, inspections, work orders, and operational workflows) are implemented incrementally according to the documented use cases.
 
 The backend is designed to support multiple client applications:
 
-- React Web application for administrators and managers
-- Additional clients (mobile, desktop, etc.) share the same REST API
-
----
+- React web application for office-based users
+- Future native Android application for field operations
+- All clients share the same REST API
 
 ---
 
@@ -51,10 +50,10 @@ Key entry points:
 
 ## What the Platform Provides
 
-The Business Platform Template provides only infrastructure that has demonstrated value across business applications.
+The current codebase provides platform infrastructure:
 
 **Backend:**
-- Spring Boot configuration
+- Spring Boot configuration (`com.infratrack`)
 - JWT authentication
 - Spring Security with role-based access control
 - User management and lifecycle (invitation, activation, deactivation)
@@ -70,30 +69,29 @@ The Business Platform Template provides only infrastructure that has demonstrate
 - Authentication and protected routing
 - User management interface
 - Notification center
-- Admin shell
+- Platform shell
 - HTTP API client with JWT token management
 - Environment-based configuration
 
 **Infrastructure:**
 - Development environment (Docker Compose with Mailpit)
 - Production environment (Docker Compose with security best practices)
-- PostgreSQL database
+- PostgreSQL database (`infratrack`)
 - Environment variable strategy
 - Production-grade configuration
 
 ---
 
-## What the Platform Does NOT Provide
+## What Is Not Yet Implemented
 
-Intentionally excluded:
+Business domain features are defined in documentation and implemented incrementally:
 
-- Business entities (projects, jobs, orders, tickets, etc.)
-- Business workflows
-- Fake CRUD examples
-- Customer-specific branding
-- Customer documentation
+- Asset registration and lifecycle
+- Inspections, work orders, and operational workflows
+- Department and reference data management
+- Field operations (Android)
 
-Each application built from this template must create its own business domain.
+See [Functional Use Cases](docs/01-functional-analysis/functional-use-cases.md) for the implementation roadmap.
 
 ---
 
@@ -101,7 +99,7 @@ Each application built from this template must create its own business domain.
 
 ```bash
 git clone <repository-url>
-cd business-platform-template
+cd InfraTrack
 docker compose up --build
 ```
 
@@ -114,8 +112,6 @@ After starting:
 ---
 
 ## Architecture
-
-The platform follows a simple, proven architecture:
 
 **Backend:**
 ```
@@ -170,15 +166,17 @@ UI → API Client → Backend
 
 ## User Roles
 
+Platform roles (InfraTrack business roles will be aligned in a later step):
+
 - **ADMIN** — Full user management, all platform capabilities
-- **MANAGER** — Can manage business entities and other users (role-dependent)
+- **MANAGER** — Can manage users and access management features
 - **EMPLOYEE** — Can access assigned work and their profile
 
 ---
 
 ## Configuration
 
-All configuration is externalized via environment variables. See `application.properties` for available options.
+All configuration is externalized via environment variables. See `backend/src/main/resources/application.properties` for available options.
 
 **Development:**
 ```bash
@@ -194,27 +192,13 @@ docker compose -f docker-compose.prod.yml up -d
 
 ---
 
-## Building a New Application
-
-1. Clone this template
-2. Rename the project
-3. Update package names (`com.company.backend` → `com.yourcompany.backend`)
-4. Replace branding (app name, colors, logos)
-5. Create your first business entity (inherit the platform architecture)
-6. Implement your business workflows
-7. Deploy using the provided Docker configuration
-
-The platform requires minimal modification for new applications.
-
----
-
 ## Design Philosophy
 
-The platform follows these principles:
+InfraTrack follows these principles:
 
 - **Simplicity before abstraction** — Explicit code over clever patterns
 - **Business before technology** — Backend owns business rules
-- **Remove instead of generalize** — Delete MRRG-specific code, don't create fake examples
+- **One capability at a time** — Vertical slice development
 - **Production-ready** — Proven architecture and deployment strategy
 - **Long-term maintainability** — Code understandable years later
 
@@ -235,19 +219,10 @@ mvn clean test
 
 ## Production Deployment
 
-Comprehensive deployment instructions including:
-- HTTPS/TLS configuration
-- Reverse proxy setup
-- Database backup strategy
-- Monitoring and logging
-- Scaling considerations
-
-See [docs/README.md](docs/README.md) for details.
+Production deployment uses `docker-compose.prod.yml` and `.env.example` as the configuration template. See [docs/README.md](docs/README.md) and [docs/05-deployment/](docs/05-deployment/) for deployment documentation as it is added.
 
 ---
 
 ## License
 
-This Business Platform Template is a production-ready foundation extracted from a real business application after validation in production use.
-
-It is provided as a template for building custom business applications.
+InfraTrack is developed as an open-source enterprise software product for Australian Local Government operational asset management.

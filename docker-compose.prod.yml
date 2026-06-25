@@ -1,4 +1,4 @@
-# Business Platform Production-Ready Docker Compose Configuration
+# InfraTrack Production Docker Compose Configuration
 # This file is a template for production deployment
 # 
 # Before production deployment:
@@ -11,7 +11,7 @@
 
 version: '3.8'
 
-name: business-platform-template
+name: infratrack
 
 services:
   backend:
@@ -68,7 +68,7 @@ services:
         condition: service_healthy
     
     networks:
-      - business-platform-network
+      - infratrack-network
 
   frontend:
     build:
@@ -88,7 +88,7 @@ services:
       - backend
     
     networks:
-      - business-platform-network
+      - infratrack-network
 
   postgres:
     image: postgres:16-alpine
@@ -114,14 +114,14 @@ services:
       retries: 5
     
     networks:
-      - business-platform-network
+      - infratrack-network
 
 volumes:
   postgres-data:
     driver: local
 
 networks:
-  business-platform-network:
+  infratrack-network:
     driver: bridge
 
 # Production Deployment Notes:

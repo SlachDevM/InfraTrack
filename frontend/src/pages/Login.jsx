@@ -44,9 +44,9 @@ export default function Login() {
       <div className="login-card">
         <div className="login-header">
           <div className="logo-placeholder">
-            <span className="logo-text">BP</span>
+            <span className="logo-text">IT</span>
           </div>
-          <h1>Business Platform</h1>
+          <h1>InfraTrack</h1>
         </div>
 
         {error && <div className="error-message">{error}</div>}
