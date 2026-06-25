@@ -18,6 +18,7 @@ import com.infratrack.issue.IssueSeverity;
 import com.infratrack.operationaldecision.OperationalDecision;
 import com.infratrack.operationaldecision.OperationalDecisionOutcome;
 import com.infratrack.operationaldecision.OperationalDecisionRepository;
+import com.infratrack.workorder.dto.AssignWorkOrderRequest;
 import com.infratrack.workorder.dto.CreateWorkOrderRequest;
 import com.infratrack.model.User;
 import com.infratrack.model.UserRole;
@@ -353,6 +354,248 @@ class WorkOrderServiceTest {
         verifyNoMoreInteractions(workOrderRepository, operationalDecisionRepository, assetHistoryEventRepository);
     }
 
+    @Test
+    void assignWorkOrder_shouldAssignInternalMaintenanceToFieldEmployee() {
+        AssignWorkOrderRequest request = validAssignRequest(20L);
+        WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
+        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(userService.getById(40L)).thenReturn(coordinator);
+        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = workOrderService.assignWorkOrder(1000L, request, 40L);
+
+        assertThat(response.getStatus()).isEqualTo(WorkOrderStatus.ASSIGNED);
+        assertThat(response.getAssignedToUserId()).isEqualTo(20L);
+        assertThat(response.getAssignedByUserId()).isEqualTo(40L);
+        assertThat(response.getAssignedAt()).isEqualTo(request.getAssignedAt());
+
+        verify(assetHistoryEventRepository).save(argThat(event ->
+                event.getEventType() == AssetHistoryEventType.WORK_ORDER_ASSIGNED));
+    }
+
+    @Test
+    void assignWorkOrder_shouldAssignContractorWorkToContractor() {
+        AssignWorkOrderRequest request = validAssignRequest(25L);
+        WorkOrder workOrder = createdWorkOrder(1000L, WorkType.CONTRACTOR_WORK);
+        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User contractor = user(25L, UserRole.CONTRACTOR);
+
+        when(userService.getById(40L)).thenReturn(coordinator);
+        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+        when(userService.getById(25L)).thenReturn(contractor);
+        when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = workOrderService.assignWorkOrder(1000L, request, 40L);
+
+        assertThat(response.getStatus()).isEqualTo(WorkOrderStatus.ASSIGNED);
+        assertThat(response.getWorkType()).isEqualTo(WorkType.CONTRACTOR_WORK);
+    }
+
+    @Test
+    void assignWorkOrder_shouldRejectContractorForInternalMaintenance() {
+        AssignWorkOrderRequest request = validAssignRequest(25L);
+        WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
+        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User contractor = user(25L, UserRole.CONTRACTOR);
+
+        when(userService.getById(40L)).thenReturn(coordinator);
+        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+        when(userService.getById(25L)).thenReturn(contractor);
+
+        assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+
+        verify(workOrderRepository, never()).save(any());
+    }
+
+    @Test
+    void assignWorkOrder_shouldRejectFieldEmployeeForContractorWork() {
+        AssignWorkOrderRequest request = validAssignRequest(20L);
+        WorkOrder workOrder = createdWorkOrder(1000L, WorkType.CONTRACTOR_WORK);
+        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(userService.getById(40L)).thenReturn(coordinator);
+        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void assignWorkOrder_shouldRejectInvalidWorkOrder() {
+        AssignWorkOrderRequest request = validAssignRequest(20L);
+        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+
+        when(userService.getById(40L)).thenReturn(coordinator);
+        when(workOrderRepository.findById(1000L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void assignWorkOrder_shouldRejectAlreadyAssignedWorkOrder() {
+        AssignWorkOrderRequest request = validAssignRequest(20L);
+        WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
+        workOrder.assign(20L, 40L, LocalDateTime.now().minusMinutes(10));
+        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+
+        when(userService.getById(40L)).thenReturn(coordinator);
+        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+
+        assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.CONFLICT);
+    }
+
+    @Test
+    void assignWorkOrder_shouldRejectMissingAssignedUser() {
+        AssignWorkOrderRequest request = validAssignRequest(null);
+        WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
+        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+
+        when(userService.getById(40L)).thenReturn(coordinator);
+        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+
+        assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void assignWorkOrder_shouldRejectMissingAssignedAt() {
+        AssignWorkOrderRequest request = validAssignRequest(20L);
+        request.setAssignedAt(null);
+        WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
+        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+
+        when(userService.getById(40L)).thenReturn(coordinator);
+        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+
+        assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void assignWorkOrder_shouldRejectAssignedAtBeforeWorkOrderCreation() {
+        AssignWorkOrderRequest request = validAssignRequest(20L);
+        WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
+        request.setAssignedAt(workOrder.getCreatedAtBusinessDate().minusMinutes(30));
+        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+
+        when(userService.getById(40L)).thenReturn(coordinator);
+        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+
+        assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void assignWorkOrder_shouldRejectFutureAssignedAt() {
+        AssignWorkOrderRequest request = validAssignRequest(20L);
+        request.setAssignedAt(LocalDateTime.now().plusDays(1));
+        WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
+        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+
+        when(userService.getById(40L)).thenReturn(coordinator);
+        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+
+        assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void assignWorkOrder_shouldAllowOperationalCoordinator() {
+        AssignWorkOrderRequest request = validAssignRequest(20L);
+        WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
+        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(userService.getById(40L)).thenReturn(coordinator);
+        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        assertThatCode(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void assignWorkOrder_shouldRejectManager() {
+        AssignWorkOrderRequest request = validAssignRequest(20L);
+        User manager = user(40L, UserRole.MANAGER);
+        when(userService.getById(40L)).thenReturn(manager);
+
+        assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void assignWorkOrder_shouldRejectAdministrator() {
+        AssignWorkOrderRequest request = validAssignRequest(20L);
+        User administrator = user(40L, UserRole.ADMINISTRATOR);
+        when(userService.getById(40L)).thenReturn(administrator);
+
+        assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void assignWorkOrder_shouldRejectFieldEmployee() {
+        AssignWorkOrderRequest request = validAssignRequest(20L);
+        User fieldEmployee = user(40L, UserRole.FIELD_EMPLOYEE);
+        when(userService.getById(40L)).thenReturn(fieldEmployee);
+
+        assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void assignWorkOrder_shouldRejectContractor() {
+        AssignWorkOrderRequest request = validAssignRequest(25L);
+        User contractor = user(40L, UserRole.CONTRACTOR);
+        when(userService.getById(40L)).thenReturn(contractor);
+
+        assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void assignWorkOrder_shouldNotCreateMaintenanceActivity() {
+        AssignWorkOrderRequest request = validAssignRequest(20L);
+        WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
+        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(userService.getById(40L)).thenReturn(coordinator);
+        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        workOrderService.assignWorkOrder(1000L, request, 40L);
+
+        verify(workOrderRepository).save(any(WorkOrder.class));
+        verify(assetHistoryEventRepository).save(any(AssetHistoryEvent.class));
+        verify(operationalDecisionRepository, never()).save(any());
+        verifyNoMoreInteractions(workOrderRepository, operationalDecisionRepository, assetHistoryEventRepository);
+    }
+
     private void assertRejectedOutcome(OperationalDecisionOutcome outcome) {
         CreateWorkOrderRequest request = validRequest();
         OperationalDecision decision = decision(900L, outcome);
@@ -375,6 +618,31 @@ class WorkOrderServiceTest {
         request.setPriority(WorkOrderPriority.HIGH);
         request.setCreatedAtBusinessDate(LocalDateTime.now().minusMinutes(5));
         return request;
+    }
+
+    private AssignWorkOrderRequest validAssignRequest(Long assignedToUserId) {
+        AssignWorkOrderRequest request = new AssignWorkOrderRequest();
+        request.setAssignedToUserId(assignedToUserId);
+        request.setAssignedAt(LocalDateTime.now().minusMinutes(2));
+        return request;
+    }
+
+    private WorkOrder createdWorkOrder(Long id, WorkType workType) {
+        OperationalDecisionOutcome outcome = workType == WorkType.INTERNAL_MAINTENANCE
+                ? OperationalDecisionOutcome.INTERNAL_MAINTENANCE
+                : OperationalDecisionOutcome.CONTRACTOR_WORK;
+        OperationalDecision decision = decision(900L, outcome);
+        WorkOrder workOrder = new WorkOrder(
+                decision,
+                decision.getAsset(),
+                workType,
+                "Replace damaged swing chain",
+                WorkOrderPriority.HIGH,
+                40L,
+                LocalDateTime.now().minusHours(1)
+        );
+        workOrder.setId(id);
+        return workOrder;
     }
 
     private OperationalDecision decision(Long id, OperationalDecisionOutcome outcome) {

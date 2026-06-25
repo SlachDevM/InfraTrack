@@ -7,6 +7,7 @@ import com.infratrack.asset.AssetHistoryEventType;
 import com.infratrack.operationaldecision.OperationalDecision;
 import com.infratrack.operationaldecision.OperationalDecisionOutcome;
 import com.infratrack.operationaldecision.OperationalDecisionRepository;
+import com.infratrack.workorder.dto.AssignWorkOrderRequest;
 import com.infratrack.workorder.dto.CreateWorkOrderRequest;
 import com.infratrack.workorder.dto.WorkOrderResponse;
 import com.infratrack.model.User;
@@ -41,13 +42,13 @@ public class WorkOrderService {
     @Transactional(readOnly = true)
     public List<WorkOrderResponse> listAll() {
         return workOrderRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(WorkOrderResponse::from)
+                .map(this::toResponse)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public WorkOrderResponse getById(Long id) {
-        return WorkOrderResponse.from(findWorkOrderOrThrow(id));
+        return toResponse(findWorkOrderOrThrow(id));
     }
 
     @Transactional
@@ -83,6 +84,87 @@ public class WorkOrderService {
         ));
 
         return WorkOrderResponse.from(workOrder);
+    }
+
+    @Transactional
+    public WorkOrderResponse assignWorkOrder(Long workOrderId, AssignWorkOrderRequest request, Long userId) {
+        User coordinator = requireOperationalCoordinatorForAssignment(userId);
+        WorkOrder workOrder = findWorkOrderOrThrow(workOrderId);
+        requireCreatedStatus(workOrder);
+        LocalDateTime assignedAt = validateAssignedAt(request.getAssignedAt(), workOrder);
+        User assignee = findEligibleAssigneeOrThrow(request.getAssignedToUserId(), workOrder.getWorkType());
+
+        workOrder.assign(assignee.getId(), coordinator.getId(), assignedAt);
+        workOrderRepository.save(workOrder);
+
+        assetHistoryEventRepository.save(new AssetHistoryEvent(
+                workOrder.getAsset(),
+                AssetHistoryEventType.WORK_ORDER_ASSIGNED,
+                coordinator.getId(),
+                assignedAt.toLocalDate()
+        ));
+
+        return WorkOrderResponse.from(workOrder, assignee);
+    }
+
+    private WorkOrderResponse toResponse(WorkOrder workOrder) {
+        User assignedToUser = workOrder.getAssignedToUserId() != null
+                ? userService.getById(workOrder.getAssignedToUserId())
+                : null;
+        return WorkOrderResponse.from(workOrder, assignedToUser);
+    }
+
+    private User requireOperationalCoordinatorForAssignment(Long userId) {
+        User user = userService.getById(userId);
+        if (!user.getRole().isOperationalCoordinator()) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Only operational coordinators can assign work orders");
+        }
+        return user;
+    }
+
+    private void requireCreatedStatus(WorkOrder workOrder) {
+        if (workOrder.getStatus() != WorkOrderStatus.CREATED) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Work order has already been assigned");
+        }
+    }
+
+    private User findEligibleAssigneeOrThrow(Long assignedToUserId, WorkType workType) {
+        if (assignedToUserId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Assigned user is required");
+        }
+        User user = userService.getById(assignedToUserId);
+        if (workType == WorkType.INTERNAL_MAINTENANCE && !user.getRole().isFieldEmployee()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Internal maintenance work orders must be assigned to a field employee");
+        }
+        if (workType == WorkType.CONTRACTOR_WORK && !user.getRole().isContractor()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Contractor work orders must be assigned to a contractor");
+        }
+        return user;
+    }
+
+    private LocalDateTime validateAssignedAt(LocalDateTime assignedAt, WorkOrder workOrder) {
+        if (assignedAt == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Assignment date and time are required");
+        }
+        if (assignedAt.isBefore(workOrder.getCreatedAtBusinessDate())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Assignment date and time cannot be before the work order was created");
+        }
+        if (assignedAt.isAfter(LocalDateTime.now())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Assignment date and time cannot be in the future");
+        }
+        return assignedAt;
     }
 
     private User requireOperationalCoordinator(Long userId) {

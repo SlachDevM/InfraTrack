@@ -43,6 +43,15 @@ public class WorkOrder {
     @Column(name = "created_at_business_date", nullable = false)
     private LocalDateTime createdAtBusinessDate;
 
+    @Column(name = "assigned_to_user_id")
+    private Long assignedToUserId;
+
+    @Column(name = "assigned_by_user_id")
+    private Long assignedByUserId;
+
+    @Column(name = "assigned_at")
+    private LocalDateTime assignedAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Long createdAt;
 
@@ -111,6 +120,26 @@ public class WorkOrder {
 
     public LocalDateTime getCreatedAtBusinessDate() {
         return createdAtBusinessDate;
+    }
+
+    public Long getAssignedToUserId() {
+        return assignedToUserId;
+    }
+
+    public Long getAssignedByUserId() {
+        return assignedByUserId;
+    }
+
+    public LocalDateTime getAssignedAt() {
+        return assignedAt;
+    }
+
+    public void assign(Long assignedToUserId, Long assignedByUserId, LocalDateTime assignedAt) {
+        this.assignedToUserId = assignedToUserId;
+        this.assignedByUserId = assignedByUserId;
+        this.assignedAt = assignedAt;
+        this.status = WorkOrderStatus.ASSIGNED;
+        this.updatedAt = System.currentTimeMillis();
     }
 
     public Long getCreatedAt() {

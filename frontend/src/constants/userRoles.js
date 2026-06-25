@@ -53,6 +53,10 @@ export function canCreateWorkOrders(role) {
   return role === USER_ROLES.OPERATIONAL_COORDINATOR;
 }
 
+export function canAssignWorkOrders(role) {
+  return role === USER_ROLES.OPERATIONAL_COORDINATOR;
+}
+
 export function getRoleLabel(role) {
   return ROLE_LABELS[role] || role;
 }

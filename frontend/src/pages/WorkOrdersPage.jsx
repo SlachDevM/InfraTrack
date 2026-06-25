@@ -5,7 +5,7 @@ import apiClient from '../services/apiClient';
 import workOrderApi from '../services/workOrderApi';
 import operationalDecisionApi from '../services/operationalDecisionApi';
 import NotificationButton from '../components/NotificationButton';
-import { canCreateWorkOrders } from '../constants/userRoles';
+import { canAssignWorkOrders, canCreateWorkOrders, USER_ROLES } from '../constants/userRoles';
 import { getOperationalDecisionOutcomeLabel } from '../constants/operationalDecisionOutcomes';
 import {
   WORK_ORDER_PRIORITIES,
@@ -27,8 +27,10 @@ export default function WorkOrdersPage() {
   const { auth, logout } = useAuth();
   const [workOrders, setWorkOrders] = useState([]);
   const [decisions, setDecisions] = useState([]);
+  const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [assigning, setAssigning] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [formData, setFormData] = useState({
@@ -37,8 +39,14 @@ export default function WorkOrdersPage() {
     priority: WORK_ORDER_PRIORITIES.NORMAL,
     createdAtBusinessDate: toDateTimeLocalValue(),
   });
+  const [assignFormData, setAssignFormData] = useState({
+    workOrderId: '',
+    assignedToUserId: '',
+    assignedAt: toDateTimeLocalValue(),
+  });
 
   const canCreate = canCreateWorkOrders(auth?.user?.role);
+  const canAssign = canAssignWorkOrders(auth?.user?.role);
 
   const eligibleDecisions = useMemo(() => {
     const decidedIds = new Set(workOrders.map((order) => order.operationalDecisionId));
@@ -54,6 +62,26 @@ export default function WorkOrdersPage() {
     [decisions, formData.operationalDecisionId]
   );
 
+  const createdWorkOrders = useMemo(
+    () => workOrders.filter((order) => order.status === 'CREATED'),
+    [workOrders]
+  );
+
+  const selectedAssignWorkOrder = useMemo(
+    () => workOrders.find((order) => String(order.id) === String(assignFormData.workOrderId)),
+    [workOrders, assignFormData.workOrderId]
+  );
+
+  const eligibleAssignees = useMemo(() => {
+    if (!selectedAssignWorkOrder) {
+      return [];
+    }
+    const requiredRole = selectedAssignWorkOrder.workType === 'INTERNAL_MAINTENANCE'
+      ? USER_ROLES.FIELD_EMPLOYEE
+      : USER_ROLES.CONTRACTOR;
+    return workers.filter((worker) => worker.role === requiredRole);
+  }, [selectedAssignWorkOrder, workers]);
+
   useEffect(() => {
     if (!auth) {
       navigate('/login');
@@ -67,12 +95,14 @@ export default function WorkOrdersPage() {
     try {
       setLoading(true);
       setError(null);
-      const [workOrderData, decisionData] = await Promise.all([
+      const [workOrderData, decisionData, workerData] = await Promise.all([
         workOrderApi.list(),
         operationalDecisionApi.list(),
+        canAssign ? workOrderApi.listWorkers() : Promise.resolve([]),
       ]);
       setWorkOrders(workOrderData);
       setDecisions(decisionData);
+      setWorkers(workerData);
     } catch (err) {
       setError(`Failed to load work orders: ${err.message}`);
     } finally {
@@ -115,6 +145,45 @@ export default function WorkOrdersPage() {
       }
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleAssignChange = (e) => {
+    const { name, value } = e.target;
+    setAssignFormData((prev) => ({
+      ...prev,
+      [name]: value,
+      ...(name === 'workOrderId' ? { assignedToUserId: '' } : {}),
+    }));
+  };
+
+  const handleAssignSubmit = async (e) => {
+    e.preventDefault();
+    if (!canAssign) return;
+
+    try {
+      setAssigning(true);
+      setError(null);
+      setSuccess(null);
+      await workOrderApi.assign(Number(assignFormData.workOrderId), {
+        assignedToUserId: Number(assignFormData.assignedToUserId),
+        assignedAt: `${assignFormData.assignedAt}:00`,
+      });
+      setSuccess('Work order assigned successfully.');
+      setAssignFormData({
+        workOrderId: '',
+        assignedToUserId: '',
+        assignedAt: toDateTimeLocalValue(),
+      });
+      await loadPageData();
+    } catch (err) {
+      if (err.status === 403) {
+        setError('You do not have permission to assign work orders.');
+      } else {
+        setError(`Failed to assign work order: ${err.message}`);
+      }
+    } finally {
+      setAssigning(false);
     }
   };
 
@@ -249,6 +318,92 @@ export default function WorkOrdersPage() {
           </p>
         )}
 
+        {canAssign ? (
+          <section className="work-order-form-section">
+            <h2>Assign Work Order</h2>
+            <form className="work-order-form" onSubmit={handleAssignSubmit}>
+              <div className="form-row">
+                <label htmlFor="workOrderId">Work Order</label>
+                <select
+                  id="workOrderId"
+                  name="workOrderId"
+                  value={assignFormData.workOrderId}
+                  onChange={handleAssignChange}
+                  required
+                  disabled={assigning || createdWorkOrders.length === 0}
+                >
+                  <option value="">Select work order</option>
+                  {createdWorkOrders.map((workOrder) => (
+                    <option key={workOrder.id} value={workOrder.id}>
+                      #{workOrder.id} — {workOrder.assetName} ({getOperationalDecisionOutcomeLabel(workOrder.workType)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedAssignWorkOrder && (
+                <div className="linked-decision-info">
+                  <strong>Work Type:</strong> {getOperationalDecisionOutcomeLabel(selectedAssignWorkOrder.workType)}
+                  <br />
+                  <strong>Description:</strong> {selectedAssignWorkOrder.description}
+                </div>
+              )}
+
+              <div className="form-row">
+                <label htmlFor="assignedToUserId">Assign To</label>
+                <select
+                  id="assignedToUserId"
+                  name="assignedToUserId"
+                  value={assignFormData.assignedToUserId}
+                  onChange={handleAssignChange}
+                  required
+                  disabled={assigning || !assignFormData.workOrderId || eligibleAssignees.length === 0}
+                >
+                  <option value="">Select assignee</option>
+                  {eligibleAssignees.map((worker) => (
+                    <option key={worker.id} value={worker.id}>
+                      {worker.name} ({worker.role})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-row">
+                <label htmlFor="assignedAt">Assignment Date & Time</label>
+                <input
+                  id="assignedAt"
+                  name="assignedAt"
+                  type="datetime-local"
+                  value={assignFormData.assignedAt}
+                  onChange={handleAssignChange}
+                  required
+                  disabled={assigning}
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={assigning || createdWorkOrders.length === 0 || eligibleAssignees.length === 0}
+              >
+                {assigning ? 'Assigning...' : 'Assign Work Order'}
+              </button>
+            </form>
+            {createdWorkOrders.length === 0 && (
+              <p className="read-only-note">No work orders are awaiting assignment.</p>
+            )}
+            {assignFormData.workOrderId && eligibleAssignees.length === 0 && (
+              <p className="read-only-note">
+                No eligible workers are available for this work order type.
+              </p>
+            )}
+          </section>
+        ) : (
+          <p className="read-only-note">
+            Work order assignment is available to Operational Coordinators.
+          </p>
+        )}
+
         <section className="work-order-list-section">
           <h2>Work Orders</h2>
           {workOrders.length === 0 ? (
@@ -263,7 +418,9 @@ export default function WorkOrdersPage() {
                   <th>Description</th>
                   <th>Priority</th>
                   <th>Status</th>
+                  <th>Assigned To</th>
                   <th>Created</th>
+                  <th>Assigned</th>
                 </tr>
               </thead>
               <tbody>
@@ -275,9 +432,15 @@ export default function WorkOrdersPage() {
                     <td>{workOrder.description}</td>
                     <td>{getWorkOrderPriorityLabel(workOrder.priority)}</td>
                     <td>{workOrder.status}</td>
+                    <td>{workOrder.assignedToUserName || '-'}</td>
                     <td>
                       {workOrder.createdAtBusinessDate
                         ? new Date(workOrder.createdAtBusinessDate).toLocaleString()
+                        : '-'}
+                    </td>
+                    <td>
+                      {workOrder.assignedAt
+                        ? new Date(workOrder.assignedAt).toLocaleString()
                         : '-'}
                     </td>
                   </tr>

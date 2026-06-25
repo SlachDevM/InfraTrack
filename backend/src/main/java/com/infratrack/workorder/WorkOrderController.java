@@ -1,5 +1,6 @@
 package com.infratrack.workorder;
 
+import com.infratrack.workorder.dto.AssignWorkOrderRequest;
 import com.infratrack.workorder.dto.CreateWorkOrderRequest;
 import com.infratrack.workorder.dto.WorkOrderResponse;
 import com.infratrack.security.JwtAuthenticationToken;
@@ -38,5 +39,15 @@ public class WorkOrderController {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         WorkOrderResponse response = workOrderService.createWorkOrder(request, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/{id}/assign")
+    public ResponseEntity<WorkOrderResponse> assignWorkOrder(
+            @PathVariable Long id,
+            @RequestBody AssignWorkOrderRequest request,
+            Authentication authentication) {
+        Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+        WorkOrderResponse response = workOrderService.assignWorkOrder(id, request, userId);
+        return ResponseEntity.ok(response);
     }
 }
