@@ -12,6 +12,7 @@ import BusinessTriggersPage from './pages/BusinessTriggersPage';
 import InspectionsPage from './pages/InspectionsPage';
 import IssuesPage from './pages/IssuesPage';
 import OperationalDecisionsPage from './pages/OperationalDecisionsPage';
+import WorkOrdersPage from './pages/WorkOrdersPage';
 import './App.css';
 
 function PrivateRoute({ children }) {
@@ -108,6 +109,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <OperationalDecisionsPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/work-orders"
+              element={
+                <PrivateRoute>
+                  <WorkOrdersPage />
                 </PrivateRoute>
               }
             />
