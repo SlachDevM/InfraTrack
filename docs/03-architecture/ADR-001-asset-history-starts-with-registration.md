@@ -38,7 +38,7 @@ Registration remains the first persisted Asset History event. Subsequent operati
 
 **Current state**
 
-Asset History now records the ten event types implemented across UC-001 to UC-010:
+Asset History now records the eleven event types implemented across UC-001 to UC-012:
 
 - Asset Registered;
 - Business Trigger Created;
@@ -49,15 +49,17 @@ Asset History now records the ten event types implemented across UC-001 to UC-01
 - Work Order Created;
 - Work Order Assigned;
 - Maintenance Completed;
-- Completion Review Recorded.
+- Completion Review Recorded;
+- Operational Document Uploaded.
 
 Asset History remains read-only. Viewing history does not create, modify or delete history entries.
 
 **Negative / deferred**
 
-- No document or photo linkage is stored with history events (out of scope for UC-001 to UC-011).
+- History entries do not embed operational document files; UC-012 stores document evidence separately and appends one `OPERATIONAL_DOCUMENT_UPLOADED` event per upload action.
 
 ## Related use cases
 
 - UC-001 Register Asset — implemented
 - UC-011 View Asset History — implemented
+- UC-012 Upload Operational Document — implemented

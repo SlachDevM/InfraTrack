@@ -65,6 +65,15 @@ export function canRecordCompletionReview(role) {
   return role === USER_ROLES.MANAGER;
 }
 
+export function canUploadOperationalDocuments(role) {
+  return (
+    role === USER_ROLES.MANAGER
+    || role === USER_ROLES.OPERATIONAL_COORDINATOR
+    || role === USER_ROLES.FIELD_EMPLOYEE
+    || role === USER_ROLES.CONTRACTOR
+  );
+}
+
 export function getRoleLabel(role) {
   return ROLE_LABELS[role] || role;
 }

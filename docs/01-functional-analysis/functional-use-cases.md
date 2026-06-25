@@ -61,7 +61,7 @@ Use Cases should remain technology-agnostic until the architecture phase.
 | UC-009 | Complete Maintenance Activity       | Detailed |
 | UC-010 | Complete Review                     | Detailed |
 | UC-011 | View Asset History                  | Detailed |
-| UC-012 | Upload Operational Document         | Listed   |
+| UC-012 | Upload Operational Document         | Detailed |
 | UC-013 | Send Notification                   | Listed   |
 | UC-014 | Manage Departments                  | Listed   |
 | UC-015 | Delegate Cross-Department Authority | Listed   |
@@ -1364,7 +1364,7 @@ The actor may review the operational timeline without changing any business obje
 
 ## Scope of History
 
-In V1, Asset History includes operational events recorded by previous use cases:
+In V1, Asset History includes eleven operational event types recorded by UC-001 through UC-012:
 
 * Asset Registered;
 * Business Trigger Created;
@@ -1375,9 +1375,10 @@ In V1, Asset History includes operational events recorded by previous use cases:
 * Work Order Created;
 * Work Order Assigned;
 * Maintenance Completed;
-* Completion Review Recorded.
+* Completion Review Recorded;
+* Operational Document Uploaded.
 
-No additional event types are defined for V1.
+These eleven event types are the implemented V1 Asset History event types displayed by UC-011.
 
 ---
 
@@ -1426,15 +1427,326 @@ This is valid. Asset registration itself creates the first history entry under U
 
 ---
 
-# 15. Listed Use Cases
+# 15. UC-012 — Upload Operational Document
 
-The following Use Cases remain listed and will be expanded when the corresponding business capability approaches implementation.
+## Purpose
+
+Upload a document or photograph as operational evidence and link it permanently to an Asset and, when applicable, to exactly one operational owner.
+
+Operational documents and photographs are business artefacts, not optional attachments. They form part of the permanent operational record of an Asset and support traceability across inspections, maintenance and managerial review.
+
+Every Operational Document has exactly one Asset and optionally exactly one operational owner. The document has exactly one operational context.
+
+An Operational Document is described by three independent concepts: business document type, operational context and file format. These concepts must not be mixed.
+
+This Use Case records supporting evidence. It does not perform inspections, record issues, create Work Orders, complete maintenance, perform Completion Review or change Asset operational status.
+
+When UC-012 is implemented, it will satisfy the deferred evidence capabilities referenced by UC-001 Register Asset, UC-004 Perform Inspection and UC-009 Complete Maintenance Activity.
 
 ---
 
-## UC-012 — Upload Operational Document
+## Primary Actor
 
-A user uploads a document or photograph and links it to an Asset or operational event.
+Operational Coordinator, Manager, Field Employee or Contractor
+
+The actor must be authorised for the operational context in which the document is uploaded.
+
+---
+
+## Supporting Actors
+
+* Administrator;
+* assigned Field Employee or Contractor (when a Coordinator or Manager uploads on behalf of visible operational context);
+* Manager (when evidence supports review or reference documentation).
+
+Administrators configure the platform but do not upload operational evidence in V1.
+
+---
+
+## Preconditions
+
+* The actor is authenticated.
+* The actor is authorised to upload operational evidence for the selected context.
+* The Asset exists.
+* When an operational owner is selected, that record exists, belongs to one of the allowed operational owner types, and belongs to the same Asset as the Operational Document.
+
+Typical authorised contexts in V1:
+
+* **Asset-level reference documentation** — Operational Coordinator or Manager; no operational owner.
+* **Inspection context** — Field Employee or Contractor assigned to the Inspection, or Operational Coordinator.
+* **Issue, Operational Decision, Work Order or Maintenance Activity context** — Operational Coordinator, Manager, assigned Field Employee or assigned Contractor according to the linked operational record.
+* **Completion Review context** — Manager.
+
+---
+
+## Main Flow
+
+1. The actor opens an Asset or an operational record linked to an Asset.
+2. The actor starts the operational document upload process.
+3. The actor confirms the target Asset, either directly or through the selected operational owner.
+4. The actor optionally selects exactly one operational owner to link the document to.
+5. The actor provides a document title or description.
+6. The actor selects the business document type.
+7. The actor provides one or more files as part of the same upload action.
+8. The actor records the business document date when applicable.
+9. InfraTrack validates the submitted information and the actor's authorisation.
+10. InfraTrack determines the file format from each uploaded file as technical metadata.
+11. InfraTrack stores the uploaded operational evidence linked to exactly one Asset.
+12. When selected, InfraTrack links the Operational Document to exactly one operational owner.
+13. InfraTrack records exactly one Asset History event for the upload action.
+14. InfraTrack confirms that the Operational Document has been uploaded.
+
+The Operational Document becomes part of the permanent operational record for the Asset.
+
+---
+
+## Document Ownership
+
+Every Operational Document has:
+
+* exactly one Asset;
+* optionally exactly one operational owner.
+
+When present, the operational owner must be exactly one of:
+
+* Inspection;
+* Issue;
+* Operational Decision;
+* Work Order;
+* Maintenance Activity;
+* Completion Review.
+
+An Operational Document shall never belong to more than one operational entity.
+
+Examples that are not allowed:
+
+* one document linked to two Work Orders;
+* one document linked to both an Inspection and a Maintenance Activity.
+
+When no operational owner is selected, the document is Asset-level reference or supporting documentation. The operational context is the Asset itself.
+
+When an operational owner is selected, the operational context is that single operational entity. The business document type does not replace or duplicate that context.
+
+---
+
+## Asset Relationship
+
+Every Operational Document belongs to exactly one Asset.
+
+The Asset may be:
+
+* referenced directly by the upload; or
+* derived through the linked operational owner.
+
+When an operational owner is selected, the Operational Document must belong to the same Asset as that operational owner. InfraTrack rejects any upload where the confirmed Asset and the operational owner's Asset are not the same.
+
+This is a business invariant. An Operational Document cannot exist without an Asset anchor.
+
+---
+
+## Document Classification
+
+An Operational Document is described by three independent concepts:
+
+1. **Business document type** — the business nature of the document;
+2. **Operational context** — the Asset and optional operational owner that give the document its place in the operational record;
+3. **File format** — technical metadata derived from the uploaded file.
+
+These concepts must not be mixed. Business document type does not describe workflow context or file format. Operational context does not describe document nature or file format. File format does not describe business meaning or workflow context.
+
+---
+
+## Business Document Type
+
+The business document type describes the business nature of the document.
+
+It does not describe:
+
+* the workflow where the document is used;
+* the file format.
+
+Allowed business document types in V1:
+
+* `PHOTO`;
+* `REPORT`;
+* `MANUAL`;
+* `PROCEDURE`;
+* `QUOTATION`;
+* `DRAWING`;
+* `OTHER`.
+
+The actor selects the business document type during upload. The same business document type may appear in different operational contexts.
+
+Business document types do not change Asset operational status by themselves.
+
+---
+
+## Operational Context
+
+The operational context is determined exclusively by the linked business entity: the Asset and, when present, exactly one operational owner.
+
+The business document type never encodes the operational context.
+
+Examples:
+
+* `PHOTO` attached to an Inspection → inspection evidence;
+* `PHOTO` attached to a Maintenance Activity → maintenance evidence;
+* `REPORT` attached to a Completion Review → completion review report;
+* `MANUAL` attached directly to an Asset → permanent asset documentation.
+
+The operational context explains where the document belongs in the operational record. It is independent of business document type and file format.
+
+---
+
+## File Format
+
+The file format is technical metadata describing the physical uploaded file.
+
+Examples include:
+
+* pdf;
+* jpg;
+* png;
+* docx;
+* xlsx;
+* heic.
+
+The file format is determined automatically from the uploaded file. The actor does not select it as part of business classification.
+
+File format is not a business document type. InfraTrack does not define a business enum for file formats.
+
+No business rules depend on the physical file format. Business meaning and operational context remain independent of whether the evidence is stored as pdf, jpg, png or any other supported format.
+
+---
+
+## Asset History
+
+Uploading operational evidence creates exactly one Asset History event per user upload action.
+
+The history event represents the upload operation. It does not represent each individual file.
+
+When the actor submits multiple files in one upload action, InfraTrack still records exactly one Asset History event for that action.
+
+Asset History remains append-only. The upload event preserves traceability of who uploaded evidence, when, and in which operational context, without creating one history entry per file.
+
+---
+
+## Alternative Flows
+
+### Asset Not Found
+
+If the Asset cannot be found, the upload cannot proceed.
+
+---
+
+### Operational Owner Not Found
+
+If a selected operational owner cannot be found, InfraTrack rejects the upload.
+
+---
+
+### Operational Owner Belongs to Another Asset
+
+If the selected operational owner is not linked to the confirmed Asset, InfraTrack rejects the upload.
+
+Operational evidence must remain linked to the correct Asset throughout its lifetime.
+
+---
+
+### Multiple Operational Owners
+
+If the upload attempts to link one Operational Document to more than one operational entity, InfraTrack rejects the upload.
+
+An Operational Document may have at most one operational owner.
+
+---
+
+### Unauthorized Role
+
+If the actor is not authorised for the selected upload context, InfraTrack rejects the upload.
+
+Examples:
+
+* a Contractor uploading evidence for a Work Order they are not assigned to;
+* a Field Employee uploading Asset-level reference documentation reserved for Coordinators or Managers;
+* an Administrator uploading operational evidence.
+
+---
+
+### Missing Required Information
+
+If required information is missing, InfraTrack rejects the upload and explains which information must be provided.
+
+Required information includes:
+
+* target Asset;
+* document title or description;
+* business document type;
+* at least one file in the upload action.
+
+---
+
+### Invalid Document
+
+If the submitted file is missing, unreadable or not accepted as operational evidence, InfraTrack rejects the upload.
+
+---
+
+### Unauthenticated User
+
+If the actor is not authenticated, InfraTrack rejects the upload.
+
+---
+
+## Postconditions
+
+* Uploaded operational evidence exists and is linked to exactly one Asset.
+* When selected, the Operational Document is linked to exactly one operational owner belonging to that Asset.
+* The Operational Document is never linked to more than one operational entity.
+* The document title or description, business document type, file format, responsible user and business document date when provided are recorded.
+* Exactly one Asset History event is recorded for the upload action, regardless of how many files were included in that action.
+* The linked operational owner is not modified except for the document association.
+* Asset operational status remains unchanged.
+* No Inspection is completed, no Issue is recorded, no Operational Decision is made, no Work Order is created or completed, and no Completion Review is recorded by this Use Case alone.
+
+Uploading evidence does not substitute for completing the operational workflow step to which the document relates.
+
+---
+
+## Business Rules
+
+* Operational documents and photographs are business artefacts that form part of the permanent operational record (Domain Overview — Document).
+* Every Operational Document belongs to exactly one Asset (BR-030).
+* Every Operational Document has at most one operational owner; the operational owner, when present, must be exactly one Inspection, Issue, Operational Decision, Work Order, Maintenance Activity or Completion Review.
+* An Operational Document shall never be linked to more than one operational entity.
+* The Asset of an Operational Document may be referenced directly or derived through its operational owner; in all cases the document remains anchored to exactly one Asset.
+* Operational documents must be linked to the Asset and may optionally be linked to one operational owner (UC-001).
+* The document type describes the business nature of the document. Operational context is determined by the linked business entity. File format is technical metadata determined from the uploaded file.
+* Business document type, operational context and file format are independent concepts and must not be mixed.
+* Business document type does not describe workflow context or file format.
+* Operational context is determined exclusively by the Asset and optional operational owner, not by business document type.
+* File format is technical metadata determined automatically from the uploaded file; it is not a business document type and no business rules depend on the physical file format.
+* Every upload action contributes exactly one Asset History event associated with the Asset (BR-004).
+* A multi-file upload action still produces exactly one Asset History event for that user action.
+* Asset History is permanent and read-only; uploaded evidence must not be removed to erase operational history (BR-026, BR-037).
+* Operational History records both actions and decisions; evidence supports understanding what happened and why (BR-027).
+* Every operational event must be associated with a date and time (BR-029).
+* Uploading an Operational Document does not automatically change Asset operational status (BR-039).
+* Asset Status changes are explicit business actions handled through dedicated capabilities, not through document upload.
+* Inspection, Maintenance Activity and Completion Review do not change Asset Status automatically; uploading related evidence does not change Asset Status either.
+* When Asset Status is changed through a future dedicated capability, that change must be recorded separately in Asset History with previous and new status traceable; document upload does not perform that change.
+* Only authorised business roles may upload operational evidence for a given context.
+* Uploading a document or photograph does not complete an Inspection, Maintenance Activity or other operational workflow step.
+* Maintenance Activities must produce operational evidence (BR-022); completion notes remain the minimum V1 execution record under UC-009, while uploaded photographs and reports extend operational evidence when UC-012 is implemented.
+* Uploading evidence does not reopen a completed Work Order.
+* Uploading evidence does not create a new Operational Decision or Work Order.
+* The backend remains the source of truth for document metadata, links and authorisation.
+
+---
+
+# 16. Listed Use Cases
+
+The following Use Cases remain listed and will be expanded when the corresponding business capability approaches implementation.
 
 ---
 
@@ -1456,7 +1768,7 @@ A Manager or authorised role delegates temporary authority to another Manager or
 
 ---
 
-# 16. Notes for Future Expansion
+# 17. Notes for Future Expansion
 
 Each listed Use Case should be detailed only when its implementation becomes relevant.
 
@@ -1464,16 +1776,16 @@ Future detailed Use Cases should avoid introducing new business concepts unless 
 
 If a Use Case reveals ambiguity in the business model, Business Discovery should be updated before architecture or implementation begins.
 
-UC-004 through UC-011 are now detailed to reflect the implemented or approved V1 behaviour.
+UC-004 through UC-012 are now detailed to reflect the implemented or approved V1 behaviour.
 
-UC-012 is the next listed Use Case to be expanded when implementation begins.
+UC-013 is the next listed Use Case to be expanded when implementation begins.
 
 ## Known V1 Limitations
 
 The following V1 limitations are intentional and reflect the current implementation state:
 
 * Notifications are documented in flows (for example, inspection assignment) but are not yet wired into UC-003.
-* Photos, documents and GPS evidence are deferred.
+* UC-012 Upload Operational Document is specified but not yet implemented; photos, file uploads and GPS evidence remain deferred in the running application.
 * Delegated decision authority is documented but not implemented; only Managers can make Operational Decisions in V1.
 
 ---
@@ -1484,8 +1796,8 @@ This document defines the Functional Analysis phase for InfraTrack.
 
 It translates the approved Business Discovery model into functional Use Cases.
 
-UC-001 through UC-011 are detailed to reflect implemented or approved V1 behaviour.
+UC-001 through UC-012 are detailed to reflect implemented or approved V1 behaviour.
 
-UC-012 is documented as the next planned Use Case.
+UC-013 is documented as the next planned Use Case.
 
 Remaining Use Cases are intentionally listed and will be expanded incrementally as each business capability approaches implementation.

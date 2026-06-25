@@ -3,11 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import apiClient from '../services/apiClient';
 import assetApi from '../services/assetApi';
+import operationalDocumentApi from '../services/operationalDocumentApi';
 import departmentApi from '../services/departmentApi';
 import assetCategoryApi from '../services/assetCategoryApi';
 import NotificationButton from '../components/NotificationButton';
-import { canRegisterAssets } from '../constants/userRoles';
+import { canRegisterAssets, canUploadOperationalDocuments } from '../constants/userRoles';
 import { getAssetHistoryEventTypeLabel } from '../constants/assetHistoryEventTypes';
+import {
+  OPERATIONAL_DOCUMENT_TYPE_OPTIONS,
+  OPERATIONAL_DOCUMENT_OWNER_TYPE_OPTIONS,
+  OPERATIONAL_DOCUMENT_OWNER_TYPES,
+  getOperationalDocumentTypeLabel,
+  getOperationalDocumentOwnerTypeLabel,
+} from '../constants/operationalDocumentTypes';
 import {
   ASSET_STATUSES,
   ASSET_STATUS_OPTIONS,
@@ -33,6 +41,16 @@ export default function AssetsPage() {
   const [success, setSuccess] = useState(null);
   const [selectedAssetId, setSelectedAssetId] = useState('');
   const [assetHistory, setAssetHistory] = useState([]);
+  const [assetDocuments, setAssetDocuments] = useState([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [documentUploading, setDocumentUploading] = useState(false);
+  const [documentForm, setDocumentForm] = useState({
+    documentType: '',
+    ownerType: '',
+    ownerId: '',
+    documentDate: '',
+    file: null,
+  });
   const [formData, setFormData] = useState({
     name: '',
     departmentId: '',
@@ -43,6 +61,7 @@ export default function AssetsPage() {
   });
 
   const canRegister = canRegisterAssets(auth?.user?.role);
+  const canUploadDocuments = canUploadOperationalDocuments(auth?.user?.role);
 
   useEffect(() => {
     if (!auth) {
@@ -125,6 +144,7 @@ export default function AssetsPage() {
     const assetId = e.target.value;
     setSelectedAssetId(assetId);
     setAssetHistory([]);
+    setAssetDocuments([]);
 
     if (!assetId) {
       return;
@@ -132,17 +152,96 @@ export default function AssetsPage() {
 
     try {
       setHistoryLoading(true);
+      setDocumentsLoading(true);
       setError(null);
-      const history = await assetApi.getHistory(Number(assetId));
+      const [history, documents] = await Promise.all([
+        assetApi.getHistory(Number(assetId)),
+        operationalDocumentApi.list(Number(assetId)),
+      ]);
       setAssetHistory(history);
+      setAssetDocuments(documents);
     } catch (err) {
       if (err.status === 404) {
         setError('Asset not found.');
       } else {
-        setError(`Failed to load asset history: ${err.message}`);
+        setError(`Failed to load asset details: ${err.message}`);
       }
     } finally {
       setHistoryLoading(false);
+      setDocumentsLoading(false);
+    }
+  };
+
+  const handleDocumentFormChange = (e) => {
+    const { name, value } = e.target;
+    setDocumentForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleDocumentFileChange = (e) => {
+    const file = e.target.files?.[0] || null;
+    setDocumentForm((prev) => ({ ...prev, file }));
+  };
+
+  const handleDocumentUpload = async (e) => {
+    e.preventDefault();
+    if (!canUploadDocuments || !selectedAssetId || !documentForm.file || !documentForm.documentType) {
+      return;
+    }
+
+    try {
+      setDocumentUploading(true);
+      setError(null);
+      setSuccess(null);
+      const formData = new FormData();
+      formData.append('file', documentForm.file);
+      formData.append('documentType', documentForm.documentType);
+      if (documentForm.ownerType) {
+        formData.append('ownerType', documentForm.ownerType);
+      }
+      if (documentForm.ownerId) {
+        formData.append('ownerId', documentForm.ownerId);
+      }
+      if (documentForm.documentDate) {
+        formData.append('documentDate', documentForm.documentDate);
+      }
+      await operationalDocumentApi.upload(Number(selectedAssetId), formData);
+      setSuccess('Operational document uploaded successfully.');
+      setDocumentForm({
+        documentType: '',
+        ownerType: '',
+        ownerId: '',
+        documentDate: '',
+        file: null,
+      });
+      const documents = await operationalDocumentApi.list(Number(selectedAssetId));
+      setAssetDocuments(documents);
+      const history = await assetApi.getHistory(Number(selectedAssetId));
+      setAssetHistory(history);
+    } catch (err) {
+      if (err.status === 403) {
+        setError('You do not have permission to upload documents for this context.');
+      } else if (err.status === 404) {
+        setError('Asset or operational owner not found.');
+      } else {
+        setError(`Failed to upload document: ${err.message}`);
+      }
+    } finally {
+      setDocumentUploading(false);
+    }
+  };
+
+  const handleDocumentDownload = async (documentId) => {
+    try {
+      setError(null);
+      const { blob, filename } = await operationalDocumentApi.download(documentId, auth.token);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(`Failed to download document: ${err.message}`);
     }
   };
 
@@ -372,6 +471,145 @@ export default function AssetsPage() {
                     <td>{entry.eventDate}</td>
                     <td>{getAssetHistoryEventTypeLabel(entry.eventType)}</td>
                     <td>{entry.responsibleUserName || `#${entry.responsibleUserId}`}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+
+        <section className="asset-documents-section">
+          <h2>Operational Documents</h2>
+          <p className="read-only-note">
+            Select an asset above to view or upload operational evidence.
+          </p>
+
+          {canUploadDocuments && selectedAssetId && (
+            <form className="asset-form document-upload-form" onSubmit={handleDocumentUpload}>
+              <div className="form-row">
+                <label htmlFor="documentType">Document Type</label>
+                <select
+                  id="documentType"
+                  name="documentType"
+                  value={documentForm.documentType}
+                  onChange={handleDocumentFormChange}
+                  required
+                  disabled={documentUploading}
+                >
+                  <option value="">Select document type</option>
+                  {OPERATIONAL_DOCUMENT_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-row">
+                <label htmlFor="ownerType">Owner Type (optional)</label>
+                <select
+                  id="ownerType"
+                  name="ownerType"
+                  value={documentForm.ownerType}
+                  onChange={handleDocumentFormChange}
+                  disabled={documentUploading}
+                >
+                  <option value="">Asset-level document</option>
+                  {OPERATIONAL_DOCUMENT_OWNER_TYPE_OPTIONS.filter(
+                    (option) => option.value !== OPERATIONAL_DOCUMENT_OWNER_TYPES.ASSET
+                  ).map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-row">
+                <label htmlFor="ownerId">Owner ID (optional)</label>
+                <input
+                  id="ownerId"
+                  name="ownerId"
+                  type="number"
+                  min="1"
+                  value={documentForm.ownerId}
+                  onChange={handleDocumentFormChange}
+                  disabled={documentUploading || !documentForm.ownerType}
+                />
+              </div>
+
+              <div className="form-row">
+                <label htmlFor="documentDate">Document Date (optional)</label>
+                <input
+                  id="documentDate"
+                  name="documentDate"
+                  type="date"
+                  value={documentForm.documentDate}
+                  onChange={handleDocumentFormChange}
+                  disabled={documentUploading}
+                />
+              </div>
+
+              <div className="form-row">
+                <label htmlFor="documentFile">File</label>
+                <input
+                  id="documentFile"
+                  name="documentFile"
+                  type="file"
+                  onChange={handleDocumentFileChange}
+                  required
+                  disabled={documentUploading}
+                />
+              </div>
+
+              <button type="submit" className="btn-primary" disabled={documentUploading}>
+                {documentUploading ? 'Uploading...' : 'Upload Document'}
+              </button>
+            </form>
+          )}
+
+          {!canUploadDocuments && (
+            <p className="read-only-note">
+              Document upload is available to Managers, Operational Coordinators, Field Employees and Contractors.
+            </p>
+          )}
+
+          {documentsLoading && <p className="read-only-note">Loading operational documents...</p>}
+
+          {!documentsLoading && selectedAssetId && assetDocuments.length === 0 && (
+            <p className="read-only-note">No operational documents uploaded for this asset.</p>
+          )}
+
+          {!documentsLoading && assetDocuments.length > 0 && (
+            <table className="reference-table assets-table">
+              <thead>
+                <tr>
+                  <th>File Name</th>
+                  <th>Type</th>
+                  <th>Owner</th>
+                  <th>Uploaded</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {assetDocuments.map((document) => (
+                  <tr key={document.id}>
+                    <td>{document.originalFileName}</td>
+                    <td>{getOperationalDocumentTypeLabel(document.documentType)}</td>
+                    <td>
+                      {getOperationalDocumentOwnerTypeLabel(document.ownerType)}
+                      {document.ownerId ? ` #${document.ownerId}` : ''}
+                    </td>
+                    <td>{document.uploadedAt?.replace('T', ' ')}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={() => handleDocumentDownload(document.id)}
+                      >
+                        Download
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

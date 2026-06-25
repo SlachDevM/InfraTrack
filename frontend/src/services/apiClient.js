@@ -83,6 +83,18 @@ class ApiClient {
     });
   }
 
+  postMultipart(endpoint, formData) {
+    const headers = {};
+    if (this.token) {
+      headers.Authorization = `Bearer ${this.token}`;
+    }
+    return this.request(endpoint, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+  }
+
   put(endpoint, data) {
     return this.request(endpoint, {
       method: 'PUT',
