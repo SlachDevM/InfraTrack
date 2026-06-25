@@ -215,6 +215,8 @@ Contractors participate only when assigned operational work.
 Typical responsibilities include:
 
 * accepting assigned work;
+* performing assigned inspections when engaged for field evidence collection;
+* recording an Issue only when the contractor completed the Inspection;
 * completing maintenance activities;
 * uploading completion evidence;
 * providing completion reports.
@@ -238,8 +240,8 @@ Operational accountability always remains with the council.
 | Register Assets            |       |      ✓      |    ✓    |                |            |
 | Create Business Trigger    |       |      ✓      |         |                |            |
 | Assign Inspection          |       |      ✓      |         |                |            |
-| Perform Inspection         |       |             |         |        ✓       |            |
-| Record Issue               |       |             |         |        ✓       |            |
+| Perform Inspection         |       |             |         |        ✓       |      ✓     |
+| Record Issue               |       |             |         |        ✓       |      ✓*    |
 | Make Operational Decision  |       |             |    ✓    |                |            |
 | Create Work Order          |       |      ✓      |         |                |            |
 | Assign Work Order          |       |      ✓      |         |                |            |
@@ -247,6 +249,8 @@ Operational accountability always remains with the council.
 | Complete Maintenance       |       |             |         |        ✓       |      ✓     |
 | Validate Completion Review |       |             |    ✓    |                |            |
 | Monitor KPIs               |       |      ✓      |    ✓    |                |            |
+
+* Contractors may record an Issue only when they completed the Inspection.
 
 
 
