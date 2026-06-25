@@ -10,6 +10,7 @@ import com.infratrack.operationaldecision.OperationalDecisionRepository;
 import com.infratrack.workorder.dto.AssignWorkOrderRequest;
 import com.infratrack.workorder.dto.CreateWorkOrderRequest;
 import com.infratrack.workorder.dto.WorkOrderResponse;
+import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
 import org.springframework.http.HttpStatus;
@@ -27,16 +28,19 @@ public class WorkOrderService {
     private final OperationalDecisionRepository operationalDecisionRepository;
     private final AssetHistoryEventRepository assetHistoryEventRepository;
     private final UserService userService;
+    private final OperationalEventNotificationService operationalEventNotificationService;
 
     public WorkOrderService(
             WorkOrderRepository workOrderRepository,
             OperationalDecisionRepository operationalDecisionRepository,
             AssetHistoryEventRepository assetHistoryEventRepository,
-            UserService userService) {
+            UserService userService,
+            OperationalEventNotificationService operationalEventNotificationService) {
         this.workOrderRepository = workOrderRepository;
         this.operationalDecisionRepository = operationalDecisionRepository;
         this.assetHistoryEventRepository = assetHistoryEventRepository;
         this.userService = userService;
+        this.operationalEventNotificationService = operationalEventNotificationService;
     }
 
     @Transactional(readOnly = true)
@@ -103,6 +107,8 @@ public class WorkOrderService {
                 coordinator.getId(),
                 assignedAt.toLocalDate()
         ));
+
+        operationalEventNotificationService.notifyWorkOrderAssigned(assignee.getId());
 
         return WorkOrderResponse.from(workOrder, assignee);
     }

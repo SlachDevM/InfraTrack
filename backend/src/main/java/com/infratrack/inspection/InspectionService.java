@@ -9,6 +9,7 @@ import com.infratrack.businesstrigger.BusinessTriggerRepository;
 import com.infratrack.inspection.dto.AssignInspectionRequest;
 import com.infratrack.inspection.dto.CompleteInspectionRequest;
 import com.infratrack.inspection.dto.InspectionResponse;
+import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
 import org.springframework.http.HttpStatus;
@@ -27,16 +28,19 @@ public class InspectionService {
     private final BusinessTriggerRepository businessTriggerRepository;
     private final AssetHistoryEventRepository assetHistoryEventRepository;
     private final UserService userService;
+    private final OperationalEventNotificationService operationalEventNotificationService;
 
     public InspectionService(
             InspectionRepository inspectionRepository,
             BusinessTriggerRepository businessTriggerRepository,
             AssetHistoryEventRepository assetHistoryEventRepository,
-            UserService userService) {
+            UserService userService,
+            OperationalEventNotificationService operationalEventNotificationService) {
         this.inspectionRepository = inspectionRepository;
         this.businessTriggerRepository = businessTriggerRepository;
         this.assetHistoryEventRepository = assetHistoryEventRepository;
         this.userService = userService;
+        this.operationalEventNotificationService = operationalEventNotificationService;
     }
 
     @Transactional(readOnly = true)
@@ -78,6 +82,8 @@ public class InspectionService {
                 userId,
                 LocalDate.now()
         ));
+
+        operationalEventNotificationService.notifyInspectionAssigned(assignedToUser.getId());
 
         User assignedByUser = userService.getById(userId);
         return InspectionResponse.from(inspection, assignedToUser, assignedByUser);

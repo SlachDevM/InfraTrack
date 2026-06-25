@@ -12,6 +12,7 @@ import com.infratrack.businesstrigger.BusinessTriggerType;
 import com.infratrack.department.Department;
 import com.infratrack.inspection.dto.AssignInspectionRequest;
 import com.infratrack.inspection.dto.CompleteInspectionRequest;
+import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
@@ -46,6 +47,9 @@ class InspectionServiceTest {
 
     @Mock
     private UserService userService;
+
+    @Mock
+    private OperationalEventNotificationService operationalEventNotificationService;
 
     @InjectMocks
     private InspectionService inspectionService;
@@ -90,6 +94,32 @@ class InspectionServiceTest {
         assertThat(historyCaptor.getValue().getAsset().getId()).isEqualTo(5L);
         assertThat(historyCaptor.getValue().getPerformedByUserId()).isEqualTo(10L);
         assertThat(historyCaptor.getValue().getEventDate()).isEqualTo(LocalDate.now());
+        verify(operationalEventNotificationService).notifyInspectionAssigned(20L);
+    }
+
+    @Test
+    void assignInspection_shouldNotCreateNotificationHistoryEvent() {
+        AssignInspectionRequest request = validRequest();
+        BusinessTrigger trigger = businessTrigger(1L, false);
+        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(businessTriggerRepository.findById(1L)).thenReturn(Optional.of(trigger));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.existsByBusinessTriggerIdAndStatus(1L, InspectionStatus.ASSIGNED))
+                .thenReturn(false);
+        when(inspectionRepository.save(any(Inspection.class))).thenAnswer(invocation -> {
+            Inspection inspection = invocation.getArgument(0);
+            inspection.setId(100L);
+            return inspection;
+        });
+
+        inspectionService.assignInspection(request, 10L);
+
+        verify(assetHistoryEventRepository, times(1)).save(any(AssetHistoryEvent.class));
+        verify(assetHistoryEventRepository).save(argThat(event ->
+                event.getEventType() == AssetHistoryEventType.INSPECTION_ASSIGNED));
     }
 
     @Test

@@ -20,6 +20,7 @@ import com.infratrack.operationaldecision.OperationalDecisionOutcome;
 import com.infratrack.operationaldecision.OperationalDecisionRepository;
 import com.infratrack.workorder.dto.AssignWorkOrderRequest;
 import com.infratrack.workorder.dto.CreateWorkOrderRequest;
+import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
@@ -54,6 +55,9 @@ class WorkOrderServiceTest {
 
     @Mock
     private UserService userService;
+
+    @Mock
+    private OperationalEventNotificationService operationalEventNotificationService;
 
     @InjectMocks
     private WorkOrderService workOrderService;
@@ -375,6 +379,7 @@ class WorkOrderServiceTest {
 
         verify(assetHistoryEventRepository).save(argThat(event ->
                 event.getEventType() == AssetHistoryEventType.WORK_ORDER_ASSIGNED));
+        verify(operationalEventNotificationService).notifyWorkOrderAssigned(20L);
     }
 
     @Test
