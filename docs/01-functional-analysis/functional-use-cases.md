@@ -60,7 +60,7 @@ Use Cases should remain technology-agnostic until the architecture phase.
 | UC-008 | Assign Work Order                   | Detailed |
 | UC-009 | Complete Maintenance Activity       | Detailed |
 | UC-010 | Complete Review                     | Detailed |
-| UC-011 | View Asset History                  | Listed   |
+| UC-011 | View Asset History                  | Detailed |
 | UC-012 | Upload Operational Document         | Listed   |
 | UC-013 | Send Notification                   | Listed   |
 | UC-014 | Manage Departments                  | Listed   |
@@ -1307,15 +1307,128 @@ If the review decision is rework required, the council must initiate any further
 
 ---
 
-# 14. Listed Use Cases
+# 14. UC-011 — View Asset History
 
-The following Use Cases remain listed and will be expanded when the corresponding business capability approaches implementation.
+## Purpose
+
+Present the permanent operational memory of an Asset as a chronological record of significant operational events.
+
+Asset History is the permanent operational memory of an Asset. It provides a chronological view of all significant operational events that occurred during the Asset's lifetime.
+
+This Use Case is read-only. It allows users to understand what happened to an Asset and who was responsible, without modifying any operational data.
 
 ---
 
-## UC-011 — View Asset History
+## Primary Actor
 
-A user views the complete operational history of an Asset.
+Authenticated User
+
+Any authenticated InfraTrack user may view Asset History in V1.
+
+---
+
+## Supporting Actors
+
+* Administrator;
+* Manager;
+* Operational Coordinator;
+* Field Employee;
+* Contractor.
+
+---
+
+## Preconditions
+
+* The actor is authenticated.
+* The Asset exists.
+
+---
+
+## Main Flow
+
+1. The actor opens an Asset.
+2. The actor requests the Asset History for the Asset.
+3. InfraTrack verifies that the actor is authenticated.
+4. InfraTrack retrieves the Asset.
+5. InfraTrack retrieves all Asset History entries linked to the Asset.
+6. InfraTrack orders the history entries in reverse chronological order (most recent first).
+7. InfraTrack presents each history entry with:
+   * the business event date;
+   * the event type;
+   * the responsible user, when available.
+8. InfraTrack confirms that the Asset History has been displayed.
+
+The actor may review the operational timeline without changing any business object.
+
+---
+
+## Scope of History
+
+In V1, Asset History includes operational events recorded by previous use cases:
+
+* Asset Registered;
+* Business Trigger Created;
+* Inspection Assigned;
+* Inspection Completed;
+* Issue Recorded;
+* Operational Decision Made;
+* Work Order Created;
+* Work Order Assigned;
+* Maintenance Completed;
+* Completion Review Recorded.
+
+No additional event types are defined for V1.
+
+---
+
+## Alternative Flows
+
+### Asset Not Found
+
+If the Asset cannot be found, Asset History cannot be displayed.
+
+---
+
+### Unauthenticated User
+
+If the actor is not authenticated, InfraTrack rejects the request.
+
+---
+
+### No History Entries
+
+If the Asset exists but no history entries have been recorded, InfraTrack presents an empty history.
+
+This is valid. Asset registration itself creates the first history entry under UC-001 Register Asset.
+
+---
+
+## Postconditions
+
+* The Asset History is displayed in reverse chronological order.
+* Each entry shows the business event date, event type and responsible user when available.
+* No business object is modified.
+* No Asset History entry is created, modified or deleted.
+* The Asset and all linked operational records remain unchanged.
+
+---
+
+## Business Rules
+
+* Asset History is the permanent operational memory of an Asset (BR-004).
+* Asset History is read-only; operational history must never be edited or deleted (BR-026).
+* Operational History records both actions and decisions (BR-027).
+* Every operational event must be associated with a date and time (BR-029).
+* Any authenticated user may view Asset History in V1.
+* Viewing Asset History does not change any business object.
+* Viewing Asset History does not create new history events.
+* History entries reflect operational events recorded by the system; they are not audit logs, version records or event-sourcing artefacts.
+
+---
+
+# 15. Listed Use Cases
+
+The following Use Cases remain listed and will be expanded when the corresponding business capability approaches implementation.
 
 ---
 
@@ -1343,7 +1456,7 @@ A Manager or authorised role delegates temporary authority to another Manager or
 
 ---
 
-# 15. Notes for Future Expansion
+# 16. Notes for Future Expansion
 
 Each listed Use Case should be detailed only when its implementation becomes relevant.
 
@@ -1351,9 +1464,9 @@ Future detailed Use Cases should avoid introducing new business concepts unless 
 
 If a Use Case reveals ambiguity in the business model, Business Discovery should be updated before architecture or implementation begins.
 
-UC-004 through UC-010 are now detailed to reflect the implemented or approved V1 behaviour.
+UC-004 through UC-011 are now detailed to reflect the implemented or approved V1 behaviour.
 
-UC-011 is the next listed Use Case to be expanded when implementation begins.
+UC-012 is the next listed Use Case to be expanded when implementation begins.
 
 ## Known V1 Limitations
 
@@ -1371,8 +1484,8 @@ This document defines the Functional Analysis phase for InfraTrack.
 
 It translates the approved Business Discovery model into functional Use Cases.
 
-UC-001 through UC-010 are detailed to reflect implemented or approved V1 behaviour.
+UC-001 through UC-011 are detailed to reflect implemented or approved V1 behaviour.
 
-UC-011 is documented as the next planned Use Case.
+UC-012 is documented as the next planned Use Case.
 
 Remaining Use Cases are intentionally listed and will be expanded incrementally as each business capability approaches implementation.

@@ -7,6 +7,7 @@ import departmentApi from '../services/departmentApi';
 import assetCategoryApi from '../services/assetCategoryApi';
 import NotificationButton from '../components/NotificationButton';
 import { canRegisterAssets } from '../constants/userRoles';
+import { getAssetHistoryEventTypeLabel } from '../constants/assetHistoryEventTypes';
 import {
   ASSET_STATUSES,
   ASSET_STATUS_OPTIONS,
@@ -26,9 +27,12 @@ export default function AssetsPage() {
   const [departments, setDepartments] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [selectedAssetId, setSelectedAssetId] = useState('');
+  const [assetHistory, setAssetHistory] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
     departmentId: '',
@@ -116,6 +120,35 @@ export default function AssetsPage() {
     logout();
     navigate('/login');
   };
+
+  const handleAssetHistoryChange = async (e) => {
+    const assetId = e.target.value;
+    setSelectedAssetId(assetId);
+    setAssetHistory([]);
+
+    if (!assetId) {
+      return;
+    }
+
+    try {
+      setHistoryLoading(true);
+      setError(null);
+      const history = await assetApi.getHistory(Number(assetId));
+      setAssetHistory(history);
+    } catch (err) {
+      if (err.status === 404) {
+        setError('Asset not found.');
+      } else {
+        setError(`Failed to load asset history: ${err.message}`);
+      }
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const selectedAsset = assets.find(
+    (asset) => String(asset.id) === String(selectedAssetId)
+  );
 
   if (loading) {
     return <div className="loading">Loading assets...</div>;
@@ -281,6 +314,64 @@ export default function AssetsPage() {
                     <td>{asset.location}</td>
                     <td>{getAssetStatusLabel(asset.status)}</td>
                     <td>{asset.registrationDate}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+
+        <section className="asset-history-section">
+          <h2>Asset History</h2>
+          <div className="form-row">
+            <label htmlFor="historyAssetId">Asset</label>
+            <select
+              id="historyAssetId"
+              name="historyAssetId"
+              value={selectedAssetId}
+              onChange={handleAssetHistoryChange}
+              disabled={historyLoading || assets.length === 0}
+            >
+              <option value="">Select asset</option>
+              {assets.map((asset) => (
+                <option key={asset.id} value={asset.id}>
+                  {asset.name} — {asset.location}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {selectedAsset && (
+            <div className="linked-decision-info">
+              <strong>Department:</strong> {selectedAsset.departmentName}
+              <br />
+              <strong>Category:</strong> {selectedAsset.assetCategoryName}
+              <br />
+              <strong>Status:</strong> {getAssetStatusLabel(selectedAsset.status)}
+            </div>
+          )}
+
+          {historyLoading && <p className="read-only-note">Loading asset history...</p>}
+
+          {!historyLoading && selectedAssetId && assetHistory.length === 0 && (
+            <p className="read-only-note">No history entries recorded for this asset.</p>
+          )}
+
+          {!historyLoading && assetHistory.length > 0 && (
+            <table className="reference-table assets-table">
+              <thead>
+                <tr>
+                  <th>Event Date</th>
+                  <th>Event Type</th>
+                  <th>Responsible User</th>
+                </tr>
+              </thead>
+              <tbody>
+                {assetHistory.map((entry, index) => (
+                  <tr key={`${entry.eventType}-${entry.eventDate}-${index}`}>
+                    <td>{entry.eventDate}</td>
+                    <td>{getAssetHistoryEventTypeLabel(entry.eventType)}</td>
+                    <td>{entry.responsibleUserName || `#${entry.responsibleUserId}`}</td>
                   </tr>
                 ))}
               </tbody>

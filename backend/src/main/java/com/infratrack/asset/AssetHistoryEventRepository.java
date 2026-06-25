@@ -7,4 +7,6 @@ import java.util.List;
 public interface AssetHistoryEventRepository extends JpaRepository<AssetHistoryEvent, Long> {
 
     List<AssetHistoryEvent> findByAssetIdOrderByCreatedAtAsc(Long assetId);
+
+    List<AssetHistoryEvent> findByAssetIdOrderByEventDateDescCreatedAtDesc(Long assetId);
 }
