@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import apiClient from '../services/apiClient';
-import { API_ENDPOINTS } from '../constants/jobConfig';
+import { API_ENDPOINTS } from '../constants/apiEndpoints';
 
 const defaultNotificationContext = {
   unreadCount: 0,

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import apiClient from '../services/apiClient';
-import { API_ENDPOINTS } from '../constants/jobConfig';
+import { API_ENDPOINTS } from '../constants/apiEndpoints';
 import '../styles/Login.css';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

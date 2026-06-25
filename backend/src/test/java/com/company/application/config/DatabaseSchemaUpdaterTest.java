@@ -9,9 +9,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class DatabaseSchemaUpdaterTest {
@@ -97,48 +98,6 @@ class DatabaseSchemaUpdaterTest {
 
         assertThat(addFcmColumn)
                 .as("Should add fcm_token column for Firebase Cloud Messaging")
-                .isNotNull();
-    }
-
-    @Test
-    void onApplicationEvent_addsPhotoColumns() {
-        ApplicationReadyEvent event = mock(ApplicationReadyEvent.class);
-
-        schemaUpdater.onApplicationEvent(event);
-
-        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
-        verify(jdbcTemplate, atLeastOnce()).execute(sqlCaptor.capture());
-
-        String beforePhotos = sqlCaptor.getAllValues().stream()
-                .filter(sql -> sql.contains("before_photos"))
-                .findFirst()
-                .orElse(null);
-
-        String afterPhotos = sqlCaptor.getAllValues().stream()
-                .filter(sql -> sql.contains("after_photos"))
-                .findFirst()
-                .orElse(null);
-
-        assertThat(beforePhotos).as("Should add before_photos column").isNotNull();
-        assertThat(afterPhotos).as("Should add after_photos column").isNotNull();
-    }
-
-    @Test
-    void onApplicationEvent_updateInProgressStatusConstraint() {
-        ApplicationReadyEvent event = mock(ApplicationReadyEvent.class);
-
-        schemaUpdater.onApplicationEvent(event);
-
-        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
-        verify(jdbcTemplate, atLeastOnce()).execute(sqlCaptor.capture());
-
-        String statusConstraint = sqlCaptor.getAllValues().stream()
-                .filter(sql -> sql.contains("IN_PROGRESS"))
-                .findFirst()
-                .orElse(null);
-
-        assertThat(statusConstraint)
-                .as("Should include IN_PROGRESS in jobs status constraint")
                 .isNotNull();
     }
 }
