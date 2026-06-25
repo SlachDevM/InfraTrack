@@ -14,6 +14,7 @@ import com.infratrack.inspection.InspectionPriority;
 import com.infratrack.inspection.PhysicalCondition;
 import com.infratrack.issue.Issue;
 import com.infratrack.issue.IssueSeverity;
+import com.infratrack.completionreview.CompletionReviewRepository;
 import com.infratrack.maintenanceactivity.dto.CompleteMaintenanceActivityRequest;
 import com.infratrack.operationaldecision.OperationalDecision;
 import com.infratrack.operationaldecision.OperationalDecisionOutcome;
@@ -56,6 +57,9 @@ class MaintenanceActivityServiceTest {
 
     @Mock
     private UserService userService;
+
+    @Mock
+    private CompletionReviewRepository completionReviewRepository;
 
     @InjectMocks
     private MaintenanceActivityService maintenanceActivityService;

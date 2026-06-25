@@ -4,6 +4,9 @@ import com.infratrack.asset.Asset;
 import com.infratrack.asset.AssetHistoryEvent;
 import com.infratrack.asset.AssetHistoryEventRepository;
 import com.infratrack.asset.AssetHistoryEventType;
+import com.infratrack.completionreview.CompletionReview;
+import com.infratrack.completionreview.CompletionReviewDecision;
+import com.infratrack.completionreview.CompletionReviewRepository;
 import com.infratrack.maintenanceactivity.dto.CompleteMaintenanceActivityRequest;
 import com.infratrack.maintenanceactivity.dto.MaintenanceActivityResponse;
 import com.infratrack.user.User;
@@ -18,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class MaintenanceActivityService {
@@ -26,16 +30,26 @@ public class MaintenanceActivityService {
     private final WorkOrderRepository workOrderRepository;
     private final AssetHistoryEventRepository assetHistoryEventRepository;
     private final UserService userService;
+    private final CompletionReviewRepository completionReviewRepository;
 
     public MaintenanceActivityService(
             MaintenanceActivityRepository maintenanceActivityRepository,
             WorkOrderRepository workOrderRepository,
             AssetHistoryEventRepository assetHistoryEventRepository,
-            UserService userService) {
+            UserService userService,
+            CompletionReviewRepository completionReviewRepository) {
         this.maintenanceActivityRepository = maintenanceActivityRepository;
         this.workOrderRepository = workOrderRepository;
         this.assetHistoryEventRepository = assetHistoryEventRepository;
         this.userService = userService;
+        this.completionReviewRepository = completionReviewRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public List<MaintenanceActivityResponse> listAll() {
+        return maintenanceActivityRepository.findAllByOrderByCompletedAtDesc().stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     @Transactional
@@ -73,6 +87,14 @@ public class MaintenanceActivityService {
         ));
 
         return MaintenanceActivityResponse.from(maintenanceActivity);
+    }
+
+    private MaintenanceActivityResponse toResponse(MaintenanceActivity maintenanceActivity) {
+        CompletionReviewDecision completionReviewDecision = completionReviewRepository
+                .findByMaintenanceActivityId(maintenanceActivity.getId())
+                .map(CompletionReview::getDecision)
+                .orElse(null);
+        return MaintenanceActivityResponse.from(maintenanceActivity, completionReviewDecision);
     }
 
     private WorkOrder findWorkOrderOrThrow(Long workOrderId) {

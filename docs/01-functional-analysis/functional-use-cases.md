@@ -59,7 +59,7 @@ Use Cases should remain technology-agnostic until the architecture phase.
 | UC-007 | Create Work Order                   | Detailed |
 | UC-008 | Assign Work Order                   | Detailed |
 | UC-009 | Complete Maintenance Activity       | Detailed |
-| UC-010 | Complete Review                     | Listed   |
+| UC-010 | Complete Review                     | Detailed |
 | UC-011 | View Asset History                  | Listed   |
 | UC-012 | Upload Operational Document         | Listed   |
 | UC-013 | Send Notification                   | Listed   |
@@ -1125,15 +1125,191 @@ If `completedAt` is in the future, InfraTrack rejects maintenance completion.
 
 ---
 
-# 13. Listed Use Cases
+# 13. UC-010 — Complete Review
 
-The following Use Cases remain listed and will be expanded when the corresponding business capability approaches implementation.
+## Purpose
+
+Record the council's validation decision regarding completed maintenance work when a Completion Review is required.
+
+A Maintenance Activity records the work actually performed. A Completion Review records the council's validation decision regarding that completed work.
+
+Completion Review is a separate business concept. It is not a boolean flag on a Maintenance Activity.
+
+Completion Review is optional. Routine work may not require review. When review is required, the review decision must be traceable.
+
+This Use Case records a managerial validation decision. It does not modify the Maintenance Activity, reopen the Work Order, create follow-up operational work, or change Asset operational status.
 
 ---
 
-## UC-010 — Complete Review
+## Primary Actor
 
-An authorised role reviews completed work when a Completion Review is required.
+Manager
+
+Only a Manager may perform a Completion Review in V1.
+
+---
+
+## Supporting Actors
+
+* Operational Coordinator;
+* Administrator.
+
+---
+
+## Preconditions
+
+* The actor is authenticated.
+* The actor is a Manager.
+* A Maintenance Activity exists.
+* The Maintenance Activity is linked to a Work Order with status completed.
+* No Completion Review has already been recorded for the Maintenance Activity.
+* The linked Asset exists.
+
+---
+
+## Main Flow
+
+1. The Manager opens the completed maintenance context for review.
+2. The Manager reviews the Asset, Operational Decision, Issue, Work Order and Maintenance Activity context.
+3. The Manager starts the Completion Review process.
+4. The Manager records the review decision:
+   * `APPROVED` — the completed work is accepted;
+   * `REWORK_REQUIRED` — the completed work is not accepted and further work is needed.
+5. The Manager records review notes explaining the validation decision.
+6. The Manager records the business review date and time (`reviewedAt`) of the Completion Review.
+7. InfraTrack validates the submitted information.
+8. InfraTrack creates a Completion Review linked to the Maintenance Activity.
+9. InfraTrack records the review decision, review notes and `reviewedAt` on the Completion Review.
+10. InfraTrack records the Completion Review in Asset History.
+11. InfraTrack confirms that the Completion Review has been recorded.
+
+The Completion Review is now the traceable validation decision for the completed work. If rework is required, any further work must start through a future Operational Decision and Work Order flow. The existing Work Order remains completed.
+
+---
+
+## Alternative Flows
+
+### Maintenance Activity Not Found
+
+If the Maintenance Activity cannot be found, Completion Review cannot proceed.
+
+---
+
+### Work Order Not Completed
+
+If the related Work Order is not in completed status, InfraTrack rejects Completion Review.
+
+Examples:
+
+* status is created;
+* status is assigned;
+* status is cancelled.
+
+---
+
+### Completion Review Already Exists
+
+If a Completion Review has already been recorded for the Maintenance Activity, InfraTrack rejects the request.
+
+In V1, each Maintenance Activity may have at most one Completion Review.
+
+---
+
+### Unauthorized Role
+
+If the actor is not a Manager, InfraTrack rejects Completion Review.
+
+Examples:
+
+* Operational Coordinator;
+* Field Employee;
+* Contractor;
+* Administrator.
+
+Administrators configure the platform but do not perform operational validation in V1.
+
+---
+
+### Missing Review Decision
+
+If the review decision is missing, InfraTrack rejects Completion Review.
+
+---
+
+### Invalid Review Decision
+
+If the review decision is not one of the allowed values, InfraTrack rejects Completion Review.
+
+Allowed decisions in V1:
+
+* `APPROVED`;
+* `REWORK_REQUIRED`.
+
+---
+
+### Missing Review Notes
+
+If review notes are missing or blank, InfraTrack rejects Completion Review.
+
+---
+
+### Missing Review Date and Time
+
+If `reviewedAt` is missing, InfraTrack rejects Completion Review.
+
+---
+
+### Review Date and Time Before Maintenance Completion
+
+If `reviewedAt` is before the Maintenance Activity was completed, InfraTrack rejects Completion Review.
+
+---
+
+### Review Date and Time in the Future
+
+If `reviewedAt` is in the future, InfraTrack rejects Completion Review.
+
+---
+
+## Postconditions
+
+* A Completion Review exists and is linked to exactly one Maintenance Activity.
+* The Completion Review records the review decision, review notes and `reviewedAt`.
+* The Completion Review is the traceable validation decision for the completed work.
+* The Maintenance Activity remains unchanged.
+* The Work Order status remains completed.
+* No new Work Order is created automatically.
+* No new Operational Decision is created automatically.
+* Asset operational status remains unchanged.
+* Asset History is updated with the Completion Review.
+
+If the review decision is rework required, the council must initiate any further work through the appropriate future Operational Decision and Work Order flow. The completed Work Order is not reopened.
+
+---
+
+## Business Rules
+
+* Completion Review is a separate business concept from Maintenance Activity; it is not a boolean flag on maintenance completion (BR-023, BR-024).
+* Completion Review is optional; routine maintenance may be closed without a Completion Review (BR-024).
+* When review is required, the review decision must be traceable.
+* Only a Manager may perform a Completion Review in V1 (BR-025).
+* A Completion Review must be linked to exactly one Maintenance Activity.
+* A Maintenance Activity may have zero or one Completion Review in V1.
+* Completion Review requires an existing Maintenance Activity and a Work Order with status completed.
+* A Work Order represents one intervention; once completed, it remains completed. Additional work requires a new Work Order through the appropriate operational flow.
+* Completion Review does not modify the Maintenance Activity.
+* Completion Review does not reopen the Work Order.
+* Completion Review does not automatically create a new Work Order or Operational Decision.
+* Completion Review does not automatically change Asset operational status.
+* If rework is required, further work must start through a future Operational Decision and Work Order flow; the system does not reopen completed Work Orders.
+* `reviewedAt` is a business operational timestamp recording when the review decision was made, not a system audit timestamp.
+* Asset History must preserve operational traceability (BR-004, BR-027).
+
+---
+
+# 14. Listed Use Cases
+
+The following Use Cases remain listed and will be expanded when the corresponding business capability approaches implementation.
 
 ---
 
@@ -1167,7 +1343,7 @@ A Manager or authorised role delegates temporary authority to another Manager or
 
 ---
 
-# 14. Notes for Future Expansion
+# 15. Notes for Future Expansion
 
 Each listed Use Case should be detailed only when its implementation becomes relevant.
 
@@ -1175,9 +1351,9 @@ Future detailed Use Cases should avoid introducing new business concepts unless 
 
 If a Use Case reveals ambiguity in the business model, Business Discovery should be updated before architecture or implementation begins.
 
-UC-004 through UC-009 are now detailed to reflect the implemented or approved V1 behaviour.
+UC-004 through UC-010 are now detailed to reflect the implemented or approved V1 behaviour.
 
-UC-010 is the next listed Use Case to be expanded when implementation begins.
+UC-011 is the next listed Use Case to be expanded when implementation begins.
 
 ## Known V1 Limitations
 
@@ -1195,8 +1371,8 @@ This document defines the Functional Analysis phase for InfraTrack.
 
 It translates the approved Business Discovery model into functional Use Cases.
 
-UC-001 through UC-009 are detailed to reflect implemented or approved V1 behaviour.
+UC-001 through UC-010 are detailed to reflect implemented or approved V1 behaviour.
 
-UC-010 is documented as the next planned Use Case.
+UC-011 is documented as the next planned Use Case.
 
 Remaining Use Cases are intentionally listed and will be expanded incrementally as each business capability approaches implementation.

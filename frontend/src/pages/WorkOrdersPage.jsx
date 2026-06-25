@@ -3,10 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import apiClient from '../services/apiClient';
 import workOrderApi from '../services/workOrderApi';
+import maintenanceActivityApi from '../services/maintenanceActivityApi';
 import operationalDecisionApi from '../services/operationalDecisionApi';
 import NotificationButton from '../components/NotificationButton';
-import { canAssignWorkOrders, canCompleteMaintenance, canCreateWorkOrders, USER_ROLES } from '../constants/userRoles';
+import { canAssignWorkOrders, canCompleteMaintenance, canCreateWorkOrders, canRecordCompletionReview, USER_ROLES } from '../constants/userRoles';
 import { getOperationalDecisionOutcomeLabel } from '../constants/operationalDecisionOutcomes';
+import {
+  COMPLETION_REVIEW_DECISION_OPTIONS,
+  getCompletionReviewDecisionLabel,
+} from '../constants/completionReviewDecisions';
 import {
   WORK_ORDER_PRIORITIES,
   WORK_ORDER_PRIORITY_OPTIONS,
@@ -26,12 +31,14 @@ export default function WorkOrdersPage() {
   const navigate = useNavigate();
   const { auth, logout } = useAuth();
   const [workOrders, setWorkOrders] = useState([]);
+  const [maintenanceActivities, setMaintenanceActivities] = useState([]);
   const [decisions, setDecisions] = useState([]);
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [assigning, setAssigning] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [reviewing, setReviewing] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [formData, setFormData] = useState({
@@ -50,10 +57,17 @@ export default function WorkOrdersPage() {
     completionNotes: '',
     completedAt: toDateTimeLocalValue(),
   });
+  const [reviewFormData, setReviewFormData] = useState({
+    maintenanceActivityId: '',
+    decision: 'APPROVED',
+    reviewNotes: '',
+    reviewedAt: toDateTimeLocalValue(),
+  });
 
   const canCreate = canCreateWorkOrders(auth?.user?.role);
   const canAssign = canAssignWorkOrders(auth?.user?.role);
   const canComplete = canCompleteMaintenance(auth?.user?.role);
+  const canReview = canRecordCompletionReview(auth?.user?.role);
   const currentUserId = auth?.user?.userId;
 
   const eligibleDecisions = useMemo(() => {
@@ -104,6 +118,21 @@ export default function WorkOrdersPage() {
     [workOrders, completeFormData.workOrderId]
   );
 
+  const reviewableMaintenanceActivities = useMemo(
+    () => maintenanceActivities.filter(
+      (activity) => activity.workOrderStatus === 'COMPLETED'
+        && !activity.completionReviewDecision
+    ),
+    [maintenanceActivities]
+  );
+
+  const selectedReviewActivity = useMemo(
+    () => maintenanceActivities.find(
+      (activity) => String(activity.id) === String(reviewFormData.maintenanceActivityId)
+    ),
+    [maintenanceActivities, reviewFormData.maintenanceActivityId]
+  );
+
   useEffect(() => {
     if (!auth) {
       navigate('/login');
@@ -117,14 +146,16 @@ export default function WorkOrdersPage() {
     try {
       setLoading(true);
       setError(null);
-      const [workOrderData, decisionData, workerData] = await Promise.all([
+      const [workOrderData, decisionData, workerData, maintenanceActivityData] = await Promise.all([
         workOrderApi.list(),
         operationalDecisionApi.list(),
         canAssign ? workOrderApi.listWorkers() : Promise.resolve([]),
+        maintenanceActivityApi.list(),
       ]);
       setWorkOrders(workOrderData);
       setDecisions(decisionData);
       setWorkers(workerData);
+      setMaintenanceActivities(maintenanceActivityData);
     } catch (err) {
       setError(`Failed to load work orders: ${err.message}`);
     } finally {
@@ -241,6 +272,46 @@ export default function WorkOrdersPage() {
       }
     } finally {
       setCompleting(false);
+    }
+  };
+
+  const handleReviewChange = (e) => {
+    const { name, value } = e.target;
+    setReviewFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!canReview) return;
+
+    try {
+      setReviewing(true);
+      setError(null);
+      setSuccess(null);
+      await maintenanceActivityApi.recordCompletionReview(
+        Number(reviewFormData.maintenanceActivityId),
+        {
+          decision: reviewFormData.decision,
+          reviewNotes: reviewFormData.reviewNotes,
+          reviewedAt: `${reviewFormData.reviewedAt}:00`,
+        }
+      );
+      setSuccess('Completion review recorded successfully.');
+      setReviewFormData({
+        maintenanceActivityId: '',
+        decision: 'APPROVED',
+        reviewNotes: '',
+        reviewedAt: toDateTimeLocalValue(),
+      });
+      await loadPageData();
+    } catch (err) {
+      if (err.status === 403) {
+        setError('You do not have permission to record completion reviews.');
+      } else {
+        setError(`Failed to record completion review: ${err.message}`);
+      }
+    } finally {
+      setReviewing(false);
     }
   };
 
@@ -538,6 +609,106 @@ export default function WorkOrdersPage() {
           </p>
         )}
 
+        {canReview ? (
+          <section className="work-order-form-section">
+            <h2>Record Completion Review</h2>
+            <form className="work-order-form" onSubmit={handleReviewSubmit}>
+              <div className="form-row">
+                <label htmlFor="maintenanceActivityId">Maintenance Activity</label>
+                <select
+                  id="maintenanceActivityId"
+                  name="maintenanceActivityId"
+                  value={reviewFormData.maintenanceActivityId}
+                  onChange={handleReviewChange}
+                  required
+                  disabled={reviewing || reviewableMaintenanceActivities.length === 0}
+                >
+                  <option value="">Select maintenance activity</option>
+                  {reviewableMaintenanceActivities.map((activity) => (
+                    <option key={activity.id} value={activity.id}>
+                      #{activity.id} — WO #{activity.workOrderId} — {activity.assetName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedReviewActivity && (
+                <div className="linked-decision-info">
+                  <strong>Asset:</strong> {selectedReviewActivity.assetName}
+                  <br />
+                  <strong>Completion Notes:</strong> {selectedReviewActivity.completionNotes}
+                  <br />
+                  <strong>Completed:</strong>{' '}
+                  {selectedReviewActivity.completedAt
+                    ? new Date(selectedReviewActivity.completedAt).toLocaleString()
+                    : '-'}
+                </div>
+              )}
+
+              <div className="form-row">
+                <label htmlFor="decision">Review Decision</label>
+                <select
+                  id="decision"
+                  name="decision"
+                  value={reviewFormData.decision}
+                  onChange={handleReviewChange}
+                  required
+                  disabled={reviewing}
+                >
+                  {COMPLETION_REVIEW_DECISION_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-row">
+                <label htmlFor="reviewNotes">Review Notes</label>
+                <textarea
+                  id="reviewNotes"
+                  name="reviewNotes"
+                  value={reviewFormData.reviewNotes}
+                  onChange={handleReviewChange}
+                  required
+                  disabled={reviewing}
+                  rows={3}
+                />
+              </div>
+
+              <div className="form-row">
+                <label htmlFor="reviewedAt">Review Date & Time</label>
+                <input
+                  id="reviewedAt"
+                  name="reviewedAt"
+                  type="datetime-local"
+                  value={reviewFormData.reviewedAt}
+                  onChange={handleReviewChange}
+                  required
+                  disabled={reviewing}
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={reviewing || reviewableMaintenanceActivities.length === 0}
+              >
+                {reviewing ? 'Recording...' : 'Record Completion Review'}
+              </button>
+            </form>
+            {reviewableMaintenanceActivities.length === 0 && (
+              <p className="read-only-note">
+                No completed maintenance activities are awaiting completion review.
+              </p>
+            )}
+          </section>
+        ) : (
+          <p className="read-only-note">
+            Completion review is available to Managers.
+          </p>
+        )}
+
         <section className="work-order-list-section">
           <h2>Work Orders</h2>
           {workOrders.length === 0 ? (
@@ -553,12 +724,17 @@ export default function WorkOrdersPage() {
                   <th>Priority</th>
                   <th>Status</th>
                   <th>Assigned To</th>
+                  <th>Review</th>
                   <th>Created</th>
                   <th>Assigned</th>
                 </tr>
               </thead>
               <tbody>
-                {workOrders.map((workOrder) => (
+                {workOrders.map((workOrder) => {
+                  const activity = maintenanceActivities.find(
+                    (item) => item.workOrderId === workOrder.id
+                  );
+                  return (
                   <tr key={workOrder.id}>
                     <td>{workOrder.assetName}</td>
                     <td>#{workOrder.operationalDecisionId}</td>
@@ -567,6 +743,11 @@ export default function WorkOrdersPage() {
                     <td>{getWorkOrderPriorityLabel(workOrder.priority)}</td>
                     <td>{workOrder.status}</td>
                     <td>{workOrder.assignedToUserName || '-'}</td>
+                    <td>
+                      {activity?.completionReviewDecision
+                        ? getCompletionReviewDecisionLabel(activity.completionReviewDecision)
+                        : activity ? 'Pending' : '-'}
+                    </td>
                     <td>
                       {workOrder.createdAtBusinessDate
                         ? new Date(workOrder.createdAtBusinessDate).toLocaleString()
@@ -578,7 +759,8 @@ export default function WorkOrdersPage() {
                         : '-'}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           )}

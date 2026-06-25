@@ -1,5 +1,6 @@
 package com.infratrack.maintenanceactivity.dto;
 
+import com.infratrack.completionreview.CompletionReviewDecision;
 import com.infratrack.maintenanceactivity.MaintenanceActivity;
 import com.infratrack.workorder.WorkOrderStatus;
 
@@ -15,10 +16,17 @@ public class MaintenanceActivityResponse {
     private String completionNotes;
     private LocalDateTime completedAt;
     private WorkOrderStatus workOrderStatus;
+    private CompletionReviewDecision completionReviewDecision;
     private Long createdAt;
     private Long updatedAt;
 
     public static MaintenanceActivityResponse from(MaintenanceActivity maintenanceActivity) {
+        return from(maintenanceActivity, null);
+    }
+
+    public static MaintenanceActivityResponse from(
+            MaintenanceActivity maintenanceActivity,
+            CompletionReviewDecision completionReviewDecision) {
         MaintenanceActivityResponse response = new MaintenanceActivityResponse();
         response.id = maintenanceActivity.getId();
         response.workOrderId = maintenanceActivity.getWorkOrder().getId();
@@ -28,6 +36,7 @@ public class MaintenanceActivityResponse {
         response.completionNotes = maintenanceActivity.getCompletionNotes();
         response.completedAt = maintenanceActivity.getCompletedAt();
         response.workOrderStatus = maintenanceActivity.getWorkOrder().getStatus();
+        response.completionReviewDecision = completionReviewDecision;
         response.createdAt = maintenanceActivity.getCreatedAt();
         response.updatedAt = maintenanceActivity.getUpdatedAt();
         return response;
@@ -63,6 +72,10 @@ public class MaintenanceActivityResponse {
 
     public WorkOrderStatus getWorkOrderStatus() {
         return workOrderStatus;
+    }
+
+    public CompletionReviewDecision getCompletionReviewDecision() {
+        return completionReviewDecision;
     }
 
     public Long getCreatedAt() {

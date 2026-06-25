@@ -61,6 +61,10 @@ export function canCompleteMaintenance(role) {
   return role === USER_ROLES.FIELD_EMPLOYEE || role === USER_ROLES.CONTRACTOR;
 }
 
+export function canRecordCompletionReview(role) {
+  return role === USER_ROLES.MANAGER;
+}
+
 export function getRoleLabel(role) {
   return ROLE_LABELS[role] || role;
 }
