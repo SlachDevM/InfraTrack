@@ -1,10 +1,10 @@
 package com.infratrack.service;
 
 import com.infratrack.model.Notification;
-import com.infratrack.model.User;
-import com.infratrack.model.UserRole;
+import com.infratrack.user.User;
+import com.infratrack.user.UserRole;
 import com.infratrack.repository.NotificationRepository;
-import com.infratrack.repository.UserRepository;
+import com.infratrack.user.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;

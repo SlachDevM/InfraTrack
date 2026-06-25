@@ -4,7 +4,7 @@ import com.infratrack.workorder.WorkOrder;
 import com.infratrack.workorder.WorkOrderPriority;
 import com.infratrack.workorder.WorkOrderStatus;
 import com.infratrack.workorder.WorkType;
-import com.infratrack.model.User;
+import com.infratrack.user.User;
 
 import java.time.LocalDateTime;
 

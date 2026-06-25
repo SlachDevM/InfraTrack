@@ -2,8 +2,8 @@ package com.infratrack.service;
 
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.Message;
-import com.infratrack.model.User;
-import com.infratrack.model.UserRole;
+import com.infratrack.user.User;
+import com.infratrack.user.UserRole;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;

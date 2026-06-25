@@ -5,7 +5,7 @@ import com.infratrack.inspection.Inspection;
 import com.infratrack.inspection.InspectionPriority;
 import com.infratrack.inspection.InspectionStatus;
 import com.infratrack.inspection.PhysicalCondition;
-import com.infratrack.model.User;
+import com.infratrack.user.User;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

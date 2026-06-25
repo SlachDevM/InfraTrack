@@ -4,7 +4,7 @@ import com.infratrack.department.dto.CreateDepartmentRequest;
 import com.infratrack.department.dto.DepartmentResponse;
 import com.infratrack.department.dto.UpdateDepartmentRequest;
 import com.infratrack.security.JwtAuthenticationToken;
-import com.infratrack.service.UserService;
+import com.infratrack.user.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
