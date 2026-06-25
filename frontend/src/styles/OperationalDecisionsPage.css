@@ -1,0 +1,42 @@
+.operational-decisions-content {
+  max-width: 1200px;
+}
+
+.decision-form-section,
+.decision-list-section {
+  margin-bottom: 2rem;
+}
+
+.decision-form-section h2,
+.decision-list-section h2 {
+  margin-bottom: 1rem;
+}
+
+.decision-form {
+  display: grid;
+  gap: 1rem;
+  background: white;
+  padding: 1.25rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.decision-form textarea {
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: vertical;
+}
+
+.linked-issue-info {
+  padding: 0.75rem 1rem;
+  background: #f5f8f6;
+  border-radius: 4px;
+  border-left: 3px solid #2d6b4d;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.decisions-table td {
+  vertical-align: top;
+}

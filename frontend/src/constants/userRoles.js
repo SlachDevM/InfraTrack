@@ -45,6 +45,10 @@ export function canRecordIssues(role) {
   return canPerformInspections(role);
 }
 
+export function canMakeOperationalDecisions(role) {
+  return role === USER_ROLES.MANAGER;
+}
+
 export function getRoleLabel(role) {
   return ROLE_LABELS[role] || role;
 }
