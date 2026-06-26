@@ -35,6 +35,12 @@ public class UserService {
                 .toList();
     }
 
+    public List<UserSummary> getManagers() {
+        return userRepository.findByRoleOrderByNameAsc(UserRole.MANAGER).stream()
+                .map(UserSummary::new)
+                .toList();
+    }
+
     public boolean isAdministrator(Long userId) {
         return getById(userId).getRole().isAdministrator();
     }

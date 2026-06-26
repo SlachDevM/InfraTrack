@@ -4,6 +4,8 @@ import com.infratrack.asset.Asset;
 import com.infratrack.asset.AssetHistoryEvent;
 import com.infratrack.asset.AssetHistoryEventRepository;
 import com.infratrack.asset.AssetHistoryEventType;
+import com.infratrack.delegatedauthority.DelegatedAuthority;
+import com.infratrack.delegatedauthority.DelegatedAuthorityService;
 import com.infratrack.inspection.InspectionStatus;
 import com.infratrack.issue.Issue;
 import com.infratrack.issue.IssueRepository;
@@ -18,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class OperationalDecisionService {
@@ -26,16 +29,19 @@ public class OperationalDecisionService {
     private final IssueRepository issueRepository;
     private final AssetHistoryEventRepository assetHistoryEventRepository;
     private final UserService userService;
+    private final DelegatedAuthorityService delegatedAuthorityService;
 
     public OperationalDecisionService(
             OperationalDecisionRepository operationalDecisionRepository,
             IssueRepository issueRepository,
             AssetHistoryEventRepository assetHistoryEventRepository,
-            UserService userService) {
+            UserService userService,
+            DelegatedAuthorityService delegatedAuthorityService) {
         this.operationalDecisionRepository = operationalDecisionRepository;
         this.issueRepository = issueRepository;
         this.assetHistoryEventRepository = assetHistoryEventRepository;
         this.userService = userService;
+        this.delegatedAuthorityService = delegatedAuthorityService;
     }
 
     @Transactional(readOnly = true)
@@ -62,14 +68,18 @@ public class OperationalDecisionService {
         LocalDateTime decidedAt = validateDecidedAt(request.getDecidedAt(), issue);
 
         Asset asset = issue.getAsset();
-        OperationalDecision decision = operationalDecisionRepository.save(new OperationalDecision(
+        Long delegatedAuthorityId = resolveDelegatedAuthorityId(manager, asset, decidedAt);
+
+        OperationalDecision decision = new OperationalDecision(
                 issue,
                 asset,
                 outcome,
                 rationale,
                 manager.getId(),
                 decidedAt
-        ));
+        );
+        decision.setDelegatedAuthorityId(delegatedAuthorityId);
+        decision = operationalDecisionRepository.save(decision);
 
         assetHistoryEventRepository.save(new AssetHistoryEvent(
                 asset,
@@ -79,6 +89,22 @@ public class OperationalDecisionService {
         ));
 
         return OperationalDecisionResponse.from(decision);
+    }
+
+    private Long resolveDelegatedAuthorityId(User manager, Asset asset, LocalDateTime decidedAt) {
+        if (delegatedAuthorityService.isManagerOfDepartment(manager, asset.getDepartment())) {
+            return null;
+        }
+
+        Optional<DelegatedAuthority> delegation = delegatedAuthorityService.findActiveDelegation(
+                manager.getId(),
+                asset.getDepartment().getId(),
+                decidedAt);
+
+        return delegation.map(DelegatedAuthority::getId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.FORBIDDEN,
+                        "Manager is not authorised to make operational decisions for this asset department"));
     }
 
     private User requireManager(Long userId) {

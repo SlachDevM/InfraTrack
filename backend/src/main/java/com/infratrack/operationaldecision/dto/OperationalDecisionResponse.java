@@ -14,6 +14,7 @@ public class OperationalDecisionResponse {
     private OperationalDecisionOutcome outcome;
     private String rationale;
     private Long decidedByUserId;
+    private Long delegatedAuthorityId;
     private LocalDateTime decidedAt;
     private Long createdAt;
     private Long updatedAt;
@@ -27,6 +28,7 @@ public class OperationalDecisionResponse {
         response.outcome = decision.getOutcome();
         response.rationale = decision.getRationale();
         response.decidedByUserId = decision.getDecidedByUserId();
+        response.delegatedAuthorityId = decision.getDelegatedAuthorityId();
         response.decidedAt = decision.getDecidedAt();
         response.createdAt = decision.getCreatedAt();
         response.updatedAt = decision.getUpdatedAt();
@@ -59,6 +61,10 @@ public class OperationalDecisionResponse {
 
     public Long getDecidedByUserId() {
         return decidedByUserId;
+    }
+
+    public Long getDelegatedAuthorityId() {
+        return delegatedAuthorityId;
     }
 
     public LocalDateTime getDecidedAt() {

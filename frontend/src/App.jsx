@@ -12,6 +12,7 @@ import BusinessTriggersPage from './pages/BusinessTriggersPage';
 import InspectionsPage from './pages/InspectionsPage';
 import IssuesPage from './pages/IssuesPage';
 import OperationalDecisionsPage from './pages/OperationalDecisionsPage';
+import DelegatedAuthoritiesPage from './pages/DelegatedAuthoritiesPage';
 import WorkOrdersPage from './pages/WorkOrdersPage';
 import './App.css';
 
@@ -109,6 +110,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <OperationalDecisionsPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/delegated-authorities"
+              element={
+                <PrivateRoute>
+                  <DelegatedAuthoritiesPage />
                 </PrivateRoute>
               }
             />

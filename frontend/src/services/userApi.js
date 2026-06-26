@@ -62,6 +62,10 @@ export const userApi = {
   resendActivation: (userId) => {
     return apiClient.post(USER_API_ENDPOINTS.USER_RESEND_ACTIVATION(userId), {});
   },
+
+  getManagers: () => {
+    return apiClient.get('/api/users/managers');
+  },
 };
 
 export default userApi;

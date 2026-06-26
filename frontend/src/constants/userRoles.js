@@ -49,6 +49,10 @@ export function canMakeOperationalDecisions(role) {
   return role === USER_ROLES.MANAGER;
 }
 
+export function canManageDelegatedAuthority(role) {
+  return role === USER_ROLES.MANAGER;
+}
+
 export function canCreateWorkOrders(role) {
   return role === USER_ROLES.OPERATIONAL_COORDINATOR;
 }

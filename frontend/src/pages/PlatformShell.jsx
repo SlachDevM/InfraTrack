@@ -33,6 +33,9 @@ export default function PlatformShell() {
           <div className="navbar-link" onClick={() => navigate('/operational-decisions')}>
             Decisions
           </div>
+          <div className="navbar-link" onClick={() => navigate('/delegated-authorities')}>
+            Delegations
+          </div>
           <div className="navbar-link" onClick={() => navigate('/work-orders')}>
             Work Orders
           </div>

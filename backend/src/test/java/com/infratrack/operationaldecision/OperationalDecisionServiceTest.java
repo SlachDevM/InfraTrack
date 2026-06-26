@@ -11,6 +11,8 @@ import com.infratrack.businesstrigger.BusinessTriggerType;
 import com.infratrack.department.Department;
 import com.infratrack.inspection.Inspection;
 import com.infratrack.inspection.InspectionPriority;
+import com.infratrack.delegatedauthority.DelegatedAuthority;
+import com.infratrack.delegatedauthority.DelegatedAuthorityService;
 import com.infratrack.inspection.InspectionStatus;
 import com.infratrack.inspection.PhysicalCondition;
 import com.infratrack.issue.Issue;
@@ -52,6 +54,9 @@ class OperationalDecisionServiceTest {
     @Mock
     private UserService userService;
 
+    @Mock
+    private DelegatedAuthorityService delegatedAuthorityService;
+
     @InjectMocks
     private OperationalDecisionService operationalDecisionService;
 
@@ -59,11 +64,12 @@ class OperationalDecisionServiceTest {
     void makeOperationalDecision_shouldCreateDecisionAndHistoryEvent_whenValid() {
         CreateOperationalDecisionRequest request = validRequest();
         Issue issue = issue(500L);
-        User manager = user(30L, UserRole.MANAGER);
+        User manager = managerInDepartment(30L, 1L);
 
         when(userService.getById(30L)).thenReturn(manager);
         when(issueRepository.findById(500L)).thenReturn(Optional.of(issue));
         when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(false);
+        when(delegatedAuthorityService.isManagerOfDepartment(manager, issue.getAsset().getDepartment())).thenReturn(true);
         when(operationalDecisionRepository.save(any(OperationalDecision.class))).thenAnswer(invocation -> {
             OperationalDecision decision = invocation.getArgument(0);
             decision.setId(900L);
@@ -97,11 +103,12 @@ class OperationalDecisionServiceTest {
         request.setOutcome(OperationalDecisionOutcome.DECOMMISSION_RECOMMENDATION);
         Issue issue = issue(500L);
         AssetStatus statusBefore = issue.getAsset().getStatus();
-        User manager = user(30L, UserRole.MANAGER);
+        User manager = managerInDepartment(30L, 1L);
 
         when(userService.getById(30L)).thenReturn(manager);
         when(issueRepository.findById(500L)).thenReturn(Optional.of(issue));
         when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(false);
+        when(delegatedAuthorityService.isManagerOfDepartment(manager, issue.getAsset().getDepartment())).thenReturn(true);
         when(operationalDecisionRepository.save(any(OperationalDecision.class))).thenAnswer(invocation -> {
             OperationalDecision decision = invocation.getArgument(0);
             decision.setId(900L);
@@ -240,11 +247,12 @@ class OperationalDecisionServiceTest {
     void makeOperationalDecision_shouldAllowManager() {
         CreateOperationalDecisionRequest request = validRequest();
         Issue issue = issue(500L);
-        User manager = user(30L, UserRole.MANAGER);
+        User manager = managerInDepartment(30L, 1L);
 
         when(userService.getById(30L)).thenReturn(manager);
         when(issueRepository.findById(500L)).thenReturn(Optional.of(issue));
         when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(false);
+        when(delegatedAuthorityService.isManagerOfDepartment(manager, issue.getAsset().getDepartment())).thenReturn(true);
         when(operationalDecisionRepository.save(any(OperationalDecision.class))).thenAnswer(invocation -> {
             OperationalDecision decision = invocation.getArgument(0);
             decision.setId(900L);
@@ -293,6 +301,68 @@ class OperationalDecisionServiceTest {
         CreateOperationalDecisionRequest request = validRequest();
         User contractor = user(30L, UserRole.CONTRACTOR);
         when(userService.getById(30L)).thenReturn(contractor);
+
+        assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void makeOperationalDecision_shouldRejectManagerOutsideAssetDepartmentWithoutDelegation() {
+        CreateOperationalDecisionRequest request = validRequest();
+        Issue issue = issue(500L);
+        User manager = managerInDepartment(30L, 2L);
+
+        when(userService.getById(30L)).thenReturn(manager);
+        when(issueRepository.findById(500L)).thenReturn(Optional.of(issue));
+        when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(false);
+        when(delegatedAuthorityService.isManagerOfDepartment(manager, issue.getAsset().getDepartment())).thenReturn(false);
+        when(delegatedAuthorityService.findActiveDelegation(30L, 1L, request.getDecidedAt())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+
+        verify(operationalDecisionRepository, never()).save(any());
+        verify(assetHistoryEventRepository, never()).save(any());
+    }
+
+    @Test
+    void makeOperationalDecision_shouldAllowManagerWithActiveDelegation() {
+        CreateOperationalDecisionRequest request = validRequest();
+        Issue issue = issue(500L);
+        User manager = managerInDepartment(30L, 2L);
+        DelegatedAuthority delegation = activeDelegation(700L);
+
+        when(userService.getById(30L)).thenReturn(manager);
+        when(issueRepository.findById(500L)).thenReturn(Optional.of(issue));
+        when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(false);
+        when(delegatedAuthorityService.isManagerOfDepartment(manager, issue.getAsset().getDepartment())).thenReturn(false);
+        when(delegatedAuthorityService.findActiveDelegation(30L, 1L, request.getDecidedAt()))
+                .thenReturn(Optional.of(delegation));
+        when(operationalDecisionRepository.save(any(OperationalDecision.class))).thenAnswer(invocation -> {
+            OperationalDecision decision = invocation.getArgument(0);
+            decision.setId(900L);
+            return decision;
+        });
+
+        var response = operationalDecisionService.makeOperationalDecision(request, 30L);
+
+        assertThat(response.getDelegatedAuthorityId()).isEqualTo(700L);
+        verify(assetHistoryEventRepository).save(any(AssetHistoryEvent.class));
+    }
+
+    @Test
+    void makeOperationalDecision_shouldRejectExpiredDelegation() {
+        CreateOperationalDecisionRequest request = validRequest();
+        Issue issue = issue(500L);
+        User manager = managerInDepartment(30L, 2L);
+
+        when(userService.getById(30L)).thenReturn(manager);
+        when(issueRepository.findById(500L)).thenReturn(Optional.of(issue));
+        when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(false);
+        when(delegatedAuthorityService.isManagerOfDepartment(manager, issue.getAsset().getDepartment())).thenReturn(false);
+        when(delegatedAuthorityService.findActiveDelegation(30L, 1L, request.getDecidedAt())).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
                 .isInstanceOf(ResponseStatusException.class)
@@ -370,5 +440,30 @@ class OperationalDecisionServiceTest {
         user.setId(id);
         user.setEnabled(true);
         return user;
+    }
+
+    private User managerInDepartment(Long id, Long departmentId) {
+        User manager = user(id, UserRole.MANAGER);
+        Department department = new Department("Department " + departmentId);
+        department.setId(departmentId);
+        manager.setDepartment(department);
+        return manager;
+    }
+
+    private DelegatedAuthority activeDelegation(Long id) {
+        Department source = new Department("Roads");
+        source.setId(2L);
+        Department target = new Department("Parks");
+        target.setId(1L);
+        DelegatedAuthority authority = new DelegatedAuthority(
+                40L,
+                30L,
+                source,
+                target,
+                LocalDateTime.now().minusDays(1),
+                LocalDateTime.now().plusDays(7),
+                "Cross-department cover");
+        authority.setId(id);
+        return authority;
     }
 }

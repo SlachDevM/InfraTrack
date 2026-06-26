@@ -32,6 +32,9 @@ public class OperationalDecision {
     @Column(name = "decided_by_user_id", nullable = false)
     private Long decidedByUserId;
 
+    @Column(name = "delegated_authority_id")
+    private Long delegatedAuthorityId;
+
     @Column(name = "decided_at", nullable = false)
     private LocalDateTime decidedAt;
 
@@ -88,6 +91,14 @@ public class OperationalDecision {
 
     public Long getDecidedByUserId() {
         return decidedByUserId;
+    }
+
+    public Long getDelegatedAuthorityId() {
+        return delegatedAuthorityId;
+    }
+
+    public void setDelegatedAuthorityId(Long delegatedAuthorityId) {
+        this.delegatedAuthorityId = delegatedAuthorityId;
     }
 
     public LocalDateTime getDecidedAt() {

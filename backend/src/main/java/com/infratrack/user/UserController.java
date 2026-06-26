@@ -145,6 +145,15 @@ public class UserController {
         return ResponseEntity.ok(userService.getWorkers());
     }
 
+    @GetMapping("/managers")
+    public ResponseEntity<List<UserSummary>> getManagers(Authentication authentication) {
+        Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+        if (!userService.isManager(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(userService.getManagers());
+    }
+
     @PutMapping("/me/fcm-token")
     public ResponseEntity<Void> updateFcmToken(
             @RequestBody FcmTokenRequest request,
