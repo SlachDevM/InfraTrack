@@ -1,8 +1,10 @@
 package com.infratrack.department;
 
+import com.infratrack.asset.AssetRepository;
 import com.infratrack.department.dto.CreateDepartmentRequest;
 import com.infratrack.department.dto.DepartmentResponse;
 import com.infratrack.department.dto.UpdateDepartmentRequest;
+import com.infratrack.user.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -13,9 +15,16 @@ import java.util.List;
 public class DepartmentService {
 
     private final DepartmentRepository departmentRepository;
+    private final AssetRepository assetRepository;
+    private final UserRepository userRepository;
 
-    public DepartmentService(DepartmentRepository departmentRepository) {
+    public DepartmentService(
+            DepartmentRepository departmentRepository,
+            AssetRepository assetRepository,
+            UserRepository userRepository) {
         this.departmentRepository = departmentRepository;
+        this.assetRepository = assetRepository;
+        this.userRepository = userRepository;
     }
 
     public List<DepartmentResponse> listAll() {
@@ -54,6 +63,14 @@ public class DepartmentService {
     public void delete(Long id) {
         if (!departmentRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Department not found");
+        }
+        if (assetRepository.existsByDepartmentId(id)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Cannot delete department while assets belong to it");
+        }
+        if (userRepository.existsByDepartmentId(id)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Cannot delete department while users belong to it");
         }
         departmentRepository.deleteById(id);
     }

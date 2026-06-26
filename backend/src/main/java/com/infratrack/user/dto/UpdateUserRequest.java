@@ -3,6 +3,8 @@ package com.infratrack.user.dto;
 public class UpdateUserRequest {
     private String name;
     private String email;
+    private Long departmentId;
+    private Boolean clearDepartment;
 
     public UpdateUserRequest() {}
 
@@ -25,5 +27,21 @@ public class UpdateUserRequest {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public Long getDepartmentId() {
+        return departmentId;
+    }
+
+    public void setDepartmentId(Long departmentId) {
+        this.departmentId = departmentId;
+    }
+
+    public Boolean getClearDepartment() {
+        return clearDepartment;
+    }
+
+    public void setClearDepartment(Boolean clearDepartment) {
+        this.clearDepartment = clearDepartment;
     }
 }

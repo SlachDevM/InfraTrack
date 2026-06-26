@@ -9,6 +9,7 @@ import com.infratrack.completionreview.CompletionReviewDecision;
 import com.infratrack.completionreview.CompletionReviewRepository;
 import com.infratrack.maintenanceactivity.dto.CompleteMaintenanceActivityRequest;
 import com.infratrack.maintenanceactivity.dto.MaintenanceActivityResponse;
+import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
 import com.infratrack.workorder.WorkOrder;
@@ -31,18 +32,21 @@ public class MaintenanceActivityService {
     private final AssetHistoryEventRepository assetHistoryEventRepository;
     private final UserService userService;
     private final CompletionReviewRepository completionReviewRepository;
+    private final OperationalEventNotificationService operationalEventNotificationService;
 
     public MaintenanceActivityService(
             MaintenanceActivityRepository maintenanceActivityRepository,
             WorkOrderRepository workOrderRepository,
             AssetHistoryEventRepository assetHistoryEventRepository,
             UserService userService,
-            CompletionReviewRepository completionReviewRepository) {
+            CompletionReviewRepository completionReviewRepository,
+            OperationalEventNotificationService operationalEventNotificationService) {
         this.maintenanceActivityRepository = maintenanceActivityRepository;
         this.workOrderRepository = workOrderRepository;
         this.assetHistoryEventRepository = assetHistoryEventRepository;
         this.userService = userService;
         this.completionReviewRepository = completionReviewRepository;
+        this.operationalEventNotificationService = operationalEventNotificationService;
     }
 
     @Transactional(readOnly = true)
@@ -85,6 +89,11 @@ public class MaintenanceActivityService {
                 actor.getId(),
                 completedAt.toLocalDate()
         ));
+
+        operationalEventNotificationService.notifyMaintenanceCompleted(asset.getDepartment());
+        if (workOrder.getWorkType() == WorkType.CONTRACTOR_WORK) {
+            operationalEventNotificationService.notifyCompletionReviewRequired(asset.getDepartment());
+        }
 
         return MaintenanceActivityResponse.from(maintenanceActivity);
     }

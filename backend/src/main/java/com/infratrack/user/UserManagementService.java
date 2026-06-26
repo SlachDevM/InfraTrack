@@ -1,6 +1,8 @@
 package com.infratrack.user;
 
 import com.infratrack.auth.ActivationService;
+import com.infratrack.department.Department;
+import com.infratrack.department.DepartmentRepository;
 import com.infratrack.service.EmailService;
 import com.infratrack.user.dto.UpdateUserRequest;
 import com.infratrack.user.dto.UserManagementResponse;
@@ -17,14 +19,17 @@ import java.util.List;
 public class UserManagementService {
 
     private final UserRepository userRepository;
+    private final DepartmentRepository departmentRepository;
     private final ActivationService activationService;
     private final EmailService emailService;
 
     public UserManagementService(
             UserRepository userRepository,
+            DepartmentRepository departmentRepository,
             ActivationService activationService,
             EmailService emailService) {
         this.userRepository = userRepository;
+        this.departmentRepository = departmentRepository;
         this.activationService = activationService;
         this.emailService = emailService;
     }
@@ -96,9 +101,13 @@ public class UserManagementService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         // Validate input
-        if ((request.getName() == null || request.getName().isBlank()) &&
-                (request.getEmail() == null || request.getEmail().isBlank())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one field (name or email) must be provided");
+        boolean hasName = request.getName() != null && !request.getName().isBlank();
+        boolean hasEmail = request.getEmail() != null && !request.getEmail().isBlank();
+        boolean hasDepartmentChange = request.getDepartmentId() != null
+                || Boolean.TRUE.equals(request.getClearDepartment());
+        if (!hasName && !hasEmail && !hasDepartmentChange) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "At least one field (name, email or department) must be provided");
         }
 
         boolean emailChanged = false;
@@ -118,6 +127,12 @@ public class UserManagementService {
 
             user.setEmail(request.getEmail());
             emailChanged = true;
+        }
+
+        if (Boolean.TRUE.equals(request.getClearDepartment())) {
+            user.setDepartment(null);
+        } else if (request.getDepartmentId() != null) {
+            user.setDepartment(findDepartmentOrThrow(request.getDepartmentId()));
         }
 
         user.setUpdatedAt(System.currentTimeMillis());
@@ -330,14 +345,11 @@ public class UserManagementService {
      */
     private UserManagementResponse toUserManagementResponse(User user) {
         UserStatus status = computeStatus(user);
-        return new UserManagementResponse(
-                user.getId(),
-                user.getName(),
-                user.getEmail(),
-                user.getRole(),
-                status,
-                user.getCreatedAt(),
-                user.getUpdatedAt()
-        );
+        return UserManagementResponse.from(user, status);
+    }
+
+    private Department findDepartmentOrThrow(Long departmentId) {
+        return departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Department not found"));
     }
 }

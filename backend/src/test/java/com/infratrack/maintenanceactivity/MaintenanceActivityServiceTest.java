@@ -16,6 +16,7 @@ import com.infratrack.issue.Issue;
 import com.infratrack.issue.IssueSeverity;
 import com.infratrack.completionreview.CompletionReviewRepository;
 import com.infratrack.maintenanceactivity.dto.CompleteMaintenanceActivityRequest;
+import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.operationaldecision.OperationalDecision;
 import com.infratrack.operationaldecision.OperationalDecisionOutcome;
 import com.infratrack.user.User;
@@ -60,6 +61,9 @@ class MaintenanceActivityServiceTest {
 
     @Mock
     private CompletionReviewRepository completionReviewRepository;
+
+    @Mock
+    private OperationalEventNotificationService operationalEventNotificationService;
 
     @InjectMocks
     private MaintenanceActivityService maintenanceActivityService;

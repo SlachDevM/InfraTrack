@@ -18,6 +18,7 @@ import com.infratrack.operationaldecision.OperationalDecision;
 import com.infratrack.operationaldecision.OperationalDecisionOutcome;
 import com.infratrack.operationaldecision.OperationalDecisionRepository;
 import com.infratrack.user.User;
+import com.infratrack.user.UserRepository;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
 import com.infratrack.workorder.dto.AssignWorkOrderRequest;
@@ -53,12 +54,15 @@ class WorkOrderServiceNotificationTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private UserRepository userRepository;
+
     private WorkOrderService workOrderService;
 
     @BeforeEach
     void setUp() {
         OperationalEventNotificationService operationalEventNotificationService =
-                new OperationalEventNotificationService(notificationService);
+                new OperationalEventNotificationService(notificationService, userRepository);
         workOrderService = new WorkOrderService(
                 workOrderRepository,
                 operationalDecisionRepository,

@@ -1,5 +1,7 @@
 package com.infratrack.auth;
 
+import com.infratrack.department.Department;
+import com.infratrack.department.DepartmentRepository;
 import com.infratrack.service.EmailService;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
@@ -20,6 +22,7 @@ import java.util.Base64;
 public class ActivationService {
 
     private final UserRepository userRepository;
+    private final DepartmentRepository departmentRepository;
     private final AccountActivationTokenRepository tokenRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
@@ -32,10 +35,12 @@ public class ActivationService {
 
     public ActivationService(
             UserRepository userRepository,
+            DepartmentRepository departmentRepository,
             AccountActivationTokenRepository tokenRepository,
             EmailService emailService,
             PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.departmentRepository = departmentRepository;
         this.tokenRepository = tokenRepository;
         this.emailService = emailService;
         this.passwordEncoder = passwordEncoder;
@@ -52,7 +57,12 @@ public class ActivationService {
      * @return the created (but inactive) user
      */
     @Transactional
-    public User createEmployeeInvitation(Long creatorId, String name, String email, UserRole requestedRole) {
+    public User createEmployeeInvitation(
+            Long creatorId,
+            String name,
+            String email,
+            UserRole requestedRole,
+            Long departmentId) {
         User creator = userRepository.findById(creatorId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Creator not found"));
 
@@ -75,6 +85,11 @@ public class ActivationService {
         // Create inactive user
         User newUser = new User(email, "", name, requestedRole);
         newUser.setEnabled(false);
+        if (departmentId != null) {
+            Department department = departmentRepository.findById(departmentId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Department not found"));
+            newUser.setDepartment(department);
+        }
         User savedUser = userRepository.save(newUser);
 
         createAndSendActivationToken(savedUser);

@@ -1,14 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import userApi from '../services/userApi';
+import departmentApi from '../services/departmentApi';
 import { getRoleLabel } from '../constants/userRoles';
 
 export default function EditUserModal({ isOpen, onClose, onSuccess, user }) {
+  const [departments, setDepartments] = useState([]);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
+    departmentId: user?.departmentId ? String(user.departmentId) : '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setFormData({
+      name: user?.name || '',
+      email: user?.email || '',
+      departmentId: user?.departmentId ? String(user.departmentId) : '',
+    });
+
+    departmentApi
+      .list()
+      .then(setDepartments)
+      .catch(() => setDepartments([]));
+  }, [isOpen, user]);
 
   if (!isOpen || !user) return null;
 
@@ -22,7 +40,19 @@ export default function EditUserModal({ isOpen, onClose, onSuccess, user }) {
     try {
       setLoading(true);
       setError(null);
-      const result = await userApi.updateUser(user.id, formData);
+
+      const payload = {
+        name: formData.name,
+        email: formData.email,
+      };
+
+      if (formData.departmentId) {
+        payload.departmentId = Number(formData.departmentId);
+      } else if (user.departmentId) {
+        payload.clearDepartment = true;
+      }
+
+      const result = await userApi.updateUser(user.id, payload);
       onSuccess(result);
     } catch (err) {
       setError(err.message || 'Failed to update user');
@@ -60,6 +90,24 @@ export default function EditUserModal({ isOpen, onClose, onSuccess, user }) {
               required
               disabled={loading}
             />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="departmentId">Department</label>
+            <select
+              id="departmentId"
+              name="departmentId"
+              value={formData.departmentId}
+              onChange={handleChange}
+              disabled={loading}
+            >
+              <option value="">No department</option>
+              {departments.map((department) => (
+                <option key={department.id} value={department.id}>
+                  {department.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="form-group readonly">

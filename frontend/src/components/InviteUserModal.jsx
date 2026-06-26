@@ -1,15 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import userApi from '../services/userApi';
+import departmentApi from '../services/departmentApi';
 import { INVITABLE_ROLES, ROLE_LABELS, USER_ROLES } from '../constants/userRoles';
 
 export default function InviteUserModal({ isOpen, onClose, onSuccess }) {
+  const [departments, setDepartments] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     role: USER_ROLES.FIELD_EMPLOYEE,
+    departmentId: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    departmentApi
+      .list()
+      .then(setDepartments)
+      .catch(() => setDepartments([]));
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -23,7 +35,18 @@ export default function InviteUserModal({ isOpen, onClose, onSuccess }) {
     try {
       setLoading(true);
       setError(null);
-      const result = await userApi.inviteUser(formData);
+
+      const payload = {
+        name: formData.name,
+        email: formData.email,
+        role: formData.role,
+      };
+
+      if (formData.departmentId) {
+        payload.departmentId = Number(formData.departmentId);
+      }
+
+      const result = await userApi.inviteUser(payload);
       onSuccess(result);
     } catch (err) {
       setError(err.message || 'Failed to invite user');
@@ -76,6 +99,24 @@ export default function InviteUserModal({ isOpen, onClose, onSuccess }) {
               {INVITABLE_ROLES.map((role) => (
                 <option key={role} value={role}>
                   {ROLE_LABELS[role]}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="departmentId">Department</label>
+            <select
+              id="departmentId"
+              name="departmentId"
+              value={formData.departmentId}
+              onChange={handleChange}
+              disabled={loading}
+            >
+              <option value="">No department</option>
+              {departments.map((department) => (
+                <option key={department.id} value={department.id}>
+                  {department.name}
                 </option>
               ))}
             </select>

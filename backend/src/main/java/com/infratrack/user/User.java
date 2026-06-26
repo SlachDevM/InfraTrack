@@ -1,5 +1,6 @@
 package com.infratrack.user;
 
+import com.infratrack.department.Department;
 import jakarta.persistence.*;
 
 @Entity
@@ -33,6 +34,10 @@ public class User {
 
     @Column(name = "enabled", nullable = false)
     private Boolean enabled = false;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id")
+    private Department department;
 
     public User() {
         this.createdAt = System.currentTimeMillis();
@@ -132,6 +137,14 @@ public class User {
 
     public void setEnabled(Boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public Department getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(Department department) {
+        this.department = department;
     }
 
     /**

@@ -12,6 +12,7 @@ import com.infratrack.inspection.dto.AssignInspectionRequest;
 import com.infratrack.notification.NotificationService;
 import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.user.User;
+import com.infratrack.user.UserRepository;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,12 +46,15 @@ class InspectionServiceNotificationTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private UserRepository userRepository;
+
     private InspectionService inspectionService;
 
     @BeforeEach
     void setUp() {
         OperationalEventNotificationService operationalEventNotificationService =
-                new OperationalEventNotificationService(notificationService);
+                new OperationalEventNotificationService(notificationService, userRepository);
         inspectionService = new InspectionService(
                 inspectionRepository,
                 businessTriggerRepository,

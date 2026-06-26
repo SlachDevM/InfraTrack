@@ -92,9 +92,9 @@ export default function UserManagementPage() {
     }
   };
 
-  const handleInviteSuccess = (newUser) => {
-    setUsers((prev) => [newUser, ...prev]);
+  const handleInviteSuccess = () => {
     setShowInviteModal(false);
+    fetchUsers();
   };
 
   const handleEditUser = (user) => {
@@ -265,6 +265,7 @@ export default function UserManagementPage() {
                   <th>Name</th>
                   <th>Email</th>
                   <th>Role</th>
+                  <th>Department</th>
                   <th>Status</th>
                   <th>Created</th>
                   {isAdministrator && <th>Actions</th>}
@@ -280,6 +281,7 @@ export default function UserManagementPage() {
                         {getRoleLabel(user.role)}
                       </span>
                     </td>
+                    <td>{user.departmentName || '-'}</td>
                     <td>
                       <span
                         className={`status-badge ${STATUS_COLORS[user.status]}`}

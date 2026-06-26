@@ -1,8 +1,10 @@
 package com.infratrack.department;
 
+import com.infratrack.asset.AssetRepository;
 import com.infratrack.department.dto.CreateDepartmentRequest;
 import com.infratrack.department.dto.DepartmentResponse;
 import com.infratrack.department.dto.UpdateDepartmentRequest;
+import com.infratrack.user.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,6 +25,12 @@ class DepartmentServiceTest {
 
     @Mock
     private DepartmentRepository departmentRepository;
+
+    @Mock
+    private AssetRepository assetRepository;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private DepartmentService departmentService;
@@ -110,12 +118,60 @@ class DepartmentServiceTest {
     }
 
     @Test
-    void delete_shouldRemoveDepartment_whenExists() {
+    void delete_shouldRemoveDepartment_whenNoAssetsOrUsers() {
         when(departmentRepository.existsById(1L)).thenReturn(true);
+        when(assetRepository.existsByDepartmentId(1L)).thenReturn(false);
+        when(userRepository.existsByDepartmentId(1L)).thenReturn(false);
 
         departmentService.delete(1L);
 
         verify(departmentRepository).deleteById(1L);
+    }
+
+    @Test
+    void delete_shouldReject_whenAssetsExist() {
+        when(departmentRepository.existsById(1L)).thenReturn(true);
+        when(assetRepository.existsByDepartmentId(1L)).thenReturn(true);
+
+        assertThatThrownBy(() -> departmentService.delete(1L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST)
+                .hasMessageContaining("assets belong to it");
+
+        verify(departmentRepository, never()).deleteById(any());
+        verify(userRepository, never()).existsByDepartmentId(any());
+    }
+
+    @Test
+    void delete_shouldReject_whenUsersExist() {
+        when(departmentRepository.existsById(1L)).thenReturn(true);
+        when(assetRepository.existsByDepartmentId(1L)).thenReturn(false);
+        when(userRepository.existsByDepartmentId(1L)).thenReturn(true);
+
+        assertThatThrownBy(() -> departmentService.delete(1L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST)
+                .hasMessageContaining("users belong to it");
+
+        verify(departmentRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void update_shouldNotChangeAssetDepartmentReference() {
+        Department department = new Department("Parks");
+        department.setId(1L);
+
+        UpdateDepartmentRequest request = new UpdateDepartmentRequest();
+        request.setName("Parks and Gardens");
+
+        when(departmentRepository.findById(1L)).thenReturn(Optional.of(department));
+        when(departmentRepository.existsByNameIgnoreCaseAndIdNot("Parks and Gardens", 1L)).thenReturn(false);
+        when(departmentRepository.save(department)).thenReturn(department);
+
+        departmentService.update(1L, request);
+
+        assertThat(department.getId()).isEqualTo(1L);
+        verify(assetRepository, never()).save(any());
     }
 
     @Test

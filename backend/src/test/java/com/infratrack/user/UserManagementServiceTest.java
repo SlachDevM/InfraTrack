@@ -1,6 +1,8 @@
 package com.infratrack.user;
 
 import com.infratrack.auth.ActivationService;
+import com.infratrack.department.Department;
+import com.infratrack.department.DepartmentRepository;
 import com.infratrack.service.EmailService;
 import com.infratrack.user.dto.UpdateUserRequest;
 import com.infratrack.user.dto.UserManagementResponse;
@@ -25,6 +27,9 @@ class UserManagementServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private DepartmentRepository departmentRepository;
 
     @Mock
     private ActivationService activationService;
@@ -165,6 +170,8 @@ class UserManagementServiceTest {
         UpdateUserRequest request = new UpdateUserRequest();
         request.setName(null);
         request.setEmail(null);
+        request.setDepartmentId(null);
+        request.setClearDepartment(null);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
         when(userRepository.findById(2L)).thenReturn(Optional.of(user));
@@ -172,6 +179,96 @@ class UserManagementServiceTest {
         assertThatThrownBy(() -> userManagementService.updateUser(2L, request, 1L))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void updateUser_shouldAssignDepartment() {
+        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMINISTRATOR);
+        admin.setId(1L);
+
+        User user = new User("user@test.com", "password", "User", UserRole.MANAGER);
+        user.setId(2L);
+        user.setEnabled(true);
+
+        Department department = new Department("Parks");
+        department.setId(10L);
+
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setDepartmentId(10L);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(user));
+        when(departmentRepository.findById(10L)).thenReturn(Optional.of(department));
+        when(userRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
+        lenient().when(activationService.hasValidActivationToken(2L)).thenReturn(false);
+
+        UserManagementResponse result = userManagementService.updateUser(2L, request, 1L);
+
+        assertThat(result.getDepartmentId()).isEqualTo(10L);
+        assertThat(result.getDepartmentName()).isEqualTo("Parks");
+        assertThat(user.getDepartment()).isEqualTo(department);
+    }
+
+    @Test
+    void updateUser_shouldRemoveDepartment() {
+        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMINISTRATOR);
+        admin.setId(1L);
+
+        Department department = new Department("Parks");
+        department.setId(10L);
+
+        User user = new User("user@test.com", "password", "User", UserRole.MANAGER);
+        user.setId(2L);
+        user.setEnabled(true);
+        user.setDepartment(department);
+
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setClearDepartment(true);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
+        lenient().when(activationService.hasValidActivationToken(2L)).thenReturn(false);
+
+        UserManagementResponse result = userManagementService.updateUser(2L, request, 1L);
+
+        assertThat(result.getDepartmentId()).isNull();
+        assertThat(user.getDepartment()).isNull();
+    }
+
+    @Test
+    void updateUser_shouldRejectInvalidDepartment() {
+        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMINISTRATOR);
+        admin.setId(1L);
+
+        User user = new User("user@test.com", "password", "User", UserRole.FIELD_EMPLOYEE);
+        user.setId(2L);
+
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setDepartmentId(99L);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(user));
+        when(departmentRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userManagementService.updateUser(2L, request, 1L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void newUser_shouldAllowNullDepartment() {
+        User user = new User("user@test.com", "password", "User", UserRole.FIELD_EMPLOYEE);
+        user.setId(1L);
+        user.setEnabled(true);
+
+        when(userRepository.findAll()).thenReturn(List.of(user));
+        lenient().when(activationService.hasValidActivationToken(anyLong())).thenReturn(false);
+
+        List<UserManagementResponse> result = userManagementService.listAllUsers();
+
+        assertThat(result.get(0).getDepartmentId()).isNull();
+        assertThat(result.get(0).getDepartmentName()).isNull();
     }
 
     @Test

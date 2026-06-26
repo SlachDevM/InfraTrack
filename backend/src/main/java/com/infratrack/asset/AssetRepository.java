@@ -12,4 +12,6 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
             String name,
             Long departmentId,
             Long assetCategoryId);
+
+    boolean existsByDepartmentId(Long departmentId);
 }

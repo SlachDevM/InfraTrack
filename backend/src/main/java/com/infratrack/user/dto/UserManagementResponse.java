@@ -1,5 +1,7 @@
 package com.infratrack.user.dto;
 
+import com.infratrack.department.Department;
+import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserStatus;
 
@@ -9,19 +11,47 @@ public class UserManagementResponse {
     private String email;
     private UserRole role;
     private UserStatus status;
+    private Long departmentId;
+    private String departmentName;
     private Long createdAt;
     private Long updatedAt;
 
     public UserManagementResponse() {}
 
-    public UserManagementResponse(Long id, String name, String email, UserRole role, UserStatus status, Long createdAt, Long updatedAt) {
+    public UserManagementResponse(
+            Long id,
+            String name,
+            String email,
+            UserRole role,
+            UserStatus status,
+            Long departmentId,
+            String departmentName,
+            Long createdAt,
+            Long updatedAt) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.role = role;
         this.status = status;
+        this.departmentId = departmentId;
+        this.departmentName = departmentName;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+    }
+
+    public static UserManagementResponse from(User user, UserStatus status) {
+        Department department = user.getDepartment();
+        return new UserManagementResponse(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getRole(),
+                status,
+                department != null ? department.getId() : null,
+                department != null ? department.getName() : null,
+                user.getCreatedAt(),
+                user.getUpdatedAt()
+        );
     }
 
     public Long getId() {
@@ -62,6 +92,22 @@ public class UserManagementResponse {
 
     public void setStatus(UserStatus status) {
         this.status = status;
+    }
+
+    public Long getDepartmentId() {
+        return departmentId;
+    }
+
+    public void setDepartmentId(Long departmentId) {
+        this.departmentId = departmentId;
+    }
+
+    public String getDepartmentName() {
+        return departmentName;
+    }
+
+    public void setDepartmentName(String departmentName) {
+        this.departmentName = departmentName;
     }
 
     public Long getCreatedAt() {

@@ -6,6 +6,7 @@ public class CreateEmployeeRequest {
     private String name;
     private String email;
     private UserRole role;
+    private Long departmentId;
 
     public CreateEmployeeRequest() {
     }
@@ -38,5 +39,13 @@ public class CreateEmployeeRequest {
 
     public void setRole(UserRole role) {
         this.role = role;
+    }
+
+    public Long getDepartmentId() {
+        return departmentId;
+    }
+
+    public void setDepartmentId(Long departmentId) {
+        this.departmentId = departmentId;
     }
 }

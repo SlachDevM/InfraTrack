@@ -71,16 +71,11 @@ public class UserController {
                 userId,
                 request.getName(),
                 request.getEmail(),
-                request.getRole()
+                request.getRole(),
+                request.getDepartmentId()
         );
 
-        UserProfileResponse response = new UserProfileResponse(
-                invitedUser.getId(),
-                invitedUser.getName(),
-                invitedUser.getEmail(),
-                invitedUser.getRole()
-        );
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(UserProfileResponse.from(invitedUser));
     }
 
     /**
@@ -136,13 +131,7 @@ public class UserController {
     public ResponseEntity<UserProfileResponse> getCurrentUser(Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         User user = userService.getById(userId);
-        UserProfileResponse response = new UserProfileResponse(
-                user.getId(),
-                user.getName(),
-                user.getEmail(),
-                user.getRole()
-        );
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(UserProfileResponse.from(user));
     }
 
     @GetMapping("/workers")
