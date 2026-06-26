@@ -1766,7 +1766,7 @@ InfraTrack creates and delivers notifications automatically when an approved ope
 
 Under normal V1 operation, no human actor manually initiates this Use Case. Operational Use Cases request notification delivery through UC-013 when an approved notification event occurs.
 
-In the running V1 application, UC-003 Assign Inspection and UC-008 Assign Work Order request notification delivery when assignment succeeds. UC-009 Complete Maintenance Activity may request notification delivery for approved events that remain deferred until recipient resolution is available.
+In the running V1 application, UC-003 Assign Inspection, UC-008 Assign Work Order and UC-009 Complete Maintenance Activity request notification delivery when the corresponding business event succeeds.
 
 ---
 
@@ -1805,54 +1805,34 @@ Dismissing or viewing a Notification does not modify the underlying business eve
 
 ---
 
-## V1 Approved Notification Events
+## V1 Notification Events
 
-The approved V1 functional model defines the following notification events:
-
-| Triggering Business Event | Source Use Case | Typical Recipient | Purpose |
-| ------------------------- | --------------- | ------------------- | ------- |
-| Inspection Assigned | UC-003 Assign Inspection | assigned Field Employee or Contractor | Inform the assignee that inspection work is available |
-| Work Order Assigned | UC-008 Assign Work Order | assigned Field Employee or Contractor | Inform the assignee that maintenance work is available |
-| Maintenance Completed | UC-009 Complete Maintenance Activity | Operational Coordinator | Inform coordination staff that field execution is complete |
-| Completion Review Required | UC-009 Complete Maintenance Activity | Manager | Inform a Manager that contractor maintenance requires Completion Review |
-
-Additional notification events may be introduced in future versions without changing the principle that notifications originate from business events.
-
----
-
-## V1 Implemented Notification Events
-
-In the running V1 application, UC-013 creates and delivers notifications for the following events only:
+In V1, UC-013 creates and delivers notifications for the following operational business events:
 
 | Triggering Business Event | Source Use Case | Recipient | Purpose |
 | ------------------------- | --------------- | --------- | ------- |
 | Inspection Assigned | UC-003 Assign Inspection | assigned Field Employee or Contractor | Inform the assignee that inspection work is available |
 | Work Order Assigned | UC-008 Assign Work Order | assigned Field Employee or Contractor | Inform the assignee that maintenance work is available |
+| Maintenance Completed | UC-009 Complete Maintenance Activity | Operational Coordinators in the Asset owning department | Inform coordination staff that field execution is complete |
+| Completion Review Required | UC-009 Complete Maintenance Activity | Managers in the Asset owning department | Inform a Manager that contractor maintenance requires Completion Review |
 
-These events have a clear assignee identified by the triggering assignment context. UC-003 Assign Inspection and UC-008 Assign Work Order request notification delivery when assignment succeeds.
+Additional notification events may be introduced in future versions without changing the principle that notifications originate from business events.
 
----
+### Recipient Resolution
 
-## V1 Deferred Notification Events
+* **Inspection Assigned** and **Work Order Assigned** — the recipient is the user assigned by the triggering Use Case.
+* **Maintenance Completed** — InfraTrack resolves the Asset owning department and notifies each user whose role is Operational Coordinator and whose department matches that Asset department.
+* **Completion Review Required** — InfraTrack resolves the Asset owning department and notifies each user whose role is Manager and whose department matches that Asset department. A Department Manager is a user whose role is Manager and whose department is that department; InfraTrack does not use a separate manager assignment entity.
 
-The following approved V1 notification events are not yet wired in the running application:
+If no matching recipient exists for a department-based notification event, InfraTrack does not create a Notification and the underlying business operation still succeeds.
 
-| Triggering Business Event | Source Use Case | Typical Recipient | Purpose |
-| ------------------------- | --------------- | ------------------- | ------- |
-| Maintenance Completed | UC-009 Complete Maintenance Activity | Operational Coordinator | Inform coordination staff that field execution is complete |
-| Completion Review Required | UC-009 Complete Maintenance Activity | Manager | Inform a Manager that contractor maintenance requires Completion Review |
-
-Recipient resolution for these events requires a Manager or Operational Coordinator identified from departmental operational context. InfraTrack V1 does not yet model a reliable Manager or department recipient relationship, so InfraTrack does not determine these recipients in the current implementation.
-
-Implementation of these events must wait until the user and department model can identify intended recipients from operational context without invented lookup rules.
-
-Deferred events remain part of the approved V1 functional model. Their absence does not change the underlying business process; operational records remain authoritative.
+UC-003 Assign Inspection, UC-008 Assign Work Order and UC-009 Complete Maintenance Activity request notification delivery when the corresponding business event succeeds.
 
 ---
 
 ## Completion Review Required Rule
 
-When **Completion Review Required** notification delivery is implemented, InfraTrack sends the notification only when:
+In V1, InfraTrack sends a **Completion Review Required** notification only when:
 
 * a Maintenance Activity is completed; and
 * the linked Work Order has Work Type `CONTRACTOR_WORK`.
@@ -1861,9 +1841,7 @@ Internal maintenance (`INTERNAL_MAINTENANCE`) does not automatically require Com
 
 This rule is fixed in V1. InfraTrack does not use a review policy engine or configurable review rules to determine whether the notification is sent.
 
-When the rule applies and recipient resolution is available, the notification is sent to a Manager after UC-009 Complete Maintenance Activity succeeds. The notification informs the Manager that Completion Review may be required under UC-010 Complete Review; it does not perform the review.
-
-This event is deferred in the current V1 implementation; see **V1 Deferred Notification Events**.
+When the rule applies, the notification is sent to each matching Manager in the Asset owning department after UC-009 Complete Maintenance Activity succeeds. The notification informs the Manager that Completion Review may be required under UC-010 Complete Review; it does not perform the review.
 
 ---
 
@@ -1894,6 +1872,8 @@ The underlying operational process remains authoritative.
 ### Recipient Not Found
 
 If the intended recipient cannot be determined or does not exist, InfraTrack does not create a Notification for that recipient.
+
+For department-based notification events, if no user with the required role belongs to the Asset owning department, InfraTrack does not create a Notification. The underlying business operation still succeeds.
 
 ---
 
@@ -1942,9 +1922,10 @@ If a Notification has already been created for the same business event and recip
 * Notification delivery is not guaranteed; operational records remain authoritative regardless of notification status.
 * The same notification may be delivered through multiple channels without creating multiple business events.
 * Notifications do not automatically change Asset operational status (BR-039).
-* When **Completion Review Required** notification delivery is implemented, the notification is sent only when maintenance is completed for a Work Order with Work Type `CONTRACTOR_WORK`; internal maintenance does not trigger this notification automatically.
+* A **Completion Review Required** notification is sent in V1 only when maintenance is completed for a Work Order with Work Type `CONTRACTOR_WORK`; internal maintenance does not trigger this notification automatically.
 * V1 does not use a review policy engine or configurable review rules for Completion Review Required notifications.
-* **Maintenance Completed** and **Completion Review Required** remain deferred in the running V1 application until InfraTrack can identify Manager and Operational Coordinator recipients from operational context without invented lookup rules.
+* **Maintenance Completed** notifications are sent to Operational Coordinators in the Asset owning department after UC-009 Complete Maintenance Activity succeeds.
+* Notification delivery failure does not roll back the triggering business operation; operational records remain authoritative.
 * The backend remains the source of truth for operational business data; notifications are temporary communication records.
 
 ---
@@ -2310,7 +2291,6 @@ If implementation reveals ambiguity in the business model, Business Discovery sh
 
 The following items are documented in Functional Analysis but may not yet be fully implemented in the running application:
 
-* UC-013 Send Notification implements **Inspection Assigned** and **Work Order Assigned** only. **Maintenance Completed** and **Completion Review Required** remain deferred because InfraTrack V1 does not yet model a reliable Manager or department recipient relationship.
 * UC-014 Manage Departments is specified; department reference data exists for operational use, but full administrative lifecycle rules should be verified during implementation.
 * UC-015 Delegate Cross-Department Authority is specified; only Managers can make Operational Decisions in the current running application until delegation is implemented.
 
