@@ -7,7 +7,7 @@
 | Project  | InfraTrack           |
 | Document | Functional Use Cases |
 | Version  | 1.0                  |
-| Status   | Draft                |
+| Status   | Approved             |
 | Phase    | Functional Analysis  |
 
 ---
@@ -48,23 +48,23 @@ Use Cases should remain technology-agnostic until the architecture phase.
 
 # 3. Use Case Catalogue
 
-| ID     | Use Case                            | Status   |
-| ------ | ----------------------------------- | -------- |
-| UC-001 | Register Asset                      | Detailed |
-| UC-002 | Create Business Trigger             | Detailed |
-| UC-003 | Assign Inspection                   | Detailed |
-| UC-004 | Perform Inspection                  | Detailed |
-| UC-005 | Record Issue                        | Detailed |
-| UC-006 | Make Operational Decision           | Detailed |
-| UC-007 | Create Work Order                   | Detailed |
-| UC-008 | Assign Work Order                   | Detailed |
-| UC-009 | Complete Maintenance Activity       | Detailed |
-| UC-010 | Complete Review                     | Detailed |
-| UC-011 | View Asset History                  | Detailed |
-| UC-012 | Upload Operational Document         | Detailed |
-| UC-013 | Send Notification                   | Detailed |
-| UC-014 | Manage Departments                  | Detailed |
-| UC-015 | Delegate Cross-Department Authority | Detailed |
+| ID     | Use Case                            | Status                 |
+| ------ | ----------------------------------- | ---------------------- |
+| UC-001 | Register Asset                      | Detailed · Implemented |
+| UC-002 | Create Business Trigger             | Detailed · Implemented |
+| UC-003 | Assign Inspection                   | Detailed · Implemented |
+| UC-004 | Perform Inspection                  | Detailed · Implemented |
+| UC-005 | Record Issue                        | Detailed · Implemented |
+| UC-006 | Make Operational Decision           | Detailed · Implemented |
+| UC-007 | Create Work Order                   | Detailed · Implemented |
+| UC-008 | Assign Work Order                   | Detailed · Implemented |
+| UC-009 | Complete Maintenance Activity       | Detailed · Implemented |
+| UC-010 | Complete Review                     | Detailed · Implemented |
+| UC-011 | View Asset History                  | Detailed · Implemented |
+| UC-012 | Upload Operational Document         | Detailed · Implemented |
+| UC-013 | Send Notification                   | Detailed · Implemented |
+| UC-014 | Manage Departments                  | Detailed · Implemented |
+| UC-015 | Delegate Cross-Department Authority | Detailed · Implemented |
 
 ---
 
@@ -612,7 +612,7 @@ Manager
 ## Preconditions
 
 * The actor is authenticated.
-* The actor has authority to make Operational Decisions.
+* The actor is a Manager who belongs to the Asset owning department, or holds active delegated authority for that department at the decision date and time (UC-015).
 * An Issue exists for a completed Inspection.
 * No Operational Decision has already been made for the Issue.
 * The Issue is linked to one Asset.
@@ -689,9 +689,15 @@ If the decision date and time is in the future, InfraTrack rejects the decision.
 
 ### Unauthorized Role
 
-If the actor is not a Manager or delegated authorised business role, InfraTrack rejects the decision.
+If the actor is not a Manager, InfraTrack rejects the decision.
 
 Operational Coordinators do not normally perform this Use Case (BR-032).
+
+---
+
+### Unauthorized Department Authority
+
+If the actor is a Manager but does not belong to the Asset owning department and has no active delegated authority covering that department at the decision date and time, InfraTrack rejects the decision.
 
 ---
 
@@ -699,6 +705,7 @@ Operational Coordinators do not normally perform this Use Case (BR-032).
 
 * An Operational Decision exists and is linked to exactly one Issue and one Asset.
 * The decision outcome and rationale are recorded.
+* When the decision is made under delegated authority, the Operational Decision records the Delegated Authority reference for traceability.
 * Asset History is updated.
 * Asset operational status is unchanged in V1.
 * No Work Order is created automatically.
@@ -712,6 +719,9 @@ Operational Coordinators do not normally perform this Use Case (BR-032).
 * Operational Decisions are only required when an Issue has been identified (BR-013).
 * Operational Decisions determine the appropriate operational response (BR-014).
 * Operational Decisions are made by Managers or delegated authorised business roles (BR-031).
+* A Manager may make an Operational Decision when the Manager belongs to the Asset owning department.
+* A Manager from another department may make an Operational Decision only when an active delegated authority covers the Asset owning department at the decision date and time (UC-015).
+* When a decision is made under delegated authority, the Operational Decision records the delegated authority reference; Asset History records the decision itself.
 * Operational Coordinators coordinate execution; they do not normally make Operational Decisions (BR-032).
 * Every operational decision must be attributable to a responsible person (BR-028).
 * Decisions precede execution; maintenance work must not begin without an Operational Decision.
@@ -1441,7 +1451,7 @@ An Operational Document is described by three independent concepts: business doc
 
 This Use Case records supporting evidence. It does not perform inspections, record issues, create Work Orders, complete maintenance, perform Completion Review or change Asset operational status.
 
-When UC-012 is implemented, it will satisfy the deferred evidence capabilities referenced by UC-001 Register Asset, UC-004 Perform Inspection and UC-009 Complete Maintenance Activity.
+In V1, UC-012 satisfies the evidence upload capabilities referenced by UC-001 Register Asset, UC-004 Perform Inspection and UC-009 Complete Maintenance Activity.
 
 ---
 
@@ -1737,7 +1747,7 @@ Uploading evidence does not substitute for completing the operational workflow s
 * When Asset Status is changed through a future dedicated capability, that change must be recorded separately in Asset History with previous and new status traceable; document upload does not perform that change.
 * Only authorised business roles may upload operational evidence for a given context.
 * Uploading a document or photograph does not complete an Inspection, Maintenance Activity or other operational workflow step.
-* Maintenance Activities must produce operational evidence (BR-022); completion notes remain the minimum V1 execution record under UC-009, while uploaded photographs and reports extend operational evidence when UC-012 is implemented.
+* Maintenance Activities must produce operational evidence (BR-022); completion notes remain the minimum V1 execution record under UC-009, while uploaded photographs and reports extend operational evidence through UC-012 Upload Operational Document.
 * Uploading evidence does not reopen a completed Work Order.
 * Uploading evidence does not create a new Operational Decision or Work Order.
 * The backend remains the source of truth for document metadata, links and authorisation.
@@ -1942,6 +1952,16 @@ This Use Case maintains reference organisational data. It does not perform inspe
 
 ---
 
+## User and Department Relationship
+
+In V1, a User may optionally belong to one Department. Department membership supports operational collaboration, notification recipient resolution and managerial authority boundaries. A User without a department may still use InfraTrack but is not resolved as a department-based notification recipient or as a Department Manager.
+
+A **Department Manager** is a User whose role is Manager and whose department is that department. InfraTrack does not use a separate manager assignment entity.
+
+Administrators assign or clear department membership through user management capabilities outside this Use Case. UC-014 maintains department reference data; it does not assign users to departments.
+
+---
+
 ## Primary Actor
 
 Administrator
@@ -1971,6 +1991,7 @@ For update or removal:
 For removal:
 
 * No Asset currently belongs to the department.
+* No User currently belongs to the department.
 
 ---
 
@@ -2006,7 +2027,7 @@ Updating a department name does not change Asset ownership or operational histor
 
 1. The Administrator opens an existing Department.
 2. The Administrator requests department removal.
-3. InfraTrack verifies that no Asset currently belongs to the Department.
+3. InfraTrack verifies that no Asset and no User currently belongs to the Department.
 4. InfraTrack removes the Department.
 5. InfraTrack confirms that the Department has been removed.
 
@@ -2058,6 +2079,14 @@ An Asset's owning department may be changed only through a separate approved Ass
 
 ---
 
+### Department Has Users
+
+If one or more Users belong to the Department, InfraTrack rejects removal.
+
+User department membership must be cleared or reassigned before the Department can be removed.
+
+---
+
 ## Postconditions
 
 ### After Create
@@ -2076,6 +2105,7 @@ An Asset's owning department may be changed only through a separate approved Ass
 
 * The Department no longer exists.
 * No Asset referenced the removed Department.
+* No User referenced the removed Department.
 * Asset History remains unchanged.
 
 In all cases, Asset operational status remains unchanged and no operational workflow is initiated by department management alone.
@@ -2085,12 +2115,14 @@ In all cases, Asset operational status remains unchanged and no operational work
 ## Business Rules
 
 * Every Asset belongs to exactly one Department (BR-001).
+* A User may optionally belong to one Department; department membership supports notification resolution and managerial authority (UC-013, UC-006, UC-015).
+* A Department Manager is a User whose role is Manager and whose department is that department.
 * Departments are organisational units responsible for managing groups of public assets (Domain Overview — Department).
 * Departments own assets; ownership establishes long-term accountability (Council Organisation, Department Collaboration).
 * Departments do not manage users from other departments (Council Organisation).
 * Operational work may cross departmental boundaries without changing Asset ownership (Department Collaboration).
 * Department management is an administrative reference-data capability, not an operational workflow step.
-* Removing a Department that owns Assets is not allowed.
+* Removing a Department that owns Assets or that has Users assigned is not allowed.
 * Updating a Department does not modify Asset operational status.
 * Department management does not create Asset History events; Asset History records operational events, not administrative reference-data maintenance.
 * The backend remains the source of truth for department reference data.
@@ -2132,30 +2164,42 @@ Operational Coordinators do not create delegations in V1 but may coordinate exec
 ## Preconditions
 
 * The actor is authenticated.
-* The actor is a Manager.
-* The delegate exists and is a Manager or other authorised business role according to council policy.
-* The delegation scope is defined.
+* The actor is a Manager who belongs to the source department.
+* The delegate exists and is a Manager.
+* The source department and target department are defined.
 * The delegation validity period is defined with a start and end.
 * The delegation reason is provided.
-* No conflicting active delegation already covers the same scope for the same delegate, unless council policy explicitly allows replacement.
+* No conflicting active delegation already covers the same delegate and target department, unless council policy explicitly allows replacement.
 
 ---
 
 ## Main Flow
 
 1. The Manager opens the delegation process.
-2. The Manager selects the delegate who will receive temporary authority.
-3. The Manager defines the delegation scope.
+2. The Manager selects the delegate Manager who will receive temporary authority.
+3. The Manager defines the source department and target department.
 4. The Manager records the business reason for delegation.
-5. The Manager records the delegation start date.
-6. The Manager records the delegation end date.
+5. The Manager records the delegation start date and time.
+6. The Manager records the delegation end date and time.
 7. InfraTrack validates the submitted information and the actor's authority.
 8. InfraTrack creates the Delegated Authority record.
 9. InfraTrack confirms that cross-department authority has been delegated.
 
-While the delegation is active, the delegate may perform UC-006 Make Operational Decision within the defined scope. The Operational Decision remains attributable to the delegate as the responsible user.
+While the delegation is active, the delegate may perform UC-006 Make Operational Decision for Assets owned by the target department. The Operational Decision remains attributable to the delegate as the responsible user.
 
-When the delegation expires, the delegate may no longer rely on that delegation for new Operational Decisions.
+When the delegation expires or is revoked, the delegate may no longer rely on that delegation for new Operational Decisions.
+
+---
+
+### Revoke Delegation
+
+1. The delegating Manager opens an active Delegated Authority record.
+2. The Manager requests revocation.
+3. InfraTrack verifies that the actor is the delegating Manager.
+4. InfraTrack marks the Delegated Authority as revoked.
+5. InfraTrack confirms that the delegation has been revoked.
+
+Revoked delegations remain visible for traceability but are no longer active authority.
 
 ---
 
@@ -2169,6 +2213,7 @@ When a delegate makes an Operational Decision under UC-006 using valid delegated
 
 * the Operational Decision record;
 * the deciding user recorded on that decision;
+* the optional Delegated Authority reference recorded on the Operational Decision when the decision is made under delegation;
 * the Asset History event created by UC-006 Make Operational Decision.
 
 The delegation grant and the operational decision remain separate concepts. Asset History records the decision, not the authorisation grant.
@@ -2177,16 +2222,12 @@ The delegation grant and the operational decision remain separate concepts. Asse
 
 ## Delegation Scope
 
-Delegation scope must be explicit and traceable.
+In the implemented V1 application, delegation scope is department-based:
 
-Typical V1 scope examples include:
+* **Source department** — the department to which the delegating Manager belongs;
+* **Target department** — the department whose Asset owning context the delegate may decide for while the delegation is active.
 
-* one Asset;
-* one Issue requiring cross-department review;
-* one owning department's operational context for a defined period;
-* a defined set of operational records linked to one Asset.
-
-Delegation scope must not span unrelated Assets or unrelated operational cycles without explicit business justification.
+An active delegation authorises the delegate to make UC-006 Operational Decisions for Issues linked to Assets owned by the target department, subject to the validity period.
 
 Delegation grants temporary operational decision authority only. It does not transfer Asset ownership and does not assign field execution work.
 
@@ -2241,17 +2282,26 @@ Expired delegations remain visible for traceability but are not active authority
 
 ---
 
+### Revoked Delegation
+
+If a delegate attempts to rely on a revoked delegation for a new Operational Decision, InfraTrack rejects the decision unless the actor has independent authority.
+
+Revoked delegations remain visible for traceability but are not active authority.
+
+---
+
 ### Conflicting Active Delegation
 
-If an active delegation already exists for the same scope and delegate, InfraTrack rejects the new delegation or requires explicit replacement according to council policy.
+If an active delegation already exists for the same delegate and target department, InfraTrack rejects the new delegation or requires explicit replacement according to council policy.
 
 ---
 
 ## Postconditions
 
-* A Delegated Authority record exists with delegate, scope, reason and validity period.
-* The delegate may perform UC-006 within scope while the delegation is active.
-* No Asset History entry is created by delegation creation alone.
+* A Delegated Authority record exists with delegate, source department, target department, reason and validity period.
+* The delegate may perform UC-006 for Assets owned by the target department while the delegation is active.
+* When revoked, the delegation is no longer active for new Operational Decisions.
+* No Asset History entry is created by delegation creation or revocation alone.
 * Asset ownership remains unchanged.
 * Asset operational status remains unchanged.
 * No Work Order, Maintenance Activity or Completion Review is created by delegation alone.
@@ -2262,6 +2312,8 @@ If an active delegation already exists for the same scope and delegate, InfraTra
 ## Business Rules
 
 * Operational Decisions are made by Managers or delegated authorised business roles (BR-031, BR-014).
+* In V1, delegation scope is defined by source department and target department.
+* Only the delegating Manager may revoke an active delegation.
 * Operational Coordinators coordinate execution; they do not normally make Operational Decisions (BR-032).
 * Cross-department operational decisions should only occur when responsibility has been explicitly delegated or assigned according to council policy (Department Collaboration).
 * Delegation grants temporary authority; it does not transfer permanent Asset ownership (Department Collaboration).
@@ -2269,7 +2321,7 @@ If an active delegation already exists for the same scope and delegate, InfraTra
 * Delegation does not automatically change Asset operational status (BR-039).
 * Delegated authority must remain traceable within the operational record (Department Collaboration).
 * Creating a Delegated Authority record does not create an Asset History event; delegation is an authorisation record, not an Asset operational event.
-* When a delegate makes an Operational Decision, traceability is preserved through the Operational Decision record, the deciding user and the Asset History event created by UC-006; V1 does not define a Delegation Recorded Asset History event.
+* When a delegate makes an Operational Decision, traceability is preserved through the Operational Decision record, the deciding user, the optional Delegated Authority reference when applicable, and the Asset History event created by UC-006; V1 does not define a Delegation Recorded Asset History event.
 * When a delegate makes an Operational Decision, the decision must remain attributable to the responsible person (BR-028).
 * Delegation does not assign Inspections or Work Orders; task assignment remains separate from delegated decision authority (Department Collaboration).
 * Delegation does not reopen completed Work Orders.
@@ -2281,20 +2333,19 @@ If an active delegation already exists for the same scope and delegate, InfraTra
 
 # 19. V1 Functional Analysis Completion Notes
 
-UC-001 through UC-015 are now fully detailed to describe the complete V1 operational lifecycle and supporting capabilities.
+UC-001 through UC-015 are fully detailed and implemented in the running V1 application.
 
-Future implementation should proceed one Use Case at a time, followed by review and stabilization, without introducing business concepts that are not already approved in Business Discovery.
-
-If implementation reveals ambiguity in the business model, Business Discovery should be updated before architecture changes begin.
+This document describes the implemented V1 functional model, not an intermediate delivery state.
 
 ## Known V1 Implementation State
 
-The following items are documented in Functional Analysis but may not yet be fully implemented in the running application:
+All fifteen Use Cases in the catalogue are implemented. The following intentional V1 limitations remain documented in Business Discovery and Functional Analysis but are not missing Use Case implementation:
 
-* UC-014 Manage Departments is specified; department reference data exists for operational use, but full administrative lifecycle rules should be verified during implementation.
-* UC-015 Delegate Cross-Department Authority is specified; only Managers can make Operational Decisions in the current running application until delegation is implemented.
+* Asset Status changes are not automated by inspection, decision, work order, maintenance or completion review (BR-039); a dedicated Asset Status capability is outside V1 scope.
+* Notification delivery is best-effort; delivery failure does not roll back operational records.
+* UC-012 stores operational document evidence separately; Asset History records an upload event but does not embed document files (ADR-001).
 
-These limitations do not change the approved V1 functional model.
+If implementation reveals ambiguity in the business model, Business Discovery should be updated before architecture changes begin.
 
 ---
 
@@ -2304,8 +2355,8 @@ This document defines the Functional Analysis phase for InfraTrack.
 
 It translates the approved Business Discovery model into functional Use Cases.
 
-UC-001 through UC-015 are fully detailed to describe the complete V1 functional model.
+UC-001 through UC-015 are fully detailed and implemented to describe the complete V1 functional model.
 
 The V1 operational lifecycle spans Asset registration, operational attention, inspection, issue recording, decision-making, work order execution, maintenance completion, optional review, evidence upload, history viewing, notification coordination, department reference management and cross-department delegation.
 
-Remaining implementation work should follow the documented Use Cases without expanding scope beyond the approved V1 model.
+This document is the authoritative functional description of implemented V1 for architecture and consistency review.
