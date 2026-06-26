@@ -1453,6 +1453,8 @@ This Use Case records supporting evidence. It does not perform inspections, reco
 
 In V1, UC-012 satisfies the evidence upload capabilities referenced by UC-001 Register Asset, UC-004 Perform Inspection and UC-009 Complete Maintenance Activity.
 
+Each upload request accepts exactly one file. V1 does not require or store a separate document title or document description. The original file name is retained as technical metadata only and is not a business document title.
+
 ---
 
 ## Primary Actor
@@ -1495,16 +1497,15 @@ Typical authorised contexts in V1:
 2. The actor starts the operational document upload process.
 3. The actor confirms the target Asset, either directly or through the selected operational owner.
 4. The actor optionally selects exactly one operational owner to link the document to.
-5. The actor provides a document title or description.
-6. The actor selects the business document type.
-7. The actor provides one or more files as part of the same upload action.
-8. The actor records the business document date when applicable.
-9. InfraTrack validates the submitted information and the actor's authorisation.
-10. InfraTrack determines the file format from each uploaded file as technical metadata.
-11. InfraTrack stores the uploaded operational evidence linked to exactly one Asset.
-12. When selected, InfraTrack links the Operational Document to exactly one operational owner.
-13. InfraTrack records exactly one Asset History event for the upload action.
-14. InfraTrack confirms that the Operational Document has been uploaded.
+5. The actor selects the business document type.
+6. The actor provides exactly one file for the upload request.
+7. The actor optionally records the business document date.
+8. InfraTrack validates the submitted information and the actor's authorisation.
+9. InfraTrack determines the file format from the uploaded file as technical metadata.
+10. InfraTrack stores the uploaded operational evidence linked to exactly one Asset.
+11. When selected, InfraTrack links the Operational Document to exactly one operational owner.
+12. InfraTrack records exactly one Asset History event for the upload action.
+13. InfraTrack confirms that the Operational Document has been uploaded.
 
 The Operational Document becomes part of the permanent operational record for the Asset.
 
@@ -1633,11 +1634,11 @@ No business rules depend on the physical file format. Business meaning and opera
 
 Uploading operational evidence creates exactly one Asset History event per user upload action.
 
-The history event represents the upload operation. It does not represent each individual file.
+The history event represents the upload operation for that single-file upload request.
 
-When the actor submits multiple files in one upload action, InfraTrack still records exactly one Asset History event for that action.
+Each upload request produces one Operational Document and exactly one Asset History event. Additional evidence requires additional upload actions.
 
-Asset History remains append-only. The upload event preserves traceability of who uploaded evidence, when, and in which operational context, without creating one history entry per file.
+Asset History remains append-only. The upload event preserves traceability of who uploaded evidence, when, and in which operational context.
 
 ---
 
@@ -1690,9 +1691,10 @@ If required information is missing, InfraTrack rejects the upload and explains w
 Required information includes:
 
 * target Asset;
-* document title or description;
 * business document type;
-* at least one file in the upload action.
+* exactly one file in the upload request.
+
+V1 does not require a document title or document description.
 
 ---
 
@@ -1713,8 +1715,8 @@ If the actor is not authenticated, InfraTrack rejects the upload.
 * Uploaded operational evidence exists and is linked to exactly one Asset.
 * When selected, the Operational Document is linked to exactly one operational owner belonging to that Asset.
 * The Operational Document is never linked to more than one operational entity.
-* The document title or description, business document type, file format, responsible user and business document date when provided are recorded.
-* Exactly one Asset History event is recorded for the upload action, regardless of how many files were included in that action.
+* The business document type, file format, responsible user and business document date when provided are recorded.
+* Exactly one Asset History event is recorded for the upload action.
 * The linked operational owner is not modified except for the document association.
 * Asset operational status remains unchanged.
 * No Inspection is completed, no Issue is recorded, no Operational Decision is made, no Work Order is created or completed, and no Completion Review is recorded by this Use Case alone.
@@ -1737,7 +1739,8 @@ Uploading evidence does not substitute for completing the operational workflow s
 * Operational context is determined exclusively by the Asset and optional operational owner, not by business document type.
 * File format is technical metadata determined automatically from the uploaded file; it is not a business document type and no business rules depend on the physical file format.
 * Every upload action contributes exactly one Asset History event associated with the Asset (BR-004).
-* A multi-file upload action still produces exactly one Asset History event for that user action.
+* Each upload request accepts exactly one file; V1 does not support multiple files in one upload request.
+* V1 does not require or store a separate document title or document description.
 * Asset History is permanent and read-only; uploaded evidence must not be removed to erase operational history (BR-026, BR-037).
 * Operational History records both actions and decisions; evidence supports understanding what happened and why (BR-027).
 * Every operational event must be associated with a date and time (BR-029).
