@@ -22,6 +22,10 @@ services:
       - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=false
       - SPRING_PROFILES_ACTIVE=dev
       - OPERATIONAL_DOCUMENTS_STORAGE_PATH=/app/data/operational-documents
+      - BOOTSTRAP_ADMIN_ENABLED=true
+      - BOOTSTRAP_ADMIN_NAME=Administrator
+      - BOOTSTRAP_ADMIN_EMAIL=admin@infratrack.local
+      - BOOTSTRAP_ADMIN_PASSWORD=change-me
     volumes:
       - ./backend/firebase-service-account.json:/app/firebase-service-account.json:ro
       - operational-documents-data:/app/data/operational-documents

@@ -56,6 +56,12 @@ services:
 
       # Operational document storage (local filesystem, persisted via Docker volume)
       OPERATIONAL_DOCUMENTS_STORAGE_PATH: ${OPERATIONAL_DOCUMENTS_STORAGE_PATH:-/app/data/operational-documents}
+
+      # Initial administrator bootstrap (disabled by default in production)
+      BOOTSTRAP_ADMIN_ENABLED: ${BOOTSTRAP_ADMIN_ENABLED:-false}
+      BOOTSTRAP_ADMIN_NAME: ${BOOTSTRAP_ADMIN_NAME:-Administrator}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
     
     ports:
       # In production, typically port 4000 should be internal only
