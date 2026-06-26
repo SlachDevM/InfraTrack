@@ -85,7 +85,7 @@ class WorkOrderServiceNotificationTest {
         when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
         when(userService.getById(20L)).thenReturn(fieldEmployee);
         when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(notificationService.create(anyLong(), anyString(), anyString()))
+        when(notificationService.create(anyLong(), anyString(), anyString(), anyString()))
                 .thenThrow(new RuntimeException("notification failed"));
 
         var response = workOrderService.assignWorkOrder(1000L, request, 40L);
@@ -96,7 +96,8 @@ class WorkOrderServiceNotificationTest {
         verify(notificationService).create(
                 eq(20L),
                 eq(OperationalEventNotificationService.WORK_ORDER_ASSIGNED_TITLE),
-                eq(OperationalEventNotificationService.WORK_ORDER_ASSIGNED_MESSAGE));
+                eq(OperationalEventNotificationService.WORK_ORDER_ASSIGNED_MESSAGE),
+                eq(OperationalEventNotificationService.WORK_ORDERS_ROUTE));
     }
 
     private WorkOrder createdWorkOrder(Long id, WorkType workType) {

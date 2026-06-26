@@ -60,9 +60,13 @@ export default function NotificationPage() {
     }
   };
 
-  const handleNotificationClick = (notif) => {
+  const handleNotificationClick = async (notif) => {
     if (!notif.isRead) {
-      handleMarkAsRead(notif.id);
+      await handleMarkAsRead(notif.id);
+    }
+
+    if (notif.targetRoute) {
+      navigate(notif.targetRoute);
     }
   };
 

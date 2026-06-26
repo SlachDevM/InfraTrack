@@ -30,37 +30,40 @@ class OperationalEventNotificationServiceTest {
     private OperationalEventNotificationService operationalEventNotificationService;
 
     @Test
-    void notifyInspectionAssigned_shouldCreateNotification() {
+    void notifyInspectionAssigned_shouldCreateNotificationWithRoute() {
         operationalEventNotificationService.notifyInspectionAssigned(20L);
 
         verify(notificationService).create(
                 20L,
                 OperationalEventNotificationService.INSPECTION_ASSIGNED_TITLE,
-                OperationalEventNotificationService.INSPECTION_ASSIGNED_MESSAGE);
+                OperationalEventNotificationService.INSPECTION_ASSIGNED_MESSAGE,
+                OperationalEventNotificationService.INSPECTIONS_ROUTE);
     }
 
     @Test
-    void notifyWorkOrderAssigned_shouldCreateNotification() {
+    void notifyWorkOrderAssigned_shouldCreateNotificationWithRoute() {
         operationalEventNotificationService.notifyWorkOrderAssigned(25L);
 
         verify(notificationService).create(
                 25L,
                 OperationalEventNotificationService.WORK_ORDER_ASSIGNED_TITLE,
-                OperationalEventNotificationService.WORK_ORDER_ASSIGNED_MESSAGE);
+                OperationalEventNotificationService.WORK_ORDER_ASSIGNED_MESSAGE,
+                OperationalEventNotificationService.WORK_ORDERS_ROUTE);
     }
 
     @Test
     void notifyInspectionAssigned_shouldNotPropagateFailure() {
         doThrow(new RuntimeException("FCM unavailable"))
                 .when(notificationService)
-                .create(anyLong(), anyString(), anyString());
+                .create(anyLong(), anyString(), anyString(), anyString());
 
         operationalEventNotificationService.notifyInspectionAssigned(20L);
 
         verify(notificationService).create(
                 20L,
                 OperationalEventNotificationService.INSPECTION_ASSIGNED_TITLE,
-                OperationalEventNotificationService.INSPECTION_ASSIGNED_MESSAGE);
+                OperationalEventNotificationService.INSPECTION_ASSIGNED_MESSAGE,
+                OperationalEventNotificationService.INSPECTIONS_ROUTE);
     }
 
     @Test
@@ -76,7 +79,8 @@ class OperationalEventNotificationServiceTest {
         verify(notificationService).create(
                 40L,
                 OperationalEventNotificationService.MAINTENANCE_COMPLETED_TITLE,
-                OperationalEventNotificationService.MAINTENANCE_COMPLETED_MESSAGE);
+                OperationalEventNotificationService.MAINTENANCE_COMPLETED_MESSAGE,
+                OperationalEventNotificationService.WORK_ORDERS_ROUTE);
     }
 
     @Test
@@ -88,7 +92,7 @@ class OperationalEventNotificationServiceTest {
 
         operationalEventNotificationService.notifyMaintenanceCompleted(department);
 
-        verify(notificationService, never()).create(anyLong(), anyString(), anyString());
+        verify(notificationService, never()).create(anyLong(), anyString(), anyString(), anyString());
     }
 
     @Test
@@ -104,7 +108,8 @@ class OperationalEventNotificationServiceTest {
         verify(notificationService).create(
                 30L,
                 OperationalEventNotificationService.COMPLETION_REVIEW_REQUIRED_TITLE,
-                OperationalEventNotificationService.COMPLETION_REVIEW_REQUIRED_MESSAGE);
+                OperationalEventNotificationService.COMPLETION_REVIEW_REQUIRED_MESSAGE,
+                OperationalEventNotificationService.WORK_ORDERS_ROUTE);
     }
 
     @Test
@@ -121,11 +126,13 @@ class OperationalEventNotificationServiceTest {
         verify(notificationService).create(
                 eq(30L),
                 eq(OperationalEventNotificationService.COMPLETION_REVIEW_REQUIRED_TITLE),
-                eq(OperationalEventNotificationService.COMPLETION_REVIEW_REQUIRED_MESSAGE));
+                eq(OperationalEventNotificationService.COMPLETION_REVIEW_REQUIRED_MESSAGE),
+                eq(OperationalEventNotificationService.WORK_ORDERS_ROUTE));
         verify(notificationService).create(
                 eq(31L),
                 eq(OperationalEventNotificationService.COMPLETION_REVIEW_REQUIRED_TITLE),
-                eq(OperationalEventNotificationService.COMPLETION_REVIEW_REQUIRED_MESSAGE));
+                eq(OperationalEventNotificationService.COMPLETION_REVIEW_REQUIRED_MESSAGE),
+                eq(OperationalEventNotificationService.WORK_ORDERS_ROUTE));
     }
 
     private Department department(Long id) {

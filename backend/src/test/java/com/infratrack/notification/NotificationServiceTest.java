@@ -1,4 +1,7 @@
 package com.infratrack.notification;
+
+import com.infratrack.user.User;
+import com.infratrack.user.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -18,6 +21,12 @@ class NotificationServiceTest {
 
     @Mock
     private NotificationRepository notificationRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private FirebaseNotificationService firebaseNotificationService;
 
     @InjectMocks
     private NotificationService notificationService;
@@ -75,8 +84,28 @@ class NotificationServiceTest {
         assertThat(saved.getTitle()).isEqualTo("Test Title");
         assertThat(saved.getMessage()).isEqualTo("You have been assigned");
         assertThat(saved.getIsRead()).isFalse();
+        assertThat(saved.getTargetRoute()).isNull();
 
         assertThat(result.getIsRead()).isFalse();
+    }
+
+    @Test
+    void create_shouldPersistTargetRouteWhenProvided() {
+        when(notificationRepository.save(any(Notification.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Notification result = notificationService.create(
+                1L,
+                "Work Order Assigned",
+                "You have been assigned a work order.",
+                "/work-orders"
+        );
+
+        ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationRepository).save(captor.capture());
+
+        assertThat(captor.getValue().getTargetRoute()).isEqualTo("/work-orders");
+        assertThat(result.getTargetRoute()).isEqualTo("/work-orders");
     }
 
     @Test

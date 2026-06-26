@@ -84,7 +84,7 @@ class InspectionServiceNotificationTest {
             inspection.setId(100L);
             return inspection;
         });
-        when(notificationService.create(anyLong(), anyString(), anyString()))
+        when(notificationService.create(anyLong(), anyString(), anyString(), anyString()))
                 .thenThrow(new RuntimeException("notification failed"));
 
         var response = inspectionService.assignInspection(request, 10L);
@@ -95,7 +95,8 @@ class InspectionServiceNotificationTest {
         verify(notificationService).create(
                 eq(20L),
                 eq(OperationalEventNotificationService.INSPECTION_ASSIGNED_TITLE),
-                eq(OperationalEventNotificationService.INSPECTION_ASSIGNED_MESSAGE));
+                eq(OperationalEventNotificationService.INSPECTION_ASSIGNED_MESSAGE),
+                eq(OperationalEventNotificationService.INSPECTIONS_ROUTE));
     }
 
     private BusinessTrigger businessTrigger() {

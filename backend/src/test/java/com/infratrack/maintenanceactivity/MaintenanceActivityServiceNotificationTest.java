@@ -108,7 +108,8 @@ class MaintenanceActivityServiceNotificationTest {
         verify(notificationService).create(
                 40L,
                 OperationalEventNotificationService.MAINTENANCE_COMPLETED_TITLE,
-                OperationalEventNotificationService.MAINTENANCE_COMPLETED_MESSAGE);
+                OperationalEventNotificationService.MAINTENANCE_COMPLETED_MESSAGE,
+                OperationalEventNotificationService.WORK_ORDERS_ROUTE);
         verify(userRepository, never()).findByRoleAndDepartmentId(eq(UserRole.MANAGER), anyLong());
     }
 
@@ -133,7 +134,7 @@ class MaintenanceActivityServiceNotificationTest {
         var response = maintenanceActivityService.completeMaintenance(1000L, request, 20L);
 
         assertThat(response.getWorkOrderStatus()).isEqualTo(WorkOrderStatus.COMPLETED);
-        verify(notificationService, never()).create(anyLong(), anyString(), anyString());
+        verify(notificationService, never()).create(anyLong(), anyString(), anyString(), anyString());
     }
 
     @Test
@@ -162,7 +163,8 @@ class MaintenanceActivityServiceNotificationTest {
         verify(notificationService).create(
                 30L,
                 OperationalEventNotificationService.COMPLETION_REVIEW_REQUIRED_TITLE,
-                OperationalEventNotificationService.COMPLETION_REVIEW_REQUIRED_MESSAGE);
+                OperationalEventNotificationService.COMPLETION_REVIEW_REQUIRED_MESSAGE,
+                OperationalEventNotificationService.WORK_ORDERS_ROUTE);
     }
 
     @Test
@@ -204,7 +206,7 @@ class MaintenanceActivityServiceNotificationTest {
                 .thenReturn(List.of(coordinator));
         doThrow(new RuntimeException("notification failed"))
                 .when(notificationService)
-                .create(anyLong(), anyString(), anyString());
+                .create(anyLong(), anyString(), anyString(), anyString());
 
         var response = maintenanceActivityService.completeMaintenance(1000L, request, 20L);
 

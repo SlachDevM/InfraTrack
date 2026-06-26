@@ -24,15 +24,23 @@ public class Notification {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Long createdAt;
 
+    @Column(name = "target_route")
+    private String targetRoute;
+
     public Notification() {
         this.isRead = false;
         this.createdAt = System.currentTimeMillis();
     }
 
     public Notification(Long userId, String title, String message) {
+        this(userId, title, message, null);
+    }
+
+    public Notification(Long userId, String title, String message, String targetRoute) {
         this.userId = userId;
         this.title = title;
         this.message = message;
+        this.targetRoute = targetRoute;
         this.isRead = false;
         this.createdAt = System.currentTimeMillis();
     }
@@ -83,5 +91,13 @@ public class Notification {
 
     public void setCreatedAt(Long createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getTargetRoute() {
+        return targetRoute;
+    }
+
+    public void setTargetRoute(String targetRoute) {
+        this.targetRoute = targetRoute;
     }
 }

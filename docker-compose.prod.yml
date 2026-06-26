@@ -62,6 +62,11 @@ services:
       BOOTSTRAP_ADMIN_NAME: ${BOOTSTRAP_ADMIN_NAME:-Administrator}
       BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
       BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+
+      # JVM and container timezone for LocalDateTime validation (V1)
+      APP_TIMEZONE: ${APP_TIMEZONE:-UTC}
+      TZ: ${APP_TIMEZONE:-UTC}
+      JAVA_TOOL_OPTIONS: -Duser.timezone=${APP_TIMEZONE:-UTC}
     
     ports:
       # In production, typically port 4000 should be internal only

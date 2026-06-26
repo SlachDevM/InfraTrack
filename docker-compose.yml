@@ -26,6 +26,9 @@ services:
       - BOOTSTRAP_ADMIN_NAME=Administrator
       - BOOTSTRAP_ADMIN_EMAIL=admin@infratrack.local
       - BOOTSTRAP_ADMIN_PASSWORD=change-me
+      - APP_TIMEZONE=Australia/Sydney
+      - TZ=Australia/Sydney
+      - JAVA_TOOL_OPTIONS=-Duser.timezone=Australia/Sydney
     volumes:
       - ./backend/firebase-service-account.json:/app/firebase-service-account.json:ro
       - operational-documents-data:/app/data/operational-documents

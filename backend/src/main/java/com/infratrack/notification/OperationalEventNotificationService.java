@@ -28,6 +28,9 @@ public class OperationalEventNotificationService {
     public static final String COMPLETION_REVIEW_REQUIRED_TITLE = "Completion Review Required";
     public static final String COMPLETION_REVIEW_REQUIRED_MESSAGE = "Contractor maintenance requires completion review.";
 
+    public static final String INSPECTIONS_ROUTE = "/inspections";
+    public static final String WORK_ORDERS_ROUTE = "/work-orders";
+
     private final NotificationService notificationService;
     private final UserRepository userRepository;
 
@@ -39,11 +42,19 @@ public class OperationalEventNotificationService {
     }
 
     public void notifyInspectionAssigned(Long assignedToUserId) {
-        sendSafely(assignedToUserId, INSPECTION_ASSIGNED_TITLE, INSPECTION_ASSIGNED_MESSAGE);
+        sendSafely(
+                assignedToUserId,
+                INSPECTION_ASSIGNED_TITLE,
+                INSPECTION_ASSIGNED_MESSAGE,
+                INSPECTIONS_ROUTE);
     }
 
     public void notifyWorkOrderAssigned(Long assignedToUserId) {
-        sendSafely(assignedToUserId, WORK_ORDER_ASSIGNED_TITLE, WORK_ORDER_ASSIGNED_MESSAGE);
+        sendSafely(
+                assignedToUserId,
+                WORK_ORDER_ASSIGNED_TITLE,
+                WORK_ORDER_ASSIGNED_MESSAGE,
+                WORK_ORDERS_ROUTE);
     }
 
     public void notifyMaintenanceCompleted(Department department) {
@@ -51,7 +62,8 @@ public class OperationalEventNotificationService {
                 department,
                 UserRole.OPERATIONAL_COORDINATOR,
                 MAINTENANCE_COMPLETED_TITLE,
-                MAINTENANCE_COMPLETED_MESSAGE);
+                MAINTENANCE_COMPLETED_MESSAGE,
+                WORK_ORDERS_ROUTE);
     }
 
     public void notifyCompletionReviewRequired(Department department) {
@@ -59,27 +71,29 @@ public class OperationalEventNotificationService {
                 department,
                 UserRole.MANAGER,
                 COMPLETION_REVIEW_REQUIRED_TITLE,
-                COMPLETION_REVIEW_REQUIRED_MESSAGE);
+                COMPLETION_REVIEW_REQUIRED_MESSAGE,
+                WORK_ORDERS_ROUTE);
     }
 
     private void notifyRoleInDepartment(
             Department department,
             UserRole role,
             String title,
-            String message) {
+            String message,
+            String targetRoute) {
         if (department == null || department.getId() == null) {
             return;
         }
 
         List<User> recipients = userRepository.findByRoleAndDepartmentId(role, department.getId());
         for (User recipient : recipients) {
-            sendSafely(recipient.getId(), title, message);
+            sendSafely(recipient.getId(), title, message, targetRoute);
         }
     }
 
-    private void sendSafely(Long userId, String title, String message) {
+    private void sendSafely(Long userId, String title, String message, String targetRoute) {
         try {
-            notificationService.create(userId, title, message);
+            notificationService.create(userId, title, message, targetRoute);
         } catch (Exception ex) {
             log.warn("Failed to send notification '{}' to user {}: {}", title, userId, ex.getMessage());
         }

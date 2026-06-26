@@ -434,6 +434,74 @@ class OperationalDocumentServiceTest {
     }
 
     @Test
+    void uploadDocument_shouldAllowManagerToUploadDirectlyToAsset() {
+        Asset asset = asset(5L);
+        User manager = user(30L, UserRole.MANAGER);
+        MultipartFile file = file("report.pdf", "application/pdf", 1024L);
+
+        when(userService.getById(30L)).thenReturn(manager);
+        when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
+        when(fileStore.store(file)).thenReturn(storedFile("report.pdf", "application/pdf", 1024L));
+        when(operationalDocumentRepository.save(any(OperationalDocument.class))).thenAnswer(invocation -> {
+            OperationalDocument document = invocation.getArgument(0);
+            document.setId(108L);
+            return document;
+        });
+
+        OperationalDocumentResponse response = operationalDocumentService.uploadDocument(
+                5L, file, OperationalDocumentType.REPORT, null, null, null, 30L);
+
+        assertThat(response.getOwnerType()).isEqualTo(OperationalDocumentOwnerType.ASSET);
+        assertThat(response.getOwnerId()).isEqualTo(5L);
+    }
+
+    @Test
+    void uploadDocument_shouldAllowManagerToUploadLinkedToIssueOnSameAsset() {
+        Asset asset = asset(5L);
+        Issue issue = issue(500L, asset);
+        User manager = user(30L, UserRole.MANAGER);
+        MultipartFile file = file("evidence.jpg", "image/jpeg", 1024L);
+
+        when(userService.getById(30L)).thenReturn(manager);
+        when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
+        when(issueRepository.findById(500L)).thenReturn(Optional.of(issue));
+        when(fileStore.store(file)).thenReturn(storedFile("evidence.jpg", "image/jpeg", 1024L));
+        when(operationalDocumentRepository.save(any(OperationalDocument.class))).thenAnswer(invocation -> {
+            OperationalDocument document = invocation.getArgument(0);
+            document.setId(109L);
+            return document;
+        });
+
+        OperationalDocumentResponse response = operationalDocumentService.uploadDocument(
+                5L,
+                file,
+                OperationalDocumentType.PHOTO,
+                OperationalDocumentOwnerType.ISSUE,
+                500L,
+                null,
+                30L);
+
+        assertThat(response.getOwnerType()).isEqualTo(OperationalDocumentOwnerType.ISSUE);
+        assertThat(response.getOwnerId()).isEqualTo(500L);
+    }
+
+    @Test
+    void uploadDocument_shouldRejectFieldEmployeeForAssetLevelUpload() {
+        Asset asset = asset(5L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        MultipartFile file = file("photo.jpg", "image/jpeg", 1024L);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
+
+        assertThatThrownBy(() -> operationalDocumentService.uploadDocument(
+                5L, file, OperationalDocumentType.PHOTO, null, null, null, 20L))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
     void uploadDocument_shouldAllowBusinessDocumentTypeIndependentOfFileFormat() {
         Asset asset = asset(5L);
         User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);

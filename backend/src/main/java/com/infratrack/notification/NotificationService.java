@@ -66,8 +66,17 @@ public class NotificationService {
             String title,
             String message
     ) {
+        return create(userId, title, message, null);
+    }
+
+    public Notification create(
+            Long userId,
+            String title,
+            String message,
+            String targetRoute
+    ) {
         Notification notification =
-                new Notification(userId, title, message);
+                new Notification(userId, title, message, targetRoute);
 
         Notification savedNotification = notificationRepository.save(notification);
 

@@ -17,6 +17,7 @@ import com.infratrack.operationaldecision.OperationalDecision;
 import com.infratrack.operationaldecision.OperationalDecisionRepository;
 import com.infratrack.operationaldocument.dto.OperationalDocumentResponse;
 import com.infratrack.user.User;
+import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
 import com.infratrack.workorder.WorkOrder;
 import com.infratrack.workorder.WorkOrderRepository;
@@ -263,22 +264,25 @@ public class OperationalDocumentService {
     }
 
     private void requireUploadAuthorized(User user, OwnerContext ownerContext) {
-        if (user.getRole().isAdministrator()) {
-            throw new ResponseStatusException(
+        UserRole role = user.getRole();
+        if (role == null) {
+            throw forbiddenUpload();
+        }
+
+        switch (role) {
+            case ADMINISTRATOR -> throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
                     "Administrators cannot upload operational evidence");
+            case MANAGER, OPERATIONAL_COORDINATOR -> {
+                // UC-012: Managers and Operational Coordinators may upload in any context.
+            }
+            case FIELD_EMPLOYEE, CONTRACTOR -> requireFieldUploadAuthorized(user, ownerContext);
+            default -> throw forbiddenUpload();
         }
+    }
 
-        if (user.getRole().isManager() || user.getRole().isOperationalCoordinator()) {
-            return;
-        }
-
-        if (user.getRole().isFieldEmployee() || user.getRole().isContractor()) {
-            requireFieldUploadAuthorized(user, ownerContext);
-            return;
-        }
-
-        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Unauthorized to upload operational evidence");
+    private ResponseStatusException forbiddenUpload() {
+        return new ResponseStatusException(HttpStatus.FORBIDDEN, "Unauthorized to upload operational evidence");
     }
 
     private void requireFieldUploadAuthorized(User user, OwnerContext ownerContext) {
