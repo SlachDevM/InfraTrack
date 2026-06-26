@@ -8,6 +8,7 @@
 # 4. Configure proper HTTPS/reverse proxy (nginx, Caddy, etc.) externally
 # 5. Set up backup strategy for PostgreSQL volumes
 # 6. Configure monitoring and logging
+# 7. Back up operational-documents-data volume (UC-012 uploaded files)
 
 version: '3.8'
 
@@ -52,6 +53,9 @@ services:
       
       # Profile
       SPRING_PROFILES_ACTIVE: prod
+
+      # Operational document storage (local filesystem, persisted via Docker volume)
+      OPERATIONAL_DOCUMENTS_STORAGE_PATH: ${OPERATIONAL_DOCUMENTS_STORAGE_PATH:-/app/data/operational-documents}
     
     ports:
       # In production, typically port 4000 should be internal only
@@ -62,6 +66,8 @@ services:
       # Firebase service account (read-only, outside Git)
       # Note: FIREBASE_SERVICE_ACCOUNT_PATH must be set in .env for production
       - ./backend/firebase-service-account.json:/app/firebase-service-account.json:ro
+      # Operational document files (UC-012 local filesystem storage)
+      - operational-documents-data:/app/data/operational-documents
     
     depends_on:
       postgres:
@@ -119,6 +125,8 @@ services:
 volumes:
   postgres-data:
     driver: local
+  operational-documents-data:
+    driver: local
 
 networks:
   infratrack-network:
@@ -136,6 +144,7 @@ networks:
 #    - Connect only from backend service within the network
 #    - Use strong POSTGRES_PASSWORD in .env
 #    - Set up regular backups of postgres-data volume
+#    - Set up regular backups of operational-documents-data volume (UC-012 files)
 # 
 # 3. Secrets Management:
 #    - Use Docker secrets or environment variable files (.env not in Git)
