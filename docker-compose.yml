@@ -21,8 +21,10 @@ services:
       - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=false
       - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=false
       - SPRING_PROFILES_ACTIVE=dev
+      - OPERATIONAL_DOCUMENTS_STORAGE_PATH=/app/data/operational-documents
     volumes:
       - ./backend/firebase-service-account.json:/app/firebase-service-account.json:ro
+      - operational-documents-data:/app/data/operational-documents
     depends_on:
       - postgres
       - mailpit
@@ -57,3 +59,4 @@ services:
       
 volumes:
   pgdata:
+  operational-documents-data:
