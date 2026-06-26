@@ -283,7 +283,7 @@ export default function AssetsPage() {
             <h2>Register Asset</h2>
             <form className="asset-form" onSubmit={handleSubmit}>
               <div className="form-row">
-                <label htmlFor="name">Name</label>
+                <label htmlFor="name">Asset name</label>
                 <input
                   id="name"
                   name="name"
@@ -315,7 +315,7 @@ export default function AssetsPage() {
               </div>
 
               <div className="form-row">
-                <label htmlFor="assetCategoryId">Category</label>
+                <label htmlFor="assetCategoryId">Asset Category</label>
                 <select
                   id="assetCategoryId"
                   name="assetCategoryId"

@@ -4,13 +4,15 @@
 
 .asset-form-section,
 .asset-list-section,
-.asset-history-section {
+.asset-history-section,
+.asset-documents-section {
   margin-bottom: 2rem;
 }
 
 .asset-form-section h2,
 .asset-list-section h2,
-.asset-history-section h2 {
+.asset-history-section h2,
+.asset-documents-section h2 {
   margin-bottom: 1rem;
 }
 

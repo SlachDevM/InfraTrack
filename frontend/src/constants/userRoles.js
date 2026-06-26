@@ -26,7 +26,15 @@ export function canManageUsers(role) {
 }
 
 export function canRegisterAssets(role) {
-  return role === USER_ROLES.MANAGER || role === USER_ROLES.OPERATIONAL_COORDINATOR;
+  if (!role) {
+    return false;
+  }
+
+  const normalisedRole = String(role).trim().toUpperCase();
+  return (
+    normalisedRole === USER_ROLES.MANAGER
+    || normalisedRole === USER_ROLES.OPERATIONAL_COORDINATOR
+  );
 }
 
 export function canCreateBusinessTriggers(role) {

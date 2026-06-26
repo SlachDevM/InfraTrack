@@ -32,7 +32,8 @@ export default function Login() {
         password: trimmedPassword,
       });
 
-      login(data, data.token);
+      const { token, ...user } = data;
+      login(user, token);
       navigate('/');
     } catch (err) {
       setError('Email or password is incorrect.');
