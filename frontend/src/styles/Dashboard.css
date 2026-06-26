@@ -1,0 +1,35 @@
+.notification-btn {
+  position: relative;
+  overflow: visible;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  transition: background-color 0.2s;
+}
+
+.notification-btn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.notification-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background-color: #dc3545;
+  color: white;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  box-shadow: 0 0 0 2px #2d6b4d;
+  z-index: 2;
+  pointer-events: none;
+}

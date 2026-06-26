@@ -22,10 +22,14 @@ class ApiClient {
 
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
+    const isFormData = options.body instanceof FormData;
+    const defaultHeaders = isFormData
+      ? (this.token ? { Authorization: `Bearer ${this.token}` } : {})
+      : this.getHeaders();
     const config = {
       ...options,
       headers: {
-        ...this.getHeaders(),
+        ...defaultHeaders,
         ...options.headers,
       },
     };
@@ -84,13 +88,8 @@ class ApiClient {
   }
 
   postMultipart(endpoint, formData) {
-    const headers = {};
-    if (this.token) {
-      headers.Authorization = `Bearer ${this.token}`;
-    }
     return this.request(endpoint, {
       method: 'POST',
-      headers,
       body: formData,
     });
   }
