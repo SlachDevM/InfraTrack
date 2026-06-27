@@ -1,9 +1,20 @@
 package com.infratrack.user.dto;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
+
 public class UpdateUserRequest {
+    @Size(max = 255)
     private String name;
+
+    @Email
+    @Size(max = 255)
     private String email;
+
+    @Positive
     private Long departmentId;
+
     private Boolean clearDepartment;
 
     public UpdateUserRequest() {}

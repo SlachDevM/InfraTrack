@@ -1,11 +1,23 @@
 package com.infratrack.auth.dto;
 
 import com.infratrack.user.UserRole;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 public class RegisterRequest {
+    @NotBlank
+    @Email
+    @Size(max = 255)
     private String email;
+
+    @NotBlank
     private String password;
+
+    @NotBlank
+    @Size(max = 255)
     private String name;
+
     private UserRole role;
 
     public RegisterRequest() {}

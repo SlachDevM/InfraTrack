@@ -1,13 +1,22 @@
 package com.infratrack.completionreview.dto;
 
 import com.infratrack.completionreview.CompletionReviewDecision;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 
 public class RecordCompletionReviewRequest {
 
+    @NotNull
     private CompletionReviewDecision decision;
+
+    @NotBlank
+    @Size(max = 4000)
     private String reviewNotes;
+
+    @NotNull
     private LocalDateTime reviewedAt;
 
     public CompletionReviewDecision getDecision() {

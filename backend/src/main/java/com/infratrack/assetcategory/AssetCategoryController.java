@@ -5,6 +5,7 @@ import com.infratrack.assetcategory.dto.CreateAssetCategoryRequest;
 import com.infratrack.assetcategory.dto.UpdateAssetCategoryRequest;
 import com.infratrack.security.JwtAuthenticationToken;
 import com.infratrack.user.UserService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -38,7 +39,7 @@ public class AssetCategoryController {
 
     @PostMapping
     public ResponseEntity<AssetCategoryResponse> createAssetCategory(
-            @RequestBody CreateAssetCategoryRequest request,
+            @Valid @RequestBody CreateAssetCategoryRequest request,
             Authentication authentication) {
         requireAdministrator(authentication);
         return ResponseEntity.status(HttpStatus.CREATED).body(assetCategoryService.create(request));
@@ -47,7 +48,7 @@ public class AssetCategoryController {
     @PutMapping("/{id}")
     public ResponseEntity<AssetCategoryResponse> updateAssetCategory(
             @PathVariable Long id,
-            @RequestBody UpdateAssetCategoryRequest request,
+            @Valid @RequestBody UpdateAssetCategoryRequest request,
             Authentication authentication) {
         requireAdministrator(authentication);
         return ResponseEntity.ok(assetCategoryService.update(id, request));

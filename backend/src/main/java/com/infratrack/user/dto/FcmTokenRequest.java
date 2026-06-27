@@ -1,6 +1,9 @@
 package com.infratrack.user.dto;
 
+import jakarta.validation.constraints.NotBlank;
+
 public class FcmTokenRequest {
+    @NotBlank
     private String token;
 
     public FcmTokenRequest() {

@@ -1,14 +1,27 @@
 package com.infratrack.workorder.dto;
 
 import com.infratrack.workorder.WorkOrderPriority;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 
 public class CreateWorkOrderRequest {
 
+    @NotNull
+    @Positive
     private Long operationalDecisionId;
+
+    @NotBlank
+    @Size(max = 4000)
     private String description;
+
+    @NotNull
     private WorkOrderPriority priority;
+
+    @NotNull
     private LocalDateTime createdAtBusinessDate;
 
     public Long getOperationalDecisionId() {

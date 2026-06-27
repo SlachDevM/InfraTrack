@@ -3,6 +3,7 @@ package com.infratrack.issue;
 import com.infratrack.issue.dto.CreateIssueRequest;
 import com.infratrack.issue.dto.IssueResponse;
 import com.infratrack.security.JwtAuthenticationToken;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -33,7 +34,7 @@ public class IssueController {
 
     @PostMapping
     public ResponseEntity<IssueResponse> recordIssue(
-            @RequestBody CreateIssueRequest request,
+            @Valid @RequestBody CreateIssueRequest request,
             Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         IssueResponse response = issueService.recordIssue(request, userId);

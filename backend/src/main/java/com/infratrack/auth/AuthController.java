@@ -4,6 +4,7 @@ import com.infratrack.auth.dto.ActivateAccountRequest;
 import com.infratrack.auth.dto.LoginRequest;
 import com.infratrack.auth.dto.LoginResponse;
 import com.infratrack.auth.dto.RegisterRequest;
+import jakarta.validation.Valid;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +23,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<LoginResponse> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
         if (!registerEndpointEnabled) {
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.FORBIDDEN,
@@ -33,12 +34,12 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
 
     @PostMapping("/activate-account")
-    public ResponseEntity<LoginResponse> activateAccount(@RequestBody ActivateAccountRequest request) {
+    public ResponseEntity<LoginResponse> activateAccount(@Valid @RequestBody ActivateAccountRequest request) {
         return ResponseEntity.ok(authService.activateAccount(request.getToken(), request.getPassword()));
     }
 

@@ -3,6 +3,7 @@ package com.infratrack.operationaldecision;
 import com.infratrack.operationaldecision.dto.CreateOperationalDecisionRequest;
 import com.infratrack.operationaldecision.dto.OperationalDecisionResponse;
 import com.infratrack.security.JwtAuthenticationToken;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -33,7 +34,7 @@ public class OperationalDecisionController {
 
     @PostMapping
     public ResponseEntity<OperationalDecisionResponse> makeOperationalDecision(
-            @RequestBody CreateOperationalDecisionRequest request,
+            @Valid @RequestBody CreateOperationalDecisionRequest request,
             Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         OperationalDecisionResponse response = operationalDecisionService.makeOperationalDecision(request, userId);

@@ -1,14 +1,27 @@
 package com.infratrack.issue.dto;
 
 import com.infratrack.issue.IssueSeverity;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 
 public class CreateIssueRequest {
 
+    @NotNull
+    @Positive
     private Long inspectionId;
+
+    @NotBlank
+    @Size(max = 4000)
     private String description;
+
+    @NotNull
     private IssueSeverity severity;
+
+    @NotNull
     private LocalDateTime recordedAt;
 
     public Long getInspectionId() {

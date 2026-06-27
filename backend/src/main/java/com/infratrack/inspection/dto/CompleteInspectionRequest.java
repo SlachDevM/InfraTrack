@@ -1,14 +1,24 @@
 package com.infratrack.inspection.dto;
 
 import com.infratrack.inspection.PhysicalCondition;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 
 public class CompleteInspectionRequest {
 
+    @NotNull
     private PhysicalCondition observedCondition;
+
+    @NotBlank
+    @Size(max = 4000)
     private String observations;
+
     private Boolean issueIdentified;
+
+    @NotNull
     private LocalDateTime completedAt;
 
     public PhysicalCondition getObservedCondition() {

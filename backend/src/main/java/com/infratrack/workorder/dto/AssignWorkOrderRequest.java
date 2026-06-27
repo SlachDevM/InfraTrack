@@ -1,10 +1,17 @@
 package com.infratrack.workorder.dto;
 
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
 import java.time.LocalDateTime;
 
 public class AssignWorkOrderRequest {
 
+    @NotNull
+    @Positive
     private Long assignedToUserId;
+
+    @NotNull
     private LocalDateTime assignedAt;
 
     public Long getAssignedToUserId() {

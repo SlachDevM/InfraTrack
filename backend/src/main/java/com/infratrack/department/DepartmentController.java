@@ -5,6 +5,7 @@ import com.infratrack.department.dto.DepartmentResponse;
 import com.infratrack.department.dto.UpdateDepartmentRequest;
 import com.infratrack.security.JwtAuthenticationToken;
 import com.infratrack.user.UserService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -37,7 +38,7 @@ public class DepartmentController {
 
     @PostMapping
     public ResponseEntity<DepartmentResponse> createDepartment(
-            @RequestBody CreateDepartmentRequest request,
+            @Valid @RequestBody CreateDepartmentRequest request,
             Authentication authentication) {
         requireAdministrator(authentication);
         return ResponseEntity.status(HttpStatus.CREATED).body(departmentService.create(request));
@@ -46,7 +47,7 @@ public class DepartmentController {
     @PutMapping("/{id}")
     public ResponseEntity<DepartmentResponse> updateDepartment(
             @PathVariable Long id,
-            @RequestBody UpdateDepartmentRequest request,
+            @Valid @RequestBody UpdateDepartmentRequest request,
             Authentication authentication) {
         requireAdministrator(authentication);
         return ResponseEntity.ok(departmentService.update(id, request));

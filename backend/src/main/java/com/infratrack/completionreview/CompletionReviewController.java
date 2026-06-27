@@ -3,6 +3,7 @@ package com.infratrack.completionreview;
 import com.infratrack.completionreview.dto.CompletionReviewResponse;
 import com.infratrack.completionreview.dto.RecordCompletionReviewRequest;
 import com.infratrack.security.JwtAuthenticationToken;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -22,7 +23,7 @@ public class CompletionReviewController {
     @PostMapping("/{id}/completion-review")
     public ResponseEntity<CompletionReviewResponse> recordCompletionReview(
             @PathVariable Long id,
-            @RequestBody RecordCompletionReviewRequest request,
+            @Valid @RequestBody RecordCompletionReviewRequest request,
             Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         CompletionReviewResponse response = completionReviewService.recordCompletionReview(id, request, userId);

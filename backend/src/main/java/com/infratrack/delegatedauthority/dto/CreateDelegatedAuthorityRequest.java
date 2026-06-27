@@ -1,14 +1,34 @@
 package com.infratrack.delegatedauthority.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
+
 import java.time.LocalDateTime;
 
 public class CreateDelegatedAuthorityRequest {
 
+    @NotNull
+    @Positive
     private Long delegateManagerUserId;
+
+    @NotNull
+    @Positive
     private Long sourceDepartmentId;
+
+    @NotNull
+    @Positive
     private Long targetDepartmentId;
+
+    @NotNull
     private LocalDateTime validFrom;
+
+    @NotNull
     private LocalDateTime validUntil;
+
+    @NotBlank
+    @Size(max = 4000)
     private String reason;
 
     public Long getDelegateManagerUserId() {

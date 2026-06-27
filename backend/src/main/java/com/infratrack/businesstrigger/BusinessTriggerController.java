@@ -3,6 +3,7 @@ package com.infratrack.businesstrigger;
 import com.infratrack.businesstrigger.dto.BusinessTriggerResponse;
 import com.infratrack.businesstrigger.dto.CreateBusinessTriggerRequest;
 import com.infratrack.security.JwtAuthenticationToken;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -33,7 +34,7 @@ public class BusinessTriggerController {
 
     @PostMapping
     public ResponseEntity<BusinessTriggerResponse> createBusinessTrigger(
-            @RequestBody CreateBusinessTriggerRequest request,
+            @Valid @RequestBody CreateBusinessTriggerRequest request,
             Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         BusinessTriggerResponse response = businessTriggerService.createBusinessTrigger(request, userId);

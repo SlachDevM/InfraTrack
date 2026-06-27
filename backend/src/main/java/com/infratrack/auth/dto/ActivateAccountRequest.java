@@ -1,7 +1,12 @@
 package com.infratrack.auth.dto;
 
+import jakarta.validation.constraints.NotBlank;
+
 public class ActivateAccountRequest {
+    @NotBlank
     private String token;
+
+    @NotBlank
     private String password;
 
     public ActivateAccountRequest() {

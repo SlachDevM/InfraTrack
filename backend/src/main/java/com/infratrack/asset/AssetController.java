@@ -3,6 +3,7 @@ package com.infratrack.asset;
 import com.infratrack.asset.dto.AssetResponse;
 import com.infratrack.asset.dto.RegisterAssetRequest;
 import com.infratrack.security.JwtAuthenticationToken;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -33,7 +34,7 @@ public class AssetController {
 
     @PostMapping
     public ResponseEntity<AssetResponse> registerAsset(
-            @RequestBody RegisterAssetRequest request,
+            @Valid @RequestBody RegisterAssetRequest request,
             Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         AssetResponse response = assetService.registerAsset(request, userId);

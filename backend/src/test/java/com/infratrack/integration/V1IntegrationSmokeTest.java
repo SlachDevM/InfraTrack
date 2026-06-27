@@ -200,6 +200,51 @@ class V1IntegrationSmokeTest {
     }
 
     @Test
+    void registerAsset_withBlankName_returnsBadRequestBeforeServiceLogic() throws Exception {
+        String body = objectMapper.writeValueAsString(new RegisterAssetPayload(
+                "",
+                departmentId,
+                categoryId,
+                "Main Street",
+                AssetStatus.ACTIVE,
+                LocalDate.of(2024, 6, 1)));
+
+        mockMvc.perform(post("/api/assets")
+                        .header("Authorization", bearerToken(coordinatorUserId, coordinatorEmail))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("name: must not be blank"));
+    }
+
+    @Test
+    void login_withInvalidEmail_returnsBadRequest() throws Exception {
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"not-an-email","password":"secret"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("email: must be a well-formed email address"));
+    }
+
+    @Test
+    void createIssue_withMissingInspectionId_returnsBadRequest() throws Exception {
+        mockMvc.perform(post("/api/issues")
+                        .header("Authorization", bearerToken(fieldEmployeeUserId, fieldEmployeeEmail))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "description": "Surface damage observed",
+                                  "severity": "MEDIUM",
+                                  "recordedAt": "2024-06-01T10:00:00"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("inspectionId: must not be null"));
+    }
+
+    @Test
     void uploadOperationalDocument_multipartRequest_succeeds() throws Exception {
         Long assetId = createAssetThroughService();
 

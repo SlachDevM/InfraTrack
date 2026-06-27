@@ -1,7 +1,12 @@
 package com.infratrack.assetcategory.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 public class UpdateAssetCategoryRequest {
 
+    @NotBlank
+    @Size(max = 255)
     private String name;
 
     public String getName() {

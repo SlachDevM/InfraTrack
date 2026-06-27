@@ -3,6 +3,7 @@ package com.infratrack.maintenanceactivity;
 import com.infratrack.maintenanceactivity.dto.CompleteMaintenanceActivityRequest;
 import com.infratrack.maintenanceactivity.dto.MaintenanceActivityResponse;
 import com.infratrack.security.JwtAuthenticationToken;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -22,7 +23,7 @@ public class MaintenanceActivityController {
     @PostMapping("/{id}/maintenance-activity")
     public ResponseEntity<MaintenanceActivityResponse> completeMaintenance(
             @PathVariable Long id,
-            @RequestBody CompleteMaintenanceActivityRequest request,
+            @Valid @RequestBody CompleteMaintenanceActivityRequest request,
             Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         MaintenanceActivityResponse response = maintenanceActivityService.completeMaintenance(id, request, userId);

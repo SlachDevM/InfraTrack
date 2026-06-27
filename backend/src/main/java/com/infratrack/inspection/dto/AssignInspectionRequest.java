@@ -1,14 +1,23 @@
 package com.infratrack.inspection.dto;
 
 import com.infratrack.inspection.InspectionPriority;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 import java.time.LocalDate;
 
 public class AssignInspectionRequest {
 
+    @NotNull
+    @Positive
     private Long businessTriggerId;
+
+    @NotNull
+    @Positive
     private Long assignedToUserId;
+
     private InspectionPriority priority;
+
     private LocalDate expectedCompletionDate;
 
     public Long getBusinessTriggerId() {

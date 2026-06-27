@@ -8,6 +8,7 @@ import com.infratrack.user.dto.UpdateUserRequest;
 import com.infratrack.user.dto.UserManagementResponse;
 import com.infratrack.user.dto.UserProfileResponse;
 import com.infratrack.user.dto.UserSummary;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -61,7 +62,7 @@ public class UserController {
 
     @PostMapping("/invitations")
     public ResponseEntity<UserProfileResponse> createEmployeeInvitation(
-            @RequestBody CreateEmployeeRequest request,
+            @Valid @RequestBody CreateEmployeeRequest request,
             Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
 
@@ -84,7 +85,7 @@ public class UserController {
     @PutMapping("/{id}")
     public ResponseEntity<UserManagementResponse> updateUser(
             @PathVariable Long id,
-            @RequestBody UpdateUserRequest request,
+            @Valid @RequestBody UpdateUserRequest request,
             Authentication authentication) {
         Long adminId = ((JwtAuthenticationToken) authentication).getUserId();
         UserManagementResponse updatedUser = userManagementService.updateUser(id, request, adminId);
@@ -156,7 +157,7 @@ public class UserController {
 
     @PutMapping("/me/fcm-token")
     public ResponseEntity<Void> updateFcmToken(
-            @RequestBody FcmTokenRequest request,
+            @Valid @RequestBody FcmTokenRequest request,
             Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
 

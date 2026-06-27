@@ -3,6 +3,7 @@ package com.infratrack.delegatedauthority;
 import com.infratrack.delegatedauthority.dto.CreateDelegatedAuthorityRequest;
 import com.infratrack.delegatedauthority.dto.DelegatedAuthorityResponse;
 import com.infratrack.security.JwtAuthenticationToken;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -33,7 +34,7 @@ public class DelegatedAuthorityController {
 
     @PostMapping
     public ResponseEntity<DelegatedAuthorityResponse> createDelegatedAuthority(
-            @RequestBody CreateDelegatedAuthorityRequest request,
+            @Valid @RequestBody CreateDelegatedAuthorityRequest request,
             Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         return ResponseEntity.status(HttpStatus.CREATED)
