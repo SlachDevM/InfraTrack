@@ -250,6 +250,22 @@ cd backend
 mvn clean test
 ```
 
+Frontend unit tests use Vitest and React Testing Library:
+
+```bash
+cd frontend
+npm ci --legacy-peer-deps
+npm test
+```
+
+Optional Playwright smoke test (requires browser install):
+
+```bash
+cd frontend
+npx playwright install --with-deps
+npm run test:e2e
+```
+
 ---
 
 ## Production Deployment

@@ -6,7 +6,13 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      '/api': 'http://backend:4000'
-    }
-  }
+      '/api': 'http://backend:4000',
+    },
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.js',
+    css: false,
+    exclude: ['**/node_modules/**', '**/e2e/**'],
+  },
 });

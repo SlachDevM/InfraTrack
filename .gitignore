@@ -33,7 +33,7 @@ Thumbs.db
 # Local operational document storage (V1)
 data/
 
-# Firebase service account (never commit)
-firebase-service-account.json
-backend/firebase-service-account.json
+# Playwright
+frontend/test-results/
+frontend/playwright-report/
 
