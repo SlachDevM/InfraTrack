@@ -24,6 +24,7 @@ import com.infratrack.operationaldecision.OperationalDecisionOutcome;
 import com.infratrack.operationaldecision.OperationalDecisionRepository;
 import com.infratrack.workorder.dto.AssignWorkOrderRequest;
 import com.infratrack.workorder.dto.CreateWorkOrderRequest;
+import com.infratrack.workorder.dto.WorkOrderSummaryResponse;
 import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.user.User;
 import com.infratrack.user.UserNameLookup;
@@ -35,14 +36,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -645,6 +652,39 @@ class WorkOrderServiceTest {
                 .isInstanceOf(ForbiddenOperationException.class);
 
         verify(workOrderRepository, never()).save(any());
+    }
+
+    @Test
+    void assignWorkOrder_shouldRejectCoordinatorFromAnotherDepartment() {
+        AssignWorkOrderRequest request = validAssignRequest(20L);
+        WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
+        User crossDepartmentCoordinator = coordinatorInDepartment(40L, 2L);
+        User fieldEmployee = userInDepartment(20L, UserRole.FIELD_EMPLOYEE, 1L);
+
+        when(userService.getById(40L)).thenReturn(crossDepartmentCoordinator);
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.of(workOrder));
+
+        assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
+                .isInstanceOf(ForbiddenOperationException.class);
+
+        verify(userService, never()).getById(20L);
+        verify(workOrderRepository, never()).save(any());
+    }
+
+    @Test
+    void listEligibleForAssignmentPage_shouldReturnCreatedWorkOrdersForCoordinatorDepartment() {
+        User coordinator = coordinatorInDepartment(40L, 1L);
+        WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
+        Pageable pageable = PageRequest.of(0, 20);
+
+        when(userService.getById(40L)).thenReturn(coordinator);
+        when(workOrderRepository.findEligibleForAssignment(eq(1L), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(workOrder), pageable, 1));
+
+        Page<WorkOrderSummaryResponse> page = workOrderService.listEligibleForAssignmentPage(40L, pageable);
+
+        assertThat(page.getContent()).hasSize(1);
+        assertThat(page.getContent().get(0).getId()).isEqualTo(1000L);
     }
 
     private void assertRejectedOutcome(OperationalDecisionOutcome outcome) {

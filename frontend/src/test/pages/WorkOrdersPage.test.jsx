@@ -18,6 +18,7 @@ const { mockAuth, mockLogout } = vi.hoisted(() => ({
 vi.mock('../../services/workOrderApi', () => ({
   default: {
     list: vi.fn(),
+    listEligibleForAssignment: vi.fn(),
     create: vi.fn(),
     assign: vi.fn(),
     listEligibleWorkers: vi.fn(),
@@ -72,7 +73,7 @@ const eligibleDecision = {
   rationale: 'Replace damaged chain',
 };
 
-const createdWorkOrder = {
+const assignableWorkOrder = {
   id: 100,
   assetName: 'Central Playground',
   assetDepartmentId: 1,
@@ -88,6 +89,7 @@ describe('WorkOrdersPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     workOrderApi.list.mockResolvedValue(pageResponse([]));
+    workOrderApi.listEligibleForAssignment.mockResolvedValue(pageResponse([]));
     operationalDecisionApi.listEligibleForWorkOrderCreation.mockResolvedValue(pageResponse([]));
     maintenanceActivityApi.list.mockResolvedValue([]);
     workOrderApi.listEligibleWorkers.mockResolvedValue([]);
@@ -110,9 +112,9 @@ describe('WorkOrdersPage', () => {
     expect(operationalDecisionApi.listEligibleForWorkOrderCreation).toHaveBeenCalledWith(0, MAX_PAGE_SIZE);
   });
 
-  it('does not show cross-department decisions when backend returns only eligible decisions', async () => {
-    operationalDecisionApi.listEligibleForWorkOrderCreation.mockResolvedValue(
-      pageResponse([eligibleDecision])
+  it('shows only assignable work orders from backend in assignment selector', async () => {
+    workOrderApi.listEligibleForAssignment.mockResolvedValue(
+      pageResponse([assignableWorkOrder])
     );
 
     render(
@@ -121,16 +123,18 @@ describe('WorkOrdersPage', () => {
       </MemoryRouter>
     );
 
-    await screen.findByRole('option', {
-      name: /#1 — Central Playground/i,
-    });
-
+    expect(await screen.findByRole('option', {
+      name: /#100 — Central Playground/i,
+    })).toBeInTheDocument();
+    expect(workOrderApi.listEligibleForAssignment).toHaveBeenCalledWith(0, MAX_PAGE_SIZE);
     expect(screen.queryByRole('option', { name: /Other Department Asset/i })).not.toBeInTheDocument();
   });
 
   it('loads eligible assignees when work order is selected', async () => {
     const user = userEvent.setup();
-    workOrderApi.list.mockResolvedValue(pageResponse([createdWorkOrder]));
+    workOrderApi.listEligibleForAssignment.mockResolvedValue(
+      pageResponse([assignableWorkOrder])
+    );
     workOrderApi.listEligibleWorkers.mockResolvedValue([
       { id: 20, name: 'Alex Field', role: 'FIELD_EMPLOYEE', status: 'ACTIVE', departmentId: 1 },
     ]);
@@ -147,6 +151,32 @@ describe('WorkOrdersPage', () => {
       expect(workOrderApi.listEligibleWorkers).toHaveBeenCalledWith(1, 'FIELD_EMPLOYEE');
       expect(screen.getByRole('option', { name: /Alex Field/i })).toBeInTheDocument();
     });
+  });
+
+  it('does not show disabled or incompatible assignees from backend response', async () => {
+    const user = userEvent.setup();
+    workOrderApi.listEligibleForAssignment.mockResolvedValue(
+      pageResponse([assignableWorkOrder])
+    );
+    workOrderApi.listEligibleWorkers.mockResolvedValue([
+      { id: 20, name: 'Alex Field', role: 'FIELD_EMPLOYEE', status: 'ACTIVE', departmentId: 1 },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <WorkOrdersPage />
+      </MemoryRouter>
+    );
+
+    await user.selectOptions(await screen.findByLabelText('Work Order'), '100');
+
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: /Alex Field/i })).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole('option', { name: /Disabled/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /MANAGER/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /CONTRACTOR/i })).not.toBeInTheDocument();
   });
 
   it('displays forbidden message when work order creation is rejected', async () => {
@@ -173,7 +203,9 @@ describe('WorkOrdersPage', () => {
 
   it('displays forbidden message when assignment is rejected', async () => {
     const user = userEvent.setup();
-    workOrderApi.list.mockResolvedValue(pageResponse([createdWorkOrder]));
+    workOrderApi.listEligibleForAssignment.mockResolvedValue(
+      pageResponse([assignableWorkOrder])
+    );
     workOrderApi.listEligibleWorkers.mockResolvedValue([
       { id: 20, name: 'Alex Field', role: 'FIELD_EMPLOYEE', status: 'ACTIVE', departmentId: 1 },
     ]);

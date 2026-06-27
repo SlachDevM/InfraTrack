@@ -1,5 +1,7 @@
 package com.infratrack.user;
 
+import com.infratrack.department.Department;
+import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.user.dto.UserSummary;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -38,12 +40,21 @@ public class UserService {
                 .toList();
     }
 
-    public List<UserSummary> getEligibleWorkersForAssignment(Long departmentId, UserRole role) {
+    public List<UserSummary> getEligibleWorkersForAssignment(Long userId, Long departmentId, UserRole role) {
         if (departmentId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Department is required");
         }
         if (role == null || (!role.isFieldEmployee() && !role.isContractor())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role must be field employee or contractor");
+        }
+        User requester = getById(userId);
+        if (requester.getRole().isOperationalCoordinator()) {
+            Department requesterDepartment = requester.getDepartment();
+            if (requesterDepartment == null
+                    || !requesterDepartment.getId().equals(departmentId)) {
+                throw new ForbiddenOperationException(
+                        "You may only list workers from your own department.");
+            }
         }
         return userRepository.findByRoleAndDepartmentIdAndEnabledTrueOrderByNameAsc(role, departmentId)
                 .stream()

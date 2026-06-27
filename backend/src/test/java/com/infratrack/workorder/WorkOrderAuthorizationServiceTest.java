@@ -135,6 +135,28 @@ class WorkOrderAuthorizationServiceTest {
                 .isInstanceOf(BusinessValidationException.class);
     }
 
+    @Test
+    void requireEligibleAssignee_shouldRejectManagerForInternalMaintenance() {
+        Asset asset = assetInDepartment(1L);
+        User assignee = userInDepartment(30L, UserRole.MANAGER, 1L);
+        when(userService.getById(30L)).thenReturn(assignee);
+
+        assertThatThrownBy(() -> authorizationService.requireEligibleAssignee(
+                30L, WorkType.INTERNAL_MAINTENANCE, asset))
+                .isInstanceOf(BusinessValidationException.class);
+    }
+
+    @Test
+    void requireEligibleAssignee_shouldRejectOperationalCoordinatorForInternalMaintenance() {
+        Asset asset = assetInDepartment(1L);
+        User assignee = userInDepartment(40L, UserRole.OPERATIONAL_COORDINATOR, 1L);
+        when(userService.getById(40L)).thenReturn(assignee);
+
+        assertThatThrownBy(() -> authorizationService.requireEligibleAssignee(
+                40L, WorkType.INTERNAL_MAINTENANCE, asset))
+                .isInstanceOf(BusinessValidationException.class);
+    }
+
     private User user(Long id, UserRole role) {
         User user = new User("user@test.com", "password", "User", role);
         user.setId(id);

@@ -68,6 +68,18 @@ public class WorkOrderService {
     }
 
     @Transactional(readOnly = true)
+    public Page<WorkOrderSummaryResponse> listEligibleForAssignmentPage(Long userId, Pageable pageable) {
+        User coordinator = authorizationService.requireOperationalCoordinatorForAssignment(userId);
+        Long coordinatorDepartmentId = coordinator.getDepartment() != null
+                ? coordinator.getDepartment().getId()
+                : null;
+        Page<WorkOrder> page = workOrderRepository.findEligibleForAssignment(
+                coordinatorDepartmentId,
+                pageable);
+        return page.map(workOrder -> WorkOrderSummaryResponse.from(workOrder, Map.of()));
+    }
+
+    @Transactional(readOnly = true)
     public WorkOrderResponse getById(Long id) {
         return toResponse(findWorkOrderOrThrow(id));
     }
@@ -105,8 +117,9 @@ public class WorkOrderService {
 
     @Transactional
     public WorkOrderResponse assignWorkOrder(Long workOrderId, AssignWorkOrderRequest request, Long userId) {
-        authorizationService.requireOperationalCoordinatorForAssignment(userId);
+        User coordinator = authorizationService.requireOperationalCoordinatorForAssignment(userId);
         WorkOrder workOrder = findWorkOrderOrThrow(workOrderId);
+        authorizationService.requireCoordinatorOwnDepartment(coordinator, workOrder.getAsset());
         requireCreatedStatus(workOrder);
         LocalDateTime assignedAt = validateAssignedAt(request.getAssignedAt(), workOrder);
         User assignee = authorizationService.requireEligibleAssignee(
@@ -114,10 +127,10 @@ public class WorkOrderService {
                 workOrder.getWorkType(),
                 workOrder.getAsset());
 
-        workOrder.assign(assignee.getId(), userId, assignedAt);
+        workOrder.assign(assignee.getId(), coordinator.getId(), assignedAt);
         workOrderRepository.save(workOrder);
 
-        historyRecorder.recordWorkOrderAssigned(workOrder.getAsset(), userId, assignedAt.toLocalDate());
+        historyRecorder.recordWorkOrderAssigned(workOrder.getAsset(), coordinator.getId(), assignedAt.toLocalDate());
 
         operationalEventNotificationService.notifyWorkOrderAssigned(assignee.getId());
 

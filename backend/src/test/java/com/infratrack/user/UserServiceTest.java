@@ -1,5 +1,7 @@
 package com.infratrack.user;
 
+import com.infratrack.department.Department;
+import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.user.dto.UserSummary;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -99,6 +101,46 @@ class UserServiceTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getName()).isEqualTo("John Worker");
+    }
+
+    @Test
+    void getEligibleWorkersForAssignment_shouldReturnWorkersForCoordinatorDepartment() {
+        Department department = new Department("Parks");
+        department.setId(1L);
+        User coordinator = new User("coord@test.com", "password", "Coordinator", UserRole.OPERATIONAL_COORDINATOR);
+        coordinator.setId(40L);
+        coordinator.setDepartment(department);
+        User fieldEmployee = new User("field@test.com", "password", "Field Worker", UserRole.FIELD_EMPLOYEE);
+        fieldEmployee.setId(20L);
+        fieldEmployee.setDepartment(department);
+        fieldEmployee.setEnabled(true);
+
+        when(userRepository.findById(40L)).thenReturn(Optional.of(coordinator));
+        when(userRepository.findByRoleAndDepartmentIdAndEnabledTrueOrderByNameAsc(
+                UserRole.FIELD_EMPLOYEE, 1L)).thenReturn(List.of(fieldEmployee));
+
+        List<UserSummary> result = userService.getEligibleWorkersForAssignment(
+                40L, 1L, UserRole.FIELD_EMPLOYEE);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getName()).isEqualTo("Field Worker");
+    }
+
+    @Test
+    void getEligibleWorkersForAssignment_shouldRejectCrossDepartmentForCoordinator() {
+        Department coordinatorDepartment = new Department("Roads");
+        coordinatorDepartment.setId(2L);
+        User coordinator = new User("coord@test.com", "password", "Coordinator", UserRole.OPERATIONAL_COORDINATOR);
+        coordinator.setId(40L);
+        coordinator.setDepartment(coordinatorDepartment);
+
+        when(userRepository.findById(40L)).thenReturn(Optional.of(coordinator));
+
+        assertThatThrownBy(() -> userService.getEligibleWorkersForAssignment(
+                40L, 1L, UserRole.FIELD_EMPLOYEE))
+                .isInstanceOf(ForbiddenOperationException.class);
+
+        verify(userRepository, never()).findByRoleAndDepartmentIdAndEnabledTrueOrderByNameAsc(any(), any());
     }
 
     @Test

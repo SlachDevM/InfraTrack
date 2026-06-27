@@ -44,7 +44,7 @@ public class WorkOrderAuthorizationService {
         if (coordinatorDepartment == null || assetDepartment == null
                 || !coordinatorDepartment.getId().equals(assetDepartment.getId())) {
             throw new ForbiddenOperationException(
-                    "You may only create work orders for operational decisions in your own department.");
+                    "You may only manage work orders for assets in your own department.");
         }
     }
 

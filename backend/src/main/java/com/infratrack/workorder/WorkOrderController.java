@@ -45,11 +45,18 @@ public class WorkOrderController {
     @ApiResponse(responseCode = "200", description = "Paginated work order summaries")
     public ResponseEntity<Page<WorkOrderSummaryResponse>> listWorkOrders(
             @Parameter(description = "Zero-based page index") @RequestParam(required = false) Integer page,
-            @Parameter(description = "Page size (max 100)") @RequestParam(required = false) Integer size) {
+            @Parameter(description = "Page size (max 100)") @RequestParam(required = false) Integer size,
+            @Parameter(description = "When true, returns only CREATED work orders eligible for assignment (UC-008)")
+            @RequestParam(required = false) Boolean eligibleForAssignment,
+            Authentication authentication) {
         Pageable pageable = PaginationSupport.pageable(
                 page,
                 size,
                 Sort.by(Sort.Direction.DESC, "createdAt"));
+        if (Boolean.TRUE.equals(eligibleForAssignment)) {
+            Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+            return ResponseEntity.ok(workOrderService.listEligibleForAssignmentPage(userId, pageable));
+        }
         return ResponseEntity.ok(workOrderService.listPage(pageable));
     }
 

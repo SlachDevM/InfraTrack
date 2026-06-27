@@ -43,6 +43,7 @@ export default function WorkOrdersPage() {
   const [listLoading, setListLoading] = useState(false);
   const [maintenanceActivities, setMaintenanceActivities] = useState([]);
   const [decisions, setDecisions] = useState([]);
+  const [assignableWorkOrders, setAssignableWorkOrders] = useState([]);
   const [eligibleAssignees, setEligibleAssignees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -85,14 +86,9 @@ export default function WorkOrdersPage() {
     [decisions, formData.operationalDecisionId]
   );
 
-  const createdWorkOrders = useMemo(
-    () => workOrders.filter((order) => order.status === 'CREATED'),
-    [workOrders]
-  );
-
   const selectedAssignWorkOrder = useMemo(
-    () => workOrders.find((order) => String(order.id) === String(assignFormData.workOrderId)),
-    [workOrders, assignFormData.workOrderId]
+    () => assignableWorkOrders.find((order) => String(order.id) === String(assignFormData.workOrderId)),
+    [assignableWorkOrders, assignFormData.workOrderId]
   );
 
   useEffect(() => {
@@ -167,17 +163,21 @@ export default function WorkOrdersPage() {
     try {
       setLoading(true);
       setError(null);
-      const [workOrderPage, decisionData, maintenanceActivityData] = await Promise.all([
+      const [workOrderPage, decisionData, maintenanceActivityData, assignablePage] = await Promise.all([
         workOrderApi.list(page),
         canCreate
           ? operationalDecisionApi.listEligibleForWorkOrderCreation(0, MAX_PAGE_SIZE)
           : Promise.resolve(null),
         maintenanceActivityApi.list(),
+        canAssign
+          ? workOrderApi.listEligibleForAssignment(0, MAX_PAGE_SIZE)
+          : Promise.resolve(null),
       ]);
       setWorkOrders(unwrapPageContent(workOrderPage));
       setWorkOrdersPage(getPageNumber(workOrderPage, page));
       setWorkOrdersTotalPages(getTotalPages(workOrderPage));
       setDecisions(decisionData ? unwrapPageContent(decisionData) : []);
+      setAssignableWorkOrders(assignablePage ? unwrapPageContent(assignablePage) : []);
       setMaintenanceActivities(maintenanceActivityData);
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to load work orders.'));
@@ -390,7 +390,7 @@ export default function WorkOrdersPage() {
         {canAssign ? (
           <AssignWorkOrderForm
             assignFormData={assignFormData}
-            createdWorkOrders={createdWorkOrders}
+            createdWorkOrders={assignableWorkOrders}
             selectedAssignWorkOrder={selectedAssignWorkOrder}
             eligibleAssignees={eligibleAssignees}
             assigning={assigning}

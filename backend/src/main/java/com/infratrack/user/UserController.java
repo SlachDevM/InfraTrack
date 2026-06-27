@@ -170,7 +170,7 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         if (departmentId != null || role != null) {
-            return ResponseEntity.ok(userService.getEligibleWorkersForAssignment(departmentId, role));
+            return ResponseEntity.ok(userService.getEligibleWorkersForAssignment(userId, departmentId, role));
         }
         return ResponseEntity.ok(userService.getWorkers());
     }

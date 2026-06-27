@@ -12,6 +12,8 @@ const ENDPOINTS = {
 export const workOrderApi = {
   list: (page = DEFAULT_PAGE, size = DEFAULT_SIZE) =>
     apiClient.get(`${ENDPOINTS.LIST}?${paginatedQuery(page, size)}`),
+  listEligibleForAssignment: (page = DEFAULT_PAGE, size = DEFAULT_SIZE) =>
+    apiClient.get(`${ENDPOINTS.LIST}?${paginatedQuery(page, size)}&eligibleForAssignment=true`),
   get: (id) => apiClient.get(ENDPOINTS.DETAIL(id)),
   create: (request) => apiClient.post(ENDPOINTS.LIST, request),
   assign: (id, request) => apiClient.post(ENDPOINTS.ASSIGN(id), request),
