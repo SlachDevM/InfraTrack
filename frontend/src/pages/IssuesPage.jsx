@@ -7,6 +7,7 @@ import inspectionApi from '../services/inspectionApi';
 import NotificationButton from '../components/NotificationButton';
 import { canRecordIssues } from '../constants/userRoles';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
+import { unwrapPageContent } from '../utils/pagination';
 import { getBusinessTriggerTypeLabel } from '../constants/businessTriggerTypes';
 import {
   ISSUE_SEVERITIES,
@@ -69,12 +70,12 @@ export default function IssuesPage() {
     try {
       setLoading(true);
       setError(null);
-      const [issueData, inspectionData] = await Promise.all([
+      const [issueData, inspectionPage] = await Promise.all([
         issueApi.list(),
         inspectionApi.list(),
       ]);
-      setIssues(issueData);
-      setInspections(inspectionData);
+      setIssues(Array.isArray(issueData) ? issueData : []);
+      setInspections(unwrapPageContent(inspectionPage));
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to load issues.'));
     } finally {

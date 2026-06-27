@@ -135,6 +135,9 @@ class InspectionServiceNotificationTest {
         User user = new User("user@test.com", "password", "User", role);
         user.setId(id);
         user.setEnabled(true);
+        Department department = new Department("Parks");
+        department.setId(1L);
+        user.setDepartment(department);
         return user;
     }
 }

@@ -148,11 +148,11 @@ class InspectionServiceTest {
         request.setPriority(null);
         BusinessTrigger trigger = businessTrigger(1L, true);
         User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
-        User contractor = user(20L, UserRole.CONTRACTOR);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
 
         when(userService.getById(10L)).thenReturn(coordinator);
         when(businessTriggerRepository.findById(1L)).thenReturn(Optional.of(trigger));
-        when(userService.getById(20L)).thenReturn(contractor);
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
         when(inspectionRepository.existsByBusinessTriggerIdAndStatus(1L, InspectionStatus.ASSIGNED))
                 .thenReturn(false);
         when(inspectionRepository.save(any(Inspection.class))).thenAnswer(invocation -> {
@@ -230,9 +230,103 @@ class InspectionServiceTest {
         when(userService.getById(20L)).thenReturn(manager);
 
         assertThatThrownBy(() -> inspectionService.assignInspection(request, 10L))
-                .isInstanceOf(BusinessValidationException.class);
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("Assigned user is not a Field Employee.");
 
         verify(inspectionRepository, never()).save(any());
+    }
+
+    @Test
+    void assignInspection_shouldRejectDisabledFieldEmployee() {
+        AssignInspectionRequest request = validRequest();
+        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        fieldEmployee.setEnabled(false);
+        BusinessTrigger trigger = businessTrigger(1L, false);
+
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(businessTriggerRepository.findById(1L)).thenReturn(Optional.of(trigger));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        assertThatThrownBy(() -> inspectionService.assignInspection(request, 10L))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("Assigned worker is disabled.");
+
+        verify(inspectionRepository, never()).save(any());
+    }
+
+    @Test
+    void assignInspection_shouldRejectFieldEmployeeFromOtherDepartment() {
+        AssignInspectionRequest request = validRequest();
+        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        Department otherDepartment = new Department("Roads");
+        otherDepartment.setId(99L);
+        fieldEmployee.setDepartment(otherDepartment);
+        BusinessTrigger trigger = businessTrigger(1L, false);
+
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(businessTriggerRepository.findById(1L)).thenReturn(Optional.of(trigger));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        assertThatThrownBy(() -> inspectionService.assignInspection(request, 10L))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("Assigned worker must belong to your department.");
+
+        verify(inspectionRepository, never()).save(any());
+    }
+
+    @Test
+    void assignInspection_shouldRejectContractorAssignee() {
+        AssignInspectionRequest request = validRequest();
+        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        User contractor = user(20L, UserRole.CONTRACTOR);
+        BusinessTrigger trigger = businessTrigger(1L, false);
+
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(businessTriggerRepository.findById(1L)).thenReturn(Optional.of(trigger));
+        when(userService.getById(20L)).thenReturn(contractor);
+
+        assertThatThrownBy(() -> inspectionService.assignInspection(request, 10L))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("Assigned user is not a Field Employee.");
+
+        verify(inspectionRepository, never()).save(any());
+    }
+
+    @Test
+    void assignInspection_shouldRejectOperationalCoordinatorAssignee() {
+        AssignInspectionRequest request = validRequest();
+        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        User otherCoordinator = user(20L, UserRole.OPERATIONAL_COORDINATOR);
+        BusinessTrigger trigger = businessTrigger(1L, false);
+
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(businessTriggerRepository.findById(1L)).thenReturn(Optional.of(trigger));
+        when(userService.getById(20L)).thenReturn(otherCoordinator);
+
+        assertThatThrownBy(() -> inspectionService.assignInspection(request, 10L))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("Assigned user is not a Field Employee.");
+
+        verify(inspectionRepository, never()).save(any());
+    }
+
+    @Test
+    void assignInspection_shouldRejectOtherDepartmentBusinessTrigger() {
+        AssignInspectionRequest request = validRequest();
+        BusinessTrigger trigger = businessTrigger(1L, false);
+        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        Department otherDepartment = new Department("Roads");
+        otherDepartment.setId(99L);
+        coordinator.setDepartment(otherDepartment);
+
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(businessTriggerRepository.findById(1L)).thenReturn(Optional.of(trigger));
+
+        assertThatThrownBy(() -> inspectionService.assignInspection(request, 10L))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You may only assign inspections for assets in your own department.");
     }
 
     @Test
@@ -575,6 +669,9 @@ class InspectionServiceTest {
         User user = new User("user@test.com", "password", "User", role);
         user.setId(id);
         user.setEnabled(true);
+        Department department = new Department("Parks");
+        department.setId(1L);
+        user.setDepartment(department);
         return user;
     }
 }

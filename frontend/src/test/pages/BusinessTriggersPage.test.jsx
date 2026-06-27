@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import BusinessTriggersPage from '../../pages/BusinessTriggersPage';
 import businessTriggerApi from '../../services/businessTriggerApi';
 import assetApi from '../../services/assetApi';
+import userApi from '../../services/userApi';
 
 const mockNavigate = vi.fn();
 
@@ -17,6 +18,12 @@ vi.mock('../../services/businessTriggerApi', () => ({
 vi.mock('../../services/assetApi', () => ({
   default: {
     list: vi.fn(),
+  },
+}));
+
+vi.mock('../../services/userApi', () => ({
+  default: {
+    getCurrentUser: vi.fn(),
   },
 }));
 
@@ -56,6 +63,7 @@ describe('BusinessTriggersPage', () => {
     vi.clearAllMocks();
     businessTriggerApi.list.mockResolvedValue([]);
     assetApi.list.mockResolvedValue(assetPageResponse([]));
+    userApi.getCurrentUser.mockResolvedValue({ departmentId: 1 });
   });
 
   it('renders with mocked trigger and asset data', async () => {
@@ -70,7 +78,8 @@ describe('BusinessTriggersPage', () => {
       },
     ]);
     assetApi.list.mockResolvedValue(assetPageResponse([
-      { id: 10, name: 'Central Playground', departmentName: 'Parks' },
+      { id: 10, name: 'Central Playground', departmentId: 1, departmentName: 'Parks' },
+      { id: 11, name: 'Other Asset', departmentId: 2, departmentName: 'Roads' },
     ]));
 
     render(
@@ -82,6 +91,7 @@ describe('BusinessTriggersPage', () => {
     expect(await screen.findByText('Central Playground')).toBeInTheDocument();
     expect(screen.getByText('Reported damage')).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Central Playground (Parks)' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Other Asset (Roads)' })).not.toBeInTheDocument();
   });
 
   it('renders empty list without crashing when assets return a Page object', async () => {

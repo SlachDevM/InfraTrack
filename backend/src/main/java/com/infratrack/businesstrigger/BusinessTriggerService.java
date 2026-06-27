@@ -10,6 +10,7 @@ import com.infratrack.businesstrigger.dto.CreateBusinessTriggerRequest;
 import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.exception.NotFoundException;
+import com.infratrack.department.Department;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
 import org.springframework.stereotype.Service;
@@ -54,9 +55,11 @@ public class BusinessTriggerService {
 
     @Transactional
     public BusinessTriggerResponse createBusinessTrigger(CreateBusinessTriggerRequest request, Long userId) {
-        requireCanCreateBusinessTriggers(userId);
+        User user = userService.getById(userId);
+        requireCanCreateBusinessTriggers(user);
 
         Asset asset = findAssetOrThrow(request.getAssetId());
+        requireOwnDepartment(user, asset);
         BusinessTriggerType type = validateType(request.getType());
         String reason = normalizeReason(request.getReason());
         boolean urgent = resolveUrgent(type, request.getUrgent());
@@ -80,10 +83,23 @@ public class BusinessTriggerService {
     }
 
     public void requireCanCreateBusinessTriggers(Long userId) {
-        User user = userService.getById(userId);
+        requireCanCreateBusinessTriggers(userService.getById(userId));
+    }
+
+    void requireCanCreateBusinessTriggers(User user) {
         if (!user.getRole().isManager() && !user.getRole().isOperationalCoordinator()) {
             throw new ForbiddenOperationException(
                     "Only managers and operational coordinators can create business triggers");
+        }
+    }
+
+    void requireOwnDepartment(User user, Asset asset) {
+        Department userDepartment = user.getDepartment();
+        Department assetDepartment = asset.getDepartment();
+        if (userDepartment == null || assetDepartment == null
+                || !userDepartment.getId().equals(assetDepartment.getId())) {
+            throw new ForbiddenOperationException(
+                    "You may only create business triggers for assets in your own department.");
         }
     }
 

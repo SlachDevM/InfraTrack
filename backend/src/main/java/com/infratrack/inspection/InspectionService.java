@@ -3,7 +3,9 @@ package com.infratrack.inspection;
 import com.infratrack.asset.Asset;
 import com.infratrack.businesstrigger.BusinessTrigger;
 import com.infratrack.businesstrigger.BusinessTriggerRepository;
+import com.infratrack.department.Department;
 import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.exception.NotFoundException;
 import com.infratrack.inspection.dto.AssignInspectionRequest;
 import com.infratrack.inspection.dto.CompleteInspectionRequest;
@@ -73,14 +75,16 @@ public class InspectionService {
 
     @Transactional
     public InspectionResponse assignInspection(AssignInspectionRequest request, Long userId) {
-        authorizationService.requireCanAssignInspections(userId);
+        User coordinator = userService.getById(userId);
+        authorizationService.requireCanAssignInspections(coordinator);
 
         BusinessTrigger businessTrigger = findBusinessTriggerOrThrow(request.getBusinessTriggerId());
-        User assignedToUser = findAssignableUserOrThrow(request.getAssignedToUserId());
+        Asset asset = businessTrigger.getAsset();
+        requireOwnDepartment(coordinator, asset);
+        User assignedToUser = findAssignableUserOrThrow(request.getAssignedToUserId(), coordinator, asset);
         validateNoActiveAssignment(businessTrigger.getId());
         validateExpectedCompletionDate(request.getExpectedCompletionDate());
 
-        Asset asset = businessTrigger.getAsset();
         InspectionPriority priority = resolvePriority(businessTrigger, request.getPriority());
 
         Inspection inspection = inspectionRepository.save(new Inspection(
@@ -96,8 +100,17 @@ public class InspectionService {
 
         operationalEventNotificationService.notifyInspectionAssigned(assignedToUser.getId());
 
-        User assignedByUser = userService.getById(userId);
-        return InspectionResponse.from(inspection, assignedToUser, assignedByUser);
+        return InspectionResponse.from(inspection, assignedToUser, coordinator);
+    }
+
+    void requireOwnDepartment(User user, Asset asset) {
+        Department userDepartment = user.getDepartment();
+        Department assetDepartment = asset.getDepartment();
+        if (userDepartment == null || assetDepartment == null
+                || !userDepartment.getId().equals(assetDepartment.getId())) {
+            throw new ForbiddenOperationException(
+                    "You may only assign inspections for assets in your own department.");
+        }
     }
 
     @Transactional
@@ -142,16 +155,31 @@ public class InspectionService {
                 .orElseThrow(() -> new BusinessValidationException("Business trigger not found"));
     }
 
-    private User findAssignableUserOrThrow(Long assignedToUserId) {
+    private User findAssignableUserOrThrow(Long assignedToUserId, User coordinator, Asset asset) {
         if (assignedToUserId == null) {
             throw new BusinessValidationException("Assigned user is required");
         }
         User user = userService.getById(assignedToUserId);
-        if (!user.getRole().isFieldEmployee() && !user.getRole().isContractor()) {
-            throw new BusinessValidationException(
-                    "Inspections can only be assigned to field employees or contractors");
+        if (!user.getRole().isFieldEmployee()) {
+            throw new ForbiddenOperationException("Assigned user is not a Field Employee.");
         }
+        if (!Boolean.TRUE.equals(user.getEnabled())) {
+            throw new ForbiddenOperationException("Assigned worker is disabled.");
+        }
+        requireAssigneeDepartment(user, coordinator, asset);
         return user;
+    }
+
+    private void requireAssigneeDepartment(User assignee, User coordinator, Asset asset) {
+        Department assigneeDepartment = assignee.getDepartment();
+        Department coordinatorDepartment = coordinator.getDepartment();
+        Department assetDepartment = asset.getDepartment();
+        if (coordinatorDepartment == null || assigneeDepartment == null || assetDepartment == null
+                || !assigneeDepartment.getId().equals(coordinatorDepartment.getId())
+                || !assigneeDepartment.getId().equals(assetDepartment.getId())) {
+            throw new ForbiddenOperationException(
+                    "Assigned worker must belong to your department.");
+        }
     }
 
     private void validateNoActiveAssignment(Long businessTriggerId) {

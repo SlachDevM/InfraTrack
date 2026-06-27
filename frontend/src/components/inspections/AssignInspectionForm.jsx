@@ -62,7 +62,7 @@ export default function AssignInspectionForm({
             <option value="">Select worker</option>
             {workers.map((worker) => (
               <option key={worker.id} value={worker.id}>
-                {worker.name} ({worker.role === 'CONTRACTOR' ? 'Contractor' : 'Field Employee'})
+                {worker.name}
               </option>
             ))}
           </select>
@@ -110,7 +110,7 @@ export default function AssignInspectionForm({
         <p className="read-only-note">Create at least one business trigger before assigning an inspection.</p>
       )}
       {workers.length === 0 && (
-        <p className="read-only-note">No field employees or contractors are available for assignment.</p>
+        <p className="read-only-note">No active field employees in your department are available for assignment.</p>
       )}
     </section>
   );

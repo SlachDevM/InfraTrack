@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import apiClient from '../services/apiClient';
 import businessTriggerApi from '../services/businessTriggerApi';
 import assetApi from '../services/assetApi';
+import userApi from '../services/userApi';
 import NotificationButton from '../components/NotificationButton';
 import { canCreateBusinessTriggers } from '../constants/userRoles';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
@@ -52,7 +53,16 @@ export default function BusinessTriggersPage() {
         assetApi.list(),
       ]);
       setTriggers(Array.isArray(triggerData) ? triggerData : []);
-      setAssets(unwrapPageContent(assetPage));
+      let loadedAssets = unwrapPageContent(assetPage);
+      if (canCreate) {
+        const profile = await userApi.getCurrentUser();
+        if (profile?.departmentId != null) {
+          loadedAssets = loadedAssets.filter(
+            (asset) => asset.departmentId === profile.departmentId
+          );
+        }
+      }
+      setAssets(loadedAssets);
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to load business triggers.'));
     } finally {
@@ -92,7 +102,7 @@ export default function BusinessTriggersPage() {
       await loadPageData();
     } catch (err) {
       if (isForbidden(err)) {
-        setError('You do not have permission to create business triggers.');
+        setError(getApiErrorMessage(err, 'You do not have permission to create business triggers.'));
       } else {
         setError(getApiErrorMessage(err, 'Failed to create business trigger.'));
       }

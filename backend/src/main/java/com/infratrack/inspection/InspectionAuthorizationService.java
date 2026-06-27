@@ -18,7 +18,10 @@ public class InspectionAuthorizationService {
     }
 
     public void requireCanAssignInspections(Long userId) {
-        User user = userService.getById(userId);
+        requireCanAssignInspections(userService.getById(userId));
+    }
+
+    public void requireCanAssignInspections(User user) {
         if (!user.getRole().isOperationalCoordinator()) {
             throw new ForbiddenOperationException(
                     "Only operational coordinators can assign inspections");

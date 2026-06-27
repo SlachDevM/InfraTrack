@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import apiClient from '../services/apiClient';
 import inspectionApi from '../services/inspectionApi';
 import businessTriggerApi from '../services/businessTriggerApi';
+import assetApi from '../services/assetApi';
+import userApi from '../services/userApi';
 import NotificationButton from '../components/NotificationButton';
 import PaginationControls from '../components/PaginationControls';
 import AssignInspectionForm from '../components/inspections/AssignInspectionForm';
@@ -17,6 +19,7 @@ import {
   PHYSICAL_CONDITIONS,
 } from '../constants/physicalConditions';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
+import { filterInspectionAssignees } from '../utils/inspectionAssignees';
 import {
   DEFAULT_PAGE,
   getPageNumber,
@@ -103,18 +106,36 @@ export default function InspectionsPage() {
     try {
       setLoading(true);
       setError(null);
-      const [inspectionPage, triggerData] = await Promise.all([
+      const canAssignRole = canAssignInspections(auth?.user?.role);
+      const [inspectionPage, triggerData, assetPage] = await Promise.all([
         inspectionApi.list(page),
         businessTriggerApi.list(),
+        canAssignRole ? assetApi.list() : Promise.resolve(null),
       ]);
       setInspections(unwrapPageContent(inspectionPage));
       setInspectionsPage(getPageNumber(inspectionPage, page));
       setInspectionsTotalPages(getTotalPages(inspectionPage));
-      setTriggers(triggerData);
 
-      if (canAssignInspections(auth?.user?.role)) {
+      let loadedTriggers = Array.isArray(triggerData) ? triggerData : [];
+      let profile = null;
+      if (canAssignRole) {
+        profile = await userApi.getCurrentUser();
+        if (profile?.departmentId != null && assetPage) {
+          const departmentAssetIds = new Set(
+            unwrapPageContent(assetPage)
+              .filter((asset) => asset.departmentId === profile.departmentId)
+              .map((asset) => asset.id)
+          );
+          loadedTriggers = loadedTriggers.filter(
+            (trigger) => departmentAssetIds.has(trigger.assetId)
+          );
+        }
+      }
+      setTriggers(loadedTriggers);
+
+      if (canAssignRole) {
         const workerData = await inspectionApi.listWorkers();
-        setWorkers(workerData);
+        setWorkers(filterInspectionAssignees(workerData, profile?.departmentId));
       }
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to load inspections.'));

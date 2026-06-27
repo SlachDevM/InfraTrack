@@ -51,7 +51,7 @@ class BusinessTriggerServiceTest {
     void createBusinessTrigger_shouldCreateTriggerAndHistoryEvent_whenValid() {
         CreateBusinessTriggerRequest request = validRequest();
         Asset asset = asset(1L, "Central Playground");
-        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        User coordinator = userWithDepartment(10L, UserRole.OPERATIONAL_COORDINATOR, 1L);
 
         when(userService.getById(10L)).thenReturn(coordinator);
         when(assetRepository.findById(1L)).thenReturn(Optional.of(asset));
@@ -89,7 +89,7 @@ class BusinessTriggerServiceTest {
         request.setUrgent(false);
 
         Asset asset = asset(1L, "Central Playground");
-        User manager = user(10L, UserRole.MANAGER);
+        User manager = userWithDepartment(10L, UserRole.MANAGER, 1L);
 
         when(userService.getById(10L)).thenReturn(manager);
         when(assetRepository.findById(1L)).thenReturn(Optional.of(asset));
@@ -109,7 +109,7 @@ class BusinessTriggerServiceTest {
     void createBusinessTrigger_shouldRejectMissingAssetId() {
         CreateBusinessTriggerRequest request = validRequest();
         request.setAssetId(null);
-        User manager = user(10L, UserRole.MANAGER);
+        User manager = userWithDepartment(10L, UserRole.MANAGER, 1L);
         when(userService.getById(10L)).thenReturn(manager);
 
         assertThatThrownBy(() -> businessTriggerService.createBusinessTrigger(request, 10L))
@@ -119,7 +119,7 @@ class BusinessTriggerServiceTest {
     @Test
     void createBusinessTrigger_shouldRejectInvalidAsset() {
         CreateBusinessTriggerRequest request = validRequest();
-        User manager = user(10L, UserRole.MANAGER);
+        User manager = userWithDepartment(10L, UserRole.MANAGER, 1L);
         when(userService.getById(10L)).thenReturn(manager);
         when(assetRepository.findById(1L)).thenReturn(Optional.empty());
 
@@ -131,8 +131,9 @@ class BusinessTriggerServiceTest {
     void createBusinessTrigger_shouldRejectMissingType() {
         CreateBusinessTriggerRequest request = validRequest();
         request.setType(null);
-        User manager = user(10L, UserRole.MANAGER);
+        User manager = userWithDepartment(10L, UserRole.MANAGER, 1L);
         when(userService.getById(10L)).thenReturn(manager);
+        when(assetRepository.findById(1L)).thenReturn(Optional.of(asset(1L, "Central Playground")));
 
         assertThatThrownBy(() -> businessTriggerService.createBusinessTrigger(request, 10L))
                 .isInstanceOf(BusinessValidationException.class);
@@ -142,8 +143,9 @@ class BusinessTriggerServiceTest {
     void createBusinessTrigger_shouldRejectBlankReason() {
         CreateBusinessTriggerRequest request = validRequest();
         request.setReason("  ");
-        User manager = user(10L, UserRole.MANAGER);
+        User manager = userWithDepartment(10L, UserRole.MANAGER, 1L);
         when(userService.getById(10L)).thenReturn(manager);
+        when(assetRepository.findById(1L)).thenReturn(Optional.of(asset(1L, "Central Playground")));
 
         assertThatThrownBy(() -> businessTriggerService.createBusinessTrigger(request, 10L))
                 .isInstanceOf(BusinessValidationException.class);
@@ -182,6 +184,84 @@ class BusinessTriggerServiceTest {
                 .isInstanceOf(ForbiddenOperationException.class);
     }
 
+    @Test
+    void createBusinessTrigger_shouldAllowManagerForOwnDepartmentAsset() {
+        CreateBusinessTriggerRequest request = validRequest();
+        Asset asset = asset(1L, "Central Playground");
+        User manager = userWithDepartment(10L, UserRole.MANAGER, 1L);
+
+        when(userService.getById(10L)).thenReturn(manager);
+        when(assetRepository.findById(1L)).thenReturn(Optional.of(asset));
+        when(businessTriggerRepository.save(any(BusinessTrigger.class))).thenAnswer(invocation -> {
+            BusinessTrigger trigger = invocation.getArgument(0);
+            trigger.setId(100L);
+            return trigger;
+        });
+
+        var response = businessTriggerService.createBusinessTrigger(request, 10L);
+
+        assertThat(response.getId()).isEqualTo(100L);
+        verify(businessTriggerRepository).save(any(BusinessTrigger.class));
+    }
+
+    @Test
+    void createBusinessTrigger_shouldRejectManagerForOtherDepartmentAsset() {
+        CreateBusinessTriggerRequest request = validRequest();
+        request.setAssetId(2L);
+        User manager = userWithDepartment(10L, UserRole.MANAGER, 1L);
+        Asset asset = asset(2L, "Other Playground");
+        asset.getDepartment().setId(2L);
+
+        when(userService.getById(10L)).thenReturn(manager);
+        when(assetRepository.findById(2L)).thenReturn(Optional.of(asset));
+
+        assertThatThrownBy(() -> businessTriggerService.createBusinessTrigger(request, 10L))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You may only create business triggers for assets in your own department.");
+
+        verify(businessTriggerRepository, never()).save(any());
+        verify(assetHistoryEventRepository, never()).save(any());
+    }
+
+    @Test
+    void createBusinessTrigger_shouldAllowCoordinatorForOwnDepartmentAsset() {
+        CreateBusinessTriggerRequest request = validRequest();
+        Asset asset = asset(1L, "Central Playground");
+        User coordinator = userWithDepartment(10L, UserRole.OPERATIONAL_COORDINATOR, 1L);
+
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(assetRepository.findById(1L)).thenReturn(Optional.of(asset));
+        when(businessTriggerRepository.save(any(BusinessTrigger.class))).thenAnswer(invocation -> {
+            BusinessTrigger trigger = invocation.getArgument(0);
+            trigger.setId(100L);
+            return trigger;
+        });
+
+        var response = businessTriggerService.createBusinessTrigger(request, 10L);
+
+        assertThat(response.getId()).isEqualTo(100L);
+        verify(businessTriggerRepository).save(any(BusinessTrigger.class));
+    }
+
+    @Test
+    void createBusinessTrigger_shouldRejectCoordinatorForOtherDepartmentAsset() {
+        CreateBusinessTriggerRequest request = validRequest();
+        request.setAssetId(2L);
+        User coordinator = userWithDepartment(10L, UserRole.OPERATIONAL_COORDINATOR, 1L);
+        Asset asset = asset(2L, "Other Playground");
+        asset.getDepartment().setId(2L);
+
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(assetRepository.findById(2L)).thenReturn(Optional.of(asset));
+
+        assertThatThrownBy(() -> businessTriggerService.createBusinessTrigger(request, 10L))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You may only create business triggers for assets in your own department.");
+
+        verify(businessTriggerRepository, never()).save(any());
+        verify(assetHistoryEventRepository, never()).save(any());
+    }
+
     private CreateBusinessTriggerRequest validRequest() {
         CreateBusinessTriggerRequest request = new CreateBusinessTriggerRequest();
         request.setAssetId(1L);
@@ -213,6 +293,14 @@ class BusinessTriggerServiceTest {
         User user = new User("user@test.com", "password", "User", role);
         user.setId(id);
         user.setEnabled(true);
+        return user;
+    }
+
+    private User userWithDepartment(Long id, UserRole role, Long departmentId) {
+        User user = user(id, role);
+        Department department = new Department("Parks");
+        department.setId(departmentId);
+        user.setDepartment(department);
         return user;
     }
 }
