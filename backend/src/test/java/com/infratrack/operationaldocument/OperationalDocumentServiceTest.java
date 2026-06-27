@@ -87,6 +87,9 @@ class OperationalDocumentServiceTest {
     private OperationalDocumentFileStore fileStore;
 
     @Mock
+    private OperationalDocumentUploadValidator uploadValidator;
+
+    @Mock
     private UserService userService;
 
     private OperationalDocumentService operationalDocumentService;
@@ -114,6 +117,7 @@ class OperationalDocumentServiceTest {
                 authorizationService,
                 historyRecorder,
                 fileStore,
+                uploadValidator,
                 userService);
     }
 
@@ -125,7 +129,9 @@ class OperationalDocumentServiceTest {
 
         when(userService.getById(10L)).thenReturn(coordinator);
         when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
-        when(fileStore.store(file)).thenReturn(storedFile("manual.pdf", "application/pdf", 2048L));
+        when(uploadValidator.validate(file)).thenReturn(
+                new OperationalDocumentUploadValidator.ValidatedUpload("manual.pdf", "application/pdf"));
+        when(fileStore.store(file, "application/pdf")).thenReturn(storedFile("manual.pdf", "application/pdf", 2048L));
         when(operationalDocumentRepository.save(any(OperationalDocument.class))).thenAnswer(invocation -> {
             OperationalDocument document = invocation.getArgument(0);
             document.setId(100L);
@@ -154,7 +160,9 @@ class OperationalDocumentServiceTest {
         when(userService.getById(10L)).thenReturn(coordinator);
         when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
         when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
-        when(fileStore.store(file)).thenReturn(storedFile("evidence.jpg", "image/jpeg", 1024L));
+        when(uploadValidator.validate(file)).thenReturn(
+                new OperationalDocumentUploadValidator.ValidatedUpload("evidence.jpg", "image/jpeg"));
+        when(fileStore.store(file, "image/jpeg")).thenReturn(storedFile("evidence.jpg", "image/jpeg", 1024L));
         when(operationalDocumentRepository.save(any(OperationalDocument.class))).thenAnswer(invocation -> {
             OperationalDocument document = invocation.getArgument(0);
             document.setId(101L);
@@ -185,7 +193,9 @@ class OperationalDocumentServiceTest {
         when(userService.getById(20L)).thenReturn(fieldEmployee);
         when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
         when(maintenanceActivityRepository.findById(500L)).thenReturn(Optional.of(maintenanceActivity));
-        when(fileStore.store(file)).thenReturn(storedFile("completion.jpg", "image/jpeg", 512L));
+        when(uploadValidator.validate(file)).thenReturn(
+                new OperationalDocumentUploadValidator.ValidatedUpload("completion.jpg", "image/jpeg"));
+        when(fileStore.store(file, "image/jpeg")).thenReturn(storedFile("completion.jpg", "image/jpeg", 512L));
         when(operationalDocumentRepository.save(any(OperationalDocument.class))).thenAnswer(invocation -> {
             OperationalDocument document = invocation.getArgument(0);
             document.setId(102L);
@@ -255,10 +265,11 @@ class OperationalDocumentServiceTest {
         Asset asset = asset(5L);
         User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
         MultipartFile file = mock(MultipartFile.class);
-        when(file.isEmpty()).thenReturn(true);
 
         when(userService.getById(10L)).thenReturn(coordinator);
         when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
+        when(uploadValidator.validate(file))
+                .thenThrow(new BusinessValidationException("Document file is required"));
 
         assertThatThrownBy(() -> operationalDocumentService.uploadDocument(
                 5L, file, OperationalDocumentType.PHOTO, null, null, null, 10L))
@@ -270,10 +281,11 @@ class OperationalDocumentServiceTest {
         Asset asset = asset(5L);
         User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
         MultipartFile file = mock(MultipartFile.class);
-        when(file.isEmpty()).thenReturn(true);
 
         when(userService.getById(10L)).thenReturn(coordinator);
         when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
+        when(uploadValidator.validate(file))
+                .thenThrow(new BusinessValidationException("Document file is required"));
 
         assertThatThrownBy(() -> operationalDocumentService.uploadDocument(
                 5L, file, OperationalDocumentType.REPORT, null, null, null, 10L))
@@ -339,7 +351,9 @@ class OperationalDocumentServiceTest {
 
         when(userService.getById(30L)).thenReturn(manager);
         when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
-        when(fileStore.store(file)).thenReturn(storedFile("report.pdf", "application/pdf", 1024L));
+        when(uploadValidator.validate(file)).thenReturn(
+                new OperationalDocumentUploadValidator.ValidatedUpload("report.pdf", "application/pdf"));
+        when(fileStore.store(file, "application/pdf")).thenReturn(storedFile("report.pdf", "application/pdf", 1024L));
         when(operationalDocumentRepository.save(any(OperationalDocument.class))).thenAnswer(invocation -> {
             OperationalDocument document = invocation.getArgument(0);
             document.setId(103L);
@@ -372,7 +386,9 @@ class OperationalDocumentServiceTest {
 
         when(userService.getById(10L)).thenReturn(coordinator);
         when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
-        when(fileStore.store(file)).thenReturn(storedFile("manual.pdf", "application/pdf", 1024L));
+        when(uploadValidator.validate(file)).thenReturn(
+                new OperationalDocumentUploadValidator.ValidatedUpload("manual.pdf", "application/pdf"));
+        when(fileStore.store(file, "application/pdf")).thenReturn(storedFile("manual.pdf", "application/pdf", 1024L));
         when(operationalDocumentRepository.save(any(OperationalDocument.class))).thenAnswer(invocation -> {
             OperationalDocument document = invocation.getArgument(0);
             document.setId(104L);
@@ -395,7 +411,9 @@ class OperationalDocumentServiceTest {
         when(userService.getById(10L)).thenReturn(coordinator);
         when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
         when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
-        when(fileStore.store(file)).thenReturn(storedFile("photo.jpg", "image/jpeg", 1024L));
+        when(uploadValidator.validate(file)).thenReturn(
+                new OperationalDocumentUploadValidator.ValidatedUpload("photo.jpg", "image/jpeg"));
+        when(fileStore.store(file, "image/jpeg")).thenReturn(storedFile("photo.jpg", "image/jpeg", 1024L));
         when(operationalDocumentRepository.save(any(OperationalDocument.class))).thenAnswer(invocation -> {
             OperationalDocument document = invocation.getArgument(0);
             document.setId(105L);
@@ -424,7 +442,9 @@ class OperationalDocumentServiceTest {
 
         when(userService.getById(10L)).thenReturn(coordinator);
         when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
-        when(fileStore.store(file)).thenReturn(new OperationalDocumentFileStore.StoredFileDetails(
+        when(uploadValidator.validate(file)).thenReturn(
+                new OperationalDocumentUploadValidator.ValidatedUpload("drawing.png", "image/png"));
+        when(fileStore.store(file, "image/png")).thenReturn(new OperationalDocumentFileStore.StoredFileDetails(
                 "stored-uuid",
                 "/tmp/stored-uuid",
                 "image/png",
@@ -457,7 +477,9 @@ class OperationalDocumentServiceTest {
 
         when(userService.getById(30L)).thenReturn(manager);
         when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
-        when(fileStore.store(file)).thenReturn(storedFile("report.pdf", "application/pdf", 1024L));
+        when(uploadValidator.validate(file)).thenReturn(
+                new OperationalDocumentUploadValidator.ValidatedUpload("report.pdf", "application/pdf"));
+        when(fileStore.store(file, "application/pdf")).thenReturn(storedFile("report.pdf", "application/pdf", 1024L));
         when(operationalDocumentRepository.save(any(OperationalDocument.class))).thenAnswer(invocation -> {
             OperationalDocument document = invocation.getArgument(0);
             document.setId(108L);
@@ -481,7 +503,9 @@ class OperationalDocumentServiceTest {
         when(userService.getById(30L)).thenReturn(manager);
         when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
         when(issueRepository.findById(500L)).thenReturn(Optional.of(issue));
-        when(fileStore.store(file)).thenReturn(storedFile("evidence.jpg", "image/jpeg", 1024L));
+        when(uploadValidator.validate(file)).thenReturn(
+                new OperationalDocumentUploadValidator.ValidatedUpload("evidence.jpg", "image/jpeg"));
+        when(fileStore.store(file, "image/jpeg")).thenReturn(storedFile("evidence.jpg", "image/jpeg", 1024L));
         when(operationalDocumentRepository.save(any(OperationalDocument.class))).thenAnswer(invocation -> {
             OperationalDocument document = invocation.getArgument(0);
             document.setId(109L);
@@ -523,7 +547,9 @@ class OperationalDocumentServiceTest {
 
         when(userService.getById(10L)).thenReturn(coordinator);
         when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
-        when(fileStore.store(file)).thenReturn(storedFile("scan.pdf", "application/pdf", 1024L));
+        when(uploadValidator.validate(file)).thenReturn(
+                new OperationalDocumentUploadValidator.ValidatedUpload("scan.pdf", "application/pdf"));
+        when(fileStore.store(file, "application/pdf")).thenReturn(storedFile("scan.pdf", "application/pdf", 1024L));
         when(operationalDocumentRepository.save(any(OperationalDocument.class))).thenAnswer(invocation -> {
             OperationalDocument document = invocation.getArgument(0);
             document.setId(107L);

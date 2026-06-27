@@ -25,6 +25,7 @@ public class OperationalDocumentService {
     private final OperationalDocumentAuthorizationService authorizationService;
     private final OperationalDocumentHistoryRecorder historyRecorder;
     private final OperationalDocumentFileStore fileStore;
+    private final OperationalDocumentUploadValidator uploadValidator;
     private final UserService userService;
 
     public OperationalDocumentService(
@@ -33,12 +34,14 @@ public class OperationalDocumentService {
             OperationalDocumentAuthorizationService authorizationService,
             OperationalDocumentHistoryRecorder historyRecorder,
             OperationalDocumentFileStore fileStore,
+            OperationalDocumentUploadValidator uploadValidator,
             UserService userService) {
         this.operationalDocumentRepository = operationalDocumentRepository;
         this.ownerResolver = ownerResolver;
         this.authorizationService = authorizationService;
         this.historyRecorder = historyRecorder;
         this.fileStore = fileStore;
+        this.uploadValidator = uploadValidator;
         this.userService = userService;
     }
 
@@ -53,13 +56,13 @@ public class OperationalDocumentService {
             Long userId) {
         User user = userService.getById(userId);
         OperationalDocumentOwnerContext ownerContext = ownerResolver.resolve(assetId, ownerType, ownerId);
-        MultipartFile validatedFile = validateFile(file);
+        OperationalDocumentUploadValidator.ValidatedUpload validatedUpload = uploadValidator.validate(file);
         OperationalDocumentType validatedDocumentType = validateDocumentType(documentType);
         LocalDate validatedDocumentDate = validateDocumentDate(documentDate);
         authorizationService.requireUploadAuthorized(user, ownerContext);
 
         OperationalDocumentFileStore.StoredFileDetails storedFile =
-                fileStore.store(validatedFile);
+                fileStore.store(file, validatedUpload.detectedContentType());
         LocalDateTime uploadedAt = LocalDateTime.now();
 
         OperationalDocument document = operationalDocumentRepository.save(new OperationalDocument(
@@ -67,7 +70,7 @@ public class OperationalDocumentService {
                 ownerContext.ownerType(),
                 ownerContext.ownerId(),
                 validatedDocumentType,
-                validatedFile.getOriginalFilename(),
+                validatedUpload.sanitizedFileName(),
                 storedFile.storedFileName(),
                 storedFile.contentType(),
                 storedFile.fileSize(),
@@ -98,16 +101,6 @@ public class OperationalDocumentService {
                 .orElseThrow(() -> new NotFoundException("Document not found"));
         Resource resource = fileStore.loadAsResource(document.getStoragePath());
         return new OperationalDocumentDownload(resource, document.getOriginalFileName(), document.getContentType());
-    }
-
-    private MultipartFile validateFile(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new BusinessValidationException("Document file is required");
-        }
-        if (file.getOriginalFilename() == null || file.getOriginalFilename().isBlank()) {
-            throw new BusinessValidationException("Invalid document");
-        }
-        return file;
     }
 
     private OperationalDocumentType validateDocumentType(OperationalDocumentType documentType) {

@@ -107,7 +107,38 @@ After starting:
 
 - Frontend: `http://localhost:3000`
 - Swagger API: `http://localhost:4000/swagger-ui/index.html`
+- Health: `http://localhost:4000/actuator/health`
+- Build info: `http://localhost:4000/actuator/info`
 - Mailpit (dev email): `http://localhost:8025`
+
+---
+
+## Operations & Monitoring
+
+InfraTrack exposes lightweight Spring Boot Actuator endpoints for production operability.
+
+| Endpoint | Purpose |
+|----------|---------|
+| `/actuator/health` | Aggregate health (database, Flyway, document storage) |
+| `/actuator/info` | Application name, version, build time, git commit |
+
+**Health contributors:**
+
+- PostgreSQL connectivity (`db`)
+- Flyway migration status (`flyway`)
+- Operational document storage directory writable (`operationalDocumentStorage`)
+
+Only `health` and `info` are exposed. Sensitive actuator endpoints (`env`, `beans`, `mappings`, `heapdump`, `threaddump`) remain disabled.
+
+**Startup diagnostics:** On application ready, the backend logs once: version, Spring profile, JVM timezone, Flyway schema version, upload storage path, database JDBC URL (no credentials), and port.
+
+**Docker:** Backend and frontend containers include `HEALTHCHECK` instructions. Compose waits for PostgreSQL and backend health before starting dependent services.
+
+**Build metadata:** Maven generates `build-info.properties` and `git.properties` (short commit hash when `.git` is available). Docker builds accept `GIT_COMMIT` as a build argument:
+
+```bash
+GIT_COMMIT=$(git rev-parse --short HEAD) docker compose up --build -d
+```
 
 ---
 

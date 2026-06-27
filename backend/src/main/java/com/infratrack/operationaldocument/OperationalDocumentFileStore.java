@@ -24,13 +24,12 @@ public class OperationalDocumentFileStore {
         this.storageRoot = Path.of(storagePath).toAbsolutePath().normalize();
     }
 
-    public StoredFileDetails store(MultipartFile file) {
+    public StoredFileDetails store(MultipartFile file, String contentType) {
         try {
             Files.createDirectories(storageRoot);
             String storedFileName = UUID.randomUUID().toString();
             Path targetPath = storageRoot.resolve(storedFileName);
             Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-            String contentType = file.getContentType() != null ? file.getContentType() : "application/octet-stream";
             return new StoredFileDetails(
                     storedFileName,
                     targetPath.toString(),
