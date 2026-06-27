@@ -6,8 +6,15 @@ import delegatedAuthorityApi from '../services/delegatedAuthorityApi';
 import departmentApi from '../services/departmentApi';
 import userApi from '../services/userApi';
 import NotificationButton from '../components/NotificationButton';
+import PaginationControls from '../components/PaginationControls';
 import { canManageDelegatedAuthority } from '../constants/userRoles';
 import { getApiErrorMessage } from '../utils/apiError';
+import {
+  DEFAULT_PAGE,
+  getPageNumber,
+  getTotalPages,
+  unwrapPageContent,
+} from '../utils/pagination';
 import '../styles/ReferenceDataPage.css';
 
 function toDateTimeLocalValue(date = new Date()) {
@@ -19,6 +26,9 @@ export default function DelegatedAuthoritiesPage() {
   const navigate = useNavigate();
   const { auth, logout } = useAuth();
   const [authorities, setAuthorities] = useState([]);
+  const [authoritiesPage, setAuthoritiesPage] = useState(DEFAULT_PAGE);
+  const [authoritiesTotalPages, setAuthoritiesTotalPages] = useState(0);
+  const [listLoading, setListLoading] = useState(false);
   const [departments, setDepartments] = useState([]);
   const [managers, setManagers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,15 +54,33 @@ export default function DelegatedAuthoritiesPage() {
     loadPageData();
   }, [auth, navigate]);
 
-  const loadPageData = async () => {
+  const loadAuthorities = async (page = authoritiesPage) => {
+    try {
+      setListLoading(true);
+      setError(null);
+      const authorityPage = await delegatedAuthorityApi.list(page);
+      setAuthorities(unwrapPageContent(authorityPage));
+      setAuthoritiesPage(getPageNumber(authorityPage, page));
+      setAuthoritiesTotalPages(getTotalPages(authorityPage));
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Failed to load delegated authorities.'));
+    } finally {
+      setListLoading(false);
+    }
+  };
+
+  const loadPageData = async (page = authoritiesPage) => {
     try {
       setLoading(true);
       setError(null);
-      const [authorityData, departmentData] = await Promise.all([
-        delegatedAuthorityApi.list(),
+      const [authorityPage, departmentData] = await Promise.all([
+        delegatedAuthorityApi.list(page),
         departmentApi.list(),
       ]);
-      setAuthorities(authorityData);
+      setAuthorities(unwrapPageContent(authorityPage));
+      setAuthoritiesPage(getPageNumber(authorityPage, page));
+      setAuthoritiesTotalPages(getTotalPages(authorityPage));
+
       setDepartments(departmentData);
 
       if (canManageDelegatedAuthority(auth.user.role)) {
@@ -63,6 +91,7 @@ export default function DelegatedAuthoritiesPage() {
       setError(getApiErrorMessage(err, 'Failed to load delegated authorities.'));
     } finally {
       setLoading(false);
+      setListLoading(false);
     }
   };
 
@@ -303,6 +332,13 @@ export default function DelegatedAuthoritiesPage() {
             </table>
           )}
         </section>
+        <PaginationControls
+          page={authoritiesPage}
+          totalPages={authoritiesTotalPages}
+          loading={listLoading}
+          onPrevious={() => loadAuthorities(authoritiesPage - 1)}
+          onNext={() => loadAuthorities(authoritiesPage + 1)}
+        />
       </main>
     </div>
   );

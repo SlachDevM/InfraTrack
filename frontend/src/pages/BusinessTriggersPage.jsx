@@ -6,9 +6,16 @@ import businessTriggerApi from '../services/businessTriggerApi';
 import assetApi from '../services/assetApi';
 import userApi from '../services/userApi';
 import NotificationButton from '../components/NotificationButton';
+import PaginationControls from '../components/PaginationControls';
 import { canCreateBusinessTriggers } from '../constants/userRoles';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
-import { unwrapPageContent } from '../utils/pagination';
+import {
+  DEFAULT_PAGE,
+  MAX_PAGE_SIZE,
+  getPageNumber,
+  getTotalPages,
+  unwrapPageContent,
+} from '../utils/pagination';
 import {
   BUSINESS_TRIGGER_TYPES,
   BUSINESS_TRIGGER_TYPE_OPTIONS,
@@ -21,6 +28,9 @@ export default function BusinessTriggersPage() {
   const navigate = useNavigate();
   const { auth, logout } = useAuth();
   const [triggers, setTriggers] = useState([]);
+  const [triggersPage, setTriggersPage] = useState(DEFAULT_PAGE);
+  const [triggersTotalPages, setTriggersTotalPages] = useState(0);
+  const [listLoading, setListLoading] = useState(false);
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -44,15 +54,17 @@ export default function BusinessTriggersPage() {
     loadPageData();
   }, [auth, navigate]);
 
-  const loadPageData = async () => {
+  const loadPageData = async (page = triggersPage) => {
     try {
       setLoading(true);
       setError(null);
-      const [triggerData, assetPage] = await Promise.all([
-        businessTriggerApi.list(),
-        assetApi.list(),
+      const [triggerPage, assetPage] = await Promise.all([
+        businessTriggerApi.list(page),
+        assetApi.list(0, MAX_PAGE_SIZE),
       ]);
-      setTriggers(Array.isArray(triggerData) ? triggerData : []);
+      setTriggers(unwrapPageContent(triggerPage));
+      setTriggersPage(getPageNumber(triggerPage, page));
+      setTriggersTotalPages(getTotalPages(triggerPage));
       let loadedAssets = unwrapPageContent(assetPage);
       if (canCreate) {
         const profile = await userApi.getCurrentUser();
@@ -67,6 +79,22 @@ export default function BusinessTriggersPage() {
       setError(getApiErrorMessage(err, 'Failed to load business triggers.'));
     } finally {
       setLoading(false);
+      setListLoading(false);
+    }
+  };
+
+  const loadTriggers = async (page = triggersPage) => {
+    try {
+      setListLoading(true);
+      setError(null);
+      const triggerPage = await businessTriggerApi.list(page);
+      setTriggers(unwrapPageContent(triggerPage));
+      setTriggersPage(getPageNumber(triggerPage, page));
+      setTriggersTotalPages(getTotalPages(triggerPage));
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Failed to load business triggers.'));
+    } finally {
+      setListLoading(false);
     }
   };
 
@@ -99,7 +127,7 @@ export default function BusinessTriggersPage() {
         reason: '',
         urgent: false,
       });
-      await loadPageData();
+      await loadPageData(triggersPage);
     } catch (err) {
       if (isForbidden(err)) {
         setError(getApiErrorMessage(err, 'You do not have permission to create business triggers.'));
@@ -268,6 +296,13 @@ export default function BusinessTriggersPage() {
             </table>
           )}
         </section>
+        <PaginationControls
+          page={triggersPage}
+          totalPages={triggersTotalPages}
+          loading={listLoading}
+          onPrevious={() => loadTriggers(triggersPage - 1)}
+          onNext={() => loadTriggers(triggersPage + 1)}
+        />
       </main>
     </div>
   );

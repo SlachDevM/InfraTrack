@@ -10,6 +10,7 @@ import com.infratrack.asset.AssetRepository;
 import com.infratrack.asset.AssetStatus;
 import com.infratrack.assetcategory.AssetCategory;
 import com.infratrack.businesstrigger.dto.CreateBusinessTriggerRequest;
+import com.infratrack.businesstrigger.dto.BusinessTriggerResponse;
 import com.infratrack.department.Department;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
@@ -20,9 +21,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -262,6 +268,20 @@ class BusinessTriggerServiceTest {
         verify(assetHistoryEventRepository, never()).save(any());
     }
 
+    @Test
+    void listPage_shouldReturnPagedTriggers() {
+        BusinessTrigger trigger = businessTrigger(100L);
+        Pageable pageable = PageRequest.of(1, 10);
+        when(businessTriggerRepository.findAllByOrderByCreatedAtDesc(pageable))
+                .thenReturn(new PageImpl<>(List.of(trigger), pageable, 25));
+
+        Page<BusinessTriggerResponse> page = businessTriggerService.listPage(pageable);
+
+        assertThat(page.getContent()).hasSize(1);
+        assertThat(page.getContent().get(0).getId()).isEqualTo(100L);
+        assertThat(page.getTotalPages()).isEqualTo(3);
+    }
+
     private CreateBusinessTriggerRequest validRequest() {
         CreateBusinessTriggerRequest request = new CreateBusinessTriggerRequest();
         request.setAssetId(1L);
@@ -302,5 +322,17 @@ class BusinessTriggerServiceTest {
         department.setId(departmentId);
         user.setDepartment(department);
         return user;
+    }
+
+    private BusinessTrigger businessTrigger(Long id) {
+        BusinessTrigger trigger = new BusinessTrigger(
+                asset(1L, "Central Playground"),
+                BusinessTriggerType.CUSTOMER_REQUEST,
+                "Damaged equipment reported by resident",
+                false,
+                10L
+        );
+        trigger.setId(id);
+        return trigger;
     }
 }

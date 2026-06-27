@@ -18,6 +18,7 @@ import com.infratrack.inspection.InspectionRepository;
 import com.infratrack.inspection.InspectionStatus;
 import com.infratrack.inspection.PhysicalCondition;
 import com.infratrack.issue.dto.CreateIssueRequest;
+import com.infratrack.issue.dto.IssueResponse;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
@@ -27,10 +28,15 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -302,6 +308,20 @@ class IssueServiceTest {
         verify(assetHistoryEventRepository, never()).save(any());
     }
 
+    @Test
+    void listPage_shouldReturnPagedIssues() {
+        Issue issue = issue(50L);
+        Pageable pageable = PageRequest.of(0, 20);
+        when(issueRepository.findAllByOrderByCreatedAtDesc(pageable))
+                .thenReturn(new PageImpl<>(List.of(issue), pageable, 21));
+
+        Page<IssueResponse> page = issueService.listPage(pageable);
+
+        assertThat(page.getContent()).hasSize(1);
+        assertThat(page.getContent().get(0).getId()).isEqualTo(50L);
+        assertThat(page.getTotalPages()).isEqualTo(2);
+    }
+
     private CreateIssueRequest validRequest() {
         CreateIssueRequest request = new CreateIssueRequest();
         request.setInspectionId(100L);
@@ -369,5 +389,19 @@ class IssueServiceTest {
         user.setId(id);
         user.setEnabled(true);
         return user;
+    }
+
+    private Issue issue(Long id) {
+        Inspection inspection = completedInspectionWithIssue(100L, 20L);
+        Issue issue = new Issue(
+                inspection,
+                inspection.getAsset(),
+                "Broken swing chain requires replacement",
+                IssueSeverity.HIGH,
+                20L,
+                LocalDateTime.now().minusMinutes(10)
+        );
+        issue.setId(id);
+        return issue;
     }
 }

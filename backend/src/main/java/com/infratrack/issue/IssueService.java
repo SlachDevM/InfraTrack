@@ -15,11 +15,12 @@ import com.infratrack.issue.dto.CreateIssueRequest;
 import com.infratrack.issue.dto.IssueResponse;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * Records issues identified from completed inspections (UC-005).
@@ -44,10 +45,9 @@ public class IssueService {
     }
 
     @Transactional(readOnly = true)
-    public List<IssueResponse> listAll() {
-        return issueRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(IssueResponse::from)
-                .toList();
+    public Page<IssueResponse> listPage(Pageable pageable) {
+        return issueRepository.findAllByOrderByCreatedAtDesc(pageable)
+                .map(IssueResponse::from);
     }
 
     @Transactional(readOnly = true)

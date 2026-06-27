@@ -5,9 +5,16 @@ import apiClient from '../services/apiClient';
 import issueApi from '../services/issueApi';
 import inspectionApi from '../services/inspectionApi';
 import NotificationButton from '../components/NotificationButton';
+import PaginationControls from '../components/PaginationControls';
 import { canRecordIssues } from '../constants/userRoles';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
-import { unwrapPageContent } from '../utils/pagination';
+import {
+  DEFAULT_PAGE,
+  MAX_PAGE_SIZE,
+  getPageNumber,
+  getTotalPages,
+  unwrapPageContent,
+} from '../utils/pagination';
 import { getBusinessTriggerTypeLabel } from '../constants/businessTriggerTypes';
 import {
   ISSUE_SEVERITIES,
@@ -26,6 +33,10 @@ export default function IssuesPage() {
   const navigate = useNavigate();
   const { auth, logout } = useAuth();
   const [issues, setIssues] = useState([]);
+  const [issuesPage, setIssuesPage] = useState(DEFAULT_PAGE);
+  const [issuesTotalPages, setIssuesTotalPages] = useState(0);
+  const [listLoading, setListLoading] = useState(false);
+  const [allIssues, setAllIssues] = useState([]);
   const [inspections, setInspections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -42,7 +53,7 @@ export default function IssuesPage() {
   const currentUserId = auth?.user?.userId;
 
   const recordableInspections = useMemo(() => {
-    const recordedInspectionIds = new Set(issues.map((issue) => issue.inspectionId));
+    const recordedInspectionIds = new Set(allIssues.map((issue) => issue.inspectionId));
     return inspections.filter(
       (inspection) =>
         inspection.status === 'COMPLETED'
@@ -50,7 +61,7 @@ export default function IssuesPage() {
         && String(inspection.completedByUserId) === String(currentUserId)
         && !recordedInspectionIds.has(inspection.id)
     );
-  }, [inspections, issues, currentUserId]);
+  }, [inspections, allIssues, currentUserId]);
 
   const selectedInspection = useMemo(
     () => inspections.find((inspection) => String(inspection.id) === String(formData.inspectionId)),
@@ -66,20 +77,40 @@ export default function IssuesPage() {
     loadPageData();
   }, [auth, navigate]);
 
-  const loadPageData = async () => {
+  const loadIssues = async (page = issuesPage) => {
+    try {
+      setListLoading(true);
+      setError(null);
+      const issuePage = await issueApi.list(page);
+      setIssues(unwrapPageContent(issuePage));
+      setIssuesPage(getPageNumber(issuePage, page));
+      setIssuesTotalPages(getTotalPages(issuePage));
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Failed to load issues.'));
+    } finally {
+      setListLoading(false);
+    }
+  };
+
+  const loadPageData = async (page = issuesPage) => {
     try {
       setLoading(true);
       setError(null);
-      const [issueData, inspectionPage] = await Promise.all([
-        issueApi.list(),
-        inspectionApi.list(),
+      const [issuePage, inspectionPage, allIssuesPage] = await Promise.all([
+        issueApi.list(page),
+        inspectionApi.list(0, MAX_PAGE_SIZE),
+        canRecord ? issueApi.list(0, MAX_PAGE_SIZE) : Promise.resolve(null),
       ]);
-      setIssues(Array.isArray(issueData) ? issueData : []);
+      setIssues(unwrapPageContent(issuePage));
+      setIssuesPage(getPageNumber(issuePage, page));
+      setIssuesTotalPages(getTotalPages(issuePage));
       setInspections(unwrapPageContent(inspectionPage));
+      setAllIssues(allIssuesPage ? unwrapPageContent(allIssuesPage) : []);
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to load issues.'));
     } finally {
       setLoading(false);
+      setListLoading(false);
     }
   };
 
@@ -109,7 +140,7 @@ export default function IssuesPage() {
         severity: ISSUE_SEVERITIES.MEDIUM,
         recordedAt: toDateTimeLocalValue(),
       });
-      await loadPageData();
+      await loadPageData(issuesPage);
     } catch (err) {
       if (isForbidden(err)) {
         setError('You are not allowed to record this issue.');
@@ -288,6 +319,13 @@ export default function IssuesPage() {
             </table>
           )}
         </section>
+        <PaginationControls
+          page={issuesPage}
+          totalPages={issuesTotalPages}
+          loading={listLoading}
+          onPrevious={() => loadIssues(issuesPage - 1)}
+          onNext={() => loadIssues(issuesPage + 1)}
+        />
       </main>
     </div>
   );

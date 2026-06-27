@@ -13,11 +13,12 @@ import com.infratrack.exception.NotFoundException;
 import com.infratrack.department.Department;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.List;
 
 /**
  * Records operational business triggers against assets (UC-006).
@@ -42,10 +43,9 @@ public class BusinessTriggerService {
     }
 
     @Transactional(readOnly = true)
-    public List<BusinessTriggerResponse> listAll() {
-        return businessTriggerRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(BusinessTriggerResponse::from)
-                .toList();
+    public Page<BusinessTriggerResponse> listPage(Pageable pageable) {
+        return businessTriggerRepository.findAllByOrderByCreatedAtDesc(pageable)
+                .map(BusinessTriggerResponse::from);
     }
 
     @Transactional(readOnly = true)

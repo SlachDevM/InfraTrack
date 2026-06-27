@@ -22,6 +22,7 @@ import { getApiErrorMessage, isForbidden } from '../utils/apiError';
 import { filterInspectionAssignees } from '../utils/inspectionAssignees';
 import {
   DEFAULT_PAGE,
+  MAX_PAGE_SIZE,
   getPageNumber,
   getTotalPages,
   unwrapPageContent,
@@ -107,16 +108,16 @@ export default function InspectionsPage() {
       setLoading(true);
       setError(null);
       const canAssignRole = canAssignInspections(auth?.user?.role);
-      const [inspectionPage, triggerData, assetPage] = await Promise.all([
+      const [inspectionPage, triggerPage, assetPage] = await Promise.all([
         inspectionApi.list(page),
-        businessTriggerApi.list(),
-        canAssignRole ? assetApi.list() : Promise.resolve(null),
+        businessTriggerApi.list(0, MAX_PAGE_SIZE),
+        canAssignRole ? assetApi.list(0, MAX_PAGE_SIZE) : Promise.resolve(null),
       ]);
       setInspections(unwrapPageContent(inspectionPage));
       setInspectionsPage(getPageNumber(inspectionPage, page));
       setInspectionsTotalPages(getTotalPages(inspectionPage));
 
-      let loadedTriggers = Array.isArray(triggerData) ? triggerData : [];
+      let loadedTriggers = unwrapPageContent(triggerPage);
       let profile = null;
       if (canAssignRole) {
         profile = await userApi.getCurrentUser();

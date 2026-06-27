@@ -21,6 +21,7 @@ import {
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
 import {
   DEFAULT_PAGE,
+  MAX_PAGE_SIZE,
   getPageNumber,
   getTotalPages,
   unwrapPageContent,
@@ -173,14 +174,14 @@ export default function WorkOrdersPage() {
       setError(null);
       const [workOrderPage, decisionData, workerData, maintenanceActivityData] = await Promise.all([
         workOrderApi.list(page),
-        operationalDecisionApi.list(),
+        operationalDecisionApi.list(0, MAX_PAGE_SIZE),
         canAssign ? workOrderApi.listWorkers() : Promise.resolve([]),
         maintenanceActivityApi.list(),
       ]);
       setWorkOrders(unwrapPageContent(workOrderPage));
       setWorkOrdersPage(getPageNumber(workOrderPage, page));
       setWorkOrdersTotalPages(getTotalPages(workOrderPage));
-      setDecisions(decisionData);
+      setDecisions(unwrapPageContent(decisionData));
       setWorkers(workerData);
       setMaintenanceActivities(maintenanceActivityData);
     } catch (err) {

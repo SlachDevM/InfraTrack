@@ -5,8 +5,16 @@ import apiClient from '../services/apiClient';
 import operationalDecisionApi from '../services/operationalDecisionApi';
 import issueApi from '../services/issueApi';
 import NotificationButton from '../components/NotificationButton';
+import PaginationControls from '../components/PaginationControls';
 import { canMakeOperationalDecisions } from '../constants/userRoles';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
+import {
+  DEFAULT_PAGE,
+  MAX_PAGE_SIZE,
+  getPageNumber,
+  getTotalPages,
+  unwrapPageContent,
+} from '../utils/pagination';
 import { getIssueSeverityLabel } from '../constants/issueSeverities';
 import {
   OPERATIONAL_DECISION_OUTCOMES,
@@ -25,7 +33,11 @@ export default function OperationalDecisionsPage() {
   const navigate = useNavigate();
   const { auth, logout } = useAuth();
   const [decisions, setDecisions] = useState([]);
+  const [decisionsPage, setDecisionsPage] = useState(DEFAULT_PAGE);
+  const [decisionsTotalPages, setDecisionsTotalPages] = useState(0);
+  const [listLoading, setListLoading] = useState(false);
   const [issues, setIssues] = useState([]);
+  const [allDecisions, setAllDecisions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -40,9 +52,9 @@ export default function OperationalDecisionsPage() {
   const canDecide = canMakeOperationalDecisions(auth?.user?.role);
 
   const issuesRequiringDecision = useMemo(() => {
-    const decidedIssueIds = new Set(decisions.map((decision) => decision.issueId));
+    const decidedIssueIds = new Set(allDecisions.map((decision) => decision.issueId));
     return issues.filter((issue) => !decidedIssueIds.has(issue.id));
-  }, [issues, decisions]);
+  }, [issues, allDecisions]);
 
   const selectedIssue = useMemo(
     () => issues.find((issue) => String(issue.id) === String(formData.issueId)),
@@ -58,20 +70,40 @@ export default function OperationalDecisionsPage() {
     loadPageData();
   }, [auth, navigate]);
 
-  const loadPageData = async () => {
+  const loadDecisions = async (page = decisionsPage) => {
+    try {
+      setListLoading(true);
+      setError(null);
+      const decisionPage = await operationalDecisionApi.list(page);
+      setDecisions(unwrapPageContent(decisionPage));
+      setDecisionsPage(getPageNumber(decisionPage, page));
+      setDecisionsTotalPages(getTotalPages(decisionPage));
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Failed to load operational decisions.'));
+    } finally {
+      setListLoading(false);
+    }
+  };
+
+  const loadPageData = async (page = decisionsPage) => {
     try {
       setLoading(true);
       setError(null);
-      const [decisionData, issueData] = await Promise.all([
-        operationalDecisionApi.list(),
-        issueApi.list(),
+      const [decisionPage, issuePage, allDecisionsPage] = await Promise.all([
+        operationalDecisionApi.list(page),
+        issueApi.list(0, MAX_PAGE_SIZE),
+        canDecide ? operationalDecisionApi.list(0, MAX_PAGE_SIZE) : Promise.resolve(null),
       ]);
-      setDecisions(decisionData);
-      setIssues(issueData);
+      setDecisions(unwrapPageContent(decisionPage));
+      setDecisionsPage(getPageNumber(decisionPage, page));
+      setDecisionsTotalPages(getTotalPages(decisionPage));
+      setIssues(unwrapPageContent(issuePage));
+      setAllDecisions(allDecisionsPage ? unwrapPageContent(allDecisionsPage) : []);
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to load operational decisions.'));
     } finally {
       setLoading(false);
+      setListLoading(false);
     }
   };
 
@@ -101,7 +133,7 @@ export default function OperationalDecisionsPage() {
         rationale: '',
         decidedAt: toDateTimeLocalValue(),
       });
-      await loadPageData();
+      await loadPageData(decisionsPage);
     } catch (err) {
       if (isForbidden(err)) {
         setError('You do not have permission to make operational decisions.');
@@ -278,6 +310,13 @@ export default function OperationalDecisionsPage() {
             </table>
           )}
         </section>
+        <PaginationControls
+          page={decisionsPage}
+          totalPages={decisionsTotalPages}
+          loading={listLoading}
+          onPrevious={() => loadDecisions(decisionsPage - 1)}
+          onNext={() => loadDecisions(decisionsPage + 1)}
+        />
       </main>
     </div>
   );

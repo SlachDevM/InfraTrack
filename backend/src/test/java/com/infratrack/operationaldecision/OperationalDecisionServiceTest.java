@@ -22,6 +22,7 @@ import com.infratrack.issue.Issue;
 import com.infratrack.issue.IssueRepository;
 import com.infratrack.issue.IssueSeverity;
 import com.infratrack.operationaldecision.dto.CreateOperationalDecisionRequest;
+import com.infratrack.operationaldecision.dto.OperationalDecisionResponse;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
@@ -31,10 +32,15 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -357,6 +363,20 @@ class OperationalDecisionServiceTest {
                 .isInstanceOf(ForbiddenOperationException.class);
     }
 
+    @Test
+    void listPage_shouldReturnPagedDecisions() {
+        OperationalDecision decision = operationalDecision(800L);
+        Pageable pageable = PageRequest.of(0, 20);
+        when(operationalDecisionRepository.findAllByOrderByCreatedAtDesc(pageable))
+                .thenReturn(new PageImpl<>(List.of(decision), pageable, 21));
+
+        Page<OperationalDecisionResponse> page = operationalDecisionService.listPage(pageable);
+
+        assertThat(page.getContent()).hasSize(1);
+        assertThat(page.getContent().get(0).getId()).isEqualTo(800L);
+        assertThat(page.getTotalPages()).isEqualTo(2);
+    }
+
     private CreateOperationalDecisionRequest validRequest() {
         CreateOperationalDecisionRequest request = new CreateOperationalDecisionRequest();
         request.setIssueId(500L);
@@ -453,5 +473,19 @@ class OperationalDecisionServiceTest {
                 "Cross-department cover");
         authority.setId(id);
         return authority;
+    }
+
+    private OperationalDecision operationalDecision(Long id) {
+        Issue issue = issue(500L);
+        OperationalDecision decision = new OperationalDecision(
+                issue,
+                issue.getAsset(),
+                OperationalDecisionOutcome.INTERNAL_MAINTENANCE,
+                "Replace damaged swing chain through internal parks crew",
+                30L,
+                LocalDateTime.now().minusMinutes(5)
+        );
+        decision.setId(id);
+        return decision;
     }
 }

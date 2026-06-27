@@ -3,6 +3,7 @@ package com.infratrack.delegatedauthority;
 import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.delegatedauthority.dto.CreateDelegatedAuthorityRequest;
+import com.infratrack.delegatedauthority.dto.DelegatedAuthorityResponse;
 import com.infratrack.department.Department;
 import com.infratrack.department.DepartmentRepository;
 import com.infratrack.user.User;
@@ -14,9 +15,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -185,6 +191,20 @@ class DelegatedAuthorityServiceTest {
 
         assertThatThrownBy(() -> delegatedAuthorityService.revoke(100L, 99L))
                 .isInstanceOf(ForbiddenOperationException.class);
+    }
+
+    @Test
+    void listPage_shouldReturnPagedAuthorities() {
+        DelegatedAuthority authority = savedAuthority(100L, 10L);
+        Pageable pageable = PageRequest.of(0, 20);
+        when(delegatedAuthorityRepository.findAllByOrderByCreatedAtDesc(pageable))
+                .thenReturn(new PageImpl<>(List.of(authority), pageable, 21));
+
+        Page<DelegatedAuthorityResponse> page = delegatedAuthorityService.listPage(pageable);
+
+        assertThat(page.getContent()).hasSize(1);
+        assertThat(page.getContent().get(0).getId()).isEqualTo(100L);
+        assertThat(page.getTotalPages()).isEqualTo(2);
     }
 
     private CreateDelegatedAuthorityRequest validRequest() {

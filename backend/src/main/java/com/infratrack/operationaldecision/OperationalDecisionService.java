@@ -17,11 +17,12 @@ import com.infratrack.operationaldecision.dto.CreateOperationalDecisionRequest;
 import com.infratrack.operationaldecision.dto.OperationalDecisionResponse;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -50,10 +51,9 @@ public class OperationalDecisionService {
     }
 
     @Transactional(readOnly = true)
-    public List<OperationalDecisionResponse> listAll() {
-        return operationalDecisionRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(OperationalDecisionResponse::from)
-                .toList();
+    public Page<OperationalDecisionResponse> listPage(Pageable pageable) {
+        return operationalDecisionRepository.findAllByOrderByCreatedAtDesc(pageable)
+                .map(OperationalDecisionResponse::from);
     }
 
     @Transactional(readOnly = true)

@@ -1,11 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, cleanup } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import IssuesPage from '../../pages/IssuesPage';
 import issueApi from '../../services/issueApi';
 import inspectionApi from '../../services/inspectionApi';
 
 const mockNavigate = vi.fn();
+
+const { mockAuth, mockLogout } = vi.hoisted(() => ({
+  mockAuth: { token: 'test-token', user: { userId: 1, role: 'MANAGER' } },
+  mockLogout: vi.fn(),
+}));
 
 vi.mock('../../services/issueApi', () => ({
   default: {
@@ -36,8 +42,8 @@ vi.mock('react-router-dom', async () => {
 
 vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({
-    auth: { token: 'test-token', user: { userId: 1, role: 'MANAGER' } },
-    logout: vi.fn(),
+    auth: mockAuth,
+    logout: mockLogout,
   }),
 }));
 
@@ -45,8 +51,8 @@ vi.mock('../../components/NotificationButton', () => ({
   default: () => <button type="button">Notifications</button>,
 }));
 
-function inspectionPageResponse(content) {
-  return { content, number: 0, totalPages: 1 };
+function pageResponse(content, number = 0, totalPages = 1) {
+  return { content, number, totalPages };
 }
 
 describe('IssuesPage', () => {
@@ -54,12 +60,12 @@ describe('IssuesPage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    issueApi.list.mockResolvedValue([]);
-    inspectionApi.list.mockResolvedValue(inspectionPageResponse([]));
+    issueApi.list.mockResolvedValue(pageResponse([]));
+    inspectionApi.list.mockResolvedValue(pageResponse([]));
   });
 
   it('renders issues from mocked API', async () => {
-    issueApi.list.mockResolvedValue([
+    issueApi.list.mockResolvedValue(pageResponse([
       {
         id: 1,
         assetName: 'Central Playground',
@@ -68,8 +74,8 @@ describe('IssuesPage', () => {
         severity: 'HIGH',
         recordedAt: '2026-06-01T09:00:00',
       },
-    ]);
-    inspectionApi.list.mockResolvedValue(inspectionPageResponse([
+    ]));
+    inspectionApi.list.mockResolvedValue(pageResponse([
       {
         id: 10,
         assetName: 'Central Playground',
@@ -117,6 +123,70 @@ describe('IssuesPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Internal server error')).toBeInTheDocument();
+    });
+  });
+
+  it('loads the first page on initial render', async () => {
+    issueApi.list.mockResolvedValue(pageResponse([
+      {
+        id: 1,
+        assetName: 'First Page Asset',
+        inspectionId: 10,
+        description: 'First page issue',
+        severity: 'HIGH',
+        recordedAt: '2026-06-01T09:00:00',
+      },
+    ], 0, 2));
+
+    render(
+      <MemoryRouter>
+        <IssuesPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('First page issue')).toBeInTheDocument();
+    expect(issueApi.list).toHaveBeenCalledWith(0);
+  });
+
+  it('loads the next page when Next is clicked', async () => {
+    const user = userEvent.setup();
+    issueApi.list.mockImplementation((page = 0) => {
+      if (page === 0) {
+        return Promise.resolve(pageResponse([
+          {
+            id: 1,
+            assetName: 'First Page Asset',
+            inspectionId: 10,
+            description: 'First page issue',
+            severity: 'HIGH',
+            recordedAt: '2026-06-01T09:00:00',
+          },
+        ], 0, 2));
+      }
+      return Promise.resolve(pageResponse([
+        {
+          id: 2,
+          assetName: 'Second Page Asset',
+          inspectionId: 11,
+          description: 'Second page issue',
+          severity: 'MEDIUM',
+          recordedAt: '2026-06-02T09:00:00',
+        },
+      ], 1, 2));
+    });
+
+    render(
+      <MemoryRouter>
+        <IssuesPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('First page issue')).toBeInTheDocument();
+    await user.click(screen.getByTestId('pagination-next'));
+
+    await waitFor(() => {
+      expect(issueApi.list).toHaveBeenLastCalledWith(1);
+      expect(screen.getByText('Second page issue')).toBeInTheDocument();
     });
   });
 });

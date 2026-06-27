@@ -11,11 +11,12 @@ import com.infratrack.exception.NotFoundException;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRepository;
 import com.infratrack.user.UserService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -41,10 +42,9 @@ public class DelegatedAuthorityService {
     }
 
     @Transactional(readOnly = true)
-    public List<DelegatedAuthorityResponse> listAll() {
-        return delegatedAuthorityRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(DelegatedAuthorityResponse::from)
-                .toList();
+    public Page<DelegatedAuthorityResponse> listPage(Pageable pageable) {
+        return delegatedAuthorityRepository.findAllByOrderByCreatedAtDesc(pageable)
+                .map(DelegatedAuthorityResponse::from);
     }
 
     @Transactional(readOnly = true)
