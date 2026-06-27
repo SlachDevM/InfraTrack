@@ -1,5 +1,8 @@
 package com.infratrack.delegatedauthority;
 
+import com.infratrack.asset.Asset;
+import com.infratrack.asset.AssetStatus;
+import com.infratrack.assetcategory.AssetCategory;
 import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.delegatedauthority.dto.CreateDelegatedAuthorityRequest;
@@ -205,6 +208,57 @@ class DelegatedAuthorityServiceTest {
         assertThat(page.getContent()).hasSize(1);
         assertThat(page.getContent().get(0).getId()).isEqualTo(100L);
         assertThat(page.getTotalPages()).isEqualTo(2);
+    }
+
+    @Test
+    void resolveOperationalDecisionDelegationId_shouldReturnNullForOwnDepartment() {
+        User manager = manager(30L, 1L);
+        Asset asset = assetInDepartment(1L);
+
+        assertThat(delegatedAuthorityService.resolveOperationalDecisionDelegationId(
+                manager, asset, LocalDateTime.now())).isNull();
+    }
+
+    @Test
+    void resolveOperationalDecisionDelegationId_shouldReturnDelegationIdWhenActive() {
+        User manager = manager(30L, 2L);
+        Asset asset = assetInDepartment(1L);
+        DelegatedAuthority delegation = savedAuthority(700L, 40L);
+        LocalDateTime decidedAt = LocalDateTime.now().minusMinutes(5);
+
+        when(delegatedAuthorityRepository.findActiveDelegation(30L, 1L, decidedAt))
+                .thenReturn(Optional.of(delegation));
+
+        assertThat(delegatedAuthorityService.resolveOperationalDecisionDelegationId(
+                manager, asset, decidedAt)).isEqualTo(700L);
+    }
+
+    @Test
+    void resolveOperationalDecisionDelegationId_shouldRejectCrossDepartmentWithoutDelegation() {
+        User manager = manager(30L, 2L);
+        Asset asset = assetInDepartment(1L);
+        LocalDateTime decidedAt = LocalDateTime.now().minusMinutes(5);
+
+        when(delegatedAuthorityRepository.findActiveDelegation(30L, 1L, decidedAt))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> delegatedAuthorityService.resolveOperationalDecisionDelegationId(
+                manager, asset, decidedAt))
+                .isInstanceOf(ForbiddenOperationException.class);
+    }
+
+    private Asset assetInDepartment(Long departmentId) {
+        AssetCategory category = new AssetCategory("Playground");
+        category.setId(2L);
+        return new Asset(
+                "Central Playground",
+                department(departmentId, "Dept " + departmentId),
+                category,
+                "Memorial Park",
+                AssetStatus.ACTIVE,
+                java.time.LocalDate.of(2026, 6, 25),
+                10L
+        );
     }
 
     private CreateDelegatedAuthorityRequest validRequest() {

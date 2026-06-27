@@ -15,7 +15,9 @@ import com.infratrack.department.Department;
 import com.infratrack.inspection.Inspection;
 import com.infratrack.inspection.InspectionPriority;
 import com.infratrack.delegatedauthority.DelegatedAuthority;
+import com.infratrack.delegatedauthority.DelegatedAuthorityRepository;
 import com.infratrack.delegatedauthority.DelegatedAuthorityService;
+import com.infratrack.department.DepartmentRepository;
 import com.infratrack.inspection.InspectionStatus;
 import com.infratrack.inspection.PhysicalCondition;
 import com.infratrack.issue.Issue;
@@ -24,6 +26,7 @@ import com.infratrack.issue.IssueSeverity;
 import com.infratrack.operationaldecision.dto.CreateOperationalDecisionRequest;
 import com.infratrack.operationaldecision.dto.OperationalDecisionResponse;
 import com.infratrack.user.User;
+import com.infratrack.user.UserRepository;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
 import org.junit.jupiter.api.Test;
@@ -45,6 +48,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -65,6 +69,15 @@ class OperationalDecisionServiceTest {
     @Mock
     private DelegatedAuthorityService delegatedAuthorityService;
 
+    @Mock
+    private DelegatedAuthorityRepository delegatedAuthorityRepository;
+
+    @Mock
+    private DepartmentRepository departmentRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
     @InjectMocks
     private OperationalDecisionService operationalDecisionService;
 
@@ -75,9 +88,10 @@ class OperationalDecisionServiceTest {
         User manager = managerInDepartment(30L, 1L);
 
         when(userService.getById(30L)).thenReturn(manager);
-        when(issueRepository.findById(500L)).thenReturn(Optional.of(issue));
+        when(issueRepository.findDetailedById(500L)).thenReturn(Optional.of(issue));
         when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(false);
-        when(delegatedAuthorityService.isManagerOfDepartment(manager, issue.getAsset().getDepartment())).thenReturn(true);
+        when(delegatedAuthorityService.resolveOperationalDecisionDelegationId(
+                manager, issue.getAsset(), request.getDecidedAt())).thenReturn(null);
         when(operationalDecisionRepository.save(any(OperationalDecision.class))).thenAnswer(invocation -> {
             OperationalDecision decision = invocation.getArgument(0);
             decision.setId(900L);
@@ -114,9 +128,10 @@ class OperationalDecisionServiceTest {
         User manager = managerInDepartment(30L, 1L);
 
         when(userService.getById(30L)).thenReturn(manager);
-        when(issueRepository.findById(500L)).thenReturn(Optional.of(issue));
+        when(issueRepository.findDetailedById(500L)).thenReturn(Optional.of(issue));
         when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(false);
-        when(delegatedAuthorityService.isManagerOfDepartment(manager, issue.getAsset().getDepartment())).thenReturn(true);
+        when(delegatedAuthorityService.resolveOperationalDecisionDelegationId(
+                manager, issue.getAsset(), request.getDecidedAt())).thenReturn(null);
         when(operationalDecisionRepository.save(any(OperationalDecision.class))).thenAnswer(invocation -> {
             OperationalDecision decision = invocation.getArgument(0);
             decision.setId(900L);
@@ -145,7 +160,7 @@ class OperationalDecisionServiceTest {
         CreateOperationalDecisionRequest request = validRequest();
         User manager = user(30L, UserRole.MANAGER);
         when(userService.getById(30L)).thenReturn(manager);
-        when(issueRepository.findById(500L)).thenReturn(Optional.empty());
+        when(issueRepository.findDetailedById(500L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
                 .isInstanceOf(BusinessValidationException.class);
@@ -158,7 +173,7 @@ class OperationalDecisionServiceTest {
         User manager = user(30L, UserRole.MANAGER);
 
         when(userService.getById(30L)).thenReturn(manager);
-        when(issueRepository.findById(500L)).thenReturn(Optional.of(issue));
+        when(issueRepository.findDetailedById(500L)).thenReturn(Optional.of(issue));
         when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(true);
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
@@ -176,7 +191,7 @@ class OperationalDecisionServiceTest {
         User manager = user(30L, UserRole.MANAGER);
 
         when(userService.getById(30L)).thenReturn(manager);
-        when(issueRepository.findById(500L)).thenReturn(Optional.of(issue));
+        when(issueRepository.findDetailedById(500L)).thenReturn(Optional.of(issue));
         when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(false);
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
@@ -191,7 +206,7 @@ class OperationalDecisionServiceTest {
         User manager = user(30L, UserRole.MANAGER);
 
         when(userService.getById(30L)).thenReturn(manager);
-        when(issueRepository.findById(500L)).thenReturn(Optional.of(issue));
+        when(issueRepository.findDetailedById(500L)).thenReturn(Optional.of(issue));
         when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(false);
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
@@ -206,7 +221,7 @@ class OperationalDecisionServiceTest {
         User manager = user(30L, UserRole.MANAGER);
 
         when(userService.getById(30L)).thenReturn(manager);
-        when(issueRepository.findById(500L)).thenReturn(Optional.of(issue));
+        when(issueRepository.findDetailedById(500L)).thenReturn(Optional.of(issue));
         when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(false);
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
@@ -221,7 +236,7 @@ class OperationalDecisionServiceTest {
         User manager = user(30L, UserRole.MANAGER);
 
         when(userService.getById(30L)).thenReturn(manager);
-        when(issueRepository.findById(500L)).thenReturn(Optional.of(issue));
+        when(issueRepository.findDetailedById(500L)).thenReturn(Optional.of(issue));
         when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(false);
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
@@ -236,7 +251,7 @@ class OperationalDecisionServiceTest {
         User manager = user(30L, UserRole.MANAGER);
 
         when(userService.getById(30L)).thenReturn(manager);
-        when(issueRepository.findById(500L)).thenReturn(Optional.of(issue));
+        when(issueRepository.findDetailedById(500L)).thenReturn(Optional.of(issue));
         when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(false);
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
@@ -250,9 +265,10 @@ class OperationalDecisionServiceTest {
         User manager = managerInDepartment(30L, 1L);
 
         when(userService.getById(30L)).thenReturn(manager);
-        when(issueRepository.findById(500L)).thenReturn(Optional.of(issue));
+        when(issueRepository.findDetailedById(500L)).thenReturn(Optional.of(issue));
         when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(false);
-        when(delegatedAuthorityService.isManagerOfDepartment(manager, issue.getAsset().getDepartment())).thenReturn(true);
+        when(delegatedAuthorityService.resolveOperationalDecisionDelegationId(
+                manager, issue.getAsset(), request.getDecidedAt())).thenReturn(null);
         when(operationalDecisionRepository.save(any(OperationalDecision.class))).thenAnswer(invocation -> {
             OperationalDecision decision = invocation.getArgument(0);
             decision.setId(900L);
@@ -310,10 +326,11 @@ class OperationalDecisionServiceTest {
         User manager = managerInDepartment(30L, 2L);
 
         when(userService.getById(30L)).thenReturn(manager);
-        when(issueRepository.findById(500L)).thenReturn(Optional.of(issue));
+        when(issueRepository.findDetailedById(500L)).thenReturn(Optional.of(issue));
         when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(false);
-        when(delegatedAuthorityService.isManagerOfDepartment(manager, issue.getAsset().getDepartment())).thenReturn(false);
-        when(delegatedAuthorityService.findActiveDelegation(30L, 1L, request.getDecidedAt())).thenReturn(Optional.empty());
+        when(delegatedAuthorityService.resolveOperationalDecisionDelegationId(
+                manager, issue.getAsset(), request.getDecidedAt()))
+                .thenThrow(new ForbiddenOperationException("Manager is not authorised to make operational decisions for this asset department"));
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
                 .isInstanceOf(ForbiddenOperationException.class);
@@ -330,11 +347,10 @@ class OperationalDecisionServiceTest {
         DelegatedAuthority delegation = activeDelegation(700L);
 
         when(userService.getById(30L)).thenReturn(manager);
-        when(issueRepository.findById(500L)).thenReturn(Optional.of(issue));
+        when(issueRepository.findDetailedById(500L)).thenReturn(Optional.of(issue));
         when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(false);
-        when(delegatedAuthorityService.isManagerOfDepartment(manager, issue.getAsset().getDepartment())).thenReturn(false);
-        when(delegatedAuthorityService.findActiveDelegation(30L, 1L, request.getDecidedAt()))
-                .thenReturn(Optional.of(delegation));
+        when(delegatedAuthorityService.resolveOperationalDecisionDelegationId(
+                manager, issue.getAsset(), request.getDecidedAt())).thenReturn(700L);
         when(operationalDecisionRepository.save(any(OperationalDecision.class))).thenAnswer(invocation -> {
             OperationalDecision decision = invocation.getArgument(0);
             decision.setId(900L);
@@ -354,12 +370,70 @@ class OperationalDecisionServiceTest {
         User manager = managerInDepartment(30L, 2L);
 
         when(userService.getById(30L)).thenReturn(manager);
-        when(issueRepository.findById(500L)).thenReturn(Optional.of(issue));
+        when(issueRepository.findDetailedById(500L)).thenReturn(Optional.of(issue));
         when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(false);
-        when(delegatedAuthorityService.isManagerOfDepartment(manager, issue.getAsset().getDepartment())).thenReturn(false);
-        when(delegatedAuthorityService.findActiveDelegation(30L, 1L, request.getDecidedAt())).thenReturn(Optional.empty());
+        when(delegatedAuthorityService.resolveOperationalDecisionDelegationId(
+                manager, issue.getAsset(), request.getDecidedAt()))
+                .thenThrow(new ForbiddenOperationException("Manager is not authorised to make operational decisions for this asset department"));
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
+                .isInstanceOf(ForbiddenOperationException.class);
+    }
+
+    @Test
+    void makeOperationalDecision_shouldRejectCrossDepartmentWithRealAuthorizationService() {
+        CreateOperationalDecisionRequest request = validRequest();
+        Issue issue = issue(500L);
+        User manager = managerInDepartment(30L, 2L);
+        DelegatedAuthorityService realAuthorizationService = new DelegatedAuthorityService(
+                delegatedAuthorityRepository,
+                departmentRepository,
+                userRepository,
+                userService);
+
+        OperationalDecisionService service = new OperationalDecisionService(
+                operationalDecisionRepository,
+                issueRepository,
+                assetHistoryEventRepository,
+                userService,
+                realAuthorizationService);
+
+        when(userService.getById(30L)).thenReturn(manager);
+        when(issueRepository.findDetailedById(500L)).thenReturn(Optional.of(issue));
+        when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(false);
+        when(delegatedAuthorityRepository.findActiveDelegation(30L, 1L, request.getDecidedAt()))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.makeOperationalDecision(request, 30L))
+                .isInstanceOf(ForbiddenOperationException.class);
+
+        verify(operationalDecisionRepository, never()).save(any());
+    }
+
+    @Test
+    void listEligibleForWorkOrderCreationPage_shouldReturnDecisionsForCoordinatorDepartment() {
+        User coordinator = coordinatorInDepartment(40L, 1L);
+        OperationalDecision decision = operationalDecision(800L);
+        Pageable pageable = PageRequest.of(0, 20);
+
+        when(userService.getById(40L)).thenReturn(coordinator);
+        when(operationalDecisionRepository.findEligibleForWorkOrderCreation(eq(1L), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(decision), pageable, 1));
+
+        Page<OperationalDecisionResponse> page =
+                operationalDecisionService.listEligibleForWorkOrderCreationPage(40L, pageable);
+
+        assertThat(page.getContent()).hasSize(1);
+        assertThat(page.getContent().get(0).getId()).isEqualTo(800L);
+    }
+
+    @Test
+    void listEligibleForWorkOrderCreationPage_shouldRejectNonCoordinator() {
+        User manager = managerInDepartment(30L, 1L);
+        when(userService.getById(30L)).thenReturn(manager);
+
+        assertThatThrownBy(() -> operationalDecisionService.listEligibleForWorkOrderCreationPage(
+                30L, PageRequest.of(0, 20)))
                 .isInstanceOf(ForbiddenOperationException.class);
     }
 
@@ -456,6 +530,14 @@ class OperationalDecisionServiceTest {
         department.setId(departmentId);
         manager.setDepartment(department);
         return manager;
+    }
+
+    private User coordinatorInDepartment(Long id, Long departmentId) {
+        User coordinator = user(id, UserRole.OPERATIONAL_COORDINATOR);
+        Department department = new Department("Department " + departmentId);
+        department.setId(departmentId);
+        coordinator.setDepartment(department);
+        return coordinator;
     }
 
     private DelegatedAuthority activeDelegation(Long id) {

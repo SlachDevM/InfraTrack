@@ -41,6 +41,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -320,6 +321,40 @@ class IssueServiceTest {
         assertThat(page.getContent()).hasSize(1);
         assertThat(page.getContent().get(0).getId()).isEqualTo(50L);
         assertThat(page.getTotalPages()).isEqualTo(2);
+    }
+
+    @Test
+    void listEligibleForOperationalDecisionPage_shouldReturnIssuesForManagerDepartment() {
+        User manager = managerInDepartment(30L, 1L);
+        Issue issue = issue(50L);
+        Pageable pageable = PageRequest.of(0, 20);
+
+        when(userService.getById(30L)).thenReturn(manager);
+        when(issueRepository.findEligibleForOperationalDecision(
+                eq(30L), eq(1L), any(LocalDateTime.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(issue), pageable, 1));
+
+        Page<IssueResponse> page = issueService.listEligibleForOperationalDecisionPage(30L, pageable);
+
+        assertThat(page.getContent()).hasSize(1);
+        assertThat(page.getContent().get(0).getId()).isEqualTo(50L);
+    }
+
+    @Test
+    void listEligibleForOperationalDecisionPage_shouldRejectNonManager() {
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        assertThatThrownBy(() -> issueService.listEligibleForOperationalDecisionPage(20L, PageRequest.of(0, 20)))
+                .isInstanceOf(ForbiddenOperationException.class);
+    }
+
+    private User managerInDepartment(Long id, Long departmentId) {
+        User manager = user(id, UserRole.MANAGER);
+        Department department = new Department("Department " + departmentId);
+        department.setId(departmentId);
+        manager.setDepartment(department);
+        return manager;
     }
 
     private CreateIssueRequest validRequest() {

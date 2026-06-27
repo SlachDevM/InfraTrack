@@ -1,5 +1,6 @@
 package com.infratrack.delegatedauthority;
 
+import com.infratrack.asset.Asset;
 import com.infratrack.delegatedauthority.dto.CreateDelegatedAuthorityRequest;
 import com.infratrack.delegatedauthority.dto.DelegatedAuthorityResponse;
 import com.infratrack.department.Department;
@@ -121,6 +122,33 @@ public class DelegatedAuthorityService {
                 && manager.getDepartment() != null
                 && department != null
                 && manager.getDepartment().getId().equals(department.getId());
+    }
+
+    @Transactional(readOnly = true)
+    public boolean canManagerActForAssetDepartment(User manager, Department assetDepartment, LocalDateTime at) {
+        if (isManagerOfDepartment(manager, assetDepartment)) {
+            return true;
+        }
+        if (assetDepartment == null) {
+            return false;
+        }
+        return findActiveDelegation(manager.getId(), assetDepartment.getId(), at).isPresent();
+    }
+
+    @Transactional(readOnly = true)
+    public Long resolveOperationalDecisionDelegationId(User manager, Asset asset, LocalDateTime decidedAt) {
+        Department assetDepartment = asset.getDepartment();
+        if (isManagerOfDepartment(manager, assetDepartment)) {
+            return null;
+        }
+        if (assetDepartment == null) {
+            throw new ForbiddenOperationException(
+                    "Manager is not authorised to make operational decisions for this asset department");
+        }
+        return findActiveDelegation(manager.getId(), assetDepartment.getId(), decidedAt)
+                .map(DelegatedAuthority::getId)
+                .orElseThrow(() -> new ForbiddenOperationException(
+                        "Manager is not authorised to make operational decisions for this asset department"));
     }
 
     User requireManager(Long userId) {

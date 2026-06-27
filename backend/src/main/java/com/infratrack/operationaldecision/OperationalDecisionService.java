@@ -4,7 +4,6 @@ import com.infratrack.asset.Asset;
 import com.infratrack.asset.AssetHistoryEvent;
 import com.infratrack.asset.AssetHistoryEventRepository;
 import com.infratrack.asset.AssetHistoryEventType;
-import com.infratrack.delegatedauthority.DelegatedAuthority;
 import com.infratrack.delegatedauthority.DelegatedAuthorityService;
 import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.ConflictException;
@@ -23,7 +22,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 /**
  * Records manager operational decisions on issues (UC-007).
@@ -57,6 +55,18 @@ public class OperationalDecisionService {
     }
 
     @Transactional(readOnly = true)
+    public Page<OperationalDecisionResponse> listEligibleForWorkOrderCreationPage(Long userId, Pageable pageable) {
+        User coordinator = requireOperationalCoordinator(userId);
+        Long coordinatorDepartmentId = coordinator.getDepartment() != null
+                ? coordinator.getDepartment().getId()
+                : null;
+        return operationalDecisionRepository.findEligibleForWorkOrderCreation(
+                        coordinatorDepartmentId,
+                        pageable)
+                .map(OperationalDecisionResponse::from);
+    }
+
+    @Transactional(readOnly = true)
     public OperationalDecisionResponse getById(Long id) {
         return OperationalDecisionResponse.from(findDecisionOrThrow(id));
     }
@@ -73,7 +83,8 @@ public class OperationalDecisionService {
         LocalDateTime decidedAt = validateDecidedAt(request.getDecidedAt(), issue);
 
         Asset asset = issue.getAsset();
-        Long delegatedAuthorityId = resolveDelegatedAuthorityId(manager, asset, decidedAt);
+        Long delegatedAuthorityId = delegatedAuthorityService.resolveOperationalDecisionDelegationId(
+                manager, asset, decidedAt);
 
         OperationalDecision decision = new OperationalDecision(
                 issue,
@@ -96,26 +107,20 @@ public class OperationalDecisionService {
         return OperationalDecisionResponse.from(decision);
     }
 
-    private Long resolveDelegatedAuthorityId(User manager, Asset asset, LocalDateTime decidedAt) {
-        if (delegatedAuthorityService.isManagerOfDepartment(manager, asset.getDepartment())) {
-            return null;
-        }
-
-        Optional<DelegatedAuthority> delegation = delegatedAuthorityService.findActiveDelegation(
-                manager.getId(),
-                asset.getDepartment().getId(),
-                decidedAt);
-
-        return delegation.map(DelegatedAuthority::getId)
-                .orElseThrow(() -> new ForbiddenOperationException(
-                        "Manager is not authorised to make operational decisions for this asset department"));
-    }
-
     private User requireManager(Long userId) {
         User user = userService.getById(userId);
         if (!user.getRole().isManager()) {
             throw new ForbiddenOperationException(
                     "Only managers can make operational decisions");
+        }
+        return user;
+    }
+
+    private User requireOperationalCoordinator(Long userId) {
+        User user = userService.getById(userId);
+        if (!user.getRole().isOperationalCoordinator()) {
+            throw new ForbiddenOperationException(
+                    "Only operational coordinators can create work orders");
         }
         return user;
     }
@@ -129,7 +134,7 @@ public class OperationalDecisionService {
         if (issueId == null) {
             throw new BusinessValidationException("Issue is required");
         }
-        return issueRepository.findById(issueId)
+        return issueRepository.findDetailedById(issueId)
                 .orElseThrow(() -> new BusinessValidationException("Issue not found"));
     }
 

@@ -43,11 +43,18 @@ public class IssueController {
     @ApiResponse(responseCode = "200", description = "Paginated issue list")
     public ResponseEntity<Page<IssueResponse>> listIssues(
             @Parameter(description = "Zero-based page index") @RequestParam(required = false) Integer page,
-            @Parameter(description = "Page size (max 100)") @RequestParam(required = false) Integer size) {
+            @Parameter(description = "Page size (max 100)") @RequestParam(required = false) Integer size,
+            @Parameter(description = "When true, returns only issues eligible for operational decision (UC-007)")
+            @RequestParam(required = false) Boolean eligibleForOperationalDecision,
+            Authentication authentication) {
         Pageable pageable = PaginationSupport.pageable(
                 page,
                 size,
                 Sort.by(Sort.Direction.DESC, "createdAt"));
+        if (Boolean.TRUE.equals(eligibleForOperationalDecision)) {
+            Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+            return ResponseEntity.ok(issueService.listEligibleForOperationalDecisionPage(userId, pageable));
+        }
         return ResponseEntity.ok(issueService.listPage(pageable));
     }
 

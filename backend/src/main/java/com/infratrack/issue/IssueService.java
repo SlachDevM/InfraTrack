@@ -51,6 +51,20 @@ public class IssueService {
     }
 
     @Transactional(readOnly = true)
+    public Page<IssueResponse> listEligibleForOperationalDecisionPage(Long userId, Pageable pageable) {
+        User manager = requireManager(userId);
+        Long managerDepartmentId = manager.getDepartment() != null
+                ? manager.getDepartment().getId()
+                : null;
+        return issueRepository.findEligibleForOperationalDecision(
+                        manager.getId(),
+                        managerDepartmentId,
+                        LocalDateTime.now(),
+                        pageable)
+                .map(IssueResponse::from);
+    }
+
+    @Transactional(readOnly = true)
     public IssueResponse getById(Long id) {
         return IssueResponse.from(findIssueOrThrow(id));
     }
@@ -88,8 +102,16 @@ public class IssueService {
     }
 
     private Issue findIssueOrThrow(Long id) {
-        return issueRepository.findById(id)
+        return issueRepository.findDetailedById(id)
                 .orElseThrow(() -> new NotFoundException("Issue not found"));
+    }
+
+    private User requireManager(Long userId) {
+        User user = userService.getById(userId);
+        if (!user.getRole().isManager()) {
+            throw new ForbiddenOperationException("Only managers can make operational decisions");
+        }
+        return user;
     }
 
     private Inspection findInspectionOrThrow(Long inspectionId) {

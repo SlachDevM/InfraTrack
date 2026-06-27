@@ -37,7 +37,6 @@ export default function OperationalDecisionsPage() {
   const [decisionsTotalPages, setDecisionsTotalPages] = useState(0);
   const [listLoading, setListLoading] = useState(false);
   const [issues, setIssues] = useState([]);
-  const [allDecisions, setAllDecisions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -50,11 +49,6 @@ export default function OperationalDecisionsPage() {
   });
 
   const canDecide = canMakeOperationalDecisions(auth?.user?.role);
-
-  const issuesRequiringDecision = useMemo(() => {
-    const decidedIssueIds = new Set(allDecisions.map((decision) => decision.issueId));
-    return issues.filter((issue) => !decidedIssueIds.has(issue.id));
-  }, [issues, allDecisions]);
 
   const selectedIssue = useMemo(
     () => issues.find((issue) => String(issue.id) === String(formData.issueId)),
@@ -89,16 +83,16 @@ export default function OperationalDecisionsPage() {
     try {
       setLoading(true);
       setError(null);
-      const [decisionPage, issuePage, allDecisionsPage] = await Promise.all([
+      const [decisionPage, issuePage] = await Promise.all([
         operationalDecisionApi.list(page),
-        issueApi.list(0, MAX_PAGE_SIZE),
-        canDecide ? operationalDecisionApi.list(0, MAX_PAGE_SIZE) : Promise.resolve(null),
+        canDecide
+          ? issueApi.listEligibleForOperationalDecision(0, MAX_PAGE_SIZE)
+          : Promise.resolve(null),
       ]);
       setDecisions(unwrapPageContent(decisionPage));
       setDecisionsPage(getPageNumber(decisionPage, page));
       setDecisionsTotalPages(getTotalPages(decisionPage));
-      setIssues(unwrapPageContent(issuePage));
-      setAllDecisions(allDecisionsPage ? unwrapPageContent(allDecisionsPage) : []);
+      setIssues(issuePage ? unwrapPageContent(issuePage) : []);
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to load operational decisions.'));
     } finally {
@@ -191,10 +185,10 @@ export default function OperationalDecisionsPage() {
                   value={formData.issueId}
                   onChange={handleChange}
                   required
-                  disabled={submitting || issuesRequiringDecision.length === 0}
+                  disabled={submitting || issues.length === 0}
                 >
                   <option value="">Select issue</option>
-                  {issuesRequiringDecision.map((issue) => (
+                  {issues.map((issue) => (
                     <option key={issue.id} value={issue.id}>
                       #{issue.id} — {issue.assetName} ({getIssueSeverityLabel(issue.severity)})
                     </option>
@@ -262,12 +256,12 @@ export default function OperationalDecisionsPage() {
               <button
                 type="submit"
                 className="btn-primary"
-                disabled={submitting || issuesRequiringDecision.length === 0}
+                disabled={submitting || issues.length === 0}
               >
                 {submitting ? 'Recording...' : 'Make Operational Decision'}
               </button>
             </form>
-            {issuesRequiringDecision.length === 0 && (
+            {issues.length === 0 && (
               <p className="read-only-note">No issues are currently awaiting an operational decision.</p>
             )}
           </section>
