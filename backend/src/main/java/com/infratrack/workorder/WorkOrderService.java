@@ -54,11 +54,6 @@ public class WorkOrderService {
     }
 
     @Transactional(readOnly = true)
-    public List<WorkOrderSummaryResponse> listAll() {
-        return mapSummaries(workOrderRepository.findAllByOrderByCreatedAtDesc());
-    }
-
-    @Transactional(readOnly = true)
     public Page<WorkOrderSummaryResponse> listPage(Pageable pageable) {
         Page<WorkOrder> page = workOrderRepository.findAllByOrderByCreatedAtDesc(pageable);
         Map<Long, String> userNames = userNameLookup.resolveNames(
@@ -127,17 +122,6 @@ public class WorkOrderService {
                 ? userService.getById(workOrder.getAssignedToUserId())
                 : null;
         return WorkOrderResponse.from(workOrder, assignedToUser);
-    }
-
-    private List<WorkOrderSummaryResponse> mapSummaries(List<WorkOrder> workOrders) {
-        Map<Long, String> userNames = userNameLookup.resolveNames(
-                workOrders.stream()
-                        .map(WorkOrder::getAssignedToUserId)
-                        .filter(Objects::nonNull)
-                        .toList());
-        return workOrders.stream()
-                .map(workOrder -> WorkOrderSummaryResponse.from(workOrder, userNames))
-                .toList();
     }
 
     private void requireCreatedStatus(WorkOrder workOrder) {

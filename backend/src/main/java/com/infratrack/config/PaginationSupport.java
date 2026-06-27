@@ -12,10 +12,6 @@ public final class PaginationSupport {
     private PaginationSupport() {
     }
 
-    public static boolean isUnpagedRequest(Integer page, Integer size) {
-        return page == null && size == null;
-    }
-
     public static int normalizeSize(int size) {
         return Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
     }

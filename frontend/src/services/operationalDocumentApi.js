@@ -1,5 +1,6 @@
 import apiClient from './apiClient';
 import API_CONFIG from '../config/apiConfig';
+import { paginatedQuery, unwrapPageContent } from '../utils/pagination';
 
 const ENDPOINTS = {
   LIST: (assetId) => `/api/assets/${assetId}/documents`,
@@ -8,7 +9,7 @@ const ENDPOINTS = {
 };
 
 export const operationalDocumentApi = {
-  list: (assetId) => apiClient.get(ENDPOINTS.LIST(assetId)),
+  list: (assetId) => apiClient.get(`${ENDPOINTS.LIST(assetId)}?${paginatedQuery()}`).then(unwrapPageContent),
   upload: (assetId, formData) => {
     if (!(formData instanceof FormData)) {
       return Promise.reject(new TypeError('upload requires FormData'));

@@ -33,15 +33,6 @@ public class AssetHistoryService {
     }
 
     @Transactional(readOnly = true)
-    public List<AssetHistoryResponse> getAssetHistory(Long assetId) {
-        requireAssetExists(assetId);
-
-        List<AssetHistoryEvent> events = assetHistoryEventRepository
-                .findByAssetIdOrderByEventDateDescCreatedAtDesc(assetId);
-        return mapEvents(events);
-    }
-
-    @Transactional(readOnly = true)
     public Page<AssetHistoryResponse> getAssetHistory(Long assetId, Pageable pageable) {
         requireAssetExists(assetId);
 
@@ -51,19 +42,10 @@ public class AssetHistoryService {
         return events.map(event -> toResponse(event, userNamesById.get(event.getPerformedByUserId())));
     }
 
-    private List<AssetHistoryResponse> mapEvents(List<AssetHistoryEvent> events) {
-        if (events.isEmpty()) {
-            return List.of();
-        }
-
-        Map<Long, String> userNamesById = loadUserNames(events);
-
-        return events.stream()
-                .map(event -> toResponse(event, userNamesById.get(event.getPerformedByUserId())))
-                .toList();
-    }
-
     private Map<Long, String> loadUserNames(List<AssetHistoryEvent> events) {
+        if (events.isEmpty()) {
+            return Map.of();
+        }
         return userRepository.findAllById(
                 events.stream()
                         .map(AssetHistoryEvent::getPerformedByUserId)

@@ -11,11 +11,16 @@ import com.infratrack.department.Department;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRepository;
 import com.infratrack.user.UserRole;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -32,6 +37,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class AssetHistoryServiceTest {
 
+    private static final Pageable DEFAULT_PAGEABLE = PageRequest.of(0, 20);
+
     @Mock
     private AssetRepository assetRepository;
 
@@ -44,46 +51,50 @@ class AssetHistoryServiceTest {
     @InjectMocks
     private AssetHistoryService assetHistoryService;
 
+    @BeforeEach
+    void setUp() {
+        lenient().when(assetRepository.existsById(5L)).thenReturn(true);
+    }
+
     @Test
     void getAssetHistory_shouldReturnHistoryForExistingAsset() {
-        when(assetRepository.existsById(5L)).thenReturn(true);
-        when(assetHistoryEventRepository.findByAssetIdOrderByEventDateDescCreatedAtDesc(5L))
-                .thenReturn(List.of(
+        when(assetHistoryEventRepository.findByAssetIdOrderByEventDateDescCreatedAtDesc(eq(5L), eq(DEFAULT_PAGEABLE)))
+                .thenReturn(new PageImpl<>(List.of(
                         historyEvent(AssetHistoryEventType.MAINTENANCE_COMPLETED, 20L, LocalDate.of(2026, 6, 25)),
                         historyEvent(AssetHistoryEventType.ASSET_REGISTERED, 10L, LocalDate.of(2026, 6, 1))
-                ));
+                )));
         when(userRepository.findAllById(Set.of(20L, 10L))).thenReturn(List.of(
                 user(10L, "Coordinator"),
                 user(20L, "Field Worker")
         ));
 
-        List<AssetHistoryResponse> history = assetHistoryService.getAssetHistory(5L);
+        Page<AssetHistoryResponse> history = assetHistoryService.getAssetHistory(5L, DEFAULT_PAGEABLE);
 
-        assertThat(history).hasSize(2);
-        assertThat(history.get(0).getEventType()).isEqualTo(AssetHistoryEventType.MAINTENANCE_COMPLETED);
-        assertThat(history.get(1).getEventType()).isEqualTo(AssetHistoryEventType.ASSET_REGISTERED);
+        assertThat(history.getContent()).hasSize(2);
+        assertThat(history.getContent().get(0).getEventType()).isEqualTo(AssetHistoryEventType.MAINTENANCE_COMPLETED);
+        assertThat(history.getContent().get(1).getEventType()).isEqualTo(AssetHistoryEventType.ASSET_REGISTERED);
     }
 
     @Test
     void getAssetHistory_shouldReturn404WhenAssetNotFound() {
         when(assetRepository.existsById(99L)).thenReturn(false);
 
-        assertThatThrownBy(() -> assetHistoryService.getAssetHistory(99L))
+        assertThatThrownBy(() -> assetHistoryService.getAssetHistory(99L, DEFAULT_PAGEABLE))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasFieldOrPropertyWithValue("statusCode", HttpStatus.NOT_FOUND);
 
-        verify(assetHistoryEventRepository, never()).findByAssetIdOrderByEventDateDescCreatedAtDesc(any());
+        verify(assetHistoryEventRepository, never())
+                .findByAssetIdOrderByEventDateDescCreatedAtDesc(any(), any());
     }
 
     @Test
     void getAssetHistory_shouldReturnEmptyListWhenNoHistoryExists() {
-        when(assetRepository.existsById(5L)).thenReturn(true);
-        when(assetHistoryEventRepository.findByAssetIdOrderByEventDateDescCreatedAtDesc(5L))
-                .thenReturn(List.of());
+        when(assetHistoryEventRepository.findByAssetIdOrderByEventDateDescCreatedAtDesc(eq(5L), eq(DEFAULT_PAGEABLE)))
+                .thenReturn(new PageImpl<>(List.of()));
 
-        List<AssetHistoryResponse> history = assetHistoryService.getAssetHistory(5L);
+        Page<AssetHistoryResponse> history = assetHistoryService.getAssetHistory(5L, DEFAULT_PAGEABLE);
 
-        assertThat(history).isEmpty();
+        assertThat(history.getContent()).isEmpty();
         verify(userRepository, never()).findAllById(any());
     }
 
@@ -100,17 +111,16 @@ class AssetHistoryServiceTest {
                 LocalDate.of(2026, 1, 1)
         );
 
-        when(assetRepository.existsById(5L)).thenReturn(true);
-        when(assetHistoryEventRepository.findByAssetIdOrderByEventDateDescCreatedAtDesc(5L))
-                .thenReturn(List.of(newest, oldest));
+        when(assetHistoryEventRepository.findByAssetIdOrderByEventDateDescCreatedAtDesc(eq(5L), eq(DEFAULT_PAGEABLE)))
+                .thenReturn(new PageImpl<>(List.of(newest, oldest)));
         when(userRepository.findAllById(Set.of(40L, 10L))).thenReturn(List.of(
                 user(10L, "Coordinator"),
                 user(40L, "Coordinator Two")
         ));
 
-        List<AssetHistoryResponse> history = assetHistoryService.getAssetHistory(5L);
+        Page<AssetHistoryResponse> history = assetHistoryService.getAssetHistory(5L, DEFAULT_PAGEABLE);
 
-        assertThat(history).extracting(AssetHistoryResponse::getEventDate)
+        assertThat(history.getContent()).extracting(AssetHistoryResponse::getEventDate)
                 .containsExactly(LocalDate.of(2026, 6, 25), LocalDate.of(2026, 1, 1));
     }
 
@@ -124,86 +134,80 @@ class AssetHistoryServiceTest {
             date = date.plusDays(1);
         }
 
-        when(assetRepository.existsById(5L)).thenReturn(true);
-        when(assetHistoryEventRepository.findByAssetIdOrderByEventDateDescCreatedAtDesc(5L))
-                .thenReturn(events);
+        when(assetHistoryEventRepository.findByAssetIdOrderByEventDateDescCreatedAtDesc(eq(5L), eq(DEFAULT_PAGEABLE)))
+                .thenReturn(new PageImpl<>(events));
         when(userRepository.findAllById(Set.of(10L))).thenReturn(List.of(user(10L, "Coordinator")));
 
-        List<AssetHistoryResponse> history = assetHistoryService.getAssetHistory(5L);
+        Page<AssetHistoryResponse> history = assetHistoryService.getAssetHistory(5L, DEFAULT_PAGEABLE);
 
-        assertThat(history).extracting(AssetHistoryResponse::getEventType)
+        assertThat(history.getContent()).extracting(AssetHistoryResponse::getEventType)
                 .containsExactlyInAnyOrder(AssetHistoryEventType.values());
     }
 
     @Test
     void getAssetHistory_shouldExposeResponsibleUser() {
-        when(assetRepository.existsById(5L)).thenReturn(true);
-        when(assetHistoryEventRepository.findByAssetIdOrderByEventDateDescCreatedAtDesc(5L))
-                .thenReturn(List.of(
+        when(assetHistoryEventRepository.findByAssetIdOrderByEventDateDescCreatedAtDesc(eq(5L), eq(DEFAULT_PAGEABLE)))
+                .thenReturn(new PageImpl<>(List.of(
                         historyEvent(AssetHistoryEventType.ISSUE_RECORDED, 20L, LocalDate.of(2026, 6, 10))
-                ));
+                )));
         when(userRepository.findAllById(Set.of(20L))).thenReturn(List.of(user(20L, "Field Worker")));
 
-        List<AssetHistoryResponse> history = assetHistoryService.getAssetHistory(5L);
+        Page<AssetHistoryResponse> history = assetHistoryService.getAssetHistory(5L, DEFAULT_PAGEABLE);
 
-        assertThat(history.get(0).getResponsibleUserId()).isEqualTo(20L);
-        assertThat(history.get(0).getResponsibleUserName()).isEqualTo("Field Worker");
+        assertThat(history.getContent().get(0).getResponsibleUserId()).isEqualTo(20L);
+        assertThat(history.getContent().get(0).getResponsibleUserName()).isEqualTo("Field Worker");
     }
 
     @Test
     void getAssetHistory_shouldLeaveResponsibleUserNameNullWhenUserUnavailable() {
-        when(assetRepository.existsById(5L)).thenReturn(true);
-        when(assetHistoryEventRepository.findByAssetIdOrderByEventDateDescCreatedAtDesc(5L))
-                .thenReturn(List.of(
+        when(assetHistoryEventRepository.findByAssetIdOrderByEventDateDescCreatedAtDesc(eq(5L), eq(DEFAULT_PAGEABLE)))
+                .thenReturn(new PageImpl<>(List.of(
                         historyEvent(AssetHistoryEventType.ISSUE_RECORDED, 20L, LocalDate.of(2026, 6, 10))
-                ));
+                )));
         when(userRepository.findAllById(Set.of(20L))).thenReturn(List.of());
 
-        List<AssetHistoryResponse> history = assetHistoryService.getAssetHistory(5L);
+        Page<AssetHistoryResponse> history = assetHistoryService.getAssetHistory(5L, DEFAULT_PAGEABLE);
 
-        assertThat(history.get(0).getResponsibleUserId()).isEqualTo(20L);
-        assertThat(history.get(0).getResponsibleUserName()).isNull();
+        assertThat(history.getContent().get(0).getResponsibleUserId()).isEqualTo(20L);
+        assertThat(history.getContent().get(0).getResponsibleUserName()).isNull();
     }
 
     @Test
     void getAssetHistory_shouldNotCreateNewAssetHistoryEvent() {
-        when(assetRepository.existsById(5L)).thenReturn(true);
-        when(assetHistoryEventRepository.findByAssetIdOrderByEventDateDescCreatedAtDesc(5L))
-                .thenReturn(List.of(
+        when(assetHistoryEventRepository.findByAssetIdOrderByEventDateDescCreatedAtDesc(eq(5L), eq(DEFAULT_PAGEABLE)))
+                .thenReturn(new PageImpl<>(List.of(
                         historyEvent(AssetHistoryEventType.ASSET_REGISTERED, 10L, LocalDate.of(2026, 6, 1))
-                ));
+                )));
         when(userRepository.findAllById(Set.of(10L))).thenReturn(List.of(user(10L, "Coordinator")));
 
-        assetHistoryService.getAssetHistory(5L);
+        assetHistoryService.getAssetHistory(5L, DEFAULT_PAGEABLE);
 
         verify(assetHistoryEventRepository, never()).save(any());
     }
 
     @Test
     void getAssetHistory_shouldNotModifyAsset() {
-        when(assetRepository.existsById(5L)).thenReturn(true);
-        when(assetHistoryEventRepository.findByAssetIdOrderByEventDateDescCreatedAtDesc(5L))
-                .thenReturn(List.of());
+        when(assetHistoryEventRepository.findByAssetIdOrderByEventDateDescCreatedAtDesc(eq(5L), eq(DEFAULT_PAGEABLE)))
+                .thenReturn(new PageImpl<>(List.of()));
 
-        assetHistoryService.getAssetHistory(5L);
+        assetHistoryService.getAssetHistory(5L, DEFAULT_PAGEABLE);
 
         verify(assetRepository, never()).save(any());
     }
 
     @Test
     void getAssetHistory_shouldLoadResponsibleUsersInSingleBatch() {
-        when(assetRepository.existsById(5L)).thenReturn(true);
-        when(assetHistoryEventRepository.findByAssetIdOrderByEventDateDescCreatedAtDesc(5L))
-                .thenReturn(List.of(
+        when(assetHistoryEventRepository.findByAssetIdOrderByEventDateDescCreatedAtDesc(eq(5L), eq(DEFAULT_PAGEABLE)))
+                .thenReturn(new PageImpl<>(List.of(
                         historyEvent(AssetHistoryEventType.WORK_ORDER_CREATED, 30L, LocalDate.of(2026, 6, 20)),
                         historyEvent(AssetHistoryEventType.ISSUE_RECORDED, 20L, LocalDate.of(2026, 6, 15))
-                ));
+                )));
         when(userRepository.findAllById(Set.of(30L, 20L))).thenReturn(List.of(
                 user(20L, "Field Worker"),
                 user(30L, "Manager")
         ));
 
-        assetHistoryService.getAssetHistory(5L);
+        assetHistoryService.getAssetHistory(5L, DEFAULT_PAGEABLE);
 
         verify(userRepository, times(1)).findAllById(eq(Set.of(30L, 20L)));
         verify(userRepository, never()).findById(any());

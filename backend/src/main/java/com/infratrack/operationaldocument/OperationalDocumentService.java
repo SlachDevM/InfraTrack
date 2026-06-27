@@ -86,14 +86,6 @@ public class OperationalDocumentService {
     }
 
     @Transactional(readOnly = true)
-    public List<OperationalDocumentSummaryResponse> listDocuments(Long assetId) {
-        ownerResolver.requireAssetExists(assetId);
-        return operationalDocumentRepository.findByAssetIdOrderByUploadedAtDesc(assetId).stream()
-                .map(OperationalDocumentSummaryResponse::from)
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
     public Page<OperationalDocumentSummaryResponse> listDocuments(Long assetId, Pageable pageable) {
         ownerResolver.requireAssetExists(assetId);
         return operationalDocumentRepository.findByAssetIdOrderByUploadedAtDesc(assetId, pageable)

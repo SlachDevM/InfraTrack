@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import apiClient from '../services/apiClient';
+import notificationApi from '../services/notificationApi';
 import { getApiErrorMessage } from '../utils/apiError';
 import '../styles/NotificationPage.css';
 
@@ -27,7 +28,7 @@ export default function NotificationPage() {
   const fetchNotifications = async () => {
     try {
       setError(null);
-      const data = await apiClient.get('/api/notifications');
+      const data = await notificationApi.list();
       setNotifications(data);
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to load notifications.'));
@@ -38,7 +39,7 @@ export default function NotificationPage() {
 
   const handleMarkAsRead = async (notificationId) => {
     try {
-      await apiClient.put(`/api/notifications/${notificationId}/read`, {});
+      await notificationApi.markAsRead(notificationId);
       const wasUnread = notifications.some((n) => n.id === notificationId && !n.isRead);
       setNotifications((prev) =>
         prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
@@ -55,7 +56,7 @@ export default function NotificationPage() {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await apiClient.put('/api/notifications/read-all', {});
+      await notificationApi.markAllAsRead();
       clearUnread();
       fetchNotifications();
     } catch (err) {

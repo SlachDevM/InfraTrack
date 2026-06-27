@@ -174,8 +174,8 @@ class V1IntegrationSmokeTest {
         mockMvc.perform(get("/api/assets/" + assetId + "/history")
                         .header("Authorization", bearerToken(coordinatorUserId, coordinatorEmail)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].eventType").value("ASSET_REGISTERED"))
-                .andExpect(jsonPath("$[0].responsibleUserId").value(coordinatorUserId));
+                .andExpect(jsonPath("$.content[0].eventType").value("ASSET_REGISTERED"))
+                .andExpect(jsonPath("$.content[0].responsibleUserId").value(coordinatorUserId));
     }
 
     @Test

@@ -4,8 +4,10 @@ import com.infratrack.config.PaginationSupport;
 import com.infratrack.inspection.dto.AssignInspectionRequest;
 import com.infratrack.inspection.dto.CompleteInspectionRequest;
 import com.infratrack.inspection.dto.InspectionResponse;
+import com.infratrack.inspection.dto.InspectionSummaryResponse;
 import com.infratrack.security.JwtAuthenticationToken;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -25,12 +27,9 @@ public class InspectionController {
     }
 
     @GetMapping
-    public ResponseEntity<?> listInspections(
+    public ResponseEntity<Page<InspectionSummaryResponse>> listInspections(
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
-        if (PaginationSupport.isUnpagedRequest(page, size)) {
-            return ResponseEntity.ok(inspectionService.listAll());
-        }
         Pageable pageable = PaginationSupport.pageable(
                 page,
                 size,

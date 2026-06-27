@@ -53,11 +53,6 @@ public class InspectionService {
     }
 
     @Transactional(readOnly = true)
-    public List<InspectionSummaryResponse> listAll() {
-        return mapSummaries(inspectionRepository.findAllByOrderByCreatedAtDesc());
-    }
-
-    @Transactional(readOnly = true)
     public Page<InspectionSummaryResponse> listPage(Pageable pageable) {
         Page<Inspection> page = inspectionRepository.findAllByOrderByCreatedAtDesc(pageable);
         Map<Long, String> userNames = userNameLookup.resolveNames(
@@ -129,17 +124,6 @@ public class InspectionService {
     private InspectionResponse toResponse(Inspection inspection) {
         User assignedToUser = userService.getById(inspection.getAssignedToUserId());
         return InspectionResponse.from(inspection, assignedToUser, null);
-    }
-
-    private List<InspectionSummaryResponse> mapSummaries(List<Inspection> inspections) {
-        Map<Long, String> userNames = userNameLookup.resolveNames(
-                inspections.stream()
-                        .map(Inspection::getAssignedToUserId)
-                        .filter(Objects::nonNull)
-                        .toList());
-        return inspections.stream()
-                .map(inspection -> InspectionSummaryResponse.from(inspection, userNames))
-                .toList();
     }
 
     private Inspection findInspectionOrThrow(Long id) {

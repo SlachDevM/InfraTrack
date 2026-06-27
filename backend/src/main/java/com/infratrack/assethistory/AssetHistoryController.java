@@ -1,6 +1,7 @@
 package com.infratrack.assethistory;
 
 import com.infratrack.config.PaginationSupport;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
@@ -23,17 +24,16 @@ public class AssetHistoryController {
     }
 
     @GetMapping("/{id}/history")
-    public ResponseEntity<?> getAssetHistory(
+    public ResponseEntity<Page<AssetHistoryResponse>> getAssetHistory(
             @PathVariable Long id,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
-        if (PaginationSupport.isUnpagedRequest(page, size)) {
-            return ResponseEntity.ok(assetHistoryService.getAssetHistory(id));
-        }
         Pageable pageable = PaginationSupport.pageable(
                 page,
                 size,
-                Sort.by(Sort.Direction.DESC, "createdAt"));
+                Sort.by(
+                        Sort.Order.desc("eventDate"),
+                        Sort.Order.desc("createdAt")));
         return ResponseEntity.ok(assetHistoryService.getAssetHistory(id, pageable));
     }
 }

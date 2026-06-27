@@ -11,8 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/notifications")
 @CrossOrigin(origins = "http://localhost:3000")
@@ -25,17 +23,11 @@ public class NotificationController {
     }
 
     @GetMapping
-    public ResponseEntity<?> getUserNotifications(
+    public ResponseEntity<Page<NotificationSummaryResponse>> getUserNotifications(
             Authentication authentication,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
         Long userId = getUserId(authentication);
-        if (PaginationSupport.isUnpagedRequest(page, size)) {
-            List<NotificationSummaryResponse> responses = notificationService.getUserNotifications(userId).stream()
-                    .map(NotificationSummaryResponse::from)
-                    .toList();
-            return ResponseEntity.ok(responses);
-        }
         Pageable pageable = PaginationSupport.pageable(
                 page,
                 size,
@@ -47,17 +39,11 @@ public class NotificationController {
     }
 
     @GetMapping("/unread")
-    public ResponseEntity<?> getUnreadNotifications(
+    public ResponseEntity<Page<NotificationSummaryResponse>> getUnreadNotifications(
             Authentication authentication,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
         Long userId = getUserId(authentication);
-        if (PaginationSupport.isUnpagedRequest(page, size)) {
-            List<NotificationSummaryResponse> responses = notificationService.getUnreadNotifications(userId).stream()
-                    .map(NotificationSummaryResponse::from)
-                    .toList();
-            return ResponseEntity.ok(responses);
-        }
         Pageable pageable = PaginationSupport.pageable(
                 page,
                 size,

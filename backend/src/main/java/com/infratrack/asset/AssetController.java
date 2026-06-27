@@ -1,10 +1,12 @@
 package com.infratrack.asset;
 
 import com.infratrack.asset.dto.AssetResponse;
+import com.infratrack.asset.dto.AssetSummaryResponse;
 import com.infratrack.asset.dto.RegisterAssetRequest;
 import com.infratrack.config.PaginationSupport;
 import com.infratrack.security.JwtAuthenticationToken;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -24,12 +26,9 @@ public class AssetController {
     }
 
     @GetMapping
-    public ResponseEntity<?> listAssets(
+    public ResponseEntity<Page<AssetSummaryResponse>> listAssets(
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
-        if (PaginationSupport.isUnpagedRequest(page, size)) {
-            return ResponseEntity.ok(assetService.listAll());
-        }
         Pageable pageable = PaginationSupport.pageable(
                 page,
                 size,

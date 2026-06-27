@@ -43,13 +43,6 @@ public class AssetService {
     }
 
     @Transactional(readOnly = true)
-    public List<AssetSummaryResponse> listAll() {
-        return assetRepository.findAllByOrderByRegistrationDateDesc().stream()
-                .map(AssetSummaryResponse::from)
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
     public Page<AssetSummaryResponse> listPage(Pageable pageable) {
         return assetRepository.findAllByOrderByRegistrationDateDesc(pageable)
                 .map(AssetSummaryResponse::from);
