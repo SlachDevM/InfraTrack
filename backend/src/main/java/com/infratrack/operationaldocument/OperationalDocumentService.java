@@ -3,6 +3,9 @@ package com.infratrack.operationaldocument;
 import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.NotFoundException;
 import com.infratrack.operationaldocument.dto.OperationalDocumentResponse;
+import com.infratrack.operationaldocument.dto.OperationalDocumentSummaryResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
 import org.springframework.core.io.Resource;
@@ -83,11 +86,18 @@ public class OperationalDocumentService {
     }
 
     @Transactional(readOnly = true)
-    public List<OperationalDocumentResponse> listDocuments(Long assetId) {
+    public List<OperationalDocumentSummaryResponse> listDocuments(Long assetId) {
         ownerResolver.requireAssetExists(assetId);
         return operationalDocumentRepository.findByAssetIdOrderByUploadedAtDesc(assetId).stream()
-                .map(OperationalDocumentResponse::from)
+                .map(OperationalDocumentSummaryResponse::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<OperationalDocumentSummaryResponse> listDocuments(Long assetId, Pageable pageable) {
+        ownerResolver.requireAssetExists(assetId);
+        return operationalDocumentRepository.findByAssetIdOrderByUploadedAtDesc(assetId, pageable)
+                .map(OperationalDocumentSummaryResponse::from);
     }
 
     @Transactional(readOnly = true)

@@ -18,6 +18,7 @@ import com.infratrack.operationaldecision.OperationalDecision;
 import com.infratrack.operationaldecision.OperationalDecisionOutcome;
 import com.infratrack.operationaldecision.OperationalDecisionRepository;
 import com.infratrack.user.User;
+import com.infratrack.user.UserNameLookup;
 import com.infratrack.user.UserRepository;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
@@ -52,6 +53,9 @@ class WorkOrderServiceNotificationTest {
     private UserService userService;
 
     @Mock
+    private UserNameLookup userNameLookup;
+
+    @Mock
     private NotificationService notificationService;
 
     @Mock
@@ -71,6 +75,7 @@ class WorkOrderServiceNotificationTest {
                 authorizationService,
                 historyRecorder,
                 userService,
+                userNameLookup,
                 operationalEventNotificationService);
     }
 

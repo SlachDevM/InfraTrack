@@ -9,15 +9,21 @@ import com.infratrack.operationaldecision.OperationalDecision;
 import com.infratrack.operationaldecision.OperationalDecisionOutcome;
 import com.infratrack.operationaldecision.OperationalDecisionRepository;
 import com.infratrack.user.User;
+import com.infratrack.user.UserNameLookup;
 import com.infratrack.user.UserService;
 import com.infratrack.workorder.dto.AssignWorkOrderRequest;
 import com.infratrack.workorder.dto.CreateWorkOrderRequest;
 import com.infratrack.workorder.dto.WorkOrderResponse;
+import com.infratrack.workorder.dto.WorkOrderSummaryResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class WorkOrderService {
@@ -27,6 +33,7 @@ public class WorkOrderService {
     private final WorkOrderAuthorizationService authorizationService;
     private final WorkOrderHistoryRecorder historyRecorder;
     private final UserService userService;
+    private final UserNameLookup userNameLookup;
     private final OperationalEventNotificationService operationalEventNotificationService;
 
     public WorkOrderService(
@@ -35,20 +42,31 @@ public class WorkOrderService {
             WorkOrderAuthorizationService authorizationService,
             WorkOrderHistoryRecorder historyRecorder,
             UserService userService,
+            UserNameLookup userNameLookup,
             OperationalEventNotificationService operationalEventNotificationService) {
         this.workOrderRepository = workOrderRepository;
         this.operationalDecisionRepository = operationalDecisionRepository;
         this.authorizationService = authorizationService;
         this.historyRecorder = historyRecorder;
         this.userService = userService;
+        this.userNameLookup = userNameLookup;
         this.operationalEventNotificationService = operationalEventNotificationService;
     }
 
     @Transactional(readOnly = true)
-    public List<WorkOrderResponse> listAll() {
-        return workOrderRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(this::toResponse)
-                .toList();
+    public List<WorkOrderSummaryResponse> listAll() {
+        return mapSummaries(workOrderRepository.findAllByOrderByCreatedAtDesc());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<WorkOrderSummaryResponse> listPage(Pageable pageable) {
+        Page<WorkOrder> page = workOrderRepository.findAllByOrderByCreatedAtDesc(pageable);
+        Map<Long, String> userNames = userNameLookup.resolveNames(
+                page.getContent().stream()
+                        .map(WorkOrder::getAssignedToUserId)
+                        .filter(Objects::nonNull)
+                        .toList());
+        return page.map(workOrder -> WorkOrderSummaryResponse.from(workOrder, userNames));
     }
 
     @Transactional(readOnly = true)
@@ -109,6 +127,17 @@ public class WorkOrderService {
                 ? userService.getById(workOrder.getAssignedToUserId())
                 : null;
         return WorkOrderResponse.from(workOrder, assignedToUser);
+    }
+
+    private List<WorkOrderSummaryResponse> mapSummaries(List<WorkOrder> workOrders) {
+        Map<Long, String> userNames = userNameLookup.resolveNames(
+                workOrders.stream()
+                        .map(WorkOrder::getAssignedToUserId)
+                        .filter(Objects::nonNull)
+                        .toList());
+        return workOrders.stream()
+                .map(workOrder -> WorkOrderSummaryResponse.from(workOrder, userNames))
+                .toList();
     }
 
     private void requireCreatedStatus(WorkOrder workOrder) {

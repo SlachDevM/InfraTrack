@@ -1,7 +1,12 @@
 package com.infratrack.notification;
 
+import com.infratrack.config.PaginationSupport;
 import com.infratrack.notification.dto.NotificationResponse;
+import com.infratrack.notification.dto.NotificationSummaryResponse;
 import com.infratrack.security.JwtAuthenticationToken;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -20,20 +25,46 @@ public class NotificationController {
     }
 
     @GetMapping
-    public ResponseEntity<List<NotificationResponse>> getUserNotifications(Authentication authentication) {
+    public ResponseEntity<?> getUserNotifications(
+            Authentication authentication,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
         Long userId = getUserId(authentication);
-        List<NotificationResponse> responses = notificationService.getUserNotifications(userId).stream()
-                .map(NotificationResponse::from)
-                .toList();
+        if (PaginationSupport.isUnpagedRequest(page, size)) {
+            List<NotificationSummaryResponse> responses = notificationService.getUserNotifications(userId).stream()
+                    .map(NotificationSummaryResponse::from)
+                    .toList();
+            return ResponseEntity.ok(responses);
+        }
+        Pageable pageable = PaginationSupport.pageable(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<NotificationSummaryResponse> responses = notificationService
+                .getUserNotifications(userId, pageable)
+                .map(NotificationSummaryResponse::from);
         return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/unread")
-    public ResponseEntity<List<NotificationResponse>> getUnreadNotifications(Authentication authentication) {
+    public ResponseEntity<?> getUnreadNotifications(
+            Authentication authentication,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
         Long userId = getUserId(authentication);
-        List<NotificationResponse> responses = notificationService.getUnreadNotifications(userId).stream()
-                .map(NotificationResponse::from)
-                .toList();
+        if (PaginationSupport.isUnpagedRequest(page, size)) {
+            List<NotificationSummaryResponse> responses = notificationService.getUnreadNotifications(userId).stream()
+                    .map(NotificationSummaryResponse::from)
+                    .toList();
+            return ResponseEntity.ok(responses);
+        }
+        Pageable pageable = PaginationSupport.pageable(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<NotificationSummaryResponse> responses = notificationService
+                .getUnreadNotifications(userId, pageable)
+                .map(NotificationSummaryResponse::from);
         return ResponseEntity.ok(responses);
     }
 

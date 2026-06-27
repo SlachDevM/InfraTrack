@@ -2,14 +2,15 @@ package com.infratrack.asset;
 
 import com.infratrack.asset.dto.AssetResponse;
 import com.infratrack.asset.dto.RegisterAssetRequest;
+import com.infratrack.config.PaginationSupport;
 import com.infratrack.security.JwtAuthenticationToken;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/assets")
@@ -23,8 +24,17 @@ public class AssetController {
     }
 
     @GetMapping
-    public ResponseEntity<List<AssetResponse>> listAssets() {
-        return ResponseEntity.ok(assetService.listAll());
+    public ResponseEntity<?> listAssets(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        if (PaginationSupport.isUnpagedRequest(page, size)) {
+            return ResponseEntity.ok(assetService.listAll());
+        }
+        Pageable pageable = PaginationSupport.pageable(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "registrationDate"));
+        return ResponseEntity.ok(assetService.listPage(pageable));
     }
 
     @GetMapping("/{id}")

@@ -5,6 +5,8 @@ import com.infratrack.assetcategory.dto.CreateAssetCategoryRequest;
 import com.infratrack.assetcategory.dto.UpdateAssetCategoryRequest;
 import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.NotFoundException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,6 +20,7 @@ public class AssetCategoryService {
         this.assetCategoryRepository = assetCategoryRepository;
     }
 
+    @Cacheable("assetCategories")
     public List<AssetCategoryResponse> listAll() {
         return assetCategoryRepository.findAllByOrderByNameAsc().stream()
                 .map(AssetCategoryResponse::from)
@@ -28,6 +31,7 @@ public class AssetCategoryService {
         return AssetCategoryResponse.from(findCategoryOrThrow(id));
     }
 
+    @CacheEvict(value = "assetCategories", allEntries = true)
     public AssetCategoryResponse create(CreateAssetCategoryRequest request) {
         String name = normalizeName(request.getName());
         if (assetCategoryRepository.existsByNameIgnoreCase(name)) {
@@ -38,6 +42,7 @@ public class AssetCategoryService {
         return AssetCategoryResponse.from(category);
     }
 
+    @CacheEvict(value = "assetCategories", allEntries = true)
     public AssetCategoryResponse update(Long id, UpdateAssetCategoryRequest request) {
         AssetCategory category = findCategoryOrThrow(id);
         String name = normalizeName(request.getName());
@@ -51,6 +56,7 @@ public class AssetCategoryService {
         return AssetCategoryResponse.from(assetCategoryRepository.save(category));
     }
 
+    @CacheEvict(value = "assetCategories", allEntries = true)
     public void delete(Long id) {
         if (!assetCategoryRepository.existsById(id)) {
             throw new NotFoundException("Asset category not found");

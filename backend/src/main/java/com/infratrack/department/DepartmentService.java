@@ -7,6 +7,8 @@ import com.infratrack.department.dto.UpdateDepartmentRequest;
 import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.NotFoundException;
 import com.infratrack.user.UserRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,6 +29,7 @@ public class DepartmentService {
         this.userRepository = userRepository;
     }
 
+    @Cacheable("departments")
     public List<DepartmentResponse> listAll() {
         return departmentRepository.findAllByOrderByNameAsc().stream()
                 .map(DepartmentResponse::from)
@@ -37,6 +40,7 @@ public class DepartmentService {
         return DepartmentResponse.from(findDepartmentOrThrow(id));
     }
 
+    @CacheEvict(value = "departments", allEntries = true)
     public DepartmentResponse create(CreateDepartmentRequest request) {
         String name = normalizeName(request.getName());
         if (departmentRepository.existsByNameIgnoreCase(name)) {
@@ -47,6 +51,7 @@ public class DepartmentService {
         return DepartmentResponse.from(department);
     }
 
+    @CacheEvict(value = "departments", allEntries = true)
     public DepartmentResponse update(Long id, UpdateDepartmentRequest request) {
         Department department = findDepartmentOrThrow(id);
         String name = normalizeName(request.getName());
@@ -60,6 +65,7 @@ public class DepartmentService {
         return DepartmentResponse.from(departmentRepository.save(department));
     }
 
+    @CacheEvict(value = "departments", allEntries = true)
     public void delete(Long id) {
         if (!departmentRepository.existsById(id)) {
             throw new NotFoundException("Department not found");

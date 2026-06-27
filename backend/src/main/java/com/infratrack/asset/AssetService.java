@@ -1,7 +1,10 @@
 package com.infratrack.asset;
 
 import com.infratrack.asset.dto.AssetResponse;
+import com.infratrack.asset.dto.AssetSummaryResponse;
 import com.infratrack.asset.dto.RegisterAssetRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import com.infratrack.assetcategory.AssetCategory;
 import com.infratrack.assetcategory.AssetCategoryRepository;
 import com.infratrack.department.Department;
@@ -40,10 +43,16 @@ public class AssetService {
     }
 
     @Transactional(readOnly = true)
-    public List<AssetResponse> listAll() {
-        return assetRepository.findAllByOrderByNameAsc().stream()
-                .map(AssetResponse::from)
+    public List<AssetSummaryResponse> listAll() {
+        return assetRepository.findAllByOrderByRegistrationDateDesc().stream()
+                .map(AssetSummaryResponse::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AssetSummaryResponse> listPage(Pageable pageable) {
+        return assetRepository.findAllByOrderByRegistrationDateDesc(pageable)
+                .map(AssetSummaryResponse::from);
     }
 
     @Transactional(readOnly = true)

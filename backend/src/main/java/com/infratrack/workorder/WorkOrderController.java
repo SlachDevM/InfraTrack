@@ -1,16 +1,17 @@
 package com.infratrack.workorder;
 
+import com.infratrack.config.PaginationSupport;
+import com.infratrack.security.JwtAuthenticationToken;
 import com.infratrack.workorder.dto.AssignWorkOrderRequest;
 import com.infratrack.workorder.dto.CreateWorkOrderRequest;
 import com.infratrack.workorder.dto.WorkOrderResponse;
-import com.infratrack.security.JwtAuthenticationToken;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/work-orders")
@@ -24,8 +25,17 @@ public class WorkOrderController {
     }
 
     @GetMapping
-    public ResponseEntity<List<WorkOrderResponse>> listWorkOrders() {
-        return ResponseEntity.ok(workOrderService.listAll());
+    public ResponseEntity<?> listWorkOrders(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        if (PaginationSupport.isUnpagedRequest(page, size)) {
+            return ResponseEntity.ok(workOrderService.listAll());
+        }
+        Pageable pageable = PaginationSupport.pageable(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+        return ResponseEntity.ok(workOrderService.listPage(pageable));
     }
 
     @GetMapping("/{id}")

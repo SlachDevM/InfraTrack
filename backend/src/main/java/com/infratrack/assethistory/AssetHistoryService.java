@@ -5,6 +5,8 @@ import com.infratrack.asset.AssetHistoryEventRepository;
 import com.infratrack.asset.AssetRepository;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,19 +38,37 @@ public class AssetHistoryService {
 
         List<AssetHistoryEvent> events = assetHistoryEventRepository
                 .findByAssetIdOrderByEventDateDescCreatedAtDesc(assetId);
+        return mapEvents(events);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AssetHistoryResponse> getAssetHistory(Long assetId, Pageable pageable) {
+        requireAssetExists(assetId);
+
+        Page<AssetHistoryEvent> events = assetHistoryEventRepository
+                .findByAssetIdOrderByEventDateDescCreatedAtDesc(assetId, pageable);
+        Map<Long, String> userNamesById = loadUserNames(events.getContent());
+        return events.map(event -> toResponse(event, userNamesById.get(event.getPerformedByUserId())));
+    }
+
+    private List<AssetHistoryResponse> mapEvents(List<AssetHistoryEvent> events) {
         if (events.isEmpty()) {
             return List.of();
         }
 
-        Map<Long, String> userNamesById = userRepository.findAllById(
-                events.stream()
-                        .map(AssetHistoryEvent::getPerformedByUserId)
-                        .collect(Collectors.toSet())
-        ).stream().collect(Collectors.toMap(User::getId, User::getName));
+        Map<Long, String> userNamesById = loadUserNames(events);
 
         return events.stream()
                 .map(event -> toResponse(event, userNamesById.get(event.getPerformedByUserId())))
                 .toList();
+    }
+
+    private Map<Long, String> loadUserNames(List<AssetHistoryEvent> events) {
+        return userRepository.findAllById(
+                events.stream()
+                        .map(AssetHistoryEvent::getPerformedByUserId)
+                        .collect(Collectors.toSet())
+        ).stream().collect(Collectors.toMap(User::getId, User::getName));
     }
 
     private AssetHistoryResponse toResponse(AssetHistoryEvent event, String responsibleUserName) {

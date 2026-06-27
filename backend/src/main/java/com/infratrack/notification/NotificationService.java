@@ -2,8 +2,11 @@ package com.infratrack.notification;
 
 import com.infratrack.user.User;
 import com.infratrack.user.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
@@ -27,21 +30,32 @@ public class NotificationService {
         this.firebaseNotificationService = firebaseNotificationService;
     }
 
+    @Transactional(readOnly = true)
     public List<Notification> getUserNotifications(Long userId) {
-        return notificationRepository
-                .findByUserIdOrderByCreatedAtDesc(userId);
+        return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }
 
+    @Transactional(readOnly = true)
+    public Page<Notification> getUserNotifications(Long userId, Pageable pageable) {
+        return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+    }
+
+    @Transactional(readOnly = true)
     public List<Notification> getUnreadNotifications(Long userId) {
-        return notificationRepository
-                .findByUserIdAndIsReadFalseOrderByCreatedAtDesc(userId);
+        return notificationRepository.findByUserIdAndIsReadFalseOrderByCreatedAtDesc(userId);
     }
 
+    @Transactional(readOnly = true)
+    public Page<Notification> getUnreadNotifications(Long userId, Pageable pageable) {
+        return notificationRepository.findByUserIdAndIsReadFalseOrderByCreatedAtDesc(userId, pageable);
+    }
+
+    @Transactional(readOnly = true)
     public long getUnreadCount(Long userId) {
-        return notificationRepository
-                .countByUserIdAndIsReadFalse(userId);
+        return notificationRepository.countByUserIdAndIsReadFalse(userId);
     }
 
+    @Transactional
     public Notification markAsRead(Long notificationId) {
         Notification notification =
                 notificationRepository.findById(notificationId)
@@ -52,6 +66,7 @@ public class NotificationService {
         return notificationRepository.save(notification);
     }
 
+    @Transactional
     public void markAllAsRead(Long userId) {
         List<Notification> notifications =
                 getUnreadNotifications(userId);
@@ -61,6 +76,7 @@ public class NotificationService {
         notificationRepository.saveAll(notifications);
     }
 
+    @Transactional
     public Notification create(
             Long userId,
             String title,
@@ -69,6 +85,7 @@ public class NotificationService {
         return create(userId, title, message, null);
     }
 
+    @Transactional
     public Notification create(
             Long userId,
             String title,

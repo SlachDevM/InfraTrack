@@ -17,6 +17,7 @@ import com.infratrack.inspection.dto.AssignInspectionRequest;
 import com.infratrack.inspection.dto.CompleteInspectionRequest;
 import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.user.User;
+import com.infratrack.user.UserNameLookup;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,6 +53,9 @@ class InspectionServiceTest {
     private UserService userService;
 
     @Mock
+    private UserNameLookup userNameLookup;
+
+    @Mock
     private OperationalEventNotificationService operationalEventNotificationService;
 
     private InspectionService inspectionService;
@@ -66,6 +70,7 @@ class InspectionServiceTest {
                 authorizationService,
                 historyRecorder,
                 userService,
+                userNameLookup,
                 operationalEventNotificationService);
     }
 

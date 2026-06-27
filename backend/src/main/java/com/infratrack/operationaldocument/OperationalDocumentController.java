@@ -1,7 +1,10 @@
 package com.infratrack.operationaldocument;
 
+import com.infratrack.config.PaginationSupport;
 import com.infratrack.operationaldocument.dto.OperationalDocumentResponse;
 import com.infratrack.security.JwtAuthenticationToken;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.core.io.Resource;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -12,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
-import java.util.List;
+import org.springframework.http.ResponseEntity;
 
 @RestController
 public class OperationalDocumentController {
@@ -46,8 +49,18 @@ public class OperationalDocumentController {
     }
 
     @GetMapping("/api/assets/{assetId}/documents")
-    public ResponseEntity<List<OperationalDocumentResponse>> listDocuments(@PathVariable Long assetId) {
-        return ResponseEntity.ok(operationalDocumentService.listDocuments(assetId));
+    public ResponseEntity<?> listDocuments(
+            @PathVariable Long assetId,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        if (PaginationSupport.isUnpagedRequest(page, size)) {
+            return ResponseEntity.ok(operationalDocumentService.listDocuments(assetId));
+        }
+        Pageable pageable = PaginationSupport.pageable(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "uploadedAt"));
+        return ResponseEntity.ok(operationalDocumentService.listDocuments(assetId, pageable));
     }
 
     @GetMapping("/api/operational-documents/{id}/download")

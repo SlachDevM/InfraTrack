@@ -8,6 +8,10 @@ import com.infratrack.exception.NotFoundException;
 import com.infratrack.inspection.dto.AssignInspectionRequest;
 import com.infratrack.inspection.dto.CompleteInspectionRequest;
 import com.infratrack.inspection.dto.InspectionResponse;
+import com.infratrack.inspection.dto.InspectionSummaryResponse;
+import com.infratrack.user.UserNameLookup;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
@@ -17,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class InspectionService {
@@ -26,6 +32,7 @@ public class InspectionService {
     private final InspectionAuthorizationService authorizationService;
     private final InspectionHistoryRecorder historyRecorder;
     private final UserService userService;
+    private final UserNameLookup userNameLookup;
     private final OperationalEventNotificationService operationalEventNotificationService;
 
     public InspectionService(
@@ -34,20 +41,31 @@ public class InspectionService {
             InspectionAuthorizationService authorizationService,
             InspectionHistoryRecorder historyRecorder,
             UserService userService,
+            UserNameLookup userNameLookup,
             OperationalEventNotificationService operationalEventNotificationService) {
         this.inspectionRepository = inspectionRepository;
         this.businessTriggerRepository = businessTriggerRepository;
         this.authorizationService = authorizationService;
         this.historyRecorder = historyRecorder;
         this.userService = userService;
+        this.userNameLookup = userNameLookup;
         this.operationalEventNotificationService = operationalEventNotificationService;
     }
 
     @Transactional(readOnly = true)
-    public List<InspectionResponse> listAll() {
-        return inspectionRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(this::toResponse)
-                .toList();
+    public List<InspectionSummaryResponse> listAll() {
+        return mapSummaries(inspectionRepository.findAllByOrderByCreatedAtDesc());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<InspectionSummaryResponse> listPage(Pageable pageable) {
+        Page<Inspection> page = inspectionRepository.findAllByOrderByCreatedAtDesc(pageable);
+        Map<Long, String> userNames = userNameLookup.resolveNames(
+                page.getContent().stream()
+                        .map(Inspection::getAssignedToUserId)
+                        .filter(Objects::nonNull)
+                        .toList());
+        return page.map(inspection -> InspectionSummaryResponse.from(inspection, userNames));
     }
 
     @Transactional(readOnly = true)
@@ -111,6 +129,17 @@ public class InspectionService {
     private InspectionResponse toResponse(Inspection inspection) {
         User assignedToUser = userService.getById(inspection.getAssignedToUserId());
         return InspectionResponse.from(inspection, assignedToUser, null);
+    }
+
+    private List<InspectionSummaryResponse> mapSummaries(List<Inspection> inspections) {
+        Map<Long, String> userNames = userNameLookup.resolveNames(
+                inspections.stream()
+                        .map(Inspection::getAssignedToUserId)
+                        .filter(Objects::nonNull)
+                        .toList());
+        return inspections.stream()
+                .map(inspection -> InspectionSummaryResponse.from(inspection, userNames))
+                .toList();
     }
 
     private Inspection findInspectionOrThrow(Long id) {

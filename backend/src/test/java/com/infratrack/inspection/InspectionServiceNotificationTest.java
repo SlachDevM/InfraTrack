@@ -12,6 +12,7 @@ import com.infratrack.inspection.dto.AssignInspectionRequest;
 import com.infratrack.notification.NotificationService;
 import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.user.User;
+import com.infratrack.user.UserNameLookup;
 import com.infratrack.user.UserRepository;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
@@ -44,6 +45,9 @@ class InspectionServiceNotificationTest {
     private UserService userService;
 
     @Mock
+    private UserNameLookup userNameLookup;
+
+    @Mock
     private NotificationService notificationService;
 
     @Mock
@@ -63,6 +67,7 @@ class InspectionServiceNotificationTest {
                 authorizationService,
                 historyRecorder,
                 userService,
+                userNameLookup,
                 operationalEventNotificationService);
     }
 

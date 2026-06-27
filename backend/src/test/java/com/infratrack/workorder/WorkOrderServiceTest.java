@@ -26,6 +26,7 @@ import com.infratrack.workorder.dto.AssignWorkOrderRequest;
 import com.infratrack.workorder.dto.CreateWorkOrderRequest;
 import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.user.User;
+import com.infratrack.user.UserNameLookup;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,6 +61,9 @@ class WorkOrderServiceTest {
     private UserService userService;
 
     @Mock
+    private UserNameLookup userNameLookup;
+
+    @Mock
     private OperationalEventNotificationService operationalEventNotificationService;
 
     private WorkOrderService workOrderService;
@@ -74,6 +78,7 @@ class WorkOrderServiceTest {
                 authorizationService,
                 historyRecorder,
                 userService,
+                userNameLookup,
                 operationalEventNotificationService);
     }
 
