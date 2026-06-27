@@ -7,6 +7,7 @@ import assetApi from '../services/assetApi';
 import NotificationButton from '../components/NotificationButton';
 import { canCreateBusinessTriggers } from '../constants/userRoles';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
+import { unwrapPageContent } from '../utils/pagination';
 import {
   BUSINESS_TRIGGER_TYPES,
   BUSINESS_TRIGGER_TYPE_OPTIONS,
@@ -46,12 +47,12 @@ export default function BusinessTriggersPage() {
     try {
       setLoading(true);
       setError(null);
-      const [triggerData, assetData] = await Promise.all([
+      const [triggerData, assetPage] = await Promise.all([
         businessTriggerApi.list(),
         assetApi.list(),
       ]);
-      setTriggers(triggerData);
-      setAssets(assetData);
+      setTriggers(Array.isArray(triggerData) ? triggerData : []);
+      setAssets(unwrapPageContent(assetPage));
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to load business triggers.'));
     } finally {
