@@ -3,6 +3,7 @@ package com.infratrack.auth;
 import com.infratrack.auth.dto.LoginRequest;
 import com.infratrack.auth.dto.LoginResponse;
 import com.infratrack.auth.dto.RegisterRequest;
+import com.infratrack.department.Department;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserRepository;
@@ -47,6 +48,9 @@ class AuthServiceTest {
         User user = new User("manager@test.com", "encoded-password", "Manager", UserRole.MANAGER);
         user.setId(1L);
         user.setEnabled(true);
+        Department department = new Department("Parks");
+        department.setId(1L);
+        user.setDepartment(department);
 
         when(userRepository.findByEmail("manager@test.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password", "encoded-password")).thenReturn(true);
@@ -63,6 +67,8 @@ class AuthServiceTest {
         assertThat(response.getName()).isEqualTo("Manager");
         assertThat(response.getRole()).isEqualTo(UserRole.MANAGER);
         assertThat(response.getToken()).isEqualTo("jwt-token");
+        assertThat(response.getDepartmentId()).isEqualTo(1L);
+        assertThat(response.getDepartmentName()).isEqualTo("Parks");
     }
 
     @Test

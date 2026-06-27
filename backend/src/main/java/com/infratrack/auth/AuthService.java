@@ -3,6 +3,7 @@ package com.infratrack.auth;
 import com.infratrack.auth.dto.LoginRequest;
 import com.infratrack.auth.dto.LoginResponse;
 import com.infratrack.auth.dto.RegisterRequest;
+import com.infratrack.department.Department;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserStatus;
@@ -86,12 +87,15 @@ public class AuthService {
 
     private LoginResponse buildLoginResponse(User user) {
         String token = tokenProvider.generateToken(user.getId(), user.getEmail());
+        Department department = user.getDepartment();
         return new LoginResponse(
                 user.getId(),
                 user.getEmail(),
                 user.getName(),
                 user.getRole(),
-                token
+                token,
+                department != null ? department.getId() : null,
+                department != null ? department.getName() : null
         );
     }
 

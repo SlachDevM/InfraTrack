@@ -108,7 +108,25 @@ describe('BusinessTriggersPage', () => {
     );
 
     expect(await screen.findByText('No business triggers yet.')).toBeInTheDocument();
-    expect(screen.getByText(/register at least one asset/i)).toBeInTheDocument();
+    expect(screen.getByText(/no assets in your department/i)).toBeInTheDocument();
+  });
+
+  it('shows no assignable assets when department id is unavailable', async () => {
+    userApi.getCurrentUser.mockResolvedValue({});
+    assetApi.list.mockResolvedValue(pageResponse([
+      { id: 10, name: 'Central Playground', departmentId: 1, departmentName: 'Parks' },
+      { id: 11, name: 'Other Asset', departmentId: 2, departmentName: 'Roads' },
+    ]));
+
+    render(
+      <MemoryRouter>
+        <BusinessTriggersPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText(/no assets in your department/i)).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Central Playground (Parks)' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Other Asset (Roads)' })).not.toBeInTheDocument();
   });
 
   it('displays API error message when loading fails', async () => {

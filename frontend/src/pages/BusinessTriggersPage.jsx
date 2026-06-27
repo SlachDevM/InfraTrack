@@ -10,6 +10,10 @@ import PaginationControls from '../components/PaginationControls';
 import { canCreateBusinessTriggers } from '../constants/userRoles';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
 import {
+  filterAssetsByUserDepartment,
+  resolveUserDepartmentId,
+} from '../utils/businessTriggerAssets';
+import {
   DEFAULT_PAGE,
   MAX_PAGE_SIZE,
   getPageNumber,
@@ -58,21 +62,18 @@ export default function BusinessTriggersPage() {
     try {
       setLoading(true);
       setError(null);
-      const [triggerPage, assetPage] = await Promise.all([
+      const [triggerPage, assetPage, profile] = await Promise.all([
         businessTriggerApi.list(page),
         assetApi.list(0, MAX_PAGE_SIZE),
+        canCreate ? userApi.getCurrentUser() : Promise.resolve(null),
       ]);
       setTriggers(unwrapPageContent(triggerPage));
       setTriggersPage(getPageNumber(triggerPage, page));
       setTriggersTotalPages(getTotalPages(triggerPage));
+      const departmentId = resolveUserDepartmentId(auth?.user, profile);
       let loadedAssets = unwrapPageContent(assetPage);
       if (canCreate) {
-        const profile = await userApi.getCurrentUser();
-        if (profile?.departmentId != null) {
-          loadedAssets = loadedAssets.filter(
-            (asset) => asset.departmentId === profile.departmentId
-          );
-        }
+        loadedAssets = filterAssetsByUserDepartment(loadedAssets, departmentId);
       }
       setAssets(loadedAssets);
     } catch (err) {
@@ -254,7 +255,9 @@ export default function BusinessTriggersPage() {
               </button>
             </form>
             {assets.length === 0 && (
-              <p className="read-only-note">Register at least one asset before creating a trigger.</p>
+              <p className="read-only-note">
+                No assets in your department are available. Register an asset in your department first.
+              </p>
             )}
           </section>
         ) : (
