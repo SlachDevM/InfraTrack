@@ -1,5 +1,8 @@
 package com.infratrack.operationaldecision;
 
+import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ForbiddenOperationException;
+import com.infratrack.exception.ConflictException;
 import com.infratrack.asset.Asset;
 import com.infratrack.asset.AssetHistoryEvent;
 import com.infratrack.asset.AssetHistoryEventRepository;
@@ -29,7 +32,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -129,8 +131,7 @@ class OperationalDecisionServiceTest {
         when(userService.getById(30L)).thenReturn(manager);
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -141,8 +142,7 @@ class OperationalDecisionServiceTest {
         when(issueRepository.findById(500L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -156,8 +156,7 @@ class OperationalDecisionServiceTest {
         when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(true);
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.CONFLICT);
+                .isInstanceOf(ConflictException.class);
 
         verify(operationalDecisionRepository, never()).save(any());
         verify(assetHistoryEventRepository, never()).save(any());
@@ -175,8 +174,7 @@ class OperationalDecisionServiceTest {
         when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(false);
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -191,8 +189,7 @@ class OperationalDecisionServiceTest {
         when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(false);
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -207,8 +204,7 @@ class OperationalDecisionServiceTest {
         when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(false);
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -223,8 +219,7 @@ class OperationalDecisionServiceTest {
         when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(false);
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -239,8 +234,7 @@ class OperationalDecisionServiceTest {
         when(operationalDecisionRepository.existsByIssueId(500L)).thenReturn(false);
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -270,8 +264,7 @@ class OperationalDecisionServiceTest {
         when(userService.getById(30L)).thenReturn(administrator);
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
@@ -281,8 +274,7 @@ class OperationalDecisionServiceTest {
         when(userService.getById(30L)).thenReturn(coordinator);
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
@@ -292,8 +284,7 @@ class OperationalDecisionServiceTest {
         when(userService.getById(30L)).thenReturn(fieldEmployee);
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
@@ -303,8 +294,7 @@ class OperationalDecisionServiceTest {
         when(userService.getById(30L)).thenReturn(contractor);
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
@@ -320,8 +310,7 @@ class OperationalDecisionServiceTest {
         when(delegatedAuthorityService.findActiveDelegation(30L, 1L, request.getDecidedAt())).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
 
         verify(operationalDecisionRepository, never()).save(any());
         verify(assetHistoryEventRepository, never()).save(any());
@@ -365,8 +354,7 @@ class OperationalDecisionServiceTest {
         when(delegatedAuthorityService.findActiveDelegation(30L, 1L, request.getDecidedAt())).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> operationalDecisionService.makeOperationalDecision(request, 30L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     private CreateOperationalDecisionRequest validRequest() {

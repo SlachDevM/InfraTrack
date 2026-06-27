@@ -1,5 +1,9 @@
 package com.infratrack.config;
 
+import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ConflictException;
+import com.infratrack.exception.ForbiddenOperationException;
+import com.infratrack.exception.NotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +16,41 @@ import static org.assertj.core.api.Assertions.assertThat;
 class GlobalExceptionHandlerTest {
 
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
+
+    @Test
+    void handleNotFoundException_returns404WithMessage() {
+        ResponseEntity<String> response = handler.handleNotFoundException(new NotFoundException("Asset not found"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).isEqualTo("Asset not found");
+    }
+
+    @Test
+    void handleBusinessValidationException_returns400WithMessage() {
+        ResponseEntity<String> response = handler.handleBusinessValidationException(
+                new BusinessValidationException("Department is required"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isEqualTo("Department is required");
+    }
+
+    @Test
+    void handleConflictException_returns409WithMessage() {
+        ResponseEntity<String> response = handler.handleConflictException(
+                new ConflictException("Work order has already been assigned"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody()).isEqualTo("Work order has already been assigned");
+    }
+
+    @Test
+    void handleForbiddenOperationException_returns403WithMessage() {
+        ResponseEntity<String> response = handler.handleForbiddenOperationException(
+                new ForbiddenOperationException("Only managers can register assets"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getBody()).isEqualTo("Only managers can register assets");
+    }
 
     @Test
     void handleMethodArgumentNotValidException_returnsFirstFieldErrorMessage() {
@@ -36,3 +75,4 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody()).isEqualTo("Validation failed");
     }
 }
+

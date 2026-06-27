@@ -1,5 +1,7 @@
 package com.infratrack.businesstrigger;
 
+import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.asset.Asset;
 import com.infratrack.asset.AssetHistoryEvent;
 import com.infratrack.asset.AssetHistoryEventRepository;
@@ -19,7 +21,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -112,8 +113,7 @@ class BusinessTriggerServiceTest {
         when(userService.getById(10L)).thenReturn(manager);
 
         assertThatThrownBy(() -> businessTriggerService.createBusinessTrigger(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -124,8 +124,7 @@ class BusinessTriggerServiceTest {
         when(assetRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> businessTriggerService.createBusinessTrigger(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -136,8 +135,7 @@ class BusinessTriggerServiceTest {
         when(userService.getById(10L)).thenReturn(manager);
 
         assertThatThrownBy(() -> businessTriggerService.createBusinessTrigger(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -148,8 +146,7 @@ class BusinessTriggerServiceTest {
         when(userService.getById(10L)).thenReturn(manager);
 
         assertThatThrownBy(() -> businessTriggerService.createBusinessTrigger(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -159,8 +156,7 @@ class BusinessTriggerServiceTest {
         when(userService.getById(10L)).thenReturn(administrator);
 
         assertThatThrownBy(() -> businessTriggerService.createBusinessTrigger(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
 
         verify(businessTriggerRepository, never()).save(any());
         verify(assetHistoryEventRepository, never()).save(any());
@@ -173,8 +169,7 @@ class BusinessTriggerServiceTest {
         when(userService.getById(10L)).thenReturn(fieldEmployee);
 
         assertThatThrownBy(() -> businessTriggerService.createBusinessTrigger(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
@@ -184,8 +179,7 @@ class BusinessTriggerServiceTest {
         when(userService.getById(10L)).thenReturn(contractor);
 
         assertThatThrownBy(() -> businessTriggerService.createBusinessTrigger(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     private CreateBusinessTriggerRequest validRequest() {

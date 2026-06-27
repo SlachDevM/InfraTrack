@@ -1,5 +1,9 @@
 package com.infratrack.workorder;
 
+import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ForbiddenOperationException;
+import com.infratrack.exception.NotFoundException;
+import com.infratrack.exception.ConflictException;
 import com.infratrack.asset.Asset;
 import com.infratrack.asset.AssetHistoryEvent;
 import com.infratrack.asset.AssetHistoryEventRepository;
@@ -31,7 +35,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -143,8 +146,7 @@ class WorkOrderServiceTest {
         when(userService.getById(40L)).thenReturn(coordinator);
 
         assertThatThrownBy(() -> workOrderService.createWorkOrder(request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -155,8 +157,7 @@ class WorkOrderServiceTest {
         when(operationalDecisionRepository.findById(900L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> workOrderService.createWorkOrder(request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -185,8 +186,7 @@ class WorkOrderServiceTest {
         when(workOrderRepository.existsByOperationalDecisionId(900L)).thenReturn(true);
 
         assertThatThrownBy(() -> workOrderService.createWorkOrder(request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.CONFLICT);
+                .isInstanceOf(ConflictException.class);
 
         verify(workOrderRepository, never()).save(any());
         verify(assetHistoryEventRepository, never()).save(any());
@@ -204,8 +204,7 @@ class WorkOrderServiceTest {
         when(workOrderRepository.existsByOperationalDecisionId(900L)).thenReturn(false);
 
         assertThatThrownBy(() -> workOrderService.createWorkOrder(request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -220,8 +219,7 @@ class WorkOrderServiceTest {
         when(workOrderRepository.existsByOperationalDecisionId(900L)).thenReturn(false);
 
         assertThatThrownBy(() -> workOrderService.createWorkOrder(request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -236,8 +234,7 @@ class WorkOrderServiceTest {
         when(workOrderRepository.existsByOperationalDecisionId(900L)).thenReturn(false);
 
         assertThatThrownBy(() -> workOrderService.createWorkOrder(request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -252,8 +249,7 @@ class WorkOrderServiceTest {
         when(workOrderRepository.existsByOperationalDecisionId(900L)).thenReturn(false);
 
         assertThatThrownBy(() -> workOrderService.createWorkOrder(request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -268,8 +264,7 @@ class WorkOrderServiceTest {
         when(workOrderRepository.existsByOperationalDecisionId(900L)).thenReturn(false);
 
         assertThatThrownBy(() -> workOrderService.createWorkOrder(request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -298,8 +293,7 @@ class WorkOrderServiceTest {
         when(userService.getById(40L)).thenReturn(manager);
 
         assertThatThrownBy(() -> workOrderService.createWorkOrder(request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
@@ -309,8 +303,7 @@ class WorkOrderServiceTest {
         when(userService.getById(40L)).thenReturn(administrator);
 
         assertThatThrownBy(() -> workOrderService.createWorkOrder(request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
@@ -320,8 +313,7 @@ class WorkOrderServiceTest {
         when(userService.getById(40L)).thenReturn(fieldEmployee);
 
         assertThatThrownBy(() -> workOrderService.createWorkOrder(request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
@@ -331,8 +323,7 @@ class WorkOrderServiceTest {
         when(userService.getById(40L)).thenReturn(contractor);
 
         assertThatThrownBy(() -> workOrderService.createWorkOrder(request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
@@ -412,8 +403,7 @@ class WorkOrderServiceTest {
         when(userService.getById(25L)).thenReturn(contractor);
 
         assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
 
         verify(workOrderRepository, never()).save(any());
     }
@@ -430,8 +420,7 @@ class WorkOrderServiceTest {
         when(userService.getById(20L)).thenReturn(fieldEmployee);
 
         assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -443,8 +432,7 @@ class WorkOrderServiceTest {
         when(workOrderRepository.findById(1000L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.NOT_FOUND);
+                .isInstanceOf(NotFoundException.class);
     }
 
     @Test
@@ -458,8 +446,7 @@ class WorkOrderServiceTest {
         when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
 
         assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.CONFLICT);
+                .isInstanceOf(ConflictException.class);
     }
 
     @Test
@@ -472,8 +459,7 @@ class WorkOrderServiceTest {
         when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
 
         assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -487,8 +473,7 @@ class WorkOrderServiceTest {
         when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
 
         assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -502,8 +487,7 @@ class WorkOrderServiceTest {
         when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
 
         assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -517,8 +501,7 @@ class WorkOrderServiceTest {
         when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
 
         assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -544,8 +527,7 @@ class WorkOrderServiceTest {
         when(userService.getById(40L)).thenReturn(manager);
 
         assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
@@ -555,8 +537,7 @@ class WorkOrderServiceTest {
         when(userService.getById(40L)).thenReturn(administrator);
 
         assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
@@ -566,8 +547,7 @@ class WorkOrderServiceTest {
         when(userService.getById(40L)).thenReturn(fieldEmployee);
 
         assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
@@ -577,8 +557,7 @@ class WorkOrderServiceTest {
         when(userService.getById(40L)).thenReturn(contractor);
 
         assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
@@ -610,8 +589,7 @@ class WorkOrderServiceTest {
         when(operationalDecisionRepository.findById(900L)).thenReturn(Optional.of(decision));
 
         assertThatThrownBy(() -> workOrderService.createWorkOrder(request, 40L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
 
         verify(workOrderRepository, never()).save(any());
     }

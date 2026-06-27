@@ -1,5 +1,8 @@
 package com.infratrack.asset;
 
+import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ForbiddenOperationException;
+import com.infratrack.exception.ConflictException;
 import com.infratrack.asset.dto.RegisterAssetRequest;
 import com.infratrack.assetcategory.AssetCategory;
 import com.infratrack.assetcategory.AssetCategoryRepository;
@@ -15,7 +18,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -89,8 +91,7 @@ class AssetServiceTest {
         when(userService.getById(10L)).thenReturn(manager);
 
         assertThatThrownBy(() -> assetService.registerAsset(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -101,8 +102,7 @@ class AssetServiceTest {
         when(userService.getById(10L)).thenReturn(manager);
 
         assertThatThrownBy(() -> assetService.registerAsset(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -113,8 +113,7 @@ class AssetServiceTest {
         when(userService.getById(10L)).thenReturn(manager);
 
         assertThatThrownBy(() -> assetService.registerAsset(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -125,8 +124,7 @@ class AssetServiceTest {
         when(departmentRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> assetService.registerAsset(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -138,8 +136,7 @@ class AssetServiceTest {
         when(assetCategoryRepository.findById(2L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> assetService.registerAsset(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -153,8 +150,7 @@ class AssetServiceTest {
                 "Central Playground", 1L, 2L)).thenReturn(true);
 
         assertThatThrownBy(() -> assetService.registerAsset(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.CONFLICT);
+                .isInstanceOf(ConflictException.class);
 
         verify(assetRepository, never()).save(any());
         verify(assetHistoryEventRepository, never()).save(any());
@@ -167,8 +163,7 @@ class AssetServiceTest {
         when(userService.getById(10L)).thenReturn(contractor);
 
         assertThatThrownBy(() -> assetService.registerAsset(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
 
         verify(assetRepository, never()).save(any());
         verify(assetHistoryEventRepository, never()).save(any());
@@ -181,8 +176,7 @@ class AssetServiceTest {
         when(userService.getById(10L)).thenReturn(fieldEmployee);
 
         assertThatThrownBy(() -> assetService.registerAsset(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
 
         verify(assetRepository, never()).save(any());
         verify(assetHistoryEventRepository, never()).save(any());
@@ -195,8 +189,7 @@ class AssetServiceTest {
         when(userService.getById(10L)).thenReturn(administrator);
 
         assertThatThrownBy(() -> assetService.registerAsset(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
 
         verify(assetRepository, never()).save(any());
         verify(assetHistoryEventRepository, never()).save(any());

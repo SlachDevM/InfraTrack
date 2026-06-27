@@ -4,10 +4,10 @@ import com.infratrack.asset.AssetRepository;
 import com.infratrack.department.dto.CreateDepartmentRequest;
 import com.infratrack.department.dto.DepartmentResponse;
 import com.infratrack.department.dto.UpdateDepartmentRequest;
+import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.NotFoundException;
 import com.infratrack.user.UserRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -40,7 +40,7 @@ public class DepartmentService {
     public DepartmentResponse create(CreateDepartmentRequest request) {
         String name = normalizeName(request.getName());
         if (departmentRepository.existsByNameIgnoreCase(name)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Department name already exists");
+            throw new BusinessValidationException("Department name already exists");
         }
 
         Department department = departmentRepository.save(new Department(name));
@@ -52,7 +52,7 @@ public class DepartmentService {
         String name = normalizeName(request.getName());
 
         if (departmentRepository.existsByNameIgnoreCaseAndIdNot(name, id)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Department name already exists");
+            throw new BusinessValidationException("Department name already exists");
         }
 
         department.setName(name);
@@ -62,14 +62,14 @@ public class DepartmentService {
 
     public void delete(Long id) {
         if (!departmentRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Department not found");
+            throw new NotFoundException("Department not found");
         }
         if (assetRepository.existsByDepartmentId(id)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+            throw new BusinessValidationException(
                     "Cannot delete department while assets belong to it");
         }
         if (userRepository.existsByDepartmentId(id)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+            throw new BusinessValidationException(
                     "Cannot delete department while users belong to it");
         }
         departmentRepository.deleteById(id);
@@ -77,12 +77,12 @@ public class DepartmentService {
 
     private Department findDepartmentOrThrow(Long id) {
         return departmentRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Department not found"));
+                .orElseThrow(() -> new NotFoundException("Department not found"));
     }
 
     private String normalizeName(String name) {
         if (name == null || name.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Department name is required");
+            throw new BusinessValidationException("Department name is required");
         }
         return name.trim();
     }

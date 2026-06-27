@@ -1,5 +1,8 @@
 package com.infratrack.operationaldocument;
 
+import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ForbiddenOperationException;
+import com.infratrack.exception.NotFoundException;
 import com.infratrack.asset.Asset;
 import com.infratrack.asset.AssetHistoryEvent;
 import com.infratrack.asset.AssetHistoryEventRepository;
@@ -40,7 +43,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -199,9 +201,7 @@ class OperationalDocumentServiceTest {
                 100L,
                 null,
                 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
-                .isEqualTo(HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -222,9 +222,7 @@ class OperationalDocumentServiceTest {
                 999L,
                 null,
                 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
-                .isEqualTo(HttpStatus.NOT_FOUND);
+                .isInstanceOf(NotFoundException.class);
     }
 
     @Test
@@ -239,9 +237,7 @@ class OperationalDocumentServiceTest {
 
         assertThatThrownBy(() -> operationalDocumentService.uploadDocument(
                 5L, file, OperationalDocumentType.PHOTO, null, null, null, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
-                .isEqualTo(HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -256,8 +252,7 @@ class OperationalDocumentServiceTest {
 
         assertThatThrownBy(() -> operationalDocumentService.uploadDocument(
                 5L, file, OperationalDocumentType.REPORT, null, null, null, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .extracting(ex -> ((ResponseStatusException) ex).getReason())
+                .extracting(Throwable::getMessage)
                 .isEqualTo("Document file is required");
     }
 
@@ -272,8 +267,7 @@ class OperationalDocumentServiceTest {
 
         assertThatThrownBy(() -> operationalDocumentService.uploadDocument(
                 5L, file, null, null, null, null, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .extracting(ex -> ((ResponseStatusException) ex).getReason())
+                .extracting(Throwable::getMessage)
                 .isEqualTo("Document type is required");
     }
 
@@ -294,8 +288,7 @@ class OperationalDocumentServiceTest {
                 null,
                 LocalDate.now().plusDays(1),
                 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .extracting(ex -> ((ResponseStatusException) ex).getReason())
+                .extracting(Throwable::getMessage)
                 .isEqualTo("Document date cannot be in the future");
     }
 
@@ -310,9 +303,7 @@ class OperationalDocumentServiceTest {
 
         assertThatThrownBy(() -> operationalDocumentService.uploadDocument(
                 5L, file, OperationalDocumentType.REPORT, null, null, null, 1L))
-                .isInstanceOf(ResponseStatusException.class)
-                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
-                .isEqualTo(HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
@@ -496,9 +487,7 @@ class OperationalDocumentServiceTest {
 
         assertThatThrownBy(() -> operationalDocumentService.uploadDocument(
                 5L, file, OperationalDocumentType.PHOTO, null, null, null, 20L))
-                .isInstanceOf(ResponseStatusException.class)
-                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
-                .isEqualTo(HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test

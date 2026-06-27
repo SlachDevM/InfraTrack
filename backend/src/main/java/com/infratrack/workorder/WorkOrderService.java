@@ -4,19 +4,21 @@ import com.infratrack.asset.Asset;
 import com.infratrack.asset.AssetHistoryEvent;
 import com.infratrack.asset.AssetHistoryEventRepository;
 import com.infratrack.asset.AssetHistoryEventType;
+import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ConflictException;
+import com.infratrack.exception.ForbiddenOperationException;
+import com.infratrack.exception.NotFoundException;
+import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.operationaldecision.OperationalDecision;
 import com.infratrack.operationaldecision.OperationalDecisionOutcome;
 import com.infratrack.operationaldecision.OperationalDecisionRepository;
+import com.infratrack.user.User;
+import com.infratrack.user.UserService;
 import com.infratrack.workorder.dto.AssignWorkOrderRequest;
 import com.infratrack.workorder.dto.CreateWorkOrderRequest;
 import com.infratrack.workorder.dto.WorkOrderResponse;
-import com.infratrack.notification.OperationalEventNotificationService;
-import com.infratrack.user.User;
-import com.infratrack.user.UserService;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -123,8 +125,7 @@ public class WorkOrderService {
     private User requireOperationalCoordinatorForAssignment(Long userId) {
         User user = userService.getById(userId);
         if (!user.getRole().isOperationalCoordinator()) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
+            throw new ForbiddenOperationException(
                     "Only operational coordinators can assign work orders");
         }
         return user;
@@ -132,25 +133,22 @@ public class WorkOrderService {
 
     private void requireCreatedStatus(WorkOrder workOrder) {
         if (workOrder.getStatus() != WorkOrderStatus.CREATED) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
+            throw new ConflictException(
                     "Work order has already been assigned");
         }
     }
 
     private User findEligibleAssigneeOrThrow(Long assignedToUserId, WorkType workType) {
         if (assignedToUserId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Assigned user is required");
+            throw new BusinessValidationException("Assigned user is required");
         }
         User user = userService.getById(assignedToUserId);
         if (workType == WorkType.INTERNAL_MAINTENANCE && !user.getRole().isFieldEmployee()) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
+            throw new BusinessValidationException(
                     "Internal maintenance work orders must be assigned to a field employee");
         }
         if (workType == WorkType.CONTRACTOR_WORK && !user.getRole().isContractor()) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
+            throw new BusinessValidationException(
                     "Contractor work orders must be assigned to a contractor");
         }
         return user;
@@ -158,16 +156,14 @@ public class WorkOrderService {
 
     private LocalDateTime validateAssignedAt(LocalDateTime assignedAt, WorkOrder workOrder) {
         if (assignedAt == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Assignment date and time are required");
+            throw new BusinessValidationException("Assignment date and time are required");
         }
         if (assignedAt.isBefore(workOrder.getCreatedAtBusinessDate())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
+            throw new BusinessValidationException(
                     "Assignment date and time cannot be before the work order was created");
         }
         if (assignedAt.isAfter(LocalDateTime.now())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
+            throw new BusinessValidationException(
                     "Assignment date and time cannot be in the future");
         }
         return assignedAt;
@@ -176,8 +172,7 @@ public class WorkOrderService {
     private User requireOperationalCoordinator(Long userId) {
         User user = userService.getById(userId);
         if (!user.getRole().isOperationalCoordinator()) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
+            throw new ForbiddenOperationException(
                     "Only operational coordinators can create work orders");
         }
         return user;
@@ -185,15 +180,15 @@ public class WorkOrderService {
 
     private WorkOrder findWorkOrderOrThrow(Long id) {
         return workOrderRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Work order not found"));
+                .orElseThrow(() -> new NotFoundException("Work order not found"));
     }
 
     private OperationalDecision findOperationalDecisionOrThrow(Long operationalDecisionId) {
         if (operationalDecisionId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Operational decision is required");
+            throw new BusinessValidationException("Operational decision is required");
         }
         return operationalDecisionRepository.findById(operationalDecisionId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Operational decision not found"));
+                .orElseThrow(() -> new BusinessValidationException("Operational decision not found"));
     }
 
     private WorkType requirePhysicalWorkOutcome(OperationalDecision decision) {
@@ -204,45 +199,41 @@ public class WorkOrderService {
         if (outcome == OperationalDecisionOutcome.CONTRACTOR_WORK) {
             return WorkType.CONTRACTOR_WORK;
         }
-        throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
+        throw new BusinessValidationException(
                 "Work orders can only be created for internal maintenance or contractor work decisions");
     }
 
     private void requireNoExistingWorkOrder(Long operationalDecisionId) {
         if (workOrderRepository.existsByOperationalDecisionId(operationalDecisionId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
+            throw new ConflictException(
                     "A work order has already been created for this operational decision");
         }
     }
 
     private String normalizeDescription(String description) {
         if (description == null || description.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Work order description is required");
+            throw new BusinessValidationException("Work order description is required");
         }
         return description.trim();
     }
 
     private WorkOrderPriority validatePriority(WorkOrderPriority priority) {
         if (priority == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Work order priority is required");
+            throw new BusinessValidationException("Work order priority is required");
         }
         return priority;
     }
 
     private LocalDateTime validateCreatedAtBusinessDate(LocalDateTime createdAtBusinessDate, OperationalDecision decision) {
         if (createdAtBusinessDate == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Work order creation date and time are required");
+            throw new BusinessValidationException("Work order creation date and time are required");
         }
         if (createdAtBusinessDate.isBefore(decision.getDecidedAt())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
+            throw new BusinessValidationException(
                     "Work order creation date and time cannot be before the operational decision");
         }
         if (createdAtBusinessDate.isAfter(LocalDateTime.now())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
+            throw new BusinessValidationException(
                     "Work order creation date and time cannot be in the future");
         }
         return createdAtBusinessDate;

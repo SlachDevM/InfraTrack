@@ -6,12 +6,14 @@ import com.infratrack.assetcategory.AssetCategory;
 import com.infratrack.assetcategory.AssetCategoryRepository;
 import com.infratrack.department.Department;
 import com.infratrack.department.DepartmentRepository;
+import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ConflictException;
+import com.infratrack.exception.ForbiddenOperationException;
+import com.infratrack.exception.NotFoundException;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -63,8 +65,7 @@ public class AssetService {
 
         if (assetRepository.existsByNameIgnoreCaseAndDepartmentIdAndAssetCategoryId(
                 name, department.getId(), category.getId())) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
+            throw new ConflictException(
                     "A possible duplicate asset already exists with the same name, department and category");
         }
 
@@ -91,56 +92,55 @@ public class AssetService {
     public void requireCanRegisterAssets(Long userId) {
         User user = userService.getById(userId);
         if (!user.getRole().isManager() && !user.getRole().isOperationalCoordinator()) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
+            throw new ForbiddenOperationException(
                     "Only managers and operational coordinators can register assets");
         }
     }
 
     private Asset findAssetOrThrow(Long id) {
         return assetRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"));
+                .orElseThrow(() -> new NotFoundException("Asset not found"));
     }
 
     private Department findDepartmentOrThrow(Long departmentId) {
         if (departmentId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Department is required");
+            throw new BusinessValidationException("Department is required");
         }
         return departmentRepository.findById(departmentId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid department"));
+                .orElseThrow(() -> new BusinessValidationException("Invalid department"));
     }
 
     private AssetCategory findAssetCategoryOrThrow(Long assetCategoryId) {
         if (assetCategoryId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Asset category is required");
+            throw new BusinessValidationException("Asset category is required");
         }
         return assetCategoryRepository.findById(assetCategoryId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid asset category"));
+                .orElseThrow(() -> new BusinessValidationException("Invalid asset category"));
     }
 
     private String normalizeName(String name) {
         if (name == null || name.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Asset name is required");
+            throw new BusinessValidationException("Asset name is required");
         }
         return name.trim();
     }
 
     private String normalizeLocation(String location) {
         if (location == null || location.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Asset location is required");
+            throw new BusinessValidationException("Asset location is required");
         }
         return location.trim();
     }
 
     private void validateRegistrationDate(java.time.LocalDate registrationDate) {
         if (registrationDate == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Registration date is required");
+            throw new BusinessValidationException("Registration date is required");
         }
     }
 
     private void validateStatus(AssetStatus status) {
         if (status == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Asset status is required");
+            throw new BusinessValidationException("Asset status is required");
         }
     }
 }

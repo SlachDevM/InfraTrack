@@ -7,6 +7,10 @@ import com.infratrack.asset.AssetHistoryEventType;
 import com.infratrack.completionreview.CompletionReview;
 import com.infratrack.completionreview.CompletionReviewDecision;
 import com.infratrack.completionreview.CompletionReviewRepository;
+import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ConflictException;
+import com.infratrack.exception.ForbiddenOperationException;
+import com.infratrack.exception.NotFoundException;
 import com.infratrack.maintenanceactivity.dto.CompleteMaintenanceActivityRequest;
 import com.infratrack.maintenanceactivity.dto.MaintenanceActivityResponse;
 import com.infratrack.notification.OperationalEventNotificationService;
@@ -16,10 +20,8 @@ import com.infratrack.workorder.WorkOrder;
 import com.infratrack.workorder.WorkOrderRepository;
 import com.infratrack.workorder.WorkOrderStatus;
 import com.infratrack.workorder.WorkType;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -108,68 +110,61 @@ public class MaintenanceActivityService {
 
     private WorkOrder findWorkOrderOrThrow(Long workOrderId) {
         return workOrderRepository.findById(workOrderId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Work order not found"));
+                .orElseThrow(() -> new NotFoundException("Work order not found"));
     }
 
     private void requireAssignedStatus(WorkOrder workOrder) {
         if (workOrder.getStatus() != WorkOrderStatus.ASSIGNED) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
+            throw new ConflictException(
                     "Work order must be assigned before maintenance can be completed");
         }
     }
 
     private void requireAssignedUser(WorkOrder workOrder, Long userId) {
         if (workOrder.getAssignedToUserId() == null) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Work order has no assigned user");
+            throw new ConflictException("Work order has no assigned user");
         }
         if (!workOrder.getAssignedToUserId().equals(userId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
+            throw new ForbiddenOperationException(
                     "Only the assigned worker may complete maintenance for this work order");
         }
     }
 
     private void requireExecutorRole(User actor, WorkType workType) {
         if (workType == WorkType.INTERNAL_MAINTENANCE && !actor.getRole().isFieldEmployee()) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
+            throw new ForbiddenOperationException(
                     "Internal maintenance work orders must be completed by a field employee");
         }
         if (workType == WorkType.CONTRACTOR_WORK && !actor.getRole().isContractor()) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
+            throw new ForbiddenOperationException(
                     "Contractor work orders must be completed by a contractor");
         }
     }
 
     private void requireNoExistingMaintenanceActivity(Long workOrderId) {
         if (maintenanceActivityRepository.existsByWorkOrderId(workOrderId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
+            throw new ConflictException(
                     "Maintenance has already been completed for this work order");
         }
     }
 
     private String normalizeCompletionNotes(String completionNotes) {
         if (completionNotes == null || completionNotes.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Completion notes are required");
+            throw new BusinessValidationException("Completion notes are required");
         }
         return completionNotes.trim();
     }
 
     private LocalDateTime validateCompletedAt(LocalDateTime completedAt, WorkOrder workOrder) {
         if (completedAt == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Completion date and time are required");
+            throw new BusinessValidationException("Completion date and time are required");
         }
         if (workOrder.getAssignedAt() != null && completedAt.isBefore(workOrder.getAssignedAt())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
+            throw new BusinessValidationException(
                     "Completion date and time cannot be before the work order was assigned");
         }
         if (completedAt.isAfter(LocalDateTime.now())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
+            throw new BusinessValidationException(
                     "Completion date and time cannot be in the future");
         }
         return completedAt;

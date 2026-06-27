@@ -1,12 +1,12 @@
 package com.infratrack.operationaldocument;
 
+import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.NotFoundException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -38,9 +38,7 @@ public class OperationalDocumentFileStore {
                     file.getSize()
             );
         } catch (IOException ex) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Invalid document");
+            throw new BusinessValidationException("Invalid document");
         }
     }
 
@@ -48,17 +46,17 @@ public class OperationalDocumentFileStore {
         try {
             Path filePath = Path.of(storagePath).normalize();
             if (!filePath.startsWith(storageRoot)) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found");
+                throw new NotFoundException("Document not found");
             }
             Resource resource = new UrlResource(filePath.toUri());
             if (!resource.exists() || !resource.isReadable()) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found");
+                throw new NotFoundException("Document not found");
             }
             return resource;
-        } catch (ResponseStatusException ex) {
+        } catch (NotFoundException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found");
+            throw new NotFoundException("Document not found");
         }
     }
 

@@ -1,5 +1,7 @@
 package com.infratrack.department;
 
+import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.NotFoundException;
 import com.infratrack.asset.AssetRepository;
 import com.infratrack.department.dto.CreateDepartmentRequest;
 import com.infratrack.department.dto.DepartmentResponse;
@@ -11,7 +13,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
@@ -75,8 +76,7 @@ class DepartmentServiceTest {
         request.setName("   ");
 
         assertThatThrownBy(() -> departmentService.create(request))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -87,8 +87,7 @@ class DepartmentServiceTest {
         when(departmentRepository.existsByNameIgnoreCase("Parks")).thenReturn(true);
 
         assertThatThrownBy(() -> departmentService.create(request))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -96,8 +95,7 @@ class DepartmentServiceTest {
         when(departmentRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> departmentService.getById(99L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.NOT_FOUND);
+                .isInstanceOf(NotFoundException.class);
     }
 
     @Test
@@ -134,8 +132,7 @@ class DepartmentServiceTest {
         when(assetRepository.existsByDepartmentId(1L)).thenReturn(true);
 
         assertThatThrownBy(() -> departmentService.delete(1L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST)
+                .isInstanceOf(BusinessValidationException.class)
                 .hasMessageContaining("assets belong to it");
 
         verify(departmentRepository, never()).deleteById(any());
@@ -149,8 +146,7 @@ class DepartmentServiceTest {
         when(userRepository.existsByDepartmentId(1L)).thenReturn(true);
 
         assertThatThrownBy(() -> departmentService.delete(1L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST)
+                .isInstanceOf(BusinessValidationException.class)
                 .hasMessageContaining("users belong to it");
 
         verify(departmentRepository, never()).deleteById(any());
@@ -179,7 +175,6 @@ class DepartmentServiceTest {
         when(departmentRepository.existsById(99L)).thenReturn(false);
 
         assertThatThrownBy(() -> departmentService.delete(99L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.NOT_FOUND);
+                .isInstanceOf(NotFoundException.class);
     }
 }

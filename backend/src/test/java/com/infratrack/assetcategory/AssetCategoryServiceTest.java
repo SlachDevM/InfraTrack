@@ -1,5 +1,7 @@
 package com.infratrack.assetcategory;
 
+import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.NotFoundException;
 import com.infratrack.assetcategory.dto.AssetCategoryResponse;
 import com.infratrack.assetcategory.dto.CreateAssetCategoryRequest;
 import com.infratrack.assetcategory.dto.UpdateAssetCategoryRequest;
@@ -9,7 +11,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
@@ -67,8 +68,7 @@ class AssetCategoryServiceTest {
         request.setName("");
 
         assertThatThrownBy(() -> assetCategoryService.create(request))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -79,8 +79,7 @@ class AssetCategoryServiceTest {
         when(assetCategoryRepository.existsByNameIgnoreCase("Road")).thenReturn(true);
 
         assertThatThrownBy(() -> assetCategoryService.create(request))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -88,8 +87,7 @@ class AssetCategoryServiceTest {
         when(assetCategoryRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> assetCategoryService.getById(99L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.NOT_FOUND);
+                .isInstanceOf(NotFoundException.class);
     }
 
     @Test
@@ -123,7 +121,6 @@ class AssetCategoryServiceTest {
         when(assetCategoryRepository.existsById(99L)).thenReturn(false);
 
         assertThatThrownBy(() -> assetCategoryService.delete(99L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.NOT_FOUND);
+                .isInstanceOf(NotFoundException.class);
     }
 }

@@ -1,5 +1,8 @@
 package com.infratrack.issue;
 
+import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ForbiddenOperationException;
+import com.infratrack.exception.ConflictException;
 import com.infratrack.asset.Asset;
 import com.infratrack.asset.AssetHistoryEvent;
 import com.infratrack.asset.AssetHistoryEventRepository;
@@ -25,7 +28,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -117,8 +119,7 @@ class IssueServiceTest {
         when(userService.getById(20L)).thenReturn(fieldEmployee);
 
         assertThatThrownBy(() -> issueService.recordIssue(request, 20L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -129,8 +130,7 @@ class IssueServiceTest {
         when(inspectionRepository.findById(100L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> issueService.recordIssue(request, 20L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -143,8 +143,7 @@ class IssueServiceTest {
         when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
 
         assertThatThrownBy(() -> issueService.recordIssue(request, 20L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
 
         verify(issueRepository, never()).save(any());
     }
@@ -166,8 +165,7 @@ class IssueServiceTest {
         when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
 
         assertThatThrownBy(() -> issueService.recordIssue(request, 20L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -180,8 +178,7 @@ class IssueServiceTest {
         when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
 
         assertThatThrownBy(() -> issueService.recordIssue(request, 99L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
 
         verify(issueRepository, never()).save(any());
     }
@@ -195,8 +192,7 @@ class IssueServiceTest {
         when(userService.getById(20L)).thenReturn(manager);
 
         assertThatThrownBy(() -> issueService.recordIssue(request, 20L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
@@ -206,8 +202,7 @@ class IssueServiceTest {
         when(userService.getById(10L)).thenReturn(coordinator);
 
         assertThatThrownBy(() -> issueService.recordIssue(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
@@ -217,8 +212,7 @@ class IssueServiceTest {
         when(userService.getById(10L)).thenReturn(administrator);
 
         assertThatThrownBy(() -> issueService.recordIssue(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
@@ -232,8 +226,7 @@ class IssueServiceTest {
         when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
 
         assertThatThrownBy(() -> issueService.recordIssue(request, 20L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -247,8 +240,7 @@ class IssueServiceTest {
         when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
 
         assertThatThrownBy(() -> issueService.recordIssue(request, 20L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -262,8 +254,7 @@ class IssueServiceTest {
         when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
 
         assertThatThrownBy(() -> issueService.recordIssue(request, 20L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -277,8 +268,7 @@ class IssueServiceTest {
         when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
 
         assertThatThrownBy(() -> issueService.recordIssue(request, 20L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -292,8 +282,7 @@ class IssueServiceTest {
         when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
 
         assertThatThrownBy(() -> issueService.recordIssue(request, 20L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -307,8 +296,7 @@ class IssueServiceTest {
         when(issueRepository.existsByInspectionId(100L)).thenReturn(true);
 
         assertThatThrownBy(() -> issueService.recordIssue(request, 20L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.CONFLICT);
+                .isInstanceOf(ConflictException.class);
 
         verify(issueRepository, never()).save(any());
         verify(assetHistoryEventRepository, never()).save(any());

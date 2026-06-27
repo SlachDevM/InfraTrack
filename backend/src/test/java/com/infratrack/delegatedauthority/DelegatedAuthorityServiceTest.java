@@ -1,5 +1,7 @@
 package com.infratrack.delegatedauthority;
 
+import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.delegatedauthority.dto.CreateDelegatedAuthorityRequest;
 import com.infratrack.department.Department;
 import com.infratrack.department.DepartmentRepository;
@@ -13,7 +15,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -76,8 +77,7 @@ class DelegatedAuthorityServiceTest {
         when(userService.getById(10L)).thenReturn(coordinator);
 
         assertThatThrownBy(() -> delegatedAuthorityService.create(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
@@ -86,8 +86,7 @@ class DelegatedAuthorityServiceTest {
         when(userService.getById(10L)).thenReturn(user(10L, UserRole.ADMINISTRATOR));
 
         assertThatThrownBy(() -> delegatedAuthorityService.create(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
@@ -96,8 +95,7 @@ class DelegatedAuthorityServiceTest {
         when(userService.getById(10L)).thenReturn(user(10L, UserRole.FIELD_EMPLOYEE));
 
         assertThatThrownBy(() -> delegatedAuthorityService.create(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
@@ -106,8 +104,7 @@ class DelegatedAuthorityServiceTest {
         when(userService.getById(10L)).thenReturn(user(10L, UserRole.CONTRACTOR));
 
         assertThatThrownBy(() -> delegatedAuthorityService.create(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
@@ -120,8 +117,7 @@ class DelegatedAuthorityServiceTest {
         when(userRepository.findById(20L)).thenReturn(Optional.of(fieldEmployee));
 
         assertThatThrownBy(() -> delegatedAuthorityService.create(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -132,8 +128,7 @@ class DelegatedAuthorityServiceTest {
         when(userService.getById(10L)).thenReturn(delegatingManager);
 
         assertThatThrownBy(() -> delegatedAuthorityService.create(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
@@ -143,8 +138,7 @@ class DelegatedAuthorityServiceTest {
         when(userService.getById(10L)).thenReturn(manager(10L, 1L));
 
         assertThatThrownBy(() -> delegatedAuthorityService.create(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -155,8 +149,7 @@ class DelegatedAuthorityServiceTest {
         when(userService.getById(10L)).thenReturn(manager(10L, 1L));
 
         assertThatThrownBy(() -> delegatedAuthorityService.create(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -168,8 +161,7 @@ class DelegatedAuthorityServiceTest {
         when(userService.getById(10L)).thenReturn(manager(10L, 1L));
 
         assertThatThrownBy(() -> delegatedAuthorityService.create(request, 10L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -192,8 +184,7 @@ class DelegatedAuthorityServiceTest {
         when(delegatedAuthorityRepository.findById(100L)).thenReturn(Optional.of(authority));
 
         assertThatThrownBy(() -> delegatedAuthorityService.revoke(100L, 99L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     private CreateDelegatedAuthorityRequest validRequest() {

@@ -7,6 +7,9 @@ import com.infratrack.asset.AssetHistoryEventType;
 import com.infratrack.asset.AssetRepository;
 import com.infratrack.completionreview.CompletionReview;
 import com.infratrack.completionreview.CompletionReviewRepository;
+import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ForbiddenOperationException;
+import com.infratrack.exception.NotFoundException;
 import com.infratrack.inspection.Inspection;
 import com.infratrack.inspection.InspectionRepository;
 import com.infratrack.issue.Issue;
@@ -22,11 +25,9 @@ import com.infratrack.user.UserService;
 import com.infratrack.workorder.WorkOrder;
 import com.infratrack.workorder.WorkOrderRepository;
 import org.springframework.core.io.Resource;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -133,42 +134,42 @@ public class OperationalDocumentService {
     @Transactional(readOnly = true)
     public OperationalDocumentDownload downloadDocument(Long documentId) {
         OperationalDocument document = operationalDocumentRepository.findById(documentId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found"));
+                .orElseThrow(() -> new NotFoundException("Document not found"));
         Resource resource = fileStore.loadAsResource(document.getStoragePath());
         return new OperationalDocumentDownload(resource, document.getOriginalFileName(), document.getContentType());
     }
 
     private Asset findAssetOrThrow(Long assetId) {
         return assetRepository.findById(assetId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"));
+                .orElseThrow(() -> new NotFoundException("Asset not found"));
     }
 
     private void requireAssetExists(Long assetId) {
         if (!assetRepository.existsById(assetId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found");
+            throw new NotFoundException("Asset not found");
         }
     }
 
     private MultipartFile validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Document file is required");
+            throw new BusinessValidationException("Document file is required");
         }
         if (file.getOriginalFilename() == null || file.getOriginalFilename().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid document");
+            throw new BusinessValidationException("Invalid document");
         }
         return file;
     }
 
     private OperationalDocumentType validateDocumentType(OperationalDocumentType documentType) {
         if (documentType == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Document type is required");
+            throw new BusinessValidationException("Document type is required");
         }
         return documentType;
     }
 
     private LocalDate validateDocumentDate(LocalDate documentDate) {
         if (documentDate != null && documentDate.isAfter(LocalDate.now())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Document date cannot be in the future");
+            throw new BusinessValidationException("Document date cannot be in the future");
         }
         return documentDate;
     }
@@ -178,8 +179,7 @@ public class OperationalDocumentService {
             OperationalDocumentOwnerType ownerType,
             Long ownerId) {
         if (ownerId != null && ownerType == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
+            throw new BusinessValidationException(
                     "Owner type is required when owner id is provided");
         }
 
@@ -189,16 +189,14 @@ public class OperationalDocumentService {
 
         if (ownerType == OperationalDocumentOwnerType.ASSET) {
             if (ownerId != null && !Objects.equals(ownerId, asset.getId())) {
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
+                throw new BusinessValidationException(
                         "Asset owner id must match the target asset");
             }
             return new OwnerContext(OperationalDocumentOwnerType.ASSET, asset.getId());
         }
 
         if (ownerId == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
+            throw new BusinessValidationException(
                     "Owner id is required for the selected owner type");
         }
 
@@ -215,50 +213,49 @@ public class OperationalDocumentService {
 
     private OwnerContext ownerFromInspection(Asset asset, Long ownerId) {
         Inspection inspection = inspectionRepository.findById(ownerId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Operational owner not found"));
+                .orElseThrow(() -> new NotFoundException("Operational owner not found"));
         requireSameAsset(asset, inspection.getAsset().getId());
         return new OwnerContext(OperationalDocumentOwnerType.INSPECTION, inspection.getId());
     }
 
     private OwnerContext ownerFromIssue(Asset asset, Long ownerId) {
         Issue issue = issueRepository.findById(ownerId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Operational owner not found"));
+                .orElseThrow(() -> new NotFoundException("Operational owner not found"));
         requireSameAsset(asset, issue.getAsset().getId());
         return new OwnerContext(OperationalDocumentOwnerType.ISSUE, issue.getId());
     }
 
     private OwnerContext ownerFromOperationalDecision(Asset asset, Long ownerId) {
         OperationalDecision decision = operationalDecisionRepository.findById(ownerId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Operational owner not found"));
+                .orElseThrow(() -> new NotFoundException("Operational owner not found"));
         requireSameAsset(asset, decision.getAsset().getId());
         return new OwnerContext(OperationalDocumentOwnerType.OPERATIONAL_DECISION, decision.getId());
     }
 
     private OwnerContext ownerFromWorkOrder(Asset asset, Long ownerId) {
         WorkOrder workOrder = workOrderRepository.findById(ownerId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Operational owner not found"));
+                .orElseThrow(() -> new NotFoundException("Operational owner not found"));
         requireSameAsset(asset, workOrder.getAsset().getId());
         return new OwnerContext(OperationalDocumentOwnerType.WORK_ORDER, workOrder.getId());
     }
 
     private OwnerContext ownerFromMaintenanceActivity(Asset asset, Long ownerId) {
         MaintenanceActivity maintenanceActivity = maintenanceActivityRepository.findById(ownerId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Operational owner not found"));
+                .orElseThrow(() -> new NotFoundException("Operational owner not found"));
         requireSameAsset(asset, maintenanceActivity.getAsset().getId());
         return new OwnerContext(OperationalDocumentOwnerType.MAINTENANCE_ACTIVITY, maintenanceActivity.getId());
     }
 
     private OwnerContext ownerFromCompletionReview(Asset asset, Long ownerId) {
         CompletionReview completionReview = completionReviewRepository.findById(ownerId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Operational owner not found"));
+                .orElseThrow(() -> new NotFoundException("Operational owner not found"));
         requireSameAsset(asset, completionReview.getAsset().getId());
         return new OwnerContext(OperationalDocumentOwnerType.COMPLETION_REVIEW, completionReview.getId());
     }
 
     private void requireSameAsset(Asset asset, Long ownerAssetId) {
         if (!Objects.equals(asset.getId(), ownerAssetId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
+            throw new BusinessValidationException(
                     "Operational owner belongs to another asset");
         }
     }
@@ -270,8 +267,7 @@ public class OperationalDocumentService {
         }
 
         switch (role) {
-            case ADMINISTRATOR -> throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
+            case ADMINISTRATOR -> throw new ForbiddenOperationException(
                     "Administrators cannot upload operational evidence");
             case MANAGER, OPERATIONAL_COORDINATOR -> {
                 // UC-012: Managers and Operational Coordinators may upload in any context.
@@ -281,49 +277,44 @@ public class OperationalDocumentService {
         }
     }
 
-    private ResponseStatusException forbiddenUpload() {
-        return new ResponseStatusException(HttpStatus.FORBIDDEN, "Unauthorized to upload operational evidence");
+    private ForbiddenOperationException forbiddenUpload() {
+        return new ForbiddenOperationException("Unauthorized to upload operational evidence");
     }
 
     private void requireFieldUploadAuthorized(User user, OwnerContext ownerContext) {
         switch (ownerContext.ownerType()) {
-            case ASSET, OPERATIONAL_DECISION, COMPLETION_REVIEW -> throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
+            case ASSET, OPERATIONAL_DECISION, COMPLETION_REVIEW -> throw new ForbiddenOperationException(
                     "Unauthorized to upload operational evidence for this context");
             case INSPECTION -> {
                 Inspection inspection = inspectionRepository.findById(ownerContext.ownerId())
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Operational owner not found"));
+                        .orElseThrow(() -> new NotFoundException("Operational owner not found"));
                 if (!Objects.equals(inspection.getAssignedToUserId(), user.getId())
                         && !Objects.equals(inspection.getCompletedByUserId(), user.getId())) {
-                    throw new ResponseStatusException(
-                            HttpStatus.FORBIDDEN,
+                    throw new ForbiddenOperationException(
                             "Unauthorized to upload operational evidence for this context");
                 }
             }
             case ISSUE -> {
                 Issue issue = issueRepository.findById(ownerContext.ownerId())
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Operational owner not found"));
+                        .orElseThrow(() -> new NotFoundException("Operational owner not found"));
                 if (!Objects.equals(issue.getRecordedByUserId(), user.getId())) {
-                    throw new ResponseStatusException(
-                            HttpStatus.FORBIDDEN,
+                    throw new ForbiddenOperationException(
                             "Unauthorized to upload operational evidence for this context");
                 }
             }
             case WORK_ORDER -> {
                 WorkOrder workOrder = workOrderRepository.findById(ownerContext.ownerId())
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Operational owner not found"));
+                        .orElseThrow(() -> new NotFoundException("Operational owner not found"));
                 if (!Objects.equals(workOrder.getAssignedToUserId(), user.getId())) {
-                    throw new ResponseStatusException(
-                            HttpStatus.FORBIDDEN,
+                    throw new ForbiddenOperationException(
                             "Unauthorized to upload operational evidence for this context");
                 }
             }
             case MAINTENANCE_ACTIVITY -> {
                 MaintenanceActivity maintenanceActivity = maintenanceActivityRepository.findById(ownerContext.ownerId())
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Operational owner not found"));
+                        .orElseThrow(() -> new NotFoundException("Operational owner not found"));
                 if (!Objects.equals(maintenanceActivity.getPerformedByUserId(), user.getId())) {
-                    throw new ResponseStatusException(
-                            HttpStatus.FORBIDDEN,
+                    throw new ForbiddenOperationException(
                             "Unauthorized to upload operational evidence for this context");
                 }
             }

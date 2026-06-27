@@ -6,16 +6,17 @@ import com.infratrack.asset.AssetHistoryEventRepository;
 import com.infratrack.asset.AssetHistoryEventType;
 import com.infratrack.businesstrigger.BusinessTrigger;
 import com.infratrack.businesstrigger.BusinessTriggerRepository;
+import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ForbiddenOperationException;
+import com.infratrack.exception.NotFoundException;
 import com.infratrack.inspection.dto.AssignInspectionRequest;
 import com.infratrack.inspection.dto.CompleteInspectionRequest;
 import com.infratrack.inspection.dto.InspectionResponse;
 import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -116,8 +117,7 @@ public class InspectionService {
     public void requireCanAssignInspections(Long userId) {
         User user = userService.getById(userId);
         if (!user.getRole().isOperationalCoordinator()) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
+            throw new ForbiddenOperationException(
                     "Only operational coordinators can assign inspections");
         }
     }
@@ -129,25 +129,24 @@ public class InspectionService {
 
     private Inspection findInspectionOrThrow(Long id) {
         return inspectionRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Inspection not found"));
+                .orElseThrow(() -> new NotFoundException("Inspection not found"));
     }
 
     private BusinessTrigger findBusinessTriggerOrThrow(Long businessTriggerId) {
         if (businessTriggerId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Business trigger is required");
+            throw new BusinessValidationException("Business trigger is required");
         }
         return businessTriggerRepository.findById(businessTriggerId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Business trigger not found"));
+                .orElseThrow(() -> new BusinessValidationException("Business trigger not found"));
     }
 
     private User findAssignableUserOrThrow(Long assignedToUserId) {
         if (assignedToUserId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Assigned user is required");
+            throw new BusinessValidationException("Assigned user is required");
         }
         User user = userService.getById(assignedToUserId);
         if (!user.getRole().isFieldEmployee() && !user.getRole().isContractor()) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
+            throw new BusinessValidationException(
                     "Inspections can only be assigned to field employees or contractors");
         }
         return user;
@@ -156,16 +155,14 @@ public class InspectionService {
     private void validateNoActiveAssignment(Long businessTriggerId) {
         if (inspectionRepository.existsByBusinessTriggerIdAndStatus(
                 businessTriggerId, InspectionStatus.ASSIGNED)) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
+            throw new BusinessValidationException(
                     "An active inspection is already assigned for this business trigger");
         }
     }
 
     private void validateExpectedCompletionDate(LocalDate expectedCompletionDate) {
         if (expectedCompletionDate != null && expectedCompletionDate.isBefore(LocalDate.now())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
+            throw new BusinessValidationException(
                     "Expected completion date cannot be in the past");
         }
     }
@@ -183,13 +180,11 @@ public class InspectionService {
     private User requireAssignedPerformer(Long userId, Inspection inspection) {
         User user = userService.getById(userId);
         if (!user.getRole().isFieldEmployee() && !user.getRole().isContractor()) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
+            throw new ForbiddenOperationException(
                     "Only field employees and contractors can perform inspections");
         }
         if (!inspection.getAssignedToUserId().equals(userId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
+            throw new ForbiddenOperationException(
                     "Only the assigned user can perform this inspection");
         }
         return user;
@@ -197,33 +192,31 @@ public class InspectionService {
 
     private void requireAssignedStatus(Inspection inspection) {
         if (inspection.getStatus() != InspectionStatus.ASSIGNED) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
+            throw new BusinessValidationException(
                     "Only assigned inspections can be completed");
         }
     }
 
     private PhysicalCondition validateObservedCondition(PhysicalCondition observedCondition) {
         if (observedCondition == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Observed condition is required");
+            throw new BusinessValidationException("Observed condition is required");
         }
         return observedCondition;
     }
 
     private String normalizeObservations(String observations) {
         if (observations == null || observations.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Inspection observations are required");
+            throw new BusinessValidationException("Inspection observations are required");
         }
         return observations.trim();
     }
 
     private LocalDateTime validateCompletedAt(LocalDateTime completedAt) {
         if (completedAt == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Completion date and time are required");
+            throw new BusinessValidationException("Completion date and time are required");
         }
         if (completedAt.isAfter(LocalDateTime.now())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
+            throw new BusinessValidationException(
                     "Completion date and time cannot be in the future");
         }
         return completedAt;

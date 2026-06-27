@@ -7,12 +7,13 @@ import com.infratrack.asset.AssetHistoryEventType;
 import com.infratrack.asset.AssetRepository;
 import com.infratrack.businesstrigger.dto.BusinessTriggerResponse;
 import com.infratrack.businesstrigger.dto.CreateBusinessTriggerRequest;
+import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ForbiddenOperationException;
+import com.infratrack.exception.NotFoundException;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -78,35 +79,34 @@ public class BusinessTriggerService {
     public void requireCanCreateBusinessTriggers(Long userId) {
         User user = userService.getById(userId);
         if (!user.getRole().isManager() && !user.getRole().isOperationalCoordinator()) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
+            throw new ForbiddenOperationException(
                     "Only managers and operational coordinators can create business triggers");
         }
     }
 
     private BusinessTrigger findTriggerOrThrow(Long id) {
         return businessTriggerRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Business trigger not found"));
+                .orElseThrow(() -> new NotFoundException("Business trigger not found"));
     }
 
     private Asset findAssetOrThrow(Long assetId) {
         if (assetId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Asset is required");
+            throw new BusinessValidationException("Asset is required");
         }
         return assetRepository.findById(assetId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Asset not found"));
+                .orElseThrow(() -> new BusinessValidationException("Asset not found"));
     }
 
     private BusinessTriggerType validateType(BusinessTriggerType type) {
         if (type == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Trigger type is required");
+            throw new BusinessValidationException("Trigger type is required");
         }
         return type;
     }
 
     private String normalizeReason(String reason) {
         if (reason == null || reason.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Trigger reason is required");
+            throw new BusinessValidationException("Trigger reason is required");
         }
         return reason.trim();
     }

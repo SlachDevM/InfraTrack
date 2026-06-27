@@ -4,13 +4,15 @@ import com.infratrack.delegatedauthority.dto.CreateDelegatedAuthorityRequest;
 import com.infratrack.delegatedauthority.dto.DelegatedAuthorityResponse;
 import com.infratrack.department.Department;
 import com.infratrack.department.DepartmentRepository;
+import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ConflictException;
+import com.infratrack.exception.ForbiddenOperationException;
+import com.infratrack.exception.NotFoundException;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRepository;
 import com.infratrack.user.UserService;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -65,8 +67,7 @@ public class DelegatedAuthorityService {
                 delegateManager.getId(),
                 targetDepartment.getId(),
                 LocalDateTime.now())) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
+            throw new ConflictException(
                     "An active delegation already exists for this delegate and target department");
         }
 
@@ -89,13 +90,12 @@ public class DelegatedAuthorityService {
         DelegatedAuthority authority = findAuthorityOrThrow(id);
 
         if (!authority.getDelegatingManagerUserId().equals(manager.getId())) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
+            throw new ForbiddenOperationException(
                     "Only the delegating manager may revoke this delegation");
         }
 
         if (authority.isRevoked()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Delegation is already revoked");
+            throw new BusinessValidationException("Delegation is already revoked");
         }
 
         authority.revoke(manager.getId(), LocalDateTime.now());
@@ -123,8 +123,7 @@ public class DelegatedAuthorityService {
     User requireManager(Long userId) {
         User user = userService.getById(userId);
         if (!user.getRole().isManager()) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
+            throw new ForbiddenOperationException(
                     "Only managers can manage delegated authority");
         }
         return user;
@@ -132,70 +131,67 @@ public class DelegatedAuthorityService {
 
     private void requireManagerBelongsToSourceDepartment(User manager, Long sourceDepartmentId) {
         if (sourceDepartmentId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Source department is required");
+            throw new BusinessValidationException("Source department is required");
         }
         if (manager.getDepartment() == null || !manager.getDepartment().getId().equals(sourceDepartmentId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
+            throw new ForbiddenOperationException(
                     "Delegating manager must belong to the source department");
         }
     }
 
     private User findDelegateManagerOrThrow(Long delegateManagerUserId) {
         if (delegateManagerUserId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Delegate manager is required");
+            throw new BusinessValidationException("Delegate manager is required");
         }
         User delegate = userRepository.findById(delegateManagerUserId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Delegate manager not found"));
+                .orElseThrow(() -> new BusinessValidationException("Delegate manager not found"));
         if (!delegate.getRole().isManager()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Delegate must be a manager");
+            throw new BusinessValidationException("Delegate must be a manager");
         }
         return delegate;
     }
 
     private Department findDepartmentOrThrow(Long departmentId) {
         if (departmentId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Department is required");
+            throw new BusinessValidationException("Department is required");
         }
         return departmentRepository.findById(departmentId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Department not found"));
+                .orElseThrow(() -> new BusinessValidationException("Department not found"));
     }
 
     private DelegatedAuthority findAuthorityOrThrow(Long id) {
         return delegatedAuthorityRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Delegated authority not found"));
+                .orElseThrow(() -> new NotFoundException("Delegated authority not found"));
     }
 
     private String normalizeReason(String reason) {
         if (reason == null || reason.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Delegation reason is required");
+            throw new BusinessValidationException("Delegation reason is required");
         }
         return reason.trim();
     }
 
     private LocalDateTime requireValidFrom(LocalDateTime validFrom) {
         if (validFrom == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Valid from date and time is required");
+            throw new BusinessValidationException("Valid from date and time is required");
         }
         return validFrom;
     }
 
     private LocalDateTime requireValidUntil(LocalDateTime validUntil) {
         if (validUntil == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Valid until date and time is required");
+            throw new BusinessValidationException("Valid until date and time is required");
         }
         return validUntil;
     }
 
     private void validateValidityPeriod(LocalDateTime validFrom, LocalDateTime validUntil) {
         if (!validUntil.isAfter(validFrom)) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
+            throw new BusinessValidationException(
                     "Valid until must be after valid from");
         }
         if (!validUntil.isAfter(LocalDateTime.now())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
+            throw new BusinessValidationException(
                     "Valid until must be in the future");
         }
     }

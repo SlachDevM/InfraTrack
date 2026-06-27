@@ -1,5 +1,9 @@
 package com.infratrack.completionreview;
 
+import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ForbiddenOperationException;
+import com.infratrack.exception.NotFoundException;
+import com.infratrack.exception.ConflictException;
 import com.infratrack.asset.Asset;
 import com.infratrack.asset.AssetHistoryEvent;
 import com.infratrack.asset.AssetHistoryEventRepository;
@@ -26,7 +30,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -201,8 +204,7 @@ class CompletionReviewServiceTest {
         when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(true);
 
         assertThatThrownBy(() -> completionReviewService.recordCompletionReview(5000L, request, 30L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.CONFLICT);
+                .isInstanceOf(ConflictException.class);
 
         verify(completionReviewRepository, never()).save(any());
     }
@@ -216,8 +218,7 @@ class CompletionReviewServiceTest {
         when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> completionReviewService.recordCompletionReview(5000L, request, 30L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.NOT_FOUND);
+                .isInstanceOf(NotFoundException.class);
     }
 
     @Test
@@ -230,8 +231,7 @@ class CompletionReviewServiceTest {
         when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
 
         assertThatThrownBy(() -> completionReviewService.recordCompletionReview(5000L, request, 30L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.CONFLICT);
+                .isInstanceOf(ConflictException.class);
     }
 
     @Test
@@ -245,8 +245,7 @@ class CompletionReviewServiceTest {
         when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
 
         assertThatThrownBy(() -> completionReviewService.recordCompletionReview(5000L, request, 30L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.CONFLICT);
+                .isInstanceOf(ConflictException.class);
     }
 
     @Test
@@ -261,8 +260,7 @@ class CompletionReviewServiceTest {
         when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
 
         assertThatThrownBy(() -> completionReviewService.recordCompletionReview(5000L, request, 30L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -277,8 +275,7 @@ class CompletionReviewServiceTest {
         when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
 
         assertThatThrownBy(() -> completionReviewService.recordCompletionReview(5000L, request, 30L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -293,8 +290,7 @@ class CompletionReviewServiceTest {
         when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
 
         assertThatThrownBy(() -> completionReviewService.recordCompletionReview(5000L, request, 30L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -309,8 +305,7 @@ class CompletionReviewServiceTest {
         when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
 
         assertThatThrownBy(() -> completionReviewService.recordCompletionReview(5000L, request, 30L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -325,8 +320,7 @@ class CompletionReviewServiceTest {
         when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
 
         assertThatThrownBy(() -> completionReviewService.recordCompletionReview(5000L, request, 30L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -384,8 +378,7 @@ class CompletionReviewServiceTest {
         when(userService.getById(userId)).thenReturn(actor);
 
         assertThatThrownBy(() -> completionReviewService.recordCompletionReview(5000L, request, userId))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
 
         verify(completionReviewRepository, never()).save(any());
         verify(maintenanceActivityRepository, never()).findById(any());

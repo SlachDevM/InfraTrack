@@ -1,5 +1,9 @@
 package com.infratrack.maintenanceactivity;
 
+import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ForbiddenOperationException;
+import com.infratrack.exception.NotFoundException;
+import com.infratrack.exception.ConflictException;
 import com.infratrack.asset.Asset;
 import com.infratrack.asset.AssetHistoryEvent;
 import com.infratrack.asset.AssetHistoryEventRepository;
@@ -34,7 +38,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -185,8 +188,7 @@ class MaintenanceActivityServiceTest {
         when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
 
         assertThatThrownBy(() -> maintenanceActivityService.completeMaintenance(1000L, request, 99L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
 
         verify(maintenanceActivityRepository, never()).save(any());
     }
@@ -201,8 +203,7 @@ class MaintenanceActivityServiceTest {
         when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
 
         assertThatThrownBy(() -> maintenanceActivityService.completeMaintenance(1000L, request, 25L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.FORBIDDEN);
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
@@ -230,8 +231,7 @@ class MaintenanceActivityServiceTest {
         when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
 
         assertThatThrownBy(() -> maintenanceActivityService.completeMaintenance(1000L, request, 20L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.CONFLICT);
+                .isInstanceOf(ConflictException.class);
     }
 
     @Test
@@ -245,8 +245,7 @@ class MaintenanceActivityServiceTest {
         when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
 
         assertThatThrownBy(() -> maintenanceActivityService.completeMaintenance(1000L, request, 20L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.CONFLICT);
+                .isInstanceOf(ConflictException.class);
     }
 
     @Test
@@ -260,8 +259,7 @@ class MaintenanceActivityServiceTest {
         when(maintenanceActivityRepository.existsByWorkOrderId(1000L)).thenReturn(true);
 
         assertThatThrownBy(() -> maintenanceActivityService.completeMaintenance(1000L, request, 20L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.CONFLICT);
+                .isInstanceOf(ConflictException.class);
     }
 
     @Test
@@ -276,8 +274,7 @@ class MaintenanceActivityServiceTest {
         when(maintenanceActivityRepository.existsByWorkOrderId(1000L)).thenReturn(false);
 
         assertThatThrownBy(() -> maintenanceActivityService.completeMaintenance(1000L, request, 20L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -292,8 +289,7 @@ class MaintenanceActivityServiceTest {
         when(maintenanceActivityRepository.existsByWorkOrderId(1000L)).thenReturn(false);
 
         assertThatThrownBy(() -> maintenanceActivityService.completeMaintenance(1000L, request, 20L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -308,8 +304,7 @@ class MaintenanceActivityServiceTest {
         when(maintenanceActivityRepository.existsByWorkOrderId(1000L)).thenReturn(false);
 
         assertThatThrownBy(() -> maintenanceActivityService.completeMaintenance(1000L, request, 20L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -324,8 +319,7 @@ class MaintenanceActivityServiceTest {
         when(maintenanceActivityRepository.existsByWorkOrderId(1000L)).thenReturn(false);
 
         assertThatThrownBy(() -> maintenanceActivityService.completeMaintenance(1000L, request, 20L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST);
+                .isInstanceOf(BusinessValidationException.class);
     }
 
     @Test
@@ -337,8 +331,7 @@ class MaintenanceActivityServiceTest {
         when(workOrderRepository.findById(1000L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> maintenanceActivityService.completeMaintenance(1000L, request, 20L))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.NOT_FOUND);
+                .isInstanceOf(NotFoundException.class);
     }
 
     @Test
@@ -368,12 +361,9 @@ class MaintenanceActivityServiceTest {
         when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
 
         assertThatThrownBy(() -> maintenanceActivityService.completeMaintenance(1000L, request, userId))
-                .isInstanceOf(ResponseStatusException.class)
                 .satisfiesAnyOf(
-                        thrown -> assertThat(((ResponseStatusException) thrown).getStatusCode())
-                                .isEqualTo(HttpStatus.FORBIDDEN),
-                        thrown -> assertThat(((ResponseStatusException) thrown).getStatusCode())
-                                .isEqualTo(HttpStatus.CONFLICT)
+                        thrown -> assertThat(thrown).isInstanceOf(ForbiddenOperationException.class),
+                        thrown -> assertThat(thrown).isInstanceOf(ConflictException.class)
                 );
 
         verify(maintenanceActivityRepository, never()).save(any());
