@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import NotificationButton from '../components/NotificationButton';
 import { canManageUsers, getRoleLabel } from '../constants/userRoles';
+import { APP_VERSION } from '../config/appVersion';
 import '../styles/PlatformShell.css';
 
 export default function PlatformShell() {
@@ -111,6 +112,10 @@ export default function PlatformShell() {
           </div>
         </div>
       </div>
+
+      <footer className="platform-footer">
+        InfraTrack v{APP_VERSION}
+      </footer>
     </div>
   );
 }

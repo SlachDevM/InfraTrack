@@ -21,47 +21,20 @@ import {
   ASSET_STATUS_OPTIONS,
   getAssetStatusLabel,
 } from '../constants/assetStatuses';
+import {
+  getApiErrorMessage,
+  isConflict,
+  isForbidden,
+  isUploadAuthorizationError,
+} from '../utils/apiError';
 import '../styles/ReferenceDataPage.css';
 import '../styles/AssetsPage.css';
-
-function extractApiErrorMessage(rawMessage) {
-  if (!rawMessage) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(rawMessage);
-    return parsed.message || parsed.detail || parsed.error || null;
-  } catch {
-    const trimmed = rawMessage.trim();
-    if (trimmed && trimmed.length <= 300) {
-      return trimmed;
-    }
-    return null;
-  }
-}
 
 function appendRequestPart(formData, name, value) {
   formData.append(
     name,
     new Blob([JSON.stringify(value)], { type: 'application/json' }),
   );
-}
-
-function isUploadAuthorizationError(status, message) {
-  if (status !== 403) {
-    return false;
-  }
-
-  if (!message) {
-    return false;
-  }
-
-  if (/media type|octet-stream|multipart|unsupported/i.test(message)) {
-    return false;
-  }
-
-  return /unauthorized|forbidden|cannot upload|permission|administrator/i.test(message);
 }
 
 function todayIsoDate() {
@@ -125,7 +98,7 @@ export default function AssetsPage() {
       setDepartments(departmentData);
       setCategories(categoryData);
     } catch (err) {
-      setError(`Failed to load assets: ${err.message}`);
+      setError(getApiErrorMessage(err, 'Failed to load assets.'));
     } finally {
       setLoading(false);
     }
@@ -163,12 +136,12 @@ export default function AssetsPage() {
       });
       await loadPageData();
     } catch (err) {
-      if (err.status === 409) {
+      if (isConflict(err)) {
         setError('A possible duplicate asset already exists with the same name, department and category.');
-      } else if (err.status === 403) {
+      } else if (isForbidden(err)) {
         setError('You do not have permission to register assets.');
       } else {
-        setError(`Failed to register asset: ${err.message}`);
+        setError(getApiErrorMessage(err, 'Failed to register asset.'));
       }
     } finally {
       setSubmitting(false);
@@ -204,7 +177,7 @@ export default function AssetsPage() {
       if (err.status === 404) {
         setError('Asset not found.');
       } else {
-        setError(`Failed to load asset details: ${err.message}`);
+        setError(getApiErrorMessage(err, 'Failed to load asset details.'));
       }
     } finally {
       setHistoryLoading(false);
@@ -258,13 +231,12 @@ export default function AssetsPage() {
       const history = await assetApi.getHistory(Number(selectedAssetId));
       setAssetHistory(history);
     } catch (err) {
-      const apiMessage = extractApiErrorMessage(err.message);
-      if (isUploadAuthorizationError(err.status, apiMessage)) {
+      if (isUploadAuthorizationError(err)) {
         setError('You do not have permission to upload documents for this context.');
       } else if (err.status === 404) {
         setError('Asset or operational owner not found.');
       } else {
-        setError(apiMessage || 'Document upload failed.');
+        setError(getApiErrorMessage(err, 'Document upload failed.'));
       }
     } finally {
       setDocumentUploading(false);
@@ -282,7 +254,7 @@ export default function AssetsPage() {
       link.click();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      setError(`Failed to download document: ${err.message}`);
+      setError(getApiErrorMessage(err, 'Failed to download document.'));
     }
   };
 

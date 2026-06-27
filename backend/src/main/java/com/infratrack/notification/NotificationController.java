@@ -1,5 +1,6 @@
 package com.infratrack.notification;
 
+import com.infratrack.notification.dto.NotificationResponse;
 import com.infratrack.security.JwtAuthenticationToken;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -19,15 +20,21 @@ public class NotificationController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Notification>> getUserNotifications(Authentication authentication) {
+    public ResponseEntity<List<NotificationResponse>> getUserNotifications(Authentication authentication) {
         Long userId = getUserId(authentication);
-        return ResponseEntity.ok(notificationService.getUserNotifications(userId));
+        List<NotificationResponse> responses = notificationService.getUserNotifications(userId).stream()
+                .map(NotificationResponse::from)
+                .toList();
+        return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/unread")
-    public ResponseEntity<List<Notification>> getUnreadNotifications(Authentication authentication) {
+    public ResponseEntity<List<NotificationResponse>> getUnreadNotifications(Authentication authentication) {
         Long userId = getUserId(authentication);
-        return ResponseEntity.ok(notificationService.getUnreadNotifications(userId));
+        List<NotificationResponse> responses = notificationService.getUnreadNotifications(userId).stream()
+                .map(NotificationResponse::from)
+                .toList();
+        return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/unread-count")
@@ -37,8 +44,8 @@ public class NotificationController {
     }
 
     @PutMapping("/{id}/read")
-    public ResponseEntity<Notification> markAsRead(@PathVariable("id") Long id, Authentication authentication) {
-        return ResponseEntity.ok(notificationService.markAsRead(id));
+    public ResponseEntity<NotificationResponse> markAsRead(@PathVariable("id") Long id, Authentication authentication) {
+        return ResponseEntity.ok(NotificationResponse.from(notificationService.markAsRead(id)));
     }
 
     @PutMapping("/read-all")

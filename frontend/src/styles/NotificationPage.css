@@ -3,6 +3,14 @@
   background-color: #f5f5f5;
 }
 
+.notification-error {
+  background: #fdecea;
+  color: #c62828;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
 .notification-header {
   background: linear-gradient(135deg, #1a472a 0%, #2d6b4d 100%);
   color: white;

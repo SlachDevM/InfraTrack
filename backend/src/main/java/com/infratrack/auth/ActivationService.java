@@ -2,7 +2,7 @@ package com.infratrack.auth;
 
 import com.infratrack.department.Department;
 import com.infratrack.department.DepartmentRepository;
-import com.infratrack.service.EmailService;
+import com.infratrack.mail.EmailService;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserRepository;

@@ -1,5 +1,4 @@
 name: infratrack
-version: '3.8'
 
 # Local development stack — uses the dev Spring profile (see application.properties).
 

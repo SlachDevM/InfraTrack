@@ -1,4 +1,4 @@
-package com.infratrack.service;
+package com.infratrack.mail;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

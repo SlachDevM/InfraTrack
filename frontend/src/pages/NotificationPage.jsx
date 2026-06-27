@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import apiClient from '../services/apiClient';
+import { getApiErrorMessage } from '../utils/apiError';
 import '../styles/NotificationPage.css';
 
 export default function NotificationPage() {
@@ -10,6 +11,7 @@ export default function NotificationPage() {
   const { auth, logout } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const { decrementUnread, clearUnread, refreshUnreadCount } = useNotifications();
 
   useEffect(() => {
@@ -24,10 +26,11 @@ export default function NotificationPage() {
 
   const fetchNotifications = async () => {
     try {
+      setError(null);
       const data = await apiClient.get('/api/notifications');
       setNotifications(data);
     } catch (err) {
-      console.error('Failed to fetch notifications:', err);
+      setError(getApiErrorMessage(err, 'Failed to load notifications.'));
     } finally {
       setLoading(false);
     }
@@ -97,7 +100,9 @@ export default function NotificationPage() {
       </header>
 
       <main className="notification-content">
-        {notifications.length === 0 ? (
+        {error ? (
+          <div className="notification-error">{error}</div>
+        ) : notifications.length === 0 ? (
           <div className="no-notifications">
             <p>You have no notifications.</p>
           </div>

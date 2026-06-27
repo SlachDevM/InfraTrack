@@ -10,8 +10,6 @@
 # 6. Configure monitoring and logging
 # 7. Back up operational-documents-data volume (UC-012 uploaded files)
 
-version: '3.8'
-
 name: infratrack
 
 services:

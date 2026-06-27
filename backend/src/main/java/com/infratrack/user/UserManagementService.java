@@ -3,7 +3,7 @@ package com.infratrack.user;
 import com.infratrack.auth.ActivationService;
 import com.infratrack.department.Department;
 import com.infratrack.department.DepartmentRepository;
-import com.infratrack.service.EmailService;
+import com.infratrack.mail.EmailService;
 import com.infratrack.user.dto.UpdateUserRequest;
 import com.infratrack.user.dto.UserManagementResponse;
 import lombok.extern.slf4j.Slf4j;
