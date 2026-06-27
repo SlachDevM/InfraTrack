@@ -15,6 +15,7 @@ import com.infratrack.businesstrigger.BusinessTriggerType;
 import com.infratrack.department.Department;
 import com.infratrack.inspection.dto.AssignInspectionRequest;
 import com.infratrack.inspection.dto.CompleteInspectionRequest;
+import com.infratrack.inspection.dto.InspectionSummaryResponse;
 import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.user.User;
 import com.infratrack.user.UserNameLookup;
@@ -26,11 +27,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -607,6 +613,51 @@ class InspectionServiceTest {
                 .isInstanceOf(NotFoundException.class);
     }
 
+    @Test
+    void listEligibleForIssueRecordingPage_shouldReturnCompletedInspectionWithIssueIdentified() {
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        Inspection inspection = completedInspectionWithIssue(100L, 20L);
+        Pageable pageable = PageRequest.of(0, 20);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.findEligibleForIssueRecording(
+                InspectionStatus.COMPLETED, 20L, 1L, pageable))
+                .thenReturn(new PageImpl<>(List.of(inspection), pageable, 1));
+        when(userNameLookup.resolveNames(List.of(20L))).thenReturn(java.util.Map.of(20L, "Field Employee"));
+
+        Page<InspectionSummaryResponse> page =
+                inspectionService.listEligibleForIssueRecordingPage(20L, pageable);
+
+        assertThat(page.getContent()).hasSize(1);
+        assertThat(page.getContent().get(0).getId()).isEqualTo(100L);
+        assertThat(page.getContent().get(0).isIssueIdentified()).isTrue();
+        assertThat(page.getContent().get(0).getCompletedByUserId()).isEqualTo(20L);
+    }
+
+    @Test
+    void listEligibleForIssueRecordingPage_shouldRejectUnauthorizedRole() {
+        User manager = user(30L, UserRole.MANAGER);
+        when(userService.getById(30L)).thenReturn(manager);
+
+        assertThatThrownBy(() -> inspectionService.listEligibleForIssueRecordingPage(
+                30L, PageRequest.of(0, 20)))
+                .isInstanceOf(ForbiddenOperationException.class);
+    }
+
+    @Test
+    void listEligibleForIssueRecordingPage_shouldReturnEmptyWhenUserHasNoDepartment() {
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        fieldEmployee.setDepartment(null);
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        Page<InspectionSummaryResponse> page =
+                inspectionService.listEligibleForIssueRecordingPage(20L, PageRequest.of(0, 20));
+
+        assertThat(page.getContent()).isEmpty();
+        verify(inspectionRepository, never()).findEligibleForIssueRecording(
+                any(), any(), any(), any());
+    }
+
     private CompleteInspectionRequest validCompleteRequest() {
         CompleteInspectionRequest request = new CompleteInspectionRequest();
         request.setObservedCondition(PhysicalCondition.GOOD);
@@ -627,6 +678,18 @@ class InspectionServiceTest {
                 LocalDate.now().plusDays(7)
         );
         inspection.setId(id);
+        return inspection;
+    }
+
+    private Inspection completedInspectionWithIssue(Long id, Long completedByUserId) {
+        Inspection inspection = assignedInspection(id, completedByUserId);
+        inspection.complete(
+                PhysicalCondition.POOR,
+                "Damaged swing chain observed",
+                true,
+                LocalDateTime.now().minusHours(1),
+                completedByUserId
+        );
         return inspection;
     }
 

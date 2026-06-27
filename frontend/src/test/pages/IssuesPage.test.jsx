@@ -5,11 +5,12 @@ import { MemoryRouter } from 'react-router-dom';
 import IssuesPage from '../../pages/IssuesPage';
 import issueApi from '../../services/issueApi';
 import inspectionApi from '../../services/inspectionApi';
+import { MAX_PAGE_SIZE } from '../../utils/pagination';
 
 const mockNavigate = vi.fn();
 
 const { mockAuth, mockLogout } = vi.hoisted(() => ({
-  mockAuth: { token: 'test-token', user: { userId: 1, role: 'MANAGER' } },
+  mockAuth: { token: 'test-token', user: { userId: 20, role: 'FIELD_EMPLOYEE' } },
   mockLogout: vi.fn(),
 }));
 
@@ -23,6 +24,7 @@ vi.mock('../../services/issueApi', () => ({
 vi.mock('../../services/inspectionApi', () => ({
   default: {
     list: vi.fn(),
+    listEligibleForIssueRecording: vi.fn(),
   },
 }));
 
@@ -55,13 +57,24 @@ function pageResponse(content, number = 0, totalPages = 1) {
   return { content, number, totalPages };
 }
 
+const eligibleInspection = {
+  id: 10,
+  assetName: 'Central Playground',
+  status: 'COMPLETED',
+  issueIdentified: true,
+  completedByUserId: 20,
+  businessTriggerType: 'CUSTOMER_REQUEST',
+  observations: 'Swing chain broken',
+  completedAt: '2026-06-01T08:00:00',
+};
+
 describe('IssuesPage', () => {
   afterEach(cleanup);
 
   beforeEach(() => {
     vi.clearAllMocks();
     issueApi.list.mockResolvedValue(pageResponse([]));
-    inspectionApi.list.mockResolvedValue(pageResponse([]));
+    inspectionApi.listEligibleForIssueRecording.mockResolvedValue(pageResponse([]));
   });
 
   it('renders issues from mocked API', async () => {
@@ -73,18 +86,6 @@ describe('IssuesPage', () => {
         description: 'Broken swing',
         severity: 'HIGH',
         recordedAt: '2026-06-01T09:00:00',
-      },
-    ]));
-    inspectionApi.list.mockResolvedValue(pageResponse([
-      {
-        id: 10,
-        assetName: 'Central Playground',
-        status: 'COMPLETED',
-        issueIdentified: true,
-        completedByUserId: 1,
-        businessTriggerType: 'CUSTOMER_REQUEST',
-        observations: 'Swing chain broken',
-        completedAt: '2026-06-01T08:00:00',
       },
     ]));
 
@@ -99,14 +100,62 @@ describe('IssuesPage', () => {
     expect(screen.getByText('#10')).toBeInTheDocument();
   });
 
-  it('renders empty state without crashing when inspections return a Page object', async () => {
+  it('shows eligible inspection in selector from backend response', async () => {
+    inspectionApi.listEligibleForIssueRecording.mockResolvedValue(
+      pageResponse([eligibleInspection])
+    );
+
     render(
       <MemoryRouter>
         <IssuesPage />
       </MemoryRouter>
     );
 
-    expect(await screen.findByText('No issues recorded yet.')).toBeInTheDocument();
+    expect(await screen.findByRole('option', {
+      name: '#10 — Central Playground (Customer Request)',
+    })).toBeInTheDocument();
+    expect(inspectionApi.listEligibleForIssueRecording).toHaveBeenCalledWith(0, MAX_PAGE_SIZE);
+    expect(inspectionApi.list).not.toHaveBeenCalled();
+  });
+
+  it('shows empty selector message when no eligible inspections exist', async () => {
+    render(
+      <MemoryRouter>
+        <IssuesPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText(/no completed inspections with identified issues/i)).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Select inspection' })).toBeInTheDocument();
+  });
+
+  it('records issue after selecting eligible inspection', async () => {
+    const user = userEvent.setup();
+    inspectionApi.listEligibleForIssueRecording.mockResolvedValue(
+      pageResponse([eligibleInspection])
+    );
+    issueApi.record.mockResolvedValue({ id: 1 });
+
+    render(
+      <MemoryRouter>
+        <IssuesPage />
+      </MemoryRouter>
+    );
+
+    await user.selectOptions(
+      await screen.findByLabelText('Completed Inspection'),
+      '10'
+    );
+    await user.type(screen.getByLabelText('Description'), 'Broken swing chain');
+    await user.click(screen.getByRole('button', { name: 'Record Issue' }));
+
+    await waitFor(() => {
+      expect(issueApi.record).toHaveBeenCalledWith(expect.objectContaining({
+        inspectionId: 10,
+        description: 'Broken swing chain',
+        severity: 'MEDIUM',
+      }));
+    });
   });
 
   it('displays API error message when loading fails', async () => {
@@ -123,6 +172,34 @@ describe('IssuesPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Internal server error')).toBeInTheDocument();
+    });
+  });
+
+  it('displays backend validation error when issue recording fails', async () => {
+    const user = userEvent.setup();
+    inspectionApi.listEligibleForIssueRecording.mockResolvedValue(
+      pageResponse([eligibleInspection])
+    );
+    issueApi.record.mockRejectedValue({
+      status: 409,
+      message: 'An issue has already been recorded for this inspection',
+    });
+
+    render(
+      <MemoryRouter>
+        <IssuesPage />
+      </MemoryRouter>
+    );
+
+    await user.selectOptions(
+      await screen.findByLabelText('Completed Inspection'),
+      '10'
+    );
+    await user.type(screen.getByLabelText('Description'), 'Duplicate attempt');
+    await user.click(screen.getByRole('button', { name: 'Record Issue' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('An issue has already been recorded for this inspection')).toBeInTheDocument();
     });
   });
 

@@ -45,7 +45,18 @@ public class InspectionController {
     @ApiResponse(responseCode = "200", description = "Paginated inspection summaries")
     public ResponseEntity<Page<InspectionSummaryResponse>> listInspections(
             @Parameter(description = "Zero-based page index") @RequestParam(required = false) Integer page,
-            @Parameter(description = "Page size (max 100)") @RequestParam(required = false) Integer size) {
+            @Parameter(description = "Page size (max 100)") @RequestParam(required = false) Integer size,
+            @Parameter(description = "When true, returns only inspections eligible for issue recording (UC-005)")
+            @RequestParam(required = false) Boolean eligibleForIssueRecording,
+            Authentication authentication) {
+        if (Boolean.TRUE.equals(eligibleForIssueRecording)) {
+            Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+            Pageable pageable = PaginationSupport.pageable(
+                    page,
+                    size,
+                    Sort.by(Sort.Direction.DESC, "completedAt"));
+            return ResponseEntity.ok(inspectionService.listEligibleForIssueRecordingPage(userId, pageable));
+        }
         Pageable pageable = PaginationSupport.pageable(
                 page,
                 size,

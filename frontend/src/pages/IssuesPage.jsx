@@ -36,8 +36,7 @@ export default function IssuesPage() {
   const [issuesPage, setIssuesPage] = useState(DEFAULT_PAGE);
   const [issuesTotalPages, setIssuesTotalPages] = useState(0);
   const [listLoading, setListLoading] = useState(false);
-  const [allIssues, setAllIssues] = useState([]);
-  const [inspections, setInspections] = useState([]);
+  const [eligibleInspections, setEligibleInspections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -50,22 +49,12 @@ export default function IssuesPage() {
   });
 
   const canRecord = canRecordIssues(auth?.user?.role);
-  const currentUserId = auth?.user?.userId;
-
-  const recordableInspections = useMemo(() => {
-    const recordedInspectionIds = new Set(allIssues.map((issue) => issue.inspectionId));
-    return inspections.filter(
-      (inspection) =>
-        inspection.status === 'COMPLETED'
-        && inspection.issueIdentified
-        && String(inspection.completedByUserId) === String(currentUserId)
-        && !recordedInspectionIds.has(inspection.id)
-    );
-  }, [inspections, allIssues, currentUserId]);
 
   const selectedInspection = useMemo(
-    () => inspections.find((inspection) => String(inspection.id) === String(formData.inspectionId)),
-    [inspections, formData.inspectionId]
+    () => eligibleInspections.find(
+      (inspection) => String(inspection.id) === String(formData.inspectionId)
+    ),
+    [eligibleInspections, formData.inspectionId]
   );
 
   useEffect(() => {
@@ -96,16 +85,17 @@ export default function IssuesPage() {
     try {
       setLoading(true);
       setError(null);
-      const [issuePage, inspectionPage, allIssuesPage] = await Promise.all([
-        issueApi.list(page),
-        inspectionApi.list(0, MAX_PAGE_SIZE),
-        canRecord ? issueApi.list(0, MAX_PAGE_SIZE) : Promise.resolve(null),
-      ]);
+      const issuePage = await issueApi.list(page);
       setIssues(unwrapPageContent(issuePage));
       setIssuesPage(getPageNumber(issuePage, page));
       setIssuesTotalPages(getTotalPages(issuePage));
-      setInspections(unwrapPageContent(inspectionPage));
-      setAllIssues(allIssuesPage ? unwrapPageContent(allIssuesPage) : []);
+
+      if (canRecord) {
+        const inspectionPage = await inspectionApi.listEligibleForIssueRecording(0, MAX_PAGE_SIZE);
+        setEligibleInspections(unwrapPageContent(inspectionPage));
+      } else {
+        setEligibleInspections([]);
+      }
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to load issues.'));
     } finally {
@@ -198,10 +188,10 @@ export default function IssuesPage() {
                   value={formData.inspectionId}
                   onChange={handleChange}
                   required
-                  disabled={submitting || recordableInspections.length === 0}
+                  disabled={submitting || eligibleInspections.length === 0}
                 >
                   <option value="">Select inspection</option>
-                  {recordableInspections.map((inspection) => (
+                  {eligibleInspections.map((inspection) => (
                     <option key={inspection.id} value={inspection.id}>
                       #{inspection.id} — {inspection.assetName} ({getBusinessTriggerTypeLabel(inspection.businessTriggerType)})
                     </option>
@@ -269,12 +259,12 @@ export default function IssuesPage() {
               <button
                 type="submit"
                 className="btn-primary"
-                disabled={submitting || recordableInspections.length === 0}
+                disabled={submitting || eligibleInspections.length === 0}
               >
                 {submitting ? 'Recording...' : 'Record Issue'}
               </button>
             </form>
-            {recordableInspections.length === 0 && (
+            {eligibleInspections.length === 0 && (
               <p className="read-only-note">
                 No completed inspections with identified issues are available for you to record.
               </p>

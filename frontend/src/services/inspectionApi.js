@@ -10,6 +10,8 @@ const ENDPOINTS = {
 export const inspectionApi = {
   list: (page = DEFAULT_PAGE, size = DEFAULT_SIZE) =>
     apiClient.get(`${ENDPOINTS.LIST}?${paginatedQuery(page, size)}`),
+  listEligibleForIssueRecording: (page = DEFAULT_PAGE, size = DEFAULT_SIZE) =>
+    apiClient.get(`${ENDPOINTS.LIST}?${paginatedQuery(page, size)}&eligibleForIssueRecording=true`),
   get: (id) => apiClient.get(ENDPOINTS.DETAIL(id)),
   assign: (request) => apiClient.post(ENDPOINTS.LIST, request),
   complete: (id, request) => apiClient.post(`${ENDPOINTS.DETAIL(id)}/complete`, request),

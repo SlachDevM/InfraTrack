@@ -26,6 +26,7 @@ public class InspectionSummaryResponse {
     private String observations;
     private boolean issueIdentified;
     private LocalDateTime completedAt;
+    private Long completedByUserId;
     private Long createdAt;
 
     public static InspectionSummaryResponse from(Inspection inspection, Map<Long, String> userNamesById) {
@@ -44,6 +45,7 @@ public class InspectionSummaryResponse {
         response.observations = inspection.getObservations();
         response.issueIdentified = inspection.isIssueIdentified();
         response.completedAt = inspection.getCompletedAt();
+        response.completedByUserId = inspection.getCompletedByUserId();
         response.createdAt = inspection.getCreatedAt();
         return response;
     }
@@ -102,6 +104,10 @@ public class InspectionSummaryResponse {
 
     public LocalDateTime getCompletedAt() {
         return completedAt;
+    }
+
+    public Long getCompletedByUserId() {
+        return completedByUserId;
     }
 
     public Long getCreatedAt() {

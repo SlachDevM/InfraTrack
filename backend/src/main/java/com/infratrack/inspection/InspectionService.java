@@ -60,6 +60,29 @@ public class InspectionService {
     @Transactional(readOnly = true)
     public Page<InspectionSummaryResponse> listPage(Pageable pageable) {
         Page<Inspection> page = inspectionRepository.findAllByOrderByCreatedAtDesc(pageable);
+        return mapInspectionSummaries(page);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<InspectionSummaryResponse> listEligibleForIssueRecordingPage(Long userId, Pageable pageable) {
+        User user = userService.getById(userId);
+        if (!user.getRole().isFieldEmployee() && !user.getRole().isContractor()) {
+            throw new ForbiddenOperationException(
+                    "Only field employees and contractors can record issues");
+        }
+        Department department = user.getDepartment();
+        if (department == null) {
+            return Page.empty(pageable);
+        }
+        Page<Inspection> page = inspectionRepository.findEligibleForIssueRecording(
+                InspectionStatus.COMPLETED,
+                userId,
+                department.getId(),
+                pageable);
+        return mapInspectionSummaries(page);
+    }
+
+    private Page<InspectionSummaryResponse> mapInspectionSummaries(Page<Inspection> page) {
         Map<Long, String> userNames = userNameLookup.resolveNames(
                 page.getContent().stream()
                         .map(Inspection::getAssignedToUserId)
