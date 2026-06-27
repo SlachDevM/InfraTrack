@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import userApi from '../services/userApi';
 import departmentApi from '../services/departmentApi';
 import { getRoleLabel } from '../constants/userRoles';
+import { getApiErrorMessage } from '../utils/apiError';
 
 export default function EditUserModal({ isOpen, onClose, onSuccess, user }) {
   const [departments, setDepartments] = useState([]);
@@ -55,7 +56,7 @@ export default function EditUserModal({ isOpen, onClose, onSuccess, user }) {
       const result = await userApi.updateUser(user.id, payload);
       onSuccess(result);
     } catch (err) {
-      setError(err.message || 'Failed to update user');
+      setError(getApiErrorMessage(err, 'Failed to update user'));
       setLoading(false);
     }
   };

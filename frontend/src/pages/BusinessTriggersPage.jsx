@@ -6,6 +6,7 @@ import businessTriggerApi from '../services/businessTriggerApi';
 import assetApi from '../services/assetApi';
 import NotificationButton from '../components/NotificationButton';
 import { canCreateBusinessTriggers } from '../constants/userRoles';
+import { getApiErrorMessage, isForbidden } from '../utils/apiError';
 import {
   BUSINESS_TRIGGER_TYPES,
   BUSINESS_TRIGGER_TYPE_OPTIONS,
@@ -52,7 +53,7 @@ export default function BusinessTriggersPage() {
       setTriggers(triggerData);
       setAssets(assetData);
     } catch (err) {
-      setError(`Failed to load business triggers: ${err.message}`);
+      setError(getApiErrorMessage(err, 'Failed to load business triggers.'));
     } finally {
       setLoading(false);
     }
@@ -89,10 +90,10 @@ export default function BusinessTriggersPage() {
       });
       await loadPageData();
     } catch (err) {
-      if (err.status === 403) {
+      if (isForbidden(err)) {
         setError('You do not have permission to create business triggers.');
       } else {
-        setError(`Failed to create business trigger: ${err.message}`);
+        setError(getApiErrorMessage(err, 'Failed to create business trigger.'));
       }
     } finally {
       setSubmitting(false);

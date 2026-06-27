@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import userApi from '../services/userApi';
 import departmentApi from '../services/departmentApi';
 import { INVITABLE_ROLES, ROLE_LABELS, USER_ROLES } from '../constants/userRoles';
+import { getApiErrorMessage } from '../utils/apiError';
 
 export default function InviteUserModal({ isOpen, onClose, onSuccess }) {
   const [departments, setDepartments] = useState([]);
@@ -49,7 +50,7 @@ export default function InviteUserModal({ isOpen, onClose, onSuccess }) {
       const result = await userApi.inviteUser(payload);
       onSuccess(result);
     } catch (err) {
-      setError(err.message || 'Failed to invite user');
+      setError(getApiErrorMessage(err, 'Failed to invite user'));
     } finally {
       setLoading(false);
     }

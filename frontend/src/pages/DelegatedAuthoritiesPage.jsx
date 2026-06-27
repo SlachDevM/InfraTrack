@@ -7,6 +7,7 @@ import departmentApi from '../services/departmentApi';
 import userApi from '../services/userApi';
 import NotificationButton from '../components/NotificationButton';
 import { canManageDelegatedAuthority } from '../constants/userRoles';
+import { getApiErrorMessage } from '../utils/apiError';
 import '../styles/ReferenceDataPage.css';
 
 function toDateTimeLocalValue(date = new Date()) {
@@ -59,7 +60,7 @@ export default function DelegatedAuthoritiesPage() {
         setManagers(managerData);
       }
     } catch (err) {
-      setError(`Failed to load delegated authorities: ${err.message}`);
+      setError(getApiErrorMessage(err, 'Failed to load delegated authorities.'));
     } finally {
       setLoading(false);
     }
@@ -95,7 +96,7 @@ export default function DelegatedAuthoritiesPage() {
       });
       await loadPageData();
     } catch (err) {
-      setError(`Failed to create delegation: ${err.message}`);
+      setError(getApiErrorMessage(err, 'Failed to create delegation.'));
     } finally {
       setSubmitting(false);
     }
@@ -109,7 +110,7 @@ export default function DelegatedAuthoritiesPage() {
       await delegatedAuthorityApi.revoke(id);
       await loadPageData();
     } catch (err) {
-      setError(`Failed to revoke delegation: ${err.message}`);
+      setError(getApiErrorMessage(err, 'Failed to revoke delegation.'));
     }
   };
 

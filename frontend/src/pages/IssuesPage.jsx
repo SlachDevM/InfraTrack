@@ -6,6 +6,7 @@ import issueApi from '../services/issueApi';
 import inspectionApi from '../services/inspectionApi';
 import NotificationButton from '../components/NotificationButton';
 import { canRecordIssues } from '../constants/userRoles';
+import { getApiErrorMessage, isForbidden } from '../utils/apiError';
 import { getBusinessTriggerTypeLabel } from '../constants/businessTriggerTypes';
 import {
   ISSUE_SEVERITIES,
@@ -75,7 +76,7 @@ export default function IssuesPage() {
       setIssues(issueData);
       setInspections(inspectionData);
     } catch (err) {
-      setError(`Failed to load issues: ${err.message}`);
+      setError(getApiErrorMessage(err, 'Failed to load issues.'));
     } finally {
       setLoading(false);
     }
@@ -109,10 +110,10 @@ export default function IssuesPage() {
       });
       await loadPageData();
     } catch (err) {
-      if (err.status === 403) {
+      if (isForbidden(err)) {
         setError('You are not allowed to record this issue.');
       } else {
-        setError(`Failed to record issue: ${err.message}`);
+        setError(getApiErrorMessage(err, 'Failed to record issue.'));
       }
     } finally {
       setSubmitting(false);

@@ -1,6 +1,6 @@
 {
   "name": "infratrack-frontend",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "scripts": {
     "start": "vite",
@@ -24,7 +24,6 @@
     "@vitejs/plugin-react": "^4.3.1",
     "jsdom": "^25.0.1",
     "vite": "^5.4.0",
-    "serve": "^14.2.6",
     "vitest": "^2.1.8"
   }
 }

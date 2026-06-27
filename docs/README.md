@@ -80,7 +80,7 @@ Reserved for detailed architecture documentation (in progress).
 
 ### 04 — API
 
-Reserved for API documentation (in progress).
+Live OpenAPI documentation is served by the backend (Swagger UI). See [04-api/README.md](04-api/README.md) and the [project README API Developer Guide](../README.md#api-developer-guide).
 
 ### 05 — Deployment
 

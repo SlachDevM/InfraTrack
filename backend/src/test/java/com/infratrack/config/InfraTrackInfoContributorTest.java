@@ -18,7 +18,7 @@ class InfraTrackInfoContributorTest {
     @Test
     void contribute_shouldExposeApplicationAndBuildMetadata() {
         BuildProperties buildProperties = new BuildProperties(new Properties() {{
-            setProperty("version", "0.0.1-SNAPSHOT");
+            setProperty("version", "1.0.1");
             setProperty("time", Instant.parse("2026-06-27T08:00:00Z").toString());
         }});
         GitProperties gitProperties = new GitProperties(new Properties() {{
@@ -43,7 +43,7 @@ class InfraTrackInfoContributorTest {
         var build = (java.util.Map<String, Object>) info.getDetails().get("build");
 
         assertThat(application.get("name")).isEqualTo("InfraTrack");
-        assertThat(application.get("version")).isEqualTo("0.0.1-SNAPSHOT");
+        assertThat(application.get("version")).isEqualTo("1.0.1");
         assertThat(build.get("commit")).isEqualTo("abc1234");
         assertThat(build.get("time")).isNotNull();
     }

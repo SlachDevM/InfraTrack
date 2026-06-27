@@ -8,6 +8,7 @@ import InviteUserModal from '../components/InviteUserModal';
 import EditUserModal from '../components/EditUserModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { canManageUsers, getRoleLabel } from '../constants/userRoles';
+import { getApiErrorMessage } from '../utils/apiError';
 import '../styles/UserManagementPage.css';
 
 const STATUS_LABELS = {
@@ -85,7 +86,7 @@ export default function UserManagementPage() {
       const data = await userApi.listUsers();
       setUsers(data);
     } catch (err) {
-      setError(`Failed to load users: ${err.message}`);
+      setError(getApiErrorMessage(err, 'Failed to load users.'));
       console.error('Failed to fetch users:', err);
     } finally {
       setLoading(false);
@@ -156,7 +157,7 @@ export default function UserManagementPage() {
       setConfirmAction(null);
       setConfirmingUserId(null);
     } catch (err) {
-      setError(`Failed to ${confirmAction} user: ${err.message}`);
+      setError(getApiErrorMessage(err, `Failed to ${confirmAction} user.`));
       console.error(`Failed to ${confirmAction} user:`, err);
     } finally {
       setActionLoading(false);

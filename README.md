@@ -2,6 +2,8 @@
 
 Operational asset and field operations management platform for Australian Local Governments.
 
+**Version 1.0.1**
+
 ![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)
 ![React](https://img.shields.io/badge/React-Frontend-61DAFB?logo=react)
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-Backend-6DB33F?logo=springboot)
@@ -12,15 +14,46 @@ Operational asset and field operations management platform for Australian Local 
 
 ## Overview
 
-InfraTrack is an enterprise software product for managing public infrastructure operations. The codebase is built on a proven platform foundation providing authentication, user management, notifications, email, and deployment infrastructure.
+InfraTrack is an enterprise software product for managing public infrastructure operations for Australian Local Governments. Version 1.0.1 delivers the complete V1 operational workflow from asset registration through inspections, issues, operational decisions, work orders, maintenance, completion reviews, operational documents, notifications and delegated authority.
 
-Business domain features (assets, inspections, work orders, and operational workflows) are implemented incrementally according to the documented use cases.
+The backend is the single source of truth for all business rules. Clients consume one REST API:
 
-The backend is designed to support multiple client applications:
+- **React web application** — office-based operational users (included)
+- **Native Android application** — field operations (planned post-V1; same REST API)
 
-- React web application for office-based users
-- Future native Android application for field operations
-- All clients share the same REST API
+---
+
+## V1.0.1 Capabilities
+
+| Use Case | Capability |
+|----------|------------|
+| UC-001 | Asset registration |
+| UC-002 | Asset lifecycle status |
+| UC-003 | Inspection assignment |
+| UC-004 | Inspection completion |
+| UC-005 | Issue recording |
+| UC-006 | Business trigger recording |
+| UC-007 | Operational decisions and work order creation |
+| UC-008 | Work order assignment; delegated authority |
+| UC-009 | Maintenance activity completion |
+| UC-010 | Completion review |
+| UC-011 | Asset operational history |
+| UC-012 | Operational document upload and download |
+| UC-013 | In-app notifications |
+
+**Platform:** JWT authentication, user lifecycle (invitation, activation, deactivation), role-based access control, email (dev Mailpit / prod SMTP), Firebase push notifications, PostgreSQL, Flyway migrations, OpenAPI/Swagger, Spring Actuator health and info.
+
+**Reference data:** Departments, asset categories, user directories by role.
+
+---
+
+## Roadmap (Post V1.0.1)
+
+- Native Android field application (same REST API)
+- Expanded pagination on remaining list endpoints
+- Detailed architecture and deployment guides under `docs/03-architecture/` and `docs/05-deployment/`
+
+See [Functional Use Cases](docs/01-functional-analysis/functional-use-cases.md) for the authoritative business scope.
 
 ---
 
@@ -36,7 +69,7 @@ See [docs/README.md](docs/README.md) for the full structure and reading order.
 | Functional Analysis | [`docs/01-functional-analysis/`](docs/01-functional-analysis/) | Use cases |
 | System Blueprint | [`docs/02-system-blueprint/`](docs/02-system-blueprint/) | Engineering standards and development workflow |
 | Architecture | [`docs/03-architecture/`](docs/03-architecture/) | Detailed architecture (in progress) |
-| API | [`docs/04-api/`](docs/04-api/) | API documentation (in progress) |
+| API | [`docs/04-api/`](docs/04-api/) | OpenAPI / Swagger reference |
 | Deployment | [`docs/05-deployment/`](docs/05-deployment/) | Deployment and operations (in progress) |
 
 Key entry points:
@@ -45,53 +78,6 @@ Key entry points:
 - [Domain Overview](docs/00-business-discovery/02-domain-overview.md)
 - [Functional Use Cases](docs/01-functional-analysis/functional-use-cases.md)
 - [System Blueprint](docs/02-system-blueprint/INFRATRACK_SYSTEM_BLUEPRINT_V1_SKELETON.md)
-
----
-
-## What the Platform Provides
-
-The current codebase provides platform infrastructure:
-
-**Backend:**
-- Spring Boot configuration (`com.infratrack`)
-- JWT authentication
-- Spring Security with role-based access control
-- User management and lifecycle (invitation, activation, deactivation)
-- Email infrastructure (development and production modes)
-- Notification infrastructure with Firebase integration
-- PostgreSQL configuration
-- Docker development and production setup
-- Environment variable strategy
-- Error handling and logging
-- OpenAPI/Swagger documentation
-
-**Frontend:**
-- Authentication and protected routing
-- User management interface
-- Notification center
-- Platform shell
-- HTTP API client with JWT token management
-- Environment-based configuration
-
-**Infrastructure:**
-- Development environment (Docker Compose with Mailpit)
-- Production environment (Docker Compose with security best practices)
-- PostgreSQL database (`infratrack`)
-- Environment variable strategy
-- Production-grade configuration
-
----
-
-## What Is Not Yet Implemented
-
-Business domain features are defined in documentation and implemented incrementally:
-
-- Asset registration and lifecycle
-- Inspections, work orders, and operational workflows
-- Department and reference data management
-- Field operations (Android)
-
-See [Functional Use Cases](docs/01-functional-analysis/functional-use-cases.md) for the implementation roadmap.
 
 ---
 
@@ -112,6 +98,8 @@ After starting:
 - Build info: `http://localhost:4000/actuator/info`
 - Mailpit (dev email): `http://localhost:8025`
 
+Default bootstrap administrator (development only): `admin@infratrack.local` / `change-me`
+
 ---
 
 ## API Developer Guide
@@ -130,7 +118,7 @@ See [Authentication Flow](#authentication-flow) below for activation and lifecyc
 
 **Pagination:** Paginated endpoints accept optional `page` (zero-based, default `0`) and `size` (default `20`, maximum `100`) query parameters. Responses use Spring Data `Page` JSON (`content`, `totalElements`, `totalPages`, etc.). Non-paginated list endpoints return a plain JSON array.
 
-**Versioning:** V1 REST paths are stable under `/api/...`. The API description version in OpenAPI is `1.0.1` (release label). Breaking changes require a new major version; additive DTO fields may be introduced without a path change.
+**Versioning:** V1 REST paths are stable under `/api/...`. The API description version in OpenAPI is `1.0.1`. Breaking changes require a new major version; additive DTO fields may be introduced without a path change.
 
 **Errors:** Business and validation failures return plain-text bodies with appropriate HTTP status codes. Swagger documents the common responses on each controller via `@StandardApiResponses`.
 
@@ -170,23 +158,34 @@ GIT_COMMIT=$(git rev-parse --short HEAD) docker compose up --build -d
 ## Architecture
 
 **Backend:**
+
 ```
 Controller → Service → Repository
 ```
 
 **Frontend:**
+
 ```
 UI → API Client → Backend
 ```
 
 **Database:**
+
 - PostgreSQL (system of record)
+- Flyway versioned migrations
 - All clients access the same data through the backend
 
 **Notifications:**
+
 - Database persistence first
 - Firebase Cloud Messaging for push delivery
 - Backend owns notification lifecycle
+
+**Security:**
+
+- JWT authentication on all `/api/**` endpoints except auth and actuator
+- Role-based authorization enforced in backend services
+- CORS configured globally in `SecurityConfig` (not per-controller)
 
 ---
 
@@ -195,12 +194,12 @@ UI → API Client → Backend
 | Component | Technology |
 |-----------|-----------|
 | Backend | Java 21, Spring Boot 3.2, Spring Security |
-| Frontend | React, Vite |
+| Frontend | React 19, Vite |
 | Database | PostgreSQL 16 |
 | Authentication | JWT (JSON Web Tokens) |
 | Notifications | Firebase Cloud Messaging |
 | Containerization | Docker Compose |
-| Testing | JUnit 5, Mockito |
+| Testing | JUnit 5, Mockito, Vitest, Playwright |
 
 ---
 
@@ -213,6 +212,7 @@ UI → API Client → Backend
 5. Backend validates token and extracts user identity
 
 **Account Activation:**
+
 - Administrator creates user account
 - User receives activation email with secure token
 - User clicks activation link and sets password
@@ -236,19 +236,68 @@ Administrative permissions do not automatically grant operational authority.
 
 ## Configuration
 
-All configuration is externalized via environment variables. See `backend/src/main/resources/application.properties` for available options.
+All configuration is externalized via environment variables. See `backend/src/main/resources/application.properties` and `.env.example` for available options.
 
 **Development:**
+
 ```bash
-docker compose up
+docker compose up --build
 ```
 
 **Production:**
+
 ```bash
 cp .env.example .env
 # Edit .env with production values
 docker compose -f docker-compose.prod.yml up -d
 ```
+
+---
+
+## Testing
+
+**Backend** (JUnit 5, Mockito, Testcontainers integration smoke):
+
+```bash
+cd backend
+mvn clean test
+```
+
+**Frontend** (Vitest, React Testing Library):
+
+```bash
+cd frontend
+npm ci --legacy-peer-deps
+npm test
+npm run build
+```
+
+**E2E smoke** (Playwright — requires browser install):
+
+```bash
+cd frontend
+npx playwright install --with-deps
+npm run test:e2e
+```
+
+Integration tests require Docker for Testcontainers; they are skipped when Docker is unavailable.
+
+---
+
+## Production Deployment
+
+Production deployment uses `docker-compose.prod.yml` and `.env.example` as the configuration template. The frontend is served by nginx; the backend runs as a non-root container with health checks on both services.
+
+See [docs/README.md](docs/README.md) and [docs/05-deployment/](docs/05-deployment/) for deployment documentation as it is added.
+
+---
+
+## Version History
+
+| Version | Summary |
+|---------|---------|
+| **1.0.1** | V1 release freeze — complete operational workflow (UC-001–UC-013), OpenAPI documentation, observability, security hardening, frontend test suite |
+| 1.0.0 | Initial React frontend release label (superseded by unified 1.0.1 versioning) |
 
 ---
 
@@ -263,39 +312,6 @@ InfraTrack follows these principles:
 - **Long-term maintainability** — Code understandable years later
 
 See [docs/00-business-discovery/00-development-philosophy.md](docs/00-business-discovery/00-development-philosophy.md) for the complete philosophy.
-
----
-
-## Testing
-
-Backend services include unit tests:
-
-```bash
-cd backend
-mvn clean test
-```
-
-Frontend unit tests use Vitest and React Testing Library:
-
-```bash
-cd frontend
-npm ci --legacy-peer-deps
-npm test
-```
-
-Optional Playwright smoke test (requires browser install):
-
-```bash
-cd frontend
-npx playwright install --with-deps
-npm run test:e2e
-```
-
----
-
-## Production Deployment
-
-Production deployment uses `docker-compose.prod.yml` and `.env.example` as the configuration template. See [docs/README.md](docs/README.md) and [docs/05-deployment/](docs/05-deployment/) for deployment documentation as it is added.
 
 ---
 

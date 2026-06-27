@@ -5,6 +5,7 @@ import apiClient from '../services/apiClient';
 import assetCategoryApi from '../services/assetCategoryApi';
 import NotificationButton from '../components/NotificationButton';
 import { canManageUsers } from '../constants/userRoles';
+import { getApiErrorMessage } from '../utils/apiError';
 import '../styles/ReferenceDataPage.css';
 
 export default function AssetCategoriesPage() {
@@ -35,7 +36,7 @@ export default function AssetCategoriesPage() {
       const data = await assetCategoryApi.list();
       setCategories(data);
     } catch (err) {
-      setError(`Failed to load asset categories: ${err.message}`);
+      setError(getApiErrorMessage(err, 'Failed to load asset categories.'));
     } finally {
       setLoading(false);
     }
@@ -57,7 +58,7 @@ export default function AssetCategoriesPage() {
       setEditingId(null);
       await loadCategories();
     } catch (err) {
-      setError(`Failed to save asset category: ${err.message}`);
+      setError(getApiErrorMessage(err, 'Failed to save asset category.'));
     } finally {
       setSubmitting(false);
     }
@@ -76,7 +77,7 @@ export default function AssetCategoriesPage() {
       await assetCategoryApi.delete(id);
       await loadCategories();
     } catch (err) {
-      setError(`Failed to delete asset category: ${err.message}`);
+      setError(getApiErrorMessage(err, 'Failed to delete asset category.'));
     }
   };
 

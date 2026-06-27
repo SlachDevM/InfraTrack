@@ -5,6 +5,7 @@ import apiClient from '../services/apiClient';
 import departmentApi from '../services/departmentApi';
 import NotificationButton from '../components/NotificationButton';
 import { canManageUsers } from '../constants/userRoles';
+import { getApiErrorMessage } from '../utils/apiError';
 import '../styles/ReferenceDataPage.css';
 
 export default function DepartmentsPage() {
@@ -35,7 +36,7 @@ export default function DepartmentsPage() {
       const data = await departmentApi.list();
       setDepartments(data);
     } catch (err) {
-      setError(`Failed to load departments: ${err.message}`);
+      setError(getApiErrorMessage(err, 'Failed to load departments.'));
     } finally {
       setLoading(false);
     }
@@ -57,7 +58,7 @@ export default function DepartmentsPage() {
       setEditingId(null);
       await loadDepartments();
     } catch (err) {
-      setError(`Failed to save department: ${err.message}`);
+      setError(getApiErrorMessage(err, 'Failed to save department.'));
     } finally {
       setSubmitting(false);
     }
@@ -76,7 +77,7 @@ export default function DepartmentsPage() {
       await departmentApi.delete(id);
       await loadDepartments();
     } catch (err) {
-      setError(`Failed to delete department: ${err.message}`);
+      setError(getApiErrorMessage(err, 'Failed to delete department.'));
     }
   };
 

@@ -12,7 +12,6 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,7 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/work-orders")
-@CrossOrigin(origins = "http://localhost:3000")
 @Tag(name = "Maintenance Activities", description = "Maintenance completion on work orders (UC-009)")
 @StandardApiResponses
 @SecurityRequirement(name = "bearerAuth")

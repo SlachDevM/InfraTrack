@@ -6,6 +6,7 @@ import operationalDecisionApi from '../services/operationalDecisionApi';
 import issueApi from '../services/issueApi';
 import NotificationButton from '../components/NotificationButton';
 import { canMakeOperationalDecisions } from '../constants/userRoles';
+import { getApiErrorMessage, isForbidden } from '../utils/apiError';
 import { getIssueSeverityLabel } from '../constants/issueSeverities';
 import {
   OPERATIONAL_DECISION_OUTCOMES,
@@ -68,7 +69,7 @@ export default function OperationalDecisionsPage() {
       setDecisions(decisionData);
       setIssues(issueData);
     } catch (err) {
-      setError(`Failed to load operational decisions: ${err.message}`);
+      setError(getApiErrorMessage(err, 'Failed to load operational decisions.'));
     } finally {
       setLoading(false);
     }
@@ -102,10 +103,10 @@ export default function OperationalDecisionsPage() {
       });
       await loadPageData();
     } catch (err) {
-      if (err.status === 403) {
+      if (isForbidden(err)) {
         setError('You do not have permission to make operational decisions.');
       } else {
-        setError(`Failed to make operational decision: ${err.message}`);
+        setError(getApiErrorMessage(err, 'Failed to make operational decision.'));
       }
     } finally {
       setSubmitting(false);

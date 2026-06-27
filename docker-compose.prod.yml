@@ -193,9 +193,8 @@ networks:
 #    - Should be HTTPS and match FRONTEND_ORIGIN in backend
 # 
 # 7. Database Migrations:
-#    - Set SPRING_JPA_HIBERNATE_DDL_AUTO=validate for safety
-#    - Implement proper migration strategy (Flyway/Liquibase) before final deployment
-#    - Run migrations separately during deployment, not auto on startup
+#    - Flyway applies classpath:db/migration on startup (V1 baseline)
+#    - Keep SPRING_JPA_HIBERNATE_DDL_AUTO=validate
 # 
 # 8. Monitoring & Logging:
 #    - Configure application logging (ELK, Splunk, etc.)
