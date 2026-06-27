@@ -7992,6 +7992,354 @@ Higher-level knowledge always takes precedence over lower-level implementation.
 
 ---
 
+# Engineering Conventions (V1.0.1)
+
+## Purpose
+
+This chapter defines the engineering conventions established during the implementation and hardening of InfraTrack Version 1.
+
+Unlike the architectural principles described elsewhere in this Blueprint, these conventions define **how contributors are expected to implement new features and refactor existing code** so that the codebase remains consistent, maintainable, and scalable over time.
+
+Unless an Architecture Decision Record (ADR) explicitly states otherwise, every contribution should follow these conventions.
+
+---
+
+## Service Architecture
+
+Application Services are **orchestrators**.
+
+Their responsibility is to coordinate a complete business use case.
+
+Application Services should:
+
+- Coordinate business operations.
+- Manage transactions.
+- Invoke repositories.
+- Delegate specialised responsibilities to dedicated collaborators.
+- Return business results.
+
+Application Services should **not** accumulate unrelated responsibilities.
+
+When a service becomes too large, extract focused collaborators instead of introducing generic abstractions.
+
+---
+
+## Authorization Services
+
+Role-based authorization must be implemented inside dedicated Authorization Services.
+
+Examples include:
+
+- InspectionAuthorizationService
+- WorkOrderAuthorizationService
+- OperationalDocumentAuthorizationService
+
+Authorization logic should never be duplicated across controllers or helper classes.
+
+Business permissions should remain explicit and easy to locate.
+
+---
+
+## History Recorders
+
+Operational history must always be written through dedicated History Recorder components.
+
+Examples include:
+
+- InspectionHistoryRecorder
+- WorkOrderHistoryRecorder
+- OperationalDocumentHistoryRecorder
+
+History recording should remain centralised in order to:
+
+- guarantee consistency;
+- simplify auditing;
+- reduce duplicated history logic;
+- preserve traceability.
+
+Application Services should never write history directly if a dedicated recorder already exists.
+
+---
+
+## Resolvers
+
+Whenever a business operation requires resolving multiple related entities, prefer dedicated Resolver classes.
+
+Typical responsibilities include:
+
+- loading business entities;
+- validating ownership;
+- validating relationships;
+- resolving business context.
+
+Resolvers should **never** perform permission checks.
+
+Authorization belongs exclusively to Authorization Services.
+
+---
+
+## Validation Strategy
+
+InfraTrack distinguishes two categories of validation.
+
+### Request Validation
+
+Structural validation is performed using Jakarta Bean Validation.
+
+Typical annotations include:
+
+- `@NotBlank`
+- `@NotNull`
+- `@Positive`
+- `@Email`
+- `@Size`
+
+Controllers should validate request structure before business logic is executed.
+
+---
+
+### Business Validation
+
+Business validation belongs exclusively inside Application Services.
+
+Examples include:
+
+- workflow rules;
+- permission checks;
+- state transitions;
+- operational constraints;
+- business invariants;
+- cross-entity consistency.
+
+Business validation must never rely solely on Bean Validation annotations.
+
+---
+
+## Exception Strategy
+
+Business errors should be represented using dedicated Business Exceptions.
+
+Examples include:
+
+- `NotFoundException`
+- `ConflictException`
+- `BusinessValidationException`
+- `ForbiddenOperationException`
+
+Application Services should throw business exceptions.
+
+`GlobalExceptionHandler` is responsible for translating business exceptions into HTTP responses.
+
+Controllers should never construct business error responses manually.
+
+---
+
+## Controller Responsibilities
+
+Controllers should remain intentionally small.
+
+Controllers should:
+
+- validate request structure;
+- invoke Application Services;
+- return responses.
+
+Controllers should never:
+
+- implement workflows;
+- access repositories directly;
+- contain business rules;
+- duplicate authorization logic.
+
+---
+
+## Repository Responsibilities
+
+Repositories are responsible only for persistence.
+
+Repositories should:
+
+- load entities;
+- persist entities;
+- expose query methods.
+
+Repositories should never:
+
+- implement workflows;
+- perform authorization;
+- enforce business rules.
+
+---
+
+## Frontend Architecture
+
+React Pages are orchestration components.
+
+Pages should:
+
+- load data;
+- own page state;
+- invoke backend APIs;
+- coordinate reusable UI components.
+
+Presentation logic belongs inside reusable components.
+
+Business logic always remains in the backend.
+
+Global state should not be introduced unless clearly justified.
+
+---
+
+## API Error Handling
+
+Frontend API errors should use the shared error helper utilities.
+
+Avoid duplicating HTTP error parsing across pages.
+
+Error handling should remain consistent throughout the application.
+
+---
+
+## Database Evolution
+
+Every database schema modification must use Flyway.
+
+Direct schema changes are prohibited.
+
+Every migration must be:
+
+- versioned;
+- reproducible;
+- backward compatible whenever possible.
+
+Hibernate automatic schema updates must never be relied upon in production.
+
+---
+
+## Testing Requirements
+
+A feature is not considered complete until the following commands succeed.
+
+Backend:
+
+```bash
+mvn clean test
+```
+
+Packaging:
+
+```bash
+mvn clean package -DskipTests
+```
+
+Frontend:
+
+```bash
+npm run build
+```
+
+Docker:
+
+```bash
+docker compose up --build
+```
+
+All commands must complete successfully before requesting review.
+
+---
+
+## Smoke Testing
+
+Every completed business capability must be manually validated through smoke testing.
+
+Smoke tests verify:
+
+- business behaviour;
+- permissions;
+- workflow integrity;
+- notifications;
+- asset history;
+- operational documents;
+- edge cases.
+
+No feature is considered complete before successful smoke testing.
+
+---
+
+## Documentation Rules
+
+Documentation is part of the implementation.
+
+Business behaviour changes must update:
+
+- Business Discovery;
+- Functional Analysis;
+- Business Rules;
+- Use Cases.
+
+Architectural changes must update:
+
+- this Blueprint;
+- relevant ADRs.
+
+Documentation should always remain synchronised with the implementation.
+
+---
+
+## AI Development Rules
+
+AI assistants working on InfraTrack are expected to:
+
+- analyse before implementing;
+- preserve the documented architecture;
+- preserve business terminology;
+- minimise technical debt;
+- favour explicit solutions over clever abstractions;
+- challenge inconsistent requests when appropriate.
+
+AI assistants should never:
+
+- invent business rules;
+- bypass documented architecture;
+- introduce speculative abstractions;
+- optimise prematurely;
+- modify workflows without documentation updates.
+
+---
+
+## Release Checklist
+
+Before considering any sprint complete, verify the following:
+
+- [ ] Business behaviour unchanged (unless intentionally modified).
+- [ ] Documentation updated.
+- [ ] All backend tests pass.
+- [ ] Backend package builds successfully.
+- [ ] Frontend builds successfully.
+- [ ] Docker images build successfully.
+- [ ] Manual smoke tests completed.
+- [ ] No unnecessary abstraction introduced.
+- [ ] No duplicated business logic introduced.
+- [ ] No API contract broken.
+- [ ] No database inconsistency introduced.
+
+---
+
+## Engineering Principles
+
+InfraTrack is developed as a long-term enterprise software product.
+
+The following principles guide every implementation:
+
+- Business correctness has priority over technical convenience.
+- Explicit code is preferred over hidden behaviour.
+- Consistency is preferred over cleverness.
+- Readability is preferred over premature optimisation.
+- Simplicity is preferred over unnecessary abstraction.
+- Every implementation should leave the codebase in a better state than it was found.
+
+---
+
 # Final Commitment
 
 Every contributor to InfraTrack commits to:
