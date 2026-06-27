@@ -5,18 +5,17 @@ import apiClient from '../services/apiClient';
 import inspectionApi from '../services/inspectionApi';
 import businessTriggerApi from '../services/businessTriggerApi';
 import NotificationButton from '../components/NotificationButton';
+import AssignInspectionForm from '../components/inspections/AssignInspectionForm';
+import CompleteInspectionForm from '../components/inspections/CompleteInspectionForm';
+import InspectionList from '../components/inspections/InspectionList';
 import { canAssignInspections, canPerformInspections } from '../constants/userRoles';
-import { getBusinessTriggerTypeLabel } from '../constants/businessTriggerTypes';
 import {
   INSPECTION_PRIORITIES,
-  INSPECTION_PRIORITY_OPTIONS,
-  getInspectionPriorityLabel,
 } from '../constants/inspectionPriorities';
 import {
   PHYSICAL_CONDITIONS,
-  PHYSICAL_CONDITION_OPTIONS,
-  getPhysicalConditionLabel,
 } from '../constants/physicalConditions';
+import { getApiErrorMessage, isForbidden } from '../utils/apiError';
 import '../styles/ReferenceDataPage.css';
 import '../styles/InspectionsPage.css';
 
@@ -92,7 +91,7 @@ export default function InspectionsPage() {
         setWorkers(workerData);
       }
     } catch (err) {
-      setError(`Failed to load inspections: ${err.message}`);
+      setError(getApiErrorMessage(err, 'Failed to load inspections.'));
     } finally {
       setLoading(false);
     }
@@ -143,10 +142,10 @@ export default function InspectionsPage() {
       });
       await loadPageData();
     } catch (err) {
-      if (err.status === 403) {
+      if (isForbidden(err)) {
         setError('You are not allowed to complete this inspection.');
       } else {
-        setError(`Failed to complete inspection: ${err.message}`);
+        setError(getApiErrorMessage(err, 'Failed to complete inspection.'));
       }
     } finally {
       setCompletingId(null);
@@ -179,10 +178,10 @@ export default function InspectionsPage() {
       });
       await loadPageData();
     } catch (err) {
-      if (err.status === 403) {
+      if (isForbidden(err)) {
         setError('You do not have permission to assign inspections.');
       } else {
-        setError(`Failed to assign inspection: ${err.message}`);
+        setError(getApiErrorMessage(err, 'Failed to assign inspection.'));
       }
     } finally {
       setSubmitting(false);
@@ -224,106 +223,15 @@ export default function InspectionsPage() {
         {success && <div className="success-message">{success}</div>}
 
         {canAssign ? (
-          <section className="inspection-form-section">
-            <h2>Assign Inspection</h2>
-            <form className="inspection-form" onSubmit={handleSubmit}>
-              <div className="form-row">
-                <label htmlFor="businessTriggerId">Business Trigger</label>
-                <select
-                  id="businessTriggerId"
-                  name="businessTriggerId"
-                  value={formData.businessTriggerId}
-                  onChange={handleChange}
-                  required
-                  disabled={submitting || triggers.length === 0}
-                >
-                  <option value="">Select business trigger</option>
-                  {triggers.map((trigger) => (
-                    <option key={trigger.id} value={trigger.id}>
-                      #{trigger.id} — {trigger.assetName} ({getBusinessTriggerTypeLabel(trigger.type)})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {selectedTrigger && (
-                <div className="linked-asset-info">
-                  <strong>Linked asset:</strong> {selectedTrigger.assetName}
-                  <br />
-                  <strong>Reason:</strong> {selectedTrigger.reason}
-                  {selectedTrigger.urgent && (
-                    <>
-                      <br />
-                      <strong>Urgent trigger</strong>
-                    </>
-                  )}
-                </div>
-              )}
-
-              <div className="form-row">
-                <label htmlFor="assignedToUserId">Assign To</label>
-                <select
-                  id="assignedToUserId"
-                  name="assignedToUserId"
-                  value={formData.assignedToUserId}
-                  onChange={handleChange}
-                  required
-                  disabled={submitting || workers.length === 0}
-                >
-                  <option value="">Select worker</option>
-                  {workers.map((worker) => (
-                    <option key={worker.id} value={worker.id}>
-                      {worker.name} ({worker.role === 'CONTRACTOR' ? 'Contractor' : 'Field Employee'})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-row">
-                <label htmlFor="priority">Priority</label>
-                <select
-                  id="priority"
-                  name="priority"
-                  value={formData.priority}
-                  onChange={handleChange}
-                  required
-                  disabled={submitting}
-                >
-                  {INSPECTION_PRIORITY_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-row">
-                <label htmlFor="expectedCompletionDate">Expected Completion Date</label>
-                <input
-                  id="expectedCompletionDate"
-                  name="expectedCompletionDate"
-                  type="date"
-                  value={formData.expectedCompletionDate}
-                  onChange={handleChange}
-                  disabled={submitting}
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="btn-primary"
-                disabled={submitting || triggers.length === 0 || workers.length === 0}
-              >
-                {submitting ? 'Assigning...' : 'Assign Inspection'}
-              </button>
-            </form>
-            {triggers.length === 0 && (
-              <p className="read-only-note">Create at least one business trigger before assigning an inspection.</p>
-            )}
-            {workers.length === 0 && (
-              <p className="read-only-note">No field employees or contractors are available for assignment.</p>
-            )}
-          </section>
+          <AssignInspectionForm
+            formData={formData}
+            triggers={triggers}
+            workers={workers}
+            selectedTrigger={selectedTrigger}
+            submitting={submitting}
+            onChange={handleChange}
+            onSubmit={handleSubmit}
+          />
         ) : (
           <p className="read-only-note">
             Inspection assignment is available to Operational Coordinators.
@@ -337,143 +245,20 @@ export default function InspectionsPage() {
               <p className="read-only-note">You have no assigned inspections to complete.</p>
             ) : (
               myAssignedInspections.map((inspection) => (
-                <form
+                <CompleteInspectionForm
                   key={inspection.id}
-                  className="inspection-form complete-form"
+                  inspection={inspection}
+                  completeFormData={completeFormData}
+                  completingId={completingId}
+                  onChange={handleCompleteChange}
                   onSubmit={(e) => handleCompleteSubmit(e, inspection.id)}
-                >
-                  <div className="linked-asset-info">
-                    <strong>Asset:</strong> {inspection.assetName}
-                    <br />
-                    <strong>Trigger:</strong> #{inspection.businessTriggerId} — {getBusinessTriggerTypeLabel(inspection.businessTriggerType)}
-                    <br />
-                    <strong>Reason:</strong> {inspection.businessTriggerReason}
-                  </div>
-
-                  <div className="form-row">
-                    <label htmlFor={`observedCondition-${inspection.id}`}>Observed Condition</label>
-                    <select
-                      id={`observedCondition-${inspection.id}`}
-                      name="observedCondition"
-                      value={completeFormData.observedCondition}
-                      onChange={handleCompleteChange}
-                      required
-                      disabled={completingId === inspection.id}
-                    >
-                      {PHYSICAL_CONDITION_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-row">
-                    <label htmlFor={`observations-${inspection.id}`}>Observations</label>
-                    <textarea
-                      id={`observations-${inspection.id}`}
-                      name="observations"
-                      value={completeFormData.observations}
-                      onChange={handleCompleteChange}
-                      required
-                      disabled={completingId === inspection.id}
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="form-row checkbox-row">
-                    <label htmlFor={`issueIdentified-${inspection.id}`}>
-                      <input
-                        id={`issueIdentified-${inspection.id}`}
-                        name="issueIdentified"
-                        type="checkbox"
-                        checked={completeFormData.issueIdentified}
-                        onChange={handleCompleteChange}
-                        disabled={completingId === inspection.id}
-                      />
-                      Issue identified (record only — Issue creation is handled separately)
-                    </label>
-                  </div>
-
-                  <div className="form-row">
-                    <label htmlFor={`completedAt-${inspection.id}`}>Completion Date & Time</label>
-                    <input
-                      id={`completedAt-${inspection.id}`}
-                      name="completedAt"
-                      type="datetime-local"
-                      value={completeFormData.completedAt}
-                      onChange={handleCompleteChange}
-                      required
-                      disabled={completingId === inspection.id}
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="btn-primary"
-                    disabled={completingId === inspection.id}
-                  >
-                    {completingId === inspection.id ? 'Completing...' : 'Complete Inspection'}
-                  </button>
-                </form>
+                />
               ))
             )}
           </section>
         )}
 
-        <section className="inspection-list-section">
-          <h2>Inspections</h2>
-          {inspections.length === 0 ? (
-            <p className="no-items">No inspections assigned yet.</p>
-          ) : (
-            <table className="reference-table inspections-table">
-              <thead>
-                <tr>
-                  <th>Asset</th>
-                  <th>Trigger</th>
-                  <th>Assigned To</th>
-                  <th>Priority</th>
-                  <th>Status</th>
-                  <th>Condition</th>
-                  <th>Issue</th>
-                  <th>Expected By</th>
-                  <th>Completed</th>
-                  <th>Created</th>
-                </tr>
-              </thead>
-              <tbody>
-                {inspections.map((inspection) => (
-                  <tr key={inspection.id}>
-                    <td>{inspection.assetName}</td>
-                    <td>
-                      #{inspection.businessTriggerId} — {getBusinessTriggerTypeLabel(inspection.businessTriggerType)}
-                    </td>
-                    <td>{inspection.assignedToUserName || inspection.assignedToUserId}</td>
-                    <td>{getInspectionPriorityLabel(inspection.priority)}</td>
-                    <td>{inspection.status}</td>
-                    <td>
-                      {inspection.observedCondition
-                        ? getPhysicalConditionLabel(inspection.observedCondition)
-                        : '-'}
-                    </td>
-                    <td>{inspection.issueIdentified ? 'Yes' : 'No'}</td>
-                    <td>{inspection.expectedCompletionDate || '-'}</td>
-                    <td>
-                      {inspection.completedAt
-                        ? new Date(inspection.completedAt).toLocaleString()
-                        : '-'}
-                    </td>
-                    <td>
-                      {inspection.createdAt
-                        ? new Date(inspection.createdAt).toLocaleString()
-                        : '-'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </section>
+        <InspectionList inspections={inspections} />
       </main>
     </div>
   );

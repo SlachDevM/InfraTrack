@@ -6,17 +6,18 @@ import workOrderApi from '../services/workOrderApi';
 import maintenanceActivityApi from '../services/maintenanceActivityApi';
 import operationalDecisionApi from '../services/operationalDecisionApi';
 import NotificationButton from '../components/NotificationButton';
+import CreateWorkOrderForm from '../components/workorders/CreateWorkOrderForm';
+import AssignWorkOrderForm from '../components/workorders/AssignWorkOrderForm';
+import CompleteMaintenanceForm from '../components/workorders/CompleteMaintenanceForm';
+import WorkOrderList from '../components/workorders/WorkOrderList';
 import { canAssignWorkOrders, canCompleteMaintenance, canCreateWorkOrders, canRecordCompletionReview, USER_ROLES } from '../constants/userRoles';
-import { getOperationalDecisionOutcomeLabel } from '../constants/operationalDecisionOutcomes';
 import {
   COMPLETION_REVIEW_DECISION_OPTIONS,
-  getCompletionReviewDecisionLabel,
 } from '../constants/completionReviewDecisions';
 import {
   WORK_ORDER_PRIORITIES,
-  WORK_ORDER_PRIORITY_OPTIONS,
-  getWorkOrderPriorityLabel,
 } from '../constants/workOrderPriorities';
+import { getApiErrorMessage, isForbidden } from '../utils/apiError';
 import '../styles/ReferenceDataPage.css';
 import '../styles/WorkOrdersPage.css';
 
@@ -157,7 +158,7 @@ export default function WorkOrdersPage() {
       setWorkers(workerData);
       setMaintenanceActivities(maintenanceActivityData);
     } catch (err) {
-      setError(`Failed to load work orders: ${err.message}`);
+      setError(getApiErrorMessage(err, 'Failed to load work orders.'));
     } finally {
       setLoading(false);
     }
@@ -191,10 +192,10 @@ export default function WorkOrdersPage() {
       });
       await loadPageData();
     } catch (err) {
-      if (err.status === 403) {
+      if (isForbidden(err)) {
         setError('You do not have permission to create work orders.');
       } else {
-        setError(`Failed to create work order: ${err.message}`);
+        setError(getApiErrorMessage(err, 'Failed to create work order.'));
       }
     } finally {
       setSubmitting(false);
@@ -230,10 +231,10 @@ export default function WorkOrdersPage() {
       });
       await loadPageData();
     } catch (err) {
-      if (err.status === 403) {
+      if (isForbidden(err)) {
         setError('You do not have permission to assign work orders.');
       } else {
-        setError(`Failed to assign work order: ${err.message}`);
+        setError(getApiErrorMessage(err, 'Failed to assign work order.'));
       }
     } finally {
       setAssigning(false);
@@ -265,10 +266,10 @@ export default function WorkOrdersPage() {
       });
       await loadPageData();
     } catch (err) {
-      if (err.status === 403) {
+      if (isForbidden(err)) {
         setError('You do not have permission to complete maintenance for this work order.');
       } else {
-        setError(`Failed to complete maintenance: ${err.message}`);
+        setError(getApiErrorMessage(err, 'Failed to complete maintenance.'));
       }
     } finally {
       setCompleting(false);
@@ -305,10 +306,10 @@ export default function WorkOrdersPage() {
       });
       await loadPageData();
     } catch (err) {
-      if (err.status === 403) {
+      if (isForbidden(err)) {
         setError('You do not have permission to record completion reviews.');
       } else {
-        setError(`Failed to record completion review: ${err.message}`);
+        setError(getApiErrorMessage(err, 'Failed to record completion review.'));
       }
     } finally {
       setReviewing(false);
@@ -350,96 +351,14 @@ export default function WorkOrdersPage() {
         {success && <div className="success-message">{success}</div>}
 
         {canCreate ? (
-          <section className="work-order-form-section">
-            <h2>Create Work Order</h2>
-            <form className="work-order-form" onSubmit={handleSubmit}>
-              <div className="form-row">
-                <label htmlFor="operationalDecisionId">Operational Decision</label>
-                <select
-                  id="operationalDecisionId"
-                  name="operationalDecisionId"
-                  value={formData.operationalDecisionId}
-                  onChange={handleChange}
-                  required
-                  disabled={submitting || eligibleDecisions.length === 0}
-                >
-                  <option value="">Select operational decision</option>
-                  {eligibleDecisions.map((decision) => (
-                    <option key={decision.id} value={decision.id}>
-                      #{decision.id} — {decision.assetName} ({getOperationalDecisionOutcomeLabel(decision.outcome)})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {selectedDecision && (
-                <div className="linked-decision-info">
-                  <strong>Asset:</strong> {selectedDecision.assetName}
-                  <br />
-                  <strong>Outcome:</strong> {getOperationalDecisionOutcomeLabel(selectedDecision.outcome)}
-                  <br />
-                  <strong>Rationale:</strong> {selectedDecision.rationale}
-                </div>
-              )}
-
-              <div className="form-row">
-                <label htmlFor="description">Description</label>
-                <textarea
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  required
-                  disabled={submitting}
-                  rows={3}
-                />
-              </div>
-
-              <div className="form-row">
-                <label htmlFor="priority">Priority</label>
-                <select
-                  id="priority"
-                  name="priority"
-                  value={formData.priority}
-                  onChange={handleChange}
-                  required
-                  disabled={submitting}
-                >
-                  {WORK_ORDER_PRIORITY_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-row">
-                <label htmlFor="createdAtBusinessDate">Creation Date & Time</label>
-                <input
-                  id="createdAtBusinessDate"
-                  name="createdAtBusinessDate"
-                  type="datetime-local"
-                  value={formData.createdAtBusinessDate}
-                  onChange={handleChange}
-                  required
-                  disabled={submitting}
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="btn-primary"
-                disabled={submitting || eligibleDecisions.length === 0}
-              >
-                {submitting ? 'Creating...' : 'Create Work Order'}
-              </button>
-            </form>
-            {eligibleDecisions.length === 0 && (
-              <p className="read-only-note">
-                No operational decisions authorising physical work are awaiting a work order.
-              </p>
-            )}
-          </section>
+          <CreateWorkOrderForm
+            formData={formData}
+            eligibleDecisions={eligibleDecisions}
+            selectedDecision={selectedDecision}
+            submitting={submitting}
+            onChange={handleChange}
+            onSubmit={handleSubmit}
+          />
         ) : (
           <p className="read-only-note">
             Work order creation is available to Operational Coordinators.
@@ -447,85 +366,15 @@ export default function WorkOrdersPage() {
         )}
 
         {canAssign ? (
-          <section className="work-order-form-section">
-            <h2>Assign Work Order</h2>
-            <form className="work-order-form" onSubmit={handleAssignSubmit}>
-              <div className="form-row">
-                <label htmlFor="workOrderId">Work Order</label>
-                <select
-                  id="workOrderId"
-                  name="workOrderId"
-                  value={assignFormData.workOrderId}
-                  onChange={handleAssignChange}
-                  required
-                  disabled={assigning || createdWorkOrders.length === 0}
-                >
-                  <option value="">Select work order</option>
-                  {createdWorkOrders.map((workOrder) => (
-                    <option key={workOrder.id} value={workOrder.id}>
-                      #{workOrder.id} — {workOrder.assetName} ({getOperationalDecisionOutcomeLabel(workOrder.workType)})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {selectedAssignWorkOrder && (
-                <div className="linked-decision-info">
-                  <strong>Work Type:</strong> {getOperationalDecisionOutcomeLabel(selectedAssignWorkOrder.workType)}
-                  <br />
-                  <strong>Description:</strong> {selectedAssignWorkOrder.description}
-                </div>
-              )}
-
-              <div className="form-row">
-                <label htmlFor="assignedToUserId">Assign To</label>
-                <select
-                  id="assignedToUserId"
-                  name="assignedToUserId"
-                  value={assignFormData.assignedToUserId}
-                  onChange={handleAssignChange}
-                  required
-                  disabled={assigning || !assignFormData.workOrderId || eligibleAssignees.length === 0}
-                >
-                  <option value="">Select assignee</option>
-                  {eligibleAssignees.map((worker) => (
-                    <option key={worker.id} value={worker.id}>
-                      {worker.name} ({worker.role})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-row">
-                <label htmlFor="assignedAt">Assignment Date & Time</label>
-                <input
-                  id="assignedAt"
-                  name="assignedAt"
-                  type="datetime-local"
-                  value={assignFormData.assignedAt}
-                  onChange={handleAssignChange}
-                  required
-                  disabled={assigning}
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="btn-primary"
-                disabled={assigning || createdWorkOrders.length === 0 || eligibleAssignees.length === 0}
-              >
-                {assigning ? 'Assigning...' : 'Assign Work Order'}
-              </button>
-            </form>
-            {createdWorkOrders.length === 0 && (
-              <p className="read-only-note">No work orders are awaiting assignment.</p>
-            )}
-            {assignFormData.workOrderId && eligibleAssignees.length === 0 && (
-              <p className="read-only-note">
-                No eligible workers are available for this work order type.
-              </p>
-            )}
-          </section>
+          <AssignWorkOrderForm
+            assignFormData={assignFormData}
+            createdWorkOrders={createdWorkOrders}
+            selectedAssignWorkOrder={selectedAssignWorkOrder}
+            eligibleAssignees={eligibleAssignees}
+            assigning={assigning}
+            onChange={handleAssignChange}
+            onSubmit={handleAssignSubmit}
+          />
         ) : (
           <p className="read-only-note">
             Work order assignment is available to Operational Coordinators.
@@ -533,76 +382,14 @@ export default function WorkOrdersPage() {
         )}
 
         {canComplete ? (
-          <section className="work-order-form-section">
-            <h2>Complete Maintenance Activity</h2>
-            <form className="work-order-form" onSubmit={handleCompleteSubmit}>
-              <div className="form-row">
-                <label htmlFor="completeWorkOrderId">Assigned Work Order</label>
-                <select
-                  id="completeWorkOrderId"
-                  name="workOrderId"
-                  value={completeFormData.workOrderId}
-                  onChange={handleCompleteChange}
-                  required
-                  disabled={completing || assignedWorkOrdersForCurrentUser.length === 0}
-                >
-                  <option value="">Select assigned work order</option>
-                  {assignedWorkOrdersForCurrentUser.map((workOrder) => (
-                    <option key={workOrder.id} value={workOrder.id}>
-                      #{workOrder.id} — {workOrder.assetName} ({getOperationalDecisionOutcomeLabel(workOrder.workType)})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {selectedCompleteWorkOrder && (
-                <div className="linked-decision-info">
-                  <strong>Asset:</strong> {selectedCompleteWorkOrder.assetName}
-                  <br />
-                  <strong>Description:</strong> {selectedCompleteWorkOrder.description}
-                </div>
-              )}
-
-              <div className="form-row">
-                <label htmlFor="completionNotes">Completion Notes</label>
-                <textarea
-                  id="completionNotes"
-                  name="completionNotes"
-                  value={completeFormData.completionNotes}
-                  onChange={handleCompleteChange}
-                  required
-                  disabled={completing}
-                  rows={3}
-                />
-              </div>
-
-              <div className="form-row">
-                <label htmlFor="completedAt">Completion Date & Time</label>
-                <input
-                  id="completedAt"
-                  name="completedAt"
-                  type="datetime-local"
-                  value={completeFormData.completedAt}
-                  onChange={handleCompleteChange}
-                  required
-                  disabled={completing}
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="btn-primary"
-                disabled={completing || assignedWorkOrdersForCurrentUser.length === 0}
-              >
-                {completing ? 'Completing...' : 'Complete Maintenance'}
-              </button>
-            </form>
-            {assignedWorkOrdersForCurrentUser.length === 0 && (
-              <p className="read-only-note">
-                You have no assigned work orders awaiting maintenance completion.
-              </p>
-            )}
-          </section>
+          <CompleteMaintenanceForm
+            completeFormData={completeFormData}
+            assignedWorkOrdersForCurrentUser={assignedWorkOrdersForCurrentUser}
+            selectedCompleteWorkOrder={selectedCompleteWorkOrder}
+            completing={completing}
+            onChange={handleCompleteChange}
+            onSubmit={handleCompleteSubmit}
+          />
         ) : (
           <p className="read-only-note">
             Maintenance completion is available to assigned Field Employees and Contractors.
@@ -709,62 +496,10 @@ export default function WorkOrdersPage() {
           </p>
         )}
 
-        <section className="work-order-list-section">
-          <h2>Work Orders</h2>
-          {workOrders.length === 0 ? (
-            <p className="no-items">No work orders yet.</p>
-          ) : (
-            <table className="reference-table work-orders-table">
-              <thead>
-                <tr>
-                  <th>Asset</th>
-                  <th>Decision</th>
-                  <th>Work Type</th>
-                  <th>Description</th>
-                  <th>Priority</th>
-                  <th>Status</th>
-                  <th>Assigned To</th>
-                  <th>Review</th>
-                  <th>Created</th>
-                  <th>Assigned</th>
-                </tr>
-              </thead>
-              <tbody>
-                {workOrders.map((workOrder) => {
-                  const activity = maintenanceActivities.find(
-                    (item) => item.workOrderId === workOrder.id
-                  );
-                  return (
-                  <tr key={workOrder.id}>
-                    <td>{workOrder.assetName}</td>
-                    <td>#{workOrder.operationalDecisionId}</td>
-                    <td>{getOperationalDecisionOutcomeLabel(workOrder.workType)}</td>
-                    <td>{workOrder.description}</td>
-                    <td>{getWorkOrderPriorityLabel(workOrder.priority)}</td>
-                    <td>{workOrder.status}</td>
-                    <td>{workOrder.assignedToUserName || '-'}</td>
-                    <td>
-                      {activity?.completionReviewDecision
-                        ? getCompletionReviewDecisionLabel(activity.completionReviewDecision)
-                        : activity ? 'Pending' : '-'}
-                    </td>
-                    <td>
-                      {workOrder.createdAtBusinessDate
-                        ? new Date(workOrder.createdAtBusinessDate).toLocaleString()
-                        : '-'}
-                    </td>
-                    <td>
-                      {workOrder.assignedAt
-                        ? new Date(workOrder.assignedAt).toLocaleString()
-                        : '-'}
-                    </td>
-                  </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </section>
+        <WorkOrderList
+          workOrders={workOrders}
+          maintenanceActivities={maintenanceActivities}
+        />
       </main>
     </div>
   );
