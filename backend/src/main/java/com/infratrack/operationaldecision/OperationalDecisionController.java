@@ -43,11 +43,19 @@ public class OperationalDecisionController {
     @ApiResponse(responseCode = "200", description = "Paginated operational decision list")
     public ResponseEntity<Page<OperationalDecisionResponse>> listOperationalDecisions(
             @Parameter(description = "Zero-based page index") @RequestParam(required = false) Integer page,
-            @Parameter(description = "Page size (max 100)") @RequestParam(required = false) Integer size) {
+            @Parameter(description = "Page size (max 100)") @RequestParam(required = false) Integer size,
+            @Parameter(description = "When true, returns only decisions eligible for work order creation (UC-008)")
+            @RequestParam(required = false) Boolean eligibleForWorkOrderCreation,
+            Authentication authentication) {
         Pageable pageable = PaginationSupport.pageable(
                 page,
                 size,
                 Sort.by(Sort.Direction.DESC, "createdAt"));
+        if (Boolean.TRUE.equals(eligibleForWorkOrderCreation)) {
+            Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+            return ResponseEntity.ok(
+                    operationalDecisionService.listEligibleForWorkOrderCreationPage(userId, pageable));
+        }
         return ResponseEntity.ok(operationalDecisionService.listPage(pageable));
     }
 

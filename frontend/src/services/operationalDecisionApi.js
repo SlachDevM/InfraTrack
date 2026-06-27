@@ -9,6 +9,8 @@ const ENDPOINTS = {
 export const operationalDecisionApi = {
   list: (page = DEFAULT_PAGE, size = DEFAULT_SIZE) =>
     apiClient.get(`${ENDPOINTS.LIST}?${paginatedQuery(page, size)}`),
+  listEligibleForWorkOrderCreation: (page = DEFAULT_PAGE, size = DEFAULT_SIZE) =>
+    apiClient.get(`${ENDPOINTS.LIST}?${paginatedQuery(page, size)}&eligibleForWorkOrderCreation=true`),
   get: (id) => apiClient.get(ENDPOINTS.DETAIL(id)),
   create: (request) => apiClient.post(ENDPOINTS.LIST, request),
 };
