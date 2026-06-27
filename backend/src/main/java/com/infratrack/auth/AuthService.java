@@ -7,6 +7,7 @@ import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserStatus;
 import com.infratrack.user.UserRepository;
+import com.infratrack.user.EmailNormalizer;
 import com.infratrack.security.JwtTokenProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -40,7 +41,7 @@ public class AuthService {
     }
 
     public LoginResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
+        User user = userRepository.findByEmail(EmailNormalizer.normalize(request.getEmail()))
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.UNAUTHORIZED,
                         "Invalid email or password"
@@ -67,12 +68,13 @@ public class AuthService {
     }
 
     public LoginResponse register(RegisterRequest request) {
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+        String normalizedEmail = EmailNormalizer.normalize(request.getEmail());
+        if (userRepository.findByEmail(normalizedEmail).isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already exists");
         }
 
         User user = new User();
-        user.setEmail(request.getEmail());
+        user.setEmail(normalizedEmail);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setName(request.getName());
         user.setRole(request.getRole() != null ? request.getRole() : UserRole.FIELD_EMPLOYEE);

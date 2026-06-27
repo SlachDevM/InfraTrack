@@ -140,7 +140,30 @@ class UserManagementServiceTest {
     }
 
     @Test
-    void updateUser_shouldThrowOnDuplicateEmail() {
+    void updateUser_shouldStoreMixedCaseEmailAsLowercase() {
+        User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMINISTRATOR);
+        admin.setId(1L);
+
+        User user = new User("user@test.com", "password", "Old", UserRole.FIELD_EMPLOYEE);
+        user.setId(2L);
+        user.setEnabled(true);
+
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setEmail("John.Doe@Company.com");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(user));
+        when(userRepository.findByEmail("john.doe@company.com")).thenReturn(Optional.empty());
+        when(userRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
+        lenient().when(activationService.hasValidActivationToken(2L)).thenReturn(false);
+
+        UserManagementResponse result = userManagementService.updateUser(2L, request, 1L);
+
+        assertThat(result.getEmail()).isEqualTo("john.doe@company.com");
+    }
+
+    @Test
+    void updateUser_shouldRejectDuplicateEmailIgnoringCase() {
         User admin = new User("admin@test.com", "password", "Admin", UserRole.ADMINISTRATOR);
         admin.setId(1L);
 
@@ -148,11 +171,11 @@ class UserManagementServiceTest {
         user.setId(2L);
 
         UpdateUserRequest request = new UpdateUserRequest();
-        request.setEmail("existing@test.com");
+        request.setEmail("JOHN@COMPANY.COM");
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
         when(userRepository.findById(2L)).thenReturn(Optional.of(user));
-        when(userRepository.findByEmail("existing@test.com")).thenReturn(Optional.of(new User()));
+        when(userRepository.findByEmail("john@company.com")).thenReturn(Optional.of(new User()));
 
         assertThatThrownBy(() -> userManagementService.updateUser(2L, request, 1L))
                 .isInstanceOf(ResponseStatusException.class)

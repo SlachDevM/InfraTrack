@@ -19,7 +19,7 @@ export default function Login() {
     e.preventDefault();
     setError('');
 
-    const trimmedEmail = email.trim();
+    const trimmedEmail = email.trim().toLowerCase();
     const trimmedPassword = password.trim();
 
     if (!trimmedEmail || !trimmedPassword || !EMAIL_PATTERN.test(trimmedEmail)) {

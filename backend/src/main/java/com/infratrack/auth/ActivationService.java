@@ -3,6 +3,7 @@ package com.infratrack.auth;
 import com.infratrack.department.Department;
 import com.infratrack.department.DepartmentRepository;
 import com.infratrack.mail.EmailService;
+import com.infratrack.user.EmailNormalizer;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserRepository;
@@ -73,7 +74,8 @@ public class ActivationService {
         validateCreatorPermissions(creator, requestedRole);
 
         // Check for duplicate email
-        if (userRepository.findByEmail(email).isPresent()) {
+        String normalizedEmail = EmailNormalizer.normalize(email);
+        if (userRepository.findByEmail(normalizedEmail).isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already exists");
         }
 
@@ -81,12 +83,12 @@ public class ActivationService {
         if (name == null || name.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Name cannot be blank");
         }
-        if (email == null || email.isBlank()) {
+        if (normalizedEmail == null || normalizedEmail.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email cannot be blank");
         }
 
         // Create inactive user
-        User newUser = new User(email, "", name, requestedRole);
+        User newUser = new User(normalizedEmail, "", name, requestedRole);
         newUser.setEnabled(false);
         if (departmentId != null) {
             Department department = departmentRepository.findById(departmentId)

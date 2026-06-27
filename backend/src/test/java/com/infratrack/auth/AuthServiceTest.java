@@ -221,4 +221,62 @@ class AuthServiceTest {
 
         verify(userRepository, never()).save(any(User.class));
     }
+
+    @Test
+    void login_shouldFindUser_whenEmailUsesDifferentCase() {
+        User user = new User("manager@test.com", "encoded-password", "Manager", UserRole.MANAGER);
+        user.setId(1L);
+        user.setEnabled(true);
+
+        when(userRepository.findByEmail("manager@test.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("password", "encoded-password")).thenReturn(true);
+        when(tokenProvider.generateToken(1L, "manager@test.com")).thenReturn("jwt-token");
+
+        LoginResponse response = authService.login(
+                new LoginRequest("Manager@Test.com", "password")
+        );
+
+        assertThat(response.getEmail()).isEqualTo("manager@test.com");
+        verify(userRepository).findByEmail("manager@test.com");
+    }
+
+    @Test
+    void register_shouldStoreEmailAsLowercase() {
+        RegisterRequest request = new RegisterRequest();
+        request.setEmail("John.Doe@Company.com");
+        request.setPassword("password");
+        request.setName("New User");
+
+        when(userRepository.findByEmail("john.doe@company.com")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode("password")).thenReturn("encoded-password");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User saved = invocation.getArgument(0);
+            saved.setId(10L);
+            return saved;
+        });
+        when(tokenProvider.generateToken(10L, "john.doe@company.com")).thenReturn("jwt-token");
+
+        authService.register(request);
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertThat(userCaptor.getValue().getEmail()).isEqualTo("john.doe@company.com");
+    }
+
+    @Test
+    void register_shouldRejectDuplicateEmailIgnoringCase() {
+        RegisterRequest request = new RegisterRequest();
+        request.setEmail("JOHN@COMPANY.COM");
+        request.setPassword("password");
+        request.setName("Existing User");
+
+        when(userRepository.findByEmail("john@company.com"))
+                .thenReturn(Optional.of(new User()));
+
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400");
+
+        verify(userRepository, never()).save(any(User.class));
+    }
 }

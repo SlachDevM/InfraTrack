@@ -122,14 +122,16 @@ public class UserManagementService {
         }
 
         // Update email if provided and different
-        if (request.getEmail() != null && !request.getEmail().isBlank() && !request.getEmail().equals(oldEmail)) {
-            // Check for duplicate email
-            if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already in use");
-            }
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            String normalizedEmail = EmailNormalizer.normalize(request.getEmail());
+            if (!normalizedEmail.equals(oldEmail)) {
+                if (userRepository.findByEmail(normalizedEmail).isPresent()) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already in use");
+                }
 
-            user.setEmail(request.getEmail());
-            emailChanged = true;
+                user.setEmail(normalizedEmail);
+                emailChanged = true;
+            }
         }
 
         if (Boolean.TRUE.equals(request.getClearDepartment())) {
