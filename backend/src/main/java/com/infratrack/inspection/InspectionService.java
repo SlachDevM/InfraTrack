@@ -1,13 +1,9 @@
 package com.infratrack.inspection;
 
 import com.infratrack.asset.Asset;
-import com.infratrack.asset.AssetHistoryEvent;
-import com.infratrack.asset.AssetHistoryEventRepository;
-import com.infratrack.asset.AssetHistoryEventType;
 import com.infratrack.businesstrigger.BusinessTrigger;
 import com.infratrack.businesstrigger.BusinessTriggerRepository;
 import com.infratrack.exception.BusinessValidationException;
-import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.exception.NotFoundException;
 import com.infratrack.inspection.dto.AssignInspectionRequest;
 import com.infratrack.inspection.dto.CompleteInspectionRequest;
@@ -27,19 +23,22 @@ public class InspectionService {
 
     private final InspectionRepository inspectionRepository;
     private final BusinessTriggerRepository businessTriggerRepository;
-    private final AssetHistoryEventRepository assetHistoryEventRepository;
+    private final InspectionAuthorizationService authorizationService;
+    private final InspectionHistoryRecorder historyRecorder;
     private final UserService userService;
     private final OperationalEventNotificationService operationalEventNotificationService;
 
     public InspectionService(
             InspectionRepository inspectionRepository,
             BusinessTriggerRepository businessTriggerRepository,
-            AssetHistoryEventRepository assetHistoryEventRepository,
+            InspectionAuthorizationService authorizationService,
+            InspectionHistoryRecorder historyRecorder,
             UserService userService,
             OperationalEventNotificationService operationalEventNotificationService) {
         this.inspectionRepository = inspectionRepository;
         this.businessTriggerRepository = businessTriggerRepository;
-        this.assetHistoryEventRepository = assetHistoryEventRepository;
+        this.authorizationService = authorizationService;
+        this.historyRecorder = historyRecorder;
         this.userService = userService;
         this.operationalEventNotificationService = operationalEventNotificationService;
     }
@@ -58,7 +57,7 @@ public class InspectionService {
 
     @Transactional
     public InspectionResponse assignInspection(AssignInspectionRequest request, Long userId) {
-        requireCanAssignInspections(userId);
+        authorizationService.requireCanAssignInspections(userId);
 
         BusinessTrigger businessTrigger = findBusinessTriggerOrThrow(request.getBusinessTriggerId());
         User assignedToUser = findAssignableUserOrThrow(request.getAssignedToUserId());
@@ -77,12 +76,7 @@ public class InspectionService {
                 request.getExpectedCompletionDate()
         ));
 
-        assetHistoryEventRepository.save(new AssetHistoryEvent(
-                asset,
-                AssetHistoryEventType.INSPECTION_ASSIGNED,
-                userId,
-                LocalDate.now()
-        ));
+        historyRecorder.recordInspectionAssigned(asset, userId, LocalDate.now());
 
         operationalEventNotificationService.notifyInspectionAssigned(assignedToUser.getId());
 
@@ -93,7 +87,7 @@ public class InspectionService {
     @Transactional
     public InspectionResponse completeInspection(Long inspectionId, CompleteInspectionRequest request, Long userId) {
         Inspection inspection = findInspectionOrThrow(inspectionId);
-        User performer = requireAssignedPerformer(userId, inspection);
+        User performer = authorizationService.requireAssignedPerformer(userId, inspection);
         requireAssignedStatus(inspection);
 
         PhysicalCondition observedCondition = validateObservedCondition(request.getObservedCondition());
@@ -104,22 +98,14 @@ public class InspectionService {
         inspection.complete(observedCondition, observations, issueIdentified, completedAt, performer.getId());
         inspectionRepository.save(inspection);
 
-        assetHistoryEventRepository.save(new AssetHistoryEvent(
-                inspection.getAsset(),
-                AssetHistoryEventType.INSPECTION_COMPLETED,
-                performer.getId(),
-                completedAt.toLocalDate()
-        ));
+        historyRecorder.recordInspectionCompleted(
+                inspection.getAsset(), performer.getId(), completedAt.toLocalDate());
 
         return InspectionResponse.from(inspection, performer, null);
     }
 
     public void requireCanAssignInspections(Long userId) {
-        User user = userService.getById(userId);
-        if (!user.getRole().isOperationalCoordinator()) {
-            throw new ForbiddenOperationException(
-                    "Only operational coordinators can assign inspections");
-        }
+        authorizationService.requireCanAssignInspections(userId);
     }
 
     private InspectionResponse toResponse(Inspection inspection) {
@@ -175,19 +161,6 @@ public class InspectionService {
             return InspectionPriority.URGENT;
         }
         return InspectionPriority.NORMAL;
-    }
-
-    private User requireAssignedPerformer(Long userId, Inspection inspection) {
-        User user = userService.getById(userId);
-        if (!user.getRole().isFieldEmployee() && !user.getRole().isContractor()) {
-            throw new ForbiddenOperationException(
-                    "Only field employees and contractors can perform inspections");
-        }
-        if (!inspection.getAssignedToUserId().equals(userId)) {
-            throw new ForbiddenOperationException(
-                    "Only the assigned user can perform this inspection");
-        }
-        return user;
     }
 
     private void requireAssignedStatus(Inspection inspection) {

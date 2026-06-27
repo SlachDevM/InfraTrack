@@ -63,10 +63,13 @@ class WorkOrderServiceNotificationTest {
     void setUp() {
         OperationalEventNotificationService operationalEventNotificationService =
                 new OperationalEventNotificationService(notificationService, userRepository);
+        WorkOrderAuthorizationService authorizationService = new WorkOrderAuthorizationService(userService);
+        WorkOrderHistoryRecorder historyRecorder = new WorkOrderHistoryRecorder(assetHistoryEventRepository);
         workOrderService = new WorkOrderService(
                 workOrderRepository,
                 operationalDecisionRepository,
-                assetHistoryEventRepository,
+                authorizationService,
+                historyRecorder,
                 userService,
                 operationalEventNotificationService);
     }

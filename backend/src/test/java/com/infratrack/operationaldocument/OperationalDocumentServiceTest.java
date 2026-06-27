@@ -35,10 +35,10 @@ import com.infratrack.workorder.WorkOrderPriority;
 import com.infratrack.workorder.WorkOrderRepository;
 import com.infratrack.workorder.WorkOrderStatus;
 import com.infratrack.workorder.WorkType;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -89,8 +89,33 @@ class OperationalDocumentServiceTest {
     @Mock
     private UserService userService;
 
-    @InjectMocks
     private OperationalDocumentService operationalDocumentService;
+
+    @BeforeEach
+    void setUp() {
+        OperationalDocumentOwnerResolver ownerResolver = new OperationalDocumentOwnerResolver(
+                assetRepository,
+                inspectionRepository,
+                issueRepository,
+                operationalDecisionRepository,
+                workOrderRepository,
+                maintenanceActivityRepository,
+                completionReviewRepository);
+        OperationalDocumentAuthorizationService authorizationService = new OperationalDocumentAuthorizationService(
+                inspectionRepository,
+                issueRepository,
+                workOrderRepository,
+                maintenanceActivityRepository);
+        OperationalDocumentHistoryRecorder historyRecorder =
+                new OperationalDocumentHistoryRecorder(assetHistoryEventRepository);
+        operationalDocumentService = new OperationalDocumentService(
+                operationalDocumentRepository,
+                ownerResolver,
+                authorizationService,
+                historyRecorder,
+                fileStore,
+                userService);
+    }
 
     @Test
     void uploadDocument_shouldAllowUploadLinkedDirectlyToAsset() {
@@ -515,8 +540,8 @@ class OperationalDocumentServiceTest {
 
     private MultipartFile file(String originalFilename, String contentType, long size) {
         MultipartFile file = mock(MultipartFile.class);
-        when(file.isEmpty()).thenReturn(false);
-        when(file.getOriginalFilename()).thenReturn(originalFilename);
+        lenient().when(file.isEmpty()).thenReturn(false);
+        lenient().when(file.getOriginalFilename()).thenReturn(originalFilename);
         lenient().when(file.getContentType()).thenReturn(contentType);
         lenient().when(file.getSize()).thenReturn(size);
         return file;

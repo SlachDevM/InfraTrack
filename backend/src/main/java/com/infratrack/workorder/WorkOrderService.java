@@ -1,12 +1,8 @@
 package com.infratrack.workorder;
 
 import com.infratrack.asset.Asset;
-import com.infratrack.asset.AssetHistoryEvent;
-import com.infratrack.asset.AssetHistoryEventRepository;
-import com.infratrack.asset.AssetHistoryEventType;
 import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.ConflictException;
-import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.exception.NotFoundException;
 import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.operationaldecision.OperationalDecision;
@@ -28,19 +24,22 @@ public class WorkOrderService {
 
     private final WorkOrderRepository workOrderRepository;
     private final OperationalDecisionRepository operationalDecisionRepository;
-    private final AssetHistoryEventRepository assetHistoryEventRepository;
+    private final WorkOrderAuthorizationService authorizationService;
+    private final WorkOrderHistoryRecorder historyRecorder;
     private final UserService userService;
     private final OperationalEventNotificationService operationalEventNotificationService;
 
     public WorkOrderService(
             WorkOrderRepository workOrderRepository,
             OperationalDecisionRepository operationalDecisionRepository,
-            AssetHistoryEventRepository assetHistoryEventRepository,
+            WorkOrderAuthorizationService authorizationService,
+            WorkOrderHistoryRecorder historyRecorder,
             UserService userService,
             OperationalEventNotificationService operationalEventNotificationService) {
         this.workOrderRepository = workOrderRepository;
         this.operationalDecisionRepository = operationalDecisionRepository;
-        this.assetHistoryEventRepository = assetHistoryEventRepository;
+        this.authorizationService = authorizationService;
+        this.historyRecorder = historyRecorder;
         this.userService = userService;
         this.operationalEventNotificationService = operationalEventNotificationService;
     }
@@ -59,7 +58,7 @@ public class WorkOrderService {
 
     @Transactional
     public WorkOrderResponse createWorkOrder(CreateWorkOrderRequest request, Long userId) {
-        User coordinator = requireOperationalCoordinator(userId);
+        User coordinator = authorizationService.requireOperationalCoordinator(userId);
         OperationalDecision decision = findOperationalDecisionOrThrow(request.getOperationalDecisionId());
         WorkType workType = requirePhysicalWorkOutcome(decision);
         requireNoExistingWorkOrder(decision.getId());
@@ -82,19 +81,14 @@ public class WorkOrderService {
                 createdAtBusinessDate
         ));
 
-        assetHistoryEventRepository.save(new AssetHistoryEvent(
-                asset,
-                AssetHistoryEventType.WORK_ORDER_CREATED,
-                coordinator.getId(),
-                createdAtBusinessDate.toLocalDate()
-        ));
+        historyRecorder.recordWorkOrderCreated(asset, coordinator.getId(), createdAtBusinessDate.toLocalDate());
 
         return WorkOrderResponse.from(workOrder);
     }
 
     @Transactional
     public WorkOrderResponse assignWorkOrder(Long workOrderId, AssignWorkOrderRequest request, Long userId) {
-        User coordinator = requireOperationalCoordinatorForAssignment(userId);
+        User coordinator = authorizationService.requireOperationalCoordinatorForAssignment(userId);
         WorkOrder workOrder = findWorkOrderOrThrow(workOrderId);
         requireCreatedStatus(workOrder);
         LocalDateTime assignedAt = validateAssignedAt(request.getAssignedAt(), workOrder);
@@ -103,12 +97,7 @@ public class WorkOrderService {
         workOrder.assign(assignee.getId(), coordinator.getId(), assignedAt);
         workOrderRepository.save(workOrder);
 
-        assetHistoryEventRepository.save(new AssetHistoryEvent(
-                workOrder.getAsset(),
-                AssetHistoryEventType.WORK_ORDER_ASSIGNED,
-                coordinator.getId(),
-                assignedAt.toLocalDate()
-        ));
+        historyRecorder.recordWorkOrderAssigned(workOrder.getAsset(), coordinator.getId(), assignedAt.toLocalDate());
 
         operationalEventNotificationService.notifyWorkOrderAssigned(assignee.getId());
 
@@ -120,15 +109,6 @@ public class WorkOrderService {
                 ? userService.getById(workOrder.getAssignedToUserId())
                 : null;
         return WorkOrderResponse.from(workOrder, assignedToUser);
-    }
-
-    private User requireOperationalCoordinatorForAssignment(Long userId) {
-        User user = userService.getById(userId);
-        if (!user.getRole().isOperationalCoordinator()) {
-            throw new ForbiddenOperationException(
-                    "Only operational coordinators can assign work orders");
-        }
-        return user;
     }
 
     private void requireCreatedStatus(WorkOrder workOrder) {
@@ -167,15 +147,6 @@ public class WorkOrderService {
                     "Assignment date and time cannot be in the future");
         }
         return assignedAt;
-    }
-
-    private User requireOperationalCoordinator(Long userId) {
-        User user = userService.getById(userId);
-        if (!user.getRole().isOperationalCoordinator()) {
-            throw new ForbiddenOperationException(
-                    "Only operational coordinators can create work orders");
-        }
-        return user;
     }
 
     private WorkOrder findWorkOrderOrThrow(Long id) {

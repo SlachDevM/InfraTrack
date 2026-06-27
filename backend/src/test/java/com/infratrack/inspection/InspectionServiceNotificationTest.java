@@ -55,10 +55,13 @@ class InspectionServiceNotificationTest {
     void setUp() {
         OperationalEventNotificationService operationalEventNotificationService =
                 new OperationalEventNotificationService(notificationService, userRepository);
+        InspectionAuthorizationService authorizationService = new InspectionAuthorizationService(userService);
+        InspectionHistoryRecorder historyRecorder = new InspectionHistoryRecorder(assetHistoryEventRepository);
         inspectionService = new InspectionService(
                 inspectionRepository,
                 businessTriggerRepository,
-                assetHistoryEventRepository,
+                authorizationService,
+                historyRecorder,
                 userService,
                 operationalEventNotificationService);
     }

@@ -28,10 +28,10 @@ import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -62,8 +62,20 @@ class WorkOrderServiceTest {
     @Mock
     private OperationalEventNotificationService operationalEventNotificationService;
 
-    @InjectMocks
     private WorkOrderService workOrderService;
+
+    @BeforeEach
+    void setUp() {
+        WorkOrderAuthorizationService authorizationService = new WorkOrderAuthorizationService(userService);
+        WorkOrderHistoryRecorder historyRecorder = new WorkOrderHistoryRecorder(assetHistoryEventRepository);
+        workOrderService = new WorkOrderService(
+                workOrderRepository,
+                operationalDecisionRepository,
+                authorizationService,
+                historyRecorder,
+                userService,
+                operationalEventNotificationService);
+    }
 
     @Test
     void createWorkOrder_shouldCreateWorkOrderFromInternalMaintenanceDecision() {

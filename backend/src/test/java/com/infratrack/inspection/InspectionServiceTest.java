@@ -19,10 +19,10 @@ import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -54,8 +54,20 @@ class InspectionServiceTest {
     @Mock
     private OperationalEventNotificationService operationalEventNotificationService;
 
-    @InjectMocks
     private InspectionService inspectionService;
+
+    @BeforeEach
+    void setUp() {
+        InspectionAuthorizationService authorizationService = new InspectionAuthorizationService(userService);
+        InspectionHistoryRecorder historyRecorder = new InspectionHistoryRecorder(assetHistoryEventRepository);
+        inspectionService = new InspectionService(
+                inspectionRepository,
+                businessTriggerRepository,
+                authorizationService,
+                historyRecorder,
+                userService,
+                operationalEventNotificationService);
+    }
 
     @Test
     void assignInspection_shouldCreateInspectionAndHistoryEvent_whenValid() {
