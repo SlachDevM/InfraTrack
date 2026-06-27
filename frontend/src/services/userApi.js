@@ -66,6 +66,10 @@ export const userApi = {
   getManagers: () => {
     return apiClient.get('/api/users/managers');
   },
+
+  getCurrentUser: () => {
+    return apiClient.get('/api/users/me');
+  },
 };
 
 export default userApi;

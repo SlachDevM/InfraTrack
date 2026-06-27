@@ -5,6 +5,7 @@ import apiClient from '../services/apiClient';
 import inspectionApi from '../services/inspectionApi';
 import businessTriggerApi from '../services/businessTriggerApi';
 import NotificationButton from '../components/NotificationButton';
+import PaginationControls from '../components/PaginationControls';
 import AssignInspectionForm from '../components/inspections/AssignInspectionForm';
 import CompleteInspectionForm from '../components/inspections/CompleteInspectionForm';
 import InspectionList from '../components/inspections/InspectionList';
@@ -16,6 +17,12 @@ import {
   PHYSICAL_CONDITIONS,
 } from '../constants/physicalConditions';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
+import {
+  DEFAULT_PAGE,
+  getPageNumber,
+  getTotalPages,
+  unwrapPageContent,
+} from '../utils/pagination';
 import '../styles/ReferenceDataPage.css';
 import '../styles/InspectionsPage.css';
 
@@ -28,6 +35,9 @@ export default function InspectionsPage() {
   const navigate = useNavigate();
   const { auth, logout } = useAuth();
   const [inspections, setInspections] = useState([]);
+  const [inspectionsPage, setInspectionsPage] = useState(DEFAULT_PAGE);
+  const [inspectionsTotalPages, setInspectionsTotalPages] = useState(0);
+  const [listLoading, setListLoading] = useState(false);
   const [triggers, setTriggers] = useState([]);
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -75,15 +85,31 @@ export default function InspectionsPage() {
     loadPageData();
   }, [auth, navigate]);
 
-  const loadPageData = async () => {
+  const loadInspections = async (page = inspectionsPage) => {
+    try {
+      setListLoading(true);
+      const inspectionPage = await inspectionApi.list(page);
+      setInspections(unwrapPageContent(inspectionPage));
+      setInspectionsPage(getPageNumber(inspectionPage, page));
+      setInspectionsTotalPages(getTotalPages(inspectionPage));
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Failed to load inspections.'));
+    } finally {
+      setListLoading(false);
+    }
+  };
+
+  const loadPageData = async (page = inspectionsPage) => {
     try {
       setLoading(true);
       setError(null);
-      const [inspectionData, triggerData] = await Promise.all([
-        inspectionApi.list(),
+      const [inspectionPage, triggerData] = await Promise.all([
+        inspectionApi.list(page),
         businessTriggerApi.list(),
       ]);
-      setInspections(inspectionData);
+      setInspections(unwrapPageContent(inspectionPage));
+      setInspectionsPage(getPageNumber(inspectionPage, page));
+      setInspectionsTotalPages(getTotalPages(inspectionPage));
       setTriggers(triggerData);
 
       if (canAssignInspections(auth?.user?.role)) {
@@ -140,7 +166,7 @@ export default function InspectionsPage() {
         issueIdentified: false,
         completedAt: toDateTimeLocalValue(),
       });
-      await loadPageData();
+      await loadPageData(inspectionsPage);
     } catch (err) {
       if (isForbidden(err)) {
         setError('You are not allowed to complete this inspection.');
@@ -176,7 +202,7 @@ export default function InspectionsPage() {
         priority: INSPECTION_PRIORITIES.NORMAL,
         expectedCompletionDate: '',
       });
-      await loadPageData();
+      await loadPageData(inspectionsPage);
     } catch (err) {
       if (isForbidden(err)) {
         setError('You do not have permission to assign inspections.');
@@ -259,6 +285,13 @@ export default function InspectionsPage() {
         )}
 
         <InspectionList inspections={inspections} />
+        <PaginationControls
+          page={inspectionsPage}
+          totalPages={inspectionsTotalPages}
+          loading={listLoading}
+          onPrevious={() => loadInspections(inspectionsPage - 1)}
+          onNext={() => loadInspections(inspectionsPage + 1)}
+        />
       </main>
     </div>
   );

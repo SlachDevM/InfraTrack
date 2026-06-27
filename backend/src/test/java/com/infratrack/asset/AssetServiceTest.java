@@ -52,7 +52,7 @@ class AssetServiceTest {
         RegisterAssetRequest request = validRequest();
         Department department = department(1L, "Parks");
         AssetCategory category = category(2L, "Playground");
-        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        User coordinator = userWithDepartment(10L, UserRole.OPERATIONAL_COORDINATOR, 1L);
 
         when(userService.getById(10L)).thenReturn(coordinator);
         when(departmentRepository.findById(1L)).thenReturn(Optional.of(department));
@@ -87,7 +87,7 @@ class AssetServiceTest {
     void registerAsset_shouldRejectBlankName() {
         RegisterAssetRequest request = validRequest();
         request.setName("  ");
-        User manager = user(10L, UserRole.MANAGER);
+        User manager = userWithDepartment(10L, UserRole.MANAGER, 1L);
         when(userService.getById(10L)).thenReturn(manager);
 
         assertThatThrownBy(() -> assetService.registerAsset(request, 10L))
@@ -98,7 +98,7 @@ class AssetServiceTest {
     void registerAsset_shouldRejectMissingRegistrationDate() {
         RegisterAssetRequest request = validRequest();
         request.setRegistrationDate(null);
-        User manager = user(10L, UserRole.MANAGER);
+        User manager = userWithDepartment(10L, UserRole.MANAGER, 1L);
         when(userService.getById(10L)).thenReturn(manager);
 
         assertThatThrownBy(() -> assetService.registerAsset(request, 10L))
@@ -109,7 +109,7 @@ class AssetServiceTest {
     void registerAsset_shouldRejectMissingStatus() {
         RegisterAssetRequest request = validRequest();
         request.setStatus(null);
-        User manager = user(10L, UserRole.MANAGER);
+        User manager = userWithDepartment(10L, UserRole.MANAGER, 1L);
         when(userService.getById(10L)).thenReturn(manager);
 
         assertThatThrownBy(() -> assetService.registerAsset(request, 10L))
@@ -119,7 +119,7 @@ class AssetServiceTest {
     @Test
     void registerAsset_shouldRejectInvalidDepartment() {
         RegisterAssetRequest request = validRequest();
-        User manager = user(10L, UserRole.MANAGER);
+        User manager = userWithDepartment(10L, UserRole.MANAGER, 1L);
         when(userService.getById(10L)).thenReturn(manager);
         when(departmentRepository.findById(1L)).thenReturn(Optional.empty());
 
@@ -130,7 +130,7 @@ class AssetServiceTest {
     @Test
     void registerAsset_shouldRejectInvalidAssetCategory() {
         RegisterAssetRequest request = validRequest();
-        User manager = user(10L, UserRole.MANAGER);
+        User manager = userWithDepartment(10L, UserRole.MANAGER, 1L);
         when(userService.getById(10L)).thenReturn(manager);
         when(departmentRepository.findById(1L)).thenReturn(Optional.of(department(1L, "Parks")));
         when(assetCategoryRepository.findById(2L)).thenReturn(Optional.empty());
@@ -142,7 +142,7 @@ class AssetServiceTest {
     @Test
     void registerAsset_shouldRejectDuplicateAsset() {
         RegisterAssetRequest request = validRequest();
-        User manager = user(10L, UserRole.MANAGER);
+        User manager = userWithDepartment(10L, UserRole.MANAGER, 1L);
         when(userService.getById(10L)).thenReturn(manager);
         when(departmentRepository.findById(1L)).thenReturn(Optional.of(department(1L, "Parks")));
         when(assetCategoryRepository.findById(2L)).thenReturn(Optional.of(category(2L, "Playground")));
@@ -195,6 +195,84 @@ class AssetServiceTest {
         verify(assetHistoryEventRepository, never()).save(any());
     }
 
+    @Test
+    void registerAsset_shouldAllowManagerInOwnDepartment() {
+        RegisterAssetRequest request = validRequest();
+        User manager = userWithDepartment(10L, UserRole.MANAGER, 1L);
+        Department department = department(1L, "Parks");
+        AssetCategory category = category(2L, "Playground");
+
+        when(userService.getById(10L)).thenReturn(manager);
+        when(departmentRepository.findById(1L)).thenReturn(Optional.of(department));
+        when(assetCategoryRepository.findById(2L)).thenReturn(Optional.of(category));
+        when(assetRepository.existsByNameIgnoreCaseAndDepartmentIdAndAssetCategoryId(
+                "Central Playground", 1L, 2L)).thenReturn(false);
+        when(assetRepository.save(any(Asset.class))).thenAnswer(invocation -> {
+            Asset asset = invocation.getArgument(0);
+            asset.setId(100L);
+            return asset;
+        });
+
+        var response = assetService.registerAsset(request, 10L);
+
+        assertThat(response.getId()).isEqualTo(100L);
+        verify(assetRepository).save(any(Asset.class));
+    }
+
+    @Test
+    void registerAsset_shouldRejectManagerInOtherDepartment() {
+        RegisterAssetRequest request = validRequest();
+        request.setDepartmentId(2L);
+        User manager = userWithDepartment(10L, UserRole.MANAGER, 1L);
+        when(userService.getById(10L)).thenReturn(manager);
+
+        assertThatThrownBy(() -> assetService.registerAsset(request, 10L))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You may only register assets for your own department.");
+
+        verify(assetRepository, never()).save(any());
+        verify(assetHistoryEventRepository, never()).save(any());
+    }
+
+    @Test
+    void registerAsset_shouldAllowCoordinatorInOwnDepartment() {
+        RegisterAssetRequest request = validRequest();
+        User coordinator = userWithDepartment(10L, UserRole.OPERATIONAL_COORDINATOR, 1L);
+        Department department = department(1L, "Parks");
+        AssetCategory category = category(2L, "Playground");
+
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(departmentRepository.findById(1L)).thenReturn(Optional.of(department));
+        when(assetCategoryRepository.findById(2L)).thenReturn(Optional.of(category));
+        when(assetRepository.existsByNameIgnoreCaseAndDepartmentIdAndAssetCategoryId(
+                "Central Playground", 1L, 2L)).thenReturn(false);
+        when(assetRepository.save(any(Asset.class))).thenAnswer(invocation -> {
+            Asset asset = invocation.getArgument(0);
+            asset.setId(100L);
+            return asset;
+        });
+
+        var response = assetService.registerAsset(request, 10L);
+
+        assertThat(response.getId()).isEqualTo(100L);
+        verify(assetRepository).save(any(Asset.class));
+    }
+
+    @Test
+    void registerAsset_shouldRejectCoordinatorInOtherDepartment() {
+        RegisterAssetRequest request = validRequest();
+        request.setDepartmentId(2L);
+        User coordinator = userWithDepartment(10L, UserRole.OPERATIONAL_COORDINATOR, 1L);
+        when(userService.getById(10L)).thenReturn(coordinator);
+
+        assertThatThrownBy(() -> assetService.registerAsset(request, 10L))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You may only register assets for your own department.");
+
+        verify(assetRepository, never()).save(any());
+        verify(assetHistoryEventRepository, never()).save(any());
+    }
+
     private RegisterAssetRequest validRequest() {
         RegisterAssetRequest request = new RegisterAssetRequest();
         request.setName("Central Playground");
@@ -222,6 +300,12 @@ class AssetServiceTest {
         User user = new User("user@test.com", "password", "User", role);
         user.setId(id);
         user.setEnabled(true);
+        return user;
+    }
+
+    private User userWithDepartment(Long id, UserRole role, Long departmentId) {
+        User user = user(id, role);
+        user.setDepartment(department(departmentId, "Parks"));
         return user;
     }
 }

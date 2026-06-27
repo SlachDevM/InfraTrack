@@ -50,6 +50,7 @@ public class AuthController {
     @Operation(summary = "Login", description = "Authenticates with email and password and returns a JWT bearer token.")
     @ApiResponse(responseCode = "200", description = "Login successful")
     @ApiResponse(responseCode = "401", description = "Invalid credentials")
+    @ApiResponse(responseCode = "403", description = "Account not activated or disabled")
     @StandardApiResponses
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));

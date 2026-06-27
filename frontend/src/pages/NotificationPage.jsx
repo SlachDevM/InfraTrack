@@ -4,13 +4,23 @@ import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import apiClient from '../services/apiClient';
 import notificationApi from '../services/notificationApi';
+import PaginationControls from '../components/PaginationControls';
 import { getApiErrorMessage } from '../utils/apiError';
+import {
+  DEFAULT_PAGE,
+  getPageNumber,
+  getTotalPages,
+  unwrapPageContent,
+} from '../utils/pagination';
 import '../styles/NotificationPage.css';
 
 export default function NotificationPage() {
   const navigate = useNavigate();
   const { auth, logout } = useAuth();
   const [notifications, setNotifications] = useState([]);
+  const [notificationsPage, setNotificationsPage] = useState(DEFAULT_PAGE);
+  const [notificationsTotalPages, setNotificationsTotalPages] = useState(0);
+  const [listLoading, setListLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { decrementUnread, clearUnread, refreshUnreadCount } = useNotifications();
@@ -25,15 +35,19 @@ export default function NotificationPage() {
     refreshUnreadCount();
   }, [auth?.token, navigate, refreshUnreadCount]);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = async (page = notificationsPage) => {
     try {
+      setListLoading(true);
       setError(null);
-      const data = await notificationApi.list();
-      setNotifications(data);
+      const notificationPage = await notificationApi.list(page);
+      setNotifications(unwrapPageContent(notificationPage));
+      setNotificationsPage(getPageNumber(notificationPage, page));
+      setNotificationsTotalPages(getTotalPages(notificationPage));
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to load notifications.'));
     } finally {
       setLoading(false);
+      setListLoading(false);
     }
   };
 
@@ -58,7 +72,7 @@ export default function NotificationPage() {
     try {
       await notificationApi.markAllAsRead();
       clearUnread();
-      fetchNotifications();
+      fetchNotifications(notificationsPage);
     } catch (err) {
       console.error('Failed to mark all as read:', err);
     }
@@ -138,6 +152,13 @@ export default function NotificationPage() {
             ))}
           </div>
         )}
+        <PaginationControls
+          page={notificationsPage}
+          totalPages={notificationsTotalPages}
+          loading={listLoading}
+          onPrevious={() => fetchNotifications(notificationsPage - 1)}
+          onNext={() => fetchNotifications(notificationsPage + 1)}
+        />
       </main>
     </div>
   );

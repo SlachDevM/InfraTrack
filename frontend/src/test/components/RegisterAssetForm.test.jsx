@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { render, screen, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import RegisterAssetForm from '../../components/assets/RegisterAssetForm';
 
@@ -13,6 +13,8 @@ const baseFormData = {
 };
 
 describe('RegisterAssetForm', () => {
+  afterEach(cleanup);
+
   it('renders key fields and calls onSubmit', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn((event) => event.preventDefault());
@@ -34,5 +36,21 @@ describe('RegisterAssetForm', () => {
 
     await user.click(screen.getByRole('button', { name: 'Register Asset' }));
     expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it('locks department selector when departmentLocked is true', () => {
+    render(
+      <RegisterAssetForm
+        formData={baseFormData}
+        departments={[{ id: 1, name: 'Parks' }]}
+        categories={[{ id: 2, name: 'Playground' }]}
+        submitting={false}
+        departmentLocked={true}
+        onChange={vi.fn()}
+        onSubmit={vi.fn()}
+      />
+    );
+
+    expect(screen.getByLabelText('Department')).toBeDisabled();
   });
 });

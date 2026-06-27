@@ -57,7 +57,9 @@ public class AuthService {
             if (status == UserStatus.PENDING_ACTIVATION) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Account is not activated");
             } else if (status == UserStatus.DISABLED) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Account is disabled");
+                throw new ResponseStatusException(
+                        HttpStatus.FORBIDDEN,
+                        "Your account has been disabled. Please contact an administrator.");
             }
         }
 

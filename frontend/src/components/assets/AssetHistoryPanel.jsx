@@ -1,5 +1,6 @@
 import { getAssetStatusLabel } from '../../constants/assetStatuses';
 import { getAssetHistoryEventTypeLabel } from '../../constants/assetHistoryEventTypes';
+import PaginationControls from '../PaginationControls';
 
 export default function AssetHistoryPanel({
   assets,
@@ -7,7 +8,11 @@ export default function AssetHistoryPanel({
   selectedAsset,
   assetHistory,
   historyLoading,
+  historyPage,
+  historyTotalPages,
   onAssetChange,
+  onHistoryPrevious,
+  onHistoryNext,
 }) {
   return (
     <section className="asset-history-section">
@@ -65,6 +70,16 @@ export default function AssetHistoryPanel({
             ))}
           </tbody>
         </table>
+      )}
+
+      {selectedAssetId && (
+        <PaginationControls
+          page={historyPage}
+          totalPages={historyTotalPages}
+          loading={historyLoading}
+          onPrevious={onHistoryPrevious}
+          onNext={onHistoryNext}
+        />
       )}
     </section>
   );

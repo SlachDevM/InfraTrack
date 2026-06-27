@@ -5,6 +5,7 @@ import {
   getOperationalDocumentTypeLabel,
   getOperationalDocumentOwnerTypeLabel,
 } from '../../constants/operationalDocumentTypes';
+import PaginationControls from '../PaginationControls';
 
 export default function OperationalDocumentsPanel({
   canUploadDocuments,
@@ -13,10 +14,14 @@ export default function OperationalDocumentsPanel({
   assetDocuments,
   documentsLoading,
   documentUploading,
+  documentsPage,
+  documentsTotalPages,
   onDocumentFormChange,
   onDocumentFileChange,
   onUpload,
   onDownload,
+  onDocumentsPrevious,
+  onDocumentsNext,
 }) {
   return (
     <section className="asset-documents-section">
@@ -155,6 +160,16 @@ export default function OperationalDocumentsPanel({
             ))}
           </tbody>
         </table>
+      )}
+
+      {selectedAssetId && (
+        <PaginationControls
+          page={documentsPage}
+          totalPages={documentsTotalPages}
+          loading={documentsLoading}
+          onPrevious={onDocumentsPrevious}
+          onNext={onDocumentsNext}
+        />
       )}
     </section>
   );

@@ -1,5 +1,5 @@
 import apiClient from './apiClient';
-import { paginatedQuery, unwrapPageContent } from '../utils/pagination';
+import { DEFAULT_PAGE, DEFAULT_SIZE, paginatedQuery } from '../utils/pagination';
 
 const ENDPOINTS = {
   LIST: '/api/inspections',
@@ -8,7 +8,8 @@ const ENDPOINTS = {
 };
 
 export const inspectionApi = {
-  list: () => apiClient.get(`${ENDPOINTS.LIST}?${paginatedQuery()}`).then(unwrapPageContent),
+  list: (page = DEFAULT_PAGE, size = DEFAULT_SIZE) =>
+    apiClient.get(`${ENDPOINTS.LIST}?${paginatedQuery(page, size)}`),
   get: (id) => apiClient.get(ENDPOINTS.DETAIL(id)),
   assign: (request) => apiClient.post(ENDPOINTS.LIST, request),
   complete: (id, request) => apiClient.post(`${ENDPOINTS.DETAIL(id)}/complete`, request),

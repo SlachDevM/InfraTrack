@@ -73,12 +73,81 @@ class AuthServiceTest {
 
         when(userRepository.findByEmail("inactive@test.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password", "encoded-password")).thenReturn(true);
+        when(tokenRepository.hasValidTokenByUserId(eq(3L), anyLong())).thenReturn(true);
 
         assertThatThrownBy(() -> authService.login(
                 new LoginRequest("inactive@test.com", "password")
         ))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("403");
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(org.springframework.http.HttpStatus.FORBIDDEN);
+                    assertThat(rse.getReason()).isEqualTo("Account is not activated");
+                });
+
+        verify(tokenProvider, never()).generateToken(anyLong(), anyString());
+    }
+
+    @Test
+    void login_shouldReturnDisabledMessage_whenDisabledUserHasCorrectPassword() {
+        User user = new User("disabled@test.com", "encoded-password", "Disabled User", UserRole.FIELD_EMPLOYEE);
+        user.setId(4L);
+        user.setEnabled(false);
+
+        when(userRepository.findByEmail("disabled@test.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("password", "encoded-password")).thenReturn(true);
+        when(tokenRepository.hasValidTokenByUserId(eq(4L), anyLong())).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.login(
+                new LoginRequest("disabled@test.com", "password")
+        ))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(org.springframework.http.HttpStatus.FORBIDDEN);
+                    assertThat(rse.getReason())
+                            .isEqualTo("Your account has been disabled. Please contact an administrator.");
+                });
+
+        verify(tokenProvider, never()).generateToken(anyLong(), anyString());
+    }
+
+    @Test
+    void login_shouldReturnGenericInvalidCredentials_whenDisabledUserHasWrongPassword() {
+        User user = new User("disabled@test.com", "encoded-password", "Disabled User", UserRole.FIELD_EMPLOYEE);
+        user.setId(4L);
+        user.setEnabled(false);
+
+        when(userRepository.findByEmail("disabled@test.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("wrong-password", "encoded-password")).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.login(
+                new LoginRequest("disabled@test.com", "wrong-password")
+        ))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(org.springframework.http.HttpStatus.UNAUTHORIZED);
+                    assertThat(rse.getReason()).isEqualTo("Invalid email or password");
+                });
+
+        verify(tokenRepository, never()).hasValidTokenByUserId(anyLong(), anyLong());
+        verify(tokenProvider, never()).generateToken(anyLong(), anyString());
+    }
+
+    @Test
+    void login_shouldReturnGenericInvalidCredentials_whenEmailUnknown() {
+        when(userRepository.findByEmail("unknown@test.com")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.login(
+                new LoginRequest("unknown@test.com", "password")
+        ))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(org.springframework.http.HttpStatus.UNAUTHORIZED);
+                    assertThat(rse.getReason()).isEqualTo("Invalid email or password");
+                });
 
         verify(tokenProvider, never()).generateToken(anyLong(), anyString());
     }

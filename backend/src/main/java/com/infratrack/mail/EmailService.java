@@ -25,8 +25,8 @@ public class EmailService {
 
     /**
      * Sends an account activation email to the user.
-     * In development, logs the activation link instead of sending email.
-     * In production, would use Spring Mail to send the actual email.
+     * When SMTP is configured (including Docker dev with Mailpit), sends the email.
+     * When no mail sender is available in a development profile, logs the activation link instead.
      *
      * SECURITY: Activation tokens are NEVER logged in production environments.
      * They are only logged in dev/development/local profiles for testing purposes.
@@ -38,10 +38,12 @@ public class EmailService {
     public void sendActivationEmail(String email, String token, String userName) {
         String activationLink = buildActivationLink(token);
 
-        if (isDevelopment()) {
+        if (mailSender != null) {
+            sendEmailViaSMTP(email, activationLink, userName);
+        } else if (isDevelopment()) {
             logActivationLink(email, activationLink, userName);
         } else {
-            sendEmailViaSMTP(email, activationLink, userName);
+            log.error("Cannot send activation email to {}: mail sender is not configured", email);
         }
     }
 
@@ -115,10 +117,12 @@ public class EmailService {
      * @param userName the user's name
      */
     public void sendEmailChangeNotification(String oldEmail, String newEmail, String userName) {
-        if (isDevelopment()) {
+        if (mailSender != null) {
+            sendEmailChangeViaSMTP(oldEmail, newEmail, userName);
+        } else if (isDevelopment()) {
             logEmailChangeNotification(oldEmail, newEmail, userName);
         } else {
-            sendEmailChangeViaSMTP(oldEmail, newEmail, userName);
+            log.error("Cannot send email change notification to {}: mail sender is not configured", oldEmail);
         }
     }
 

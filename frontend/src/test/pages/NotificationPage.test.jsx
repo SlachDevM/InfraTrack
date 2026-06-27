@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import NotificationPage from '../../pages/NotificationPage';
@@ -46,15 +46,21 @@ vi.mock('../../context/NotificationContext', () => ({
   }),
 }));
 
+function pageResponse(content, number = 0, totalPages = 1) {
+  return { content, number, totalPages };
+}
+
 describe('NotificationPage', () => {
+  afterEach(cleanup);
+
   beforeEach(() => {
     vi.clearAllMocks();
-    notificationApi.list.mockResolvedValue([]);
+    notificationApi.list.mockResolvedValue(pageResponse([]));
     notificationApi.markAsRead.mockResolvedValue({});
   });
 
   it('renders notifications from notificationApi', async () => {
-    notificationApi.list.mockResolvedValue([
+    notificationApi.list.mockResolvedValue(pageResponse([
       {
         id: 1,
         title: 'Inspection Assigned',
@@ -63,7 +69,7 @@ describe('NotificationPage', () => {
         isRead: false,
         targetRoute: null,
       },
-    ]);
+    ]));
 
     render(
       <MemoryRouter>
@@ -77,7 +83,7 @@ describe('NotificationPage', () => {
 
   it('marks unread notification as read and navigates when targetRoute is present', async () => {
     const user = userEvent.setup();
-    notificationApi.list.mockResolvedValue([
+    notificationApi.list.mockResolvedValue(pageResponse([
       {
         id: 2,
         title: 'Work Order Assigned',
@@ -86,7 +92,7 @@ describe('NotificationPage', () => {
         isRead: false,
         targetRoute: '/work-orders',
       },
-    ]);
+    ]));
 
     render(
       <MemoryRouter>
@@ -105,7 +111,7 @@ describe('NotificationPage', () => {
 
   it('does not crash when notification has no targetRoute', async () => {
     const user = userEvent.setup();
-    notificationApi.list.mockResolvedValue([
+    notificationApi.list.mockResolvedValue(pageResponse([
       {
         id: 3,
         title: 'General Notice',
@@ -114,7 +120,7 @@ describe('NotificationPage', () => {
         isRead: true,
         targetRoute: null,
       },
-    ]);
+    ]));
 
     render(
       <MemoryRouter>
@@ -127,5 +133,26 @@ describe('NotificationPage', () => {
     expect(notificationApi.markAsRead).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();
     expect(screen.getByText('System maintenance tonight.')).toBeInTheDocument();
+  });
+
+  it('loads the next page when Next is clicked', async () => {
+    const user = userEvent.setup();
+    notificationApi.list
+      .mockResolvedValueOnce(pageResponse([{ id: 1, title: 'Page 1', message: 'First', createdAt: '2026-06-01T09:00:00', isRead: true }], 0, 2))
+      .mockResolvedValueOnce(pageResponse([{ id: 2, title: 'Page 2', message: 'Second', createdAt: '2026-06-01T10:00:00', isRead: true }], 1, 2));
+
+    render(
+      <MemoryRouter>
+        <NotificationPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('Page 1')).toBeInTheDocument();
+    await user.click(screen.getByTestId('pagination-next'));
+
+    await waitFor(() => {
+      expect(notificationApi.list).toHaveBeenLastCalledWith(1);
+      expect(screen.getByText('Page 2')).toBeInTheDocument();
+    });
   });
 });

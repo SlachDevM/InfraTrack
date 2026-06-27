@@ -6,6 +6,7 @@ import workOrderApi from '../services/workOrderApi';
 import maintenanceActivityApi from '../services/maintenanceActivityApi';
 import operationalDecisionApi from '../services/operationalDecisionApi';
 import NotificationButton from '../components/NotificationButton';
+import PaginationControls from '../components/PaginationControls';
 import CreateWorkOrderForm from '../components/workorders/CreateWorkOrderForm';
 import AssignWorkOrderForm from '../components/workorders/AssignWorkOrderForm';
 import CompleteMaintenanceForm from '../components/workorders/CompleteMaintenanceForm';
@@ -18,6 +19,12 @@ import {
   WORK_ORDER_PRIORITIES,
 } from '../constants/workOrderPriorities';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
+import {
+  DEFAULT_PAGE,
+  getPageNumber,
+  getTotalPages,
+  unwrapPageContent,
+} from '../utils/pagination';
 import '../styles/ReferenceDataPage.css';
 import '../styles/WorkOrdersPage.css';
 
@@ -32,6 +39,9 @@ export default function WorkOrdersPage() {
   const navigate = useNavigate();
   const { auth, logout } = useAuth();
   const [workOrders, setWorkOrders] = useState([]);
+  const [workOrdersPage, setWorkOrdersPage] = useState(DEFAULT_PAGE);
+  const [workOrdersTotalPages, setWorkOrdersTotalPages] = useState(0);
+  const [listLoading, setListLoading] = useState(false);
   const [maintenanceActivities, setMaintenanceActivities] = useState([]);
   const [decisions, setDecisions] = useState([]);
   const [workers, setWorkers] = useState([]);
@@ -143,17 +153,33 @@ export default function WorkOrdersPage() {
     loadPageData();
   }, [auth, navigate]);
 
-  const loadPageData = async () => {
+  const loadWorkOrders = async (page = workOrdersPage) => {
+    try {
+      setListLoading(true);
+      const workOrderPage = await workOrderApi.list(page);
+      setWorkOrders(unwrapPageContent(workOrderPage));
+      setWorkOrdersPage(getPageNumber(workOrderPage, page));
+      setWorkOrdersTotalPages(getTotalPages(workOrderPage));
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Failed to load work orders.'));
+    } finally {
+      setListLoading(false);
+    }
+  };
+
+  const loadPageData = async (page = workOrdersPage) => {
     try {
       setLoading(true);
       setError(null);
-      const [workOrderData, decisionData, workerData, maintenanceActivityData] = await Promise.all([
-        workOrderApi.list(),
+      const [workOrderPage, decisionData, workerData, maintenanceActivityData] = await Promise.all([
+        workOrderApi.list(page),
         operationalDecisionApi.list(),
         canAssign ? workOrderApi.listWorkers() : Promise.resolve([]),
         maintenanceActivityApi.list(),
       ]);
-      setWorkOrders(workOrderData);
+      setWorkOrders(unwrapPageContent(workOrderPage));
+      setWorkOrdersPage(getPageNumber(workOrderPage, page));
+      setWorkOrdersTotalPages(getTotalPages(workOrderPage));
       setDecisions(decisionData);
       setWorkers(workerData);
       setMaintenanceActivities(maintenanceActivityData);
@@ -190,7 +216,7 @@ export default function WorkOrdersPage() {
         priority: WORK_ORDER_PRIORITIES.NORMAL,
         createdAtBusinessDate: toDateTimeLocalValue(),
       });
-      await loadPageData();
+      await loadPageData(workOrdersPage);
     } catch (err) {
       if (isForbidden(err)) {
         setError('You do not have permission to create work orders.');
@@ -229,7 +255,7 @@ export default function WorkOrdersPage() {
         assignedToUserId: '',
         assignedAt: toDateTimeLocalValue(),
       });
-      await loadPageData();
+      await loadPageData(workOrdersPage);
     } catch (err) {
       if (isForbidden(err)) {
         setError('You do not have permission to assign work orders.');
@@ -264,7 +290,7 @@ export default function WorkOrdersPage() {
         completionNotes: '',
         completedAt: toDateTimeLocalValue(),
       });
-      await loadPageData();
+      await loadPageData(workOrdersPage);
     } catch (err) {
       if (isForbidden(err)) {
         setError('You do not have permission to complete maintenance for this work order.');
@@ -304,7 +330,7 @@ export default function WorkOrdersPage() {
         reviewNotes: '',
         reviewedAt: toDateTimeLocalValue(),
       });
-      await loadPageData();
+      await loadPageData(workOrdersPage);
     } catch (err) {
       if (isForbidden(err)) {
         setError('You do not have permission to record completion reviews.');
@@ -499,6 +525,13 @@ export default function WorkOrdersPage() {
         <WorkOrderList
           workOrders={workOrders}
           maintenanceActivities={maintenanceActivities}
+        />
+        <PaginationControls
+          page={workOrdersPage}
+          totalPages={workOrdersTotalPages}
+          loading={listLoading}
+          onPrevious={() => loadWorkOrders(workOrdersPage - 1)}
+          onNext={() => loadWorkOrders(workOrdersPage + 1)}
         />
       </main>
     </div>

@@ -58,7 +58,9 @@ public class AssetService {
 
     @Transactional
     public AssetResponse registerAsset(RegisterAssetRequest request, Long userId) {
-        requireCanRegisterAssets(userId);
+        User user = userService.getById(userId);
+        requireCanRegisterAssets(user);
+        requireOwnDepartment(user, request.getDepartmentId());
 
         String name = normalizeName(request.getName());
         String location = normalizeLocation(request.getLocation());
@@ -95,10 +97,22 @@ public class AssetService {
     }
 
     public void requireCanRegisterAssets(Long userId) {
-        User user = userService.getById(userId);
+        requireCanRegisterAssets(userService.getById(userId));
+    }
+
+    void requireCanRegisterAssets(User user) {
         if (!user.getRole().isManager() && !user.getRole().isOperationalCoordinator()) {
             throw new ForbiddenOperationException(
                     "Only managers and operational coordinators can register assets");
+        }
+    }
+
+    void requireOwnDepartment(User user, Long requestedDepartmentId) {
+        Department userDepartment = user.getDepartment();
+        if (userDepartment == null || requestedDepartmentId == null
+                || !userDepartment.getId().equals(requestedDepartmentId)) {
+            throw new ForbiddenOperationException(
+                    "You may only register assets for your own department.");
         }
     }
 

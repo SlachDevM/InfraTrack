@@ -1,45 +1,46 @@
 package com.infratrack.mail;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class EmailServiceTest {
 
+    @Mock
+    private JavaMailSender mailSender;
+
+    private EmailService emailService;
+
+    @BeforeEach
+    void setUp() {
+        emailService = new EmailService();
+        ReflectionTestUtils.setField(emailService, "mailSender", mailSender);
+        ReflectionTestUtils.setField(emailService, "activationLinkBaseUrl", "app://activate-account");
+        ReflectionTestUtils.setField(emailService, "fromEmail", "noreply@infratrack.local");
+        ReflectionTestUtils.setField(emailService, "activeProfile", "dev");
+    }
+
     @Test
     void isDevelopment_returnsTrue_forDevProfile() {
-        EmailService emailService = new EmailService();
-        ReflectionTestUtils.setField(emailService, "activeProfile", "dev");
-
-        boolean isDev = (boolean) ReflectionTestUtils.invokeMethod(emailService, "isDevelopment");
-        assertThat(isDev).isTrue();
-    }
-
-    @Test
-    void isDevelopment_returnsTrue_forDevelopmentProfile() {
-        EmailService emailService = new EmailService();
-        ReflectionTestUtils.setField(emailService, "activeProfile", "development");
-
-        boolean isDev = (boolean) ReflectionTestUtils.invokeMethod(emailService, "isDevelopment");
-        assertThat(isDev).isTrue();
-    }
-
-    @Test
-    void isDevelopment_returnsTrue_forLocalProfile() {
-        EmailService emailService = new EmailService();
-        ReflectionTestUtils.setField(emailService, "activeProfile", "local");
-
         boolean isDev = (boolean) ReflectionTestUtils.invokeMethod(emailService, "isDevelopment");
         assertThat(isDev).isTrue();
     }
 
     @Test
     void isDevelopment_returnsFalse_forProductionProfile() {
-        EmailService emailService = new EmailService();
         ReflectionTestUtils.setField(emailService, "activeProfile", "prod");
 
         boolean isDev = (boolean) ReflectionTestUtils.invokeMethod(emailService, "isDevelopment");
@@ -47,50 +48,50 @@ class EmailServiceTest {
     }
 
     @Test
-    void isDevelopment_returnsFalse_forProductionProfileExplicit() {
-        EmailService emailService = new EmailService();
-        ReflectionTestUtils.setField(emailService, "activeProfile", "production");
+    void sendActivationEmail_sendsViaSmtp_whenMailSenderConfigured() {
+        emailService.sendActivationEmail("user@test.com", "secret-token-123", "Test User");
 
-        boolean isDev = (boolean) ReflectionTestUtils.invokeMethod(emailService, "isDevelopment");
-        assertThat(isDev).isFalse();
+        ArgumentCaptor<SimpleMailMessage> messageCaptor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender).send(messageCaptor.capture());
+
+        SimpleMailMessage message = messageCaptor.getValue();
+        assertThat(message.getTo()).containsExactly("user@test.com");
+        assertThat(message.getSubject()).isEqualTo("Account Activation - InfraTrack");
+        assertThat(message.getText()).contains("Test User");
+        assertThat(message.getText()).contains("app://activate-account?token=secret-token-123");
     }
 
     @Test
-    void sendActivationEmail_logsInDevelopmentProfile() {
-        EmailService emailService = new EmailService();
-        ReflectionTestUtils.setField(emailService, "activeProfile", "dev");
-        ReflectionTestUtils.setField(emailService, "activationLinkBaseUrl", "app://activate-account");
+    void sendActivationEmail_logsOnly_whenMailSenderUnavailableInDevelopment() {
+        ReflectionTestUtils.setField(emailService, "mailSender", null);
 
-        // Ensure no exception is thrown during development logging
         assertThatNoException().isThrownBy(() ->
-            emailService.sendActivationEmail("user@test.com", "secret-token-123", "Test User")
+                emailService.sendActivationEmail("user@test.com", "secret-token-123", "Test User")
         );
+
+        verify(mailSender, never()).send(any(SimpleMailMessage.class));
     }
 
     @Test
-    void sendActivationEmail_skipsLoggingInProductionProfile() {
-        EmailService emailService = new EmailService();
+    void sendActivationEmail_doesNotLogTokenInProduction_whenMailSenderUnavailable() {
+        ReflectionTestUtils.setField(emailService, "mailSender", null);
         ReflectionTestUtils.setField(emailService, "activeProfile", "prod");
-        ReflectionTestUtils.setField(emailService, "activationLinkBaseUrl", "app://activate-account");
 
-        // Ensure no exception is thrown (falls through to sendEmailViaSMTP which logs warning)
         assertThatNoException().isThrownBy(() ->
-            emailService.sendActivationEmail("user@test.com", "secret-token-123", "Test User")
+                emailService.sendActivationEmail("user@test.com", "secret-token-123", "Test User")
         );
+
+        verify(mailSender, never()).send(any(SimpleMailMessage.class));
     }
 
     @Test
     void buildActivationLink_formatsDeepLink() {
-        EmailService emailService = new EmailService();
-        ReflectionTestUtils.setField(emailService, "activationLinkBaseUrl", "app://activate-account");
-
         String link = (String) ReflectionTestUtils.invokeMethod(emailService, "buildActivationLink", "test-token-123");
         assertThat(link).isEqualTo("app://activate-account?token=test-token-123");
     }
 
     @Test
     void buildActivationLink_formatsHttpsLink() {
-        EmailService emailService = new EmailService();
         ReflectionTestUtils.setField(emailService, "activationLinkBaseUrl", "https://example.com/activate");
 
         String link = (String) ReflectionTestUtils.invokeMethod(emailService, "buildActivationLink", "test-token-456");

@@ -4,6 +4,10 @@ import {
   DEFAULT_SIZE,
   paginatedQuery,
   unwrapPageContent,
+  getPageNumber,
+  getTotalPages,
+  isFirstPage,
+  isLastPage,
 } from '../../utils/pagination';
 
 describe('paginatedQuery', () => {
@@ -30,5 +34,22 @@ describe('unwrapPageContent', () => {
     expect(unwrapPageContent(null)).toEqual([]);
     expect(unwrapPageContent(undefined)).toEqual([]);
     expect(unwrapPageContent({})).toEqual([]);
+  });
+});
+
+describe('page metadata helpers', () => {
+  const page = { content: [{ id: 1 }], number: 2, totalPages: 5 };
+
+  it('reads page number and total pages', () => {
+    expect(getPageNumber(page)).toBe(2);
+    expect(getTotalPages(page)).toBe(5);
+  });
+
+  it('detects first and last page', () => {
+    expect(isFirstPage(0)).toBe(true);
+    expect(isFirstPage(1)).toBe(false);
+    expect(isLastPage(0, 1)).toBe(true);
+    expect(isLastPage(0, 5)).toBe(false);
+    expect(isLastPage(4, 5)).toBe(true);
   });
 });

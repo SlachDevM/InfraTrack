@@ -1,5 +1,5 @@
 import apiClient from './apiClient';
-import { paginatedQuery, unwrapPageContent } from '../utils/pagination';
+import { DEFAULT_PAGE, DEFAULT_SIZE, paginatedQuery } from '../utils/pagination';
 
 const ENDPOINTS = {
   LIST: '/api/work-orders',
@@ -10,7 +10,8 @@ const ENDPOINTS = {
 };
 
 export const workOrderApi = {
-  list: () => apiClient.get(`${ENDPOINTS.LIST}?${paginatedQuery()}`).then(unwrapPageContent),
+  list: (page = DEFAULT_PAGE, size = DEFAULT_SIZE) =>
+    apiClient.get(`${ENDPOINTS.LIST}?${paginatedQuery(page, size)}`),
   get: (id) => apiClient.get(ENDPOINTS.DETAIL(id)),
   create: (request) => apiClient.post(ENDPOINTS.LIST, request),
   assign: (id, request) => apiClient.post(ENDPOINTS.ASSIGN(id), request),

@@ -6,7 +6,9 @@ import assetApi from '../services/assetApi';
 import operationalDocumentApi from '../services/operationalDocumentApi';
 import departmentApi from '../services/departmentApi';
 import assetCategoryApi from '../services/assetCategoryApi';
+import userApi from '../services/userApi';
 import NotificationButton from '../components/NotificationButton';
+import PaginationControls from '../components/PaginationControls';
 import RegisterAssetForm from '../components/assets/RegisterAssetForm';
 import AssetList from '../components/assets/AssetList';
 import AssetHistoryPanel from '../components/assets/AssetHistoryPanel';
@@ -19,6 +21,12 @@ import {
   isForbidden,
   isUploadAuthorizationError,
 } from '../utils/apiError';
+import {
+  DEFAULT_PAGE,
+  getPageNumber,
+  getTotalPages,
+  unwrapPageContent,
+} from '../utils/pagination';
 import '../styles/ReferenceDataPage.css';
 import '../styles/AssetsPage.css';
 
@@ -37,8 +45,13 @@ export default function AssetsPage() {
   const navigate = useNavigate();
   const { auth, logout } = useAuth();
   const [assets, setAssets] = useState([]);
+  const [assetsPage, setAssetsPage] = useState(DEFAULT_PAGE);
+  const [assetsTotalPages, setAssetsTotalPages] = useState(0);
+  const [listLoading, setListLoading] = useState(false);
   const [departments, setDepartments] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [departmentLocked, setDepartmentLocked] = useState(false);
+  const [lockedDepartmentId, setLockedDepartmentId] = useState('');
   const [loading, setLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -46,7 +59,11 @@ export default function AssetsPage() {
   const [success, setSuccess] = useState(null);
   const [selectedAssetId, setSelectedAssetId] = useState('');
   const [assetHistory, setAssetHistory] = useState([]);
+  const [historyPage, setHistoryPage] = useState(DEFAULT_PAGE);
+  const [historyTotalPages, setHistoryTotalPages] = useState(0);
   const [assetDocuments, setAssetDocuments] = useState([]);
+  const [documentsPage, setDocumentsPage] = useState(DEFAULT_PAGE);
+  const [documentsTotalPages, setDocumentsTotalPages] = useState(0);
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [documentUploading, setDocumentUploading] = useState(false);
   const [documentForm, setDocumentForm] = useState({
@@ -77,18 +94,45 @@ export default function AssetsPage() {
     loadPageData();
   }, [auth, navigate]);
 
+  const loadAssets = async (page = assetsPage) => {
+    try {
+      setListLoading(true);
+      setError(null);
+      const assetPage = await assetApi.list(page);
+      setAssets(unwrapPageContent(assetPage));
+      setAssetsPage(getPageNumber(assetPage, page));
+      setAssetsTotalPages(getTotalPages(assetPage));
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Failed to load assets.'));
+    } finally {
+      setListLoading(false);
+    }
+  };
+
   const loadPageData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const [assetData, departmentData, categoryData] = await Promise.all([
-        assetApi.list(),
+      const requests = [
+        assetApi.list(DEFAULT_PAGE),
         departmentApi.list(),
         assetCategoryApi.list(),
-      ]);
-      setAssets(assetData);
+      ];
+      if (canRegister) {
+        requests.push(userApi.getCurrentUser());
+      }
+      const [assetPage, departmentData, categoryData, profile] = await Promise.all(requests);
+      setAssets(unwrapPageContent(assetPage));
+      setAssetsPage(getPageNumber(assetPage, DEFAULT_PAGE));
+      setAssetsTotalPages(getTotalPages(assetPage));
       setDepartments(departmentData);
       setCategories(categoryData);
+      if (profile?.departmentId) {
+        const departmentId = String(profile.departmentId);
+        setDepartmentLocked(true);
+        setLockedDepartmentId(departmentId);
+        setFormData((prev) => ({ ...prev, departmentId }));
+      }
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to load assets.'));
     } finally {
@@ -120,7 +164,7 @@ export default function AssetsPage() {
       setSuccess('Asset registered successfully.');
       setFormData({
         name: '',
-        departmentId: '',
+        departmentId: departmentLocked ? lockedDepartmentId : '',
         assetCategoryId: '',
         location: '',
         status: ASSET_STATUSES.ACTIVE,
@@ -131,7 +175,7 @@ export default function AssetsPage() {
       if (isConflict(err)) {
         setError('A possible duplicate asset already exists with the same name, department and category.');
       } else if (isForbidden(err)) {
-        setError('You do not have permission to register assets.');
+        setError(getApiErrorMessage(err, 'You do not have permission to register this asset.'));
       } else {
         setError(getApiErrorMessage(err, 'Failed to register asset.'));
       }
@@ -145,26 +189,25 @@ export default function AssetsPage() {
     navigate('/login');
   };
 
-  const handleAssetHistoryChange = async (e) => {
-    const assetId = e.target.value;
-    setSelectedAssetId(assetId);
-    setAssetHistory([]);
-    setAssetDocuments([]);
-
-    if (!assetId) {
-      return;
-    }
-
+  const loadAssetDetails = async (
+    assetId,
+    historyPageIndex = DEFAULT_PAGE,
+    documentsPageIndex = DEFAULT_PAGE,
+  ) => {
     try {
       setHistoryLoading(true);
       setDocumentsLoading(true);
       setError(null);
-      const [history, documents] = await Promise.all([
-        assetApi.getHistory(Number(assetId)),
-        operationalDocumentApi.list(Number(assetId)),
+      const [historyPageResponse, documentsPageResponse] = await Promise.all([
+        assetApi.getHistory(Number(assetId), historyPageIndex),
+        operationalDocumentApi.list(Number(assetId), documentsPageIndex),
       ]);
-      setAssetHistory(history);
-      setAssetDocuments(documents);
+      setAssetHistory(unwrapPageContent(historyPageResponse));
+      setHistoryPage(getPageNumber(historyPageResponse, historyPageIndex));
+      setHistoryTotalPages(getTotalPages(historyPageResponse));
+      setAssetDocuments(unwrapPageContent(documentsPageResponse));
+      setDocumentsPage(getPageNumber(documentsPageResponse, documentsPageIndex));
+      setDocumentsTotalPages(getTotalPages(documentsPageResponse));
     } catch (err) {
       if (err.status === 404) {
         setError('Asset not found.');
@@ -175,6 +218,23 @@ export default function AssetsPage() {
       setHistoryLoading(false);
       setDocumentsLoading(false);
     }
+  };
+
+  const handleAssetHistoryChange = async (e) => {
+    const assetId = e.target.value;
+    setSelectedAssetId(assetId);
+    setAssetHistory([]);
+    setAssetDocuments([]);
+    setHistoryPage(DEFAULT_PAGE);
+    setHistoryTotalPages(0);
+    setDocumentsPage(DEFAULT_PAGE);
+    setDocumentsTotalPages(0);
+
+    if (!assetId) {
+      return;
+    }
+
+    await loadAssetDetails(assetId);
   };
 
   const handleDocumentFormChange = (e) => {
@@ -218,10 +278,17 @@ export default function AssetsPage() {
         documentDate: '',
         file: null,
       });
-      const documents = await operationalDocumentApi.list(Number(selectedAssetId));
-      setAssetDocuments(documents);
-      const history = await assetApi.getHistory(Number(selectedAssetId));
-      setAssetHistory(history);
+      const documentsPageResponse = await operationalDocumentApi.list(
+        Number(selectedAssetId),
+        documentsPage,
+      );
+      setAssetDocuments(unwrapPageContent(documentsPageResponse));
+      setDocumentsPage(getPageNumber(documentsPageResponse, documentsPage));
+      setDocumentsTotalPages(getTotalPages(documentsPageResponse));
+      const historyPageResponse = await assetApi.getHistory(Number(selectedAssetId), historyPage);
+      setAssetHistory(unwrapPageContent(historyPageResponse));
+      setHistoryPage(getPageNumber(historyPageResponse, historyPage));
+      setHistoryTotalPages(getTotalPages(historyPageResponse));
     } catch (err) {
       if (isUploadAuthorizationError(err)) {
         setError('You do not have permission to upload documents for this context.');
@@ -289,6 +356,7 @@ export default function AssetsPage() {
             departments={departments}
             categories={categories}
             submitting={submitting}
+            departmentLocked={departmentLocked}
             onChange={handleChange}
             onSubmit={handleSubmit}
           />
@@ -299,6 +367,13 @@ export default function AssetsPage() {
         )}
 
         <AssetList assets={assets} />
+        <PaginationControls
+          page={assetsPage}
+          totalPages={assetsTotalPages}
+          loading={listLoading}
+          onPrevious={() => loadAssets(assetsPage - 1)}
+          onNext={() => loadAssets(assetsPage + 1)}
+        />
 
         <AssetHistoryPanel
           assets={assets}
@@ -306,7 +381,11 @@ export default function AssetsPage() {
           selectedAsset={selectedAsset}
           assetHistory={assetHistory}
           historyLoading={historyLoading}
+          historyPage={historyPage}
+          historyTotalPages={historyTotalPages}
           onAssetChange={handleAssetHistoryChange}
+          onHistoryPrevious={() => loadAssetDetails(selectedAssetId, historyPage - 1, documentsPage)}
+          onHistoryNext={() => loadAssetDetails(selectedAssetId, historyPage + 1, documentsPage)}
         />
 
         <OperationalDocumentsPanel
@@ -316,10 +395,14 @@ export default function AssetsPage() {
           assetDocuments={assetDocuments}
           documentsLoading={documentsLoading}
           documentUploading={documentUploading}
+          documentsPage={documentsPage}
+          documentsTotalPages={documentsTotalPages}
           onDocumentFormChange={handleDocumentFormChange}
           onDocumentFileChange={handleDocumentFileChange}
           onUpload={handleDocumentUpload}
           onDownload={handleDocumentDownload}
+          onDocumentsPrevious={() => loadAssetDetails(selectedAssetId, historyPage, documentsPage - 1)}
+          onDocumentsNext={() => loadAssetDetails(selectedAssetId, historyPage, documentsPage + 1)}
         />
       </main>
     </div>

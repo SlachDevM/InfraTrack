@@ -1,5 +1,5 @@
 import apiClient from './apiClient';
-import { paginatedQuery, unwrapPageContent } from '../utils/pagination';
+import { DEFAULT_PAGE, DEFAULT_SIZE, paginatedQuery } from '../utils/pagination';
 
 const ENDPOINTS = {
   LIST: '/api/assets',
@@ -8,9 +8,11 @@ const ENDPOINTS = {
 };
 
 export const assetApi = {
-  list: () => apiClient.get(`${ENDPOINTS.LIST}?${paginatedQuery()}`).then(unwrapPageContent),
+  list: (page = DEFAULT_PAGE, size = DEFAULT_SIZE) =>
+    apiClient.get(`${ENDPOINTS.LIST}?${paginatedQuery(page, size)}`),
   get: (id) => apiClient.get(ENDPOINTS.DETAIL(id)),
-  getHistory: (id) => apiClient.get(`${ENDPOINTS.HISTORY(id)}?${paginatedQuery()}`).then(unwrapPageContent),
+  getHistory: (id, page = DEFAULT_PAGE, size = DEFAULT_SIZE) =>
+    apiClient.get(`${ENDPOINTS.HISTORY(id)}?${paginatedQuery(page, size)}`),
   register: (request) => apiClient.post(ENDPOINTS.LIST, request),
 };
 

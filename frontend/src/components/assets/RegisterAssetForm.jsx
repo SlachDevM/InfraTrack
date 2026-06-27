@@ -5,6 +5,7 @@ export default function RegisterAssetForm({
   departments,
   categories,
   submitting,
+  departmentLocked = false,
   onChange,
   onSubmit,
 }) {
@@ -33,7 +34,7 @@ export default function RegisterAssetForm({
             value={formData.departmentId}
             onChange={onChange}
             required
-            disabled={submitting}
+            disabled={submitting || departmentLocked}
           >
             <option value="">Select department</option>
             {departments.map((department) => (

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import apiClient from '../services/apiClient';
 import { API_ENDPOINTS } from '../constants/apiEndpoints';
+import { getApiErrorMessage } from '../utils/apiError';
 import '../styles/Login.css';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -36,7 +37,7 @@ export default function Login() {
       login(user, token);
       navigate('/');
     } catch (err) {
-      setError('Email or password is incorrect.');
+      setError(getApiErrorMessage(err, 'Email or password is incorrect.'));
     }
   };
 
