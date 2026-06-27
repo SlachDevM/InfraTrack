@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -153,15 +154,23 @@ public class UserController {
     @Operation(
             summary = "List workers",
             description = "Returns field employees and contractors for assignment. "
+                    + "When departmentId and role are provided, returns only active workers "
+                    + "in that department with the specified role. "
                     + "Administrator, Manager or Operational Coordinator only.")
     @ApiResponse(responseCode = "200", description = "Worker summaries")
     @ApiResponse(responseCode = "403", description = "Insufficient role")
-    public ResponseEntity<List<UserSummary>> getWorkers(Authentication authentication) {
+    public ResponseEntity<List<UserSummary>> getWorkers(
+            @RequestParam(required = false) Long departmentId,
+            @RequestParam(required = false) UserRole role,
+            Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         if (!userService.isAdministrator(userId)
                 && !userService.isManager(userId)
                 && !userService.isOperationalCoordinator(userId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if (departmentId != null || role != null) {
+            return ResponseEntity.ok(userService.getEligibleWorkersForAssignment(departmentId, role));
         }
         return ResponseEntity.ok(userService.getWorkers());
     }

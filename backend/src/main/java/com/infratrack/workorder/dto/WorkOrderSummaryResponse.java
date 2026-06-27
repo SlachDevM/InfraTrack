@@ -14,6 +14,7 @@ public class WorkOrderSummaryResponse {
     private Long id;
     private Long operationalDecisionId;
     private String assetName;
+    private Long assetDepartmentId;
     private WorkType workType;
     private WorkOrderStatus status;
     private String description;
@@ -28,6 +29,9 @@ public class WorkOrderSummaryResponse {
         response.id = workOrder.getId();
         response.operationalDecisionId = workOrder.getOperationalDecision().getId();
         response.assetName = workOrder.getAsset().getName();
+        if (workOrder.getAsset().getDepartment() != null) {
+            response.assetDepartmentId = workOrder.getAsset().getDepartment().getId();
+        }
         response.workType = workOrder.getWorkType();
         response.status = workOrder.getStatus();
         response.description = workOrder.getDescription();
@@ -59,6 +63,10 @@ public class WorkOrderSummaryResponse {
 
     public String getAssetName() {
         return assetName;
+    }
+
+    public Long getAssetDepartmentId() {
+        return assetDepartmentId;
     }
 
     public WorkType getWorkType() {

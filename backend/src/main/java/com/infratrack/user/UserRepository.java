@@ -21,6 +21,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findByRoleAndDepartmentId(UserRole role, Long departmentId);
 
+    @EntityGraph(attributePaths = {"department"})
+    List<User> findByRoleAndDepartmentIdAndEnabledTrueOrderByNameAsc(UserRole role, Long departmentId);
+
     List<User> findByRoleOrderByNameAsc(UserRole role);
 
     boolean existsByDepartmentId(Long departmentId);

@@ -86,10 +86,10 @@ class WorkOrderServiceTest {
     void createWorkOrder_shouldCreateWorkOrderFromInternalMaintenanceDecision() {
         CreateWorkOrderRequest request = validRequest();
         OperationalDecision decision = decision(900L, OperationalDecisionOutcome.INTERNAL_MAINTENANCE);
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User coordinator = coordinatorInDepartment(40L, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(operationalDecisionRepository.findById(900L)).thenReturn(Optional.of(decision));
+        when(operationalDecisionRepository.findDetailedById(900L)).thenReturn(Optional.of(decision));
         when(workOrderRepository.existsByOperationalDecisionId(900L)).thenReturn(false);
         when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(invocation -> {
             WorkOrder workOrder = invocation.getArgument(0);
@@ -112,10 +112,10 @@ class WorkOrderServiceTest {
     void createWorkOrder_shouldCreateWorkOrderFromContractorWorkDecision() {
         CreateWorkOrderRequest request = validRequest();
         OperationalDecision decision = decision(900L, OperationalDecisionOutcome.CONTRACTOR_WORK);
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User coordinator = coordinatorInDepartment(40L, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(operationalDecisionRepository.findById(900L)).thenReturn(Optional.of(decision));
+        when(operationalDecisionRepository.findDetailedById(900L)).thenReturn(Optional.of(decision));
         when(workOrderRepository.existsByOperationalDecisionId(900L)).thenReturn(false);
         when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(invocation -> {
             WorkOrder workOrder = invocation.getArgument(0);
@@ -132,10 +132,10 @@ class WorkOrderServiceTest {
     void createWorkOrder_shouldCreateHistoryEventAndLinkAsset() {
         CreateWorkOrderRequest request = validRequest();
         OperationalDecision decision = decision(900L, OperationalDecisionOutcome.INTERNAL_MAINTENANCE);
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User coordinator = coordinatorInDepartment(40L, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(operationalDecisionRepository.findById(900L)).thenReturn(Optional.of(decision));
+        when(operationalDecisionRepository.findDetailedById(900L)).thenReturn(Optional.of(decision));
         when(workOrderRepository.existsByOperationalDecisionId(900L)).thenReturn(false);
         when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(invocation -> {
             WorkOrder workOrder = invocation.getArgument(0);
@@ -159,7 +159,7 @@ class WorkOrderServiceTest {
     void createWorkOrder_shouldRejectMissingOperationalDecisionId() {
         CreateWorkOrderRequest request = validRequest();
         request.setOperationalDecisionId(null);
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User coordinator = coordinatorInDepartment(40L, 1L);
         when(userService.getById(40L)).thenReturn(coordinator);
 
         assertThatThrownBy(() -> workOrderService.createWorkOrder(request, 40L))
@@ -169,9 +169,9 @@ class WorkOrderServiceTest {
     @Test
     void createWorkOrder_shouldRejectInvalidOperationalDecision() {
         CreateWorkOrderRequest request = validRequest();
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User coordinator = coordinatorInDepartment(40L, 1L);
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(operationalDecisionRepository.findById(900L)).thenReturn(Optional.empty());
+        when(operationalDecisionRepository.findDetailedById(900L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> workOrderService.createWorkOrder(request, 40L))
                 .isInstanceOf(BusinessValidationException.class);
@@ -196,10 +196,10 @@ class WorkOrderServiceTest {
     void createWorkOrder_shouldRejectDuplicateWorkOrderForSameDecision() {
         CreateWorkOrderRequest request = validRequest();
         OperationalDecision decision = decision(900L, OperationalDecisionOutcome.INTERNAL_MAINTENANCE);
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User coordinator = coordinatorInDepartment(40L, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(operationalDecisionRepository.findById(900L)).thenReturn(Optional.of(decision));
+        when(operationalDecisionRepository.findDetailedById(900L)).thenReturn(Optional.of(decision));
         when(workOrderRepository.existsByOperationalDecisionId(900L)).thenReturn(true);
 
         assertThatThrownBy(() -> workOrderService.createWorkOrder(request, 40L))
@@ -214,10 +214,10 @@ class WorkOrderServiceTest {
         CreateWorkOrderRequest request = validRequest();
         request.setDescription("  ");
         OperationalDecision decision = decision(900L, OperationalDecisionOutcome.INTERNAL_MAINTENANCE);
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User coordinator = coordinatorInDepartment(40L, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(operationalDecisionRepository.findById(900L)).thenReturn(Optional.of(decision));
+        when(operationalDecisionRepository.findDetailedById(900L)).thenReturn(Optional.of(decision));
         when(workOrderRepository.existsByOperationalDecisionId(900L)).thenReturn(false);
 
         assertThatThrownBy(() -> workOrderService.createWorkOrder(request, 40L))
@@ -229,10 +229,10 @@ class WorkOrderServiceTest {
         CreateWorkOrderRequest request = validRequest();
         request.setPriority(null);
         OperationalDecision decision = decision(900L, OperationalDecisionOutcome.INTERNAL_MAINTENANCE);
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User coordinator = coordinatorInDepartment(40L, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(operationalDecisionRepository.findById(900L)).thenReturn(Optional.of(decision));
+        when(operationalDecisionRepository.findDetailedById(900L)).thenReturn(Optional.of(decision));
         when(workOrderRepository.existsByOperationalDecisionId(900L)).thenReturn(false);
 
         assertThatThrownBy(() -> workOrderService.createWorkOrder(request, 40L))
@@ -244,10 +244,10 @@ class WorkOrderServiceTest {
         CreateWorkOrderRequest request = validRequest();
         request.setCreatedAtBusinessDate(null);
         OperationalDecision decision = decision(900L, OperationalDecisionOutcome.INTERNAL_MAINTENANCE);
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User coordinator = coordinatorInDepartment(40L, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(operationalDecisionRepository.findById(900L)).thenReturn(Optional.of(decision));
+        when(operationalDecisionRepository.findDetailedById(900L)).thenReturn(Optional.of(decision));
         when(workOrderRepository.existsByOperationalDecisionId(900L)).thenReturn(false);
 
         assertThatThrownBy(() -> workOrderService.createWorkOrder(request, 40L))
@@ -259,10 +259,10 @@ class WorkOrderServiceTest {
         CreateWorkOrderRequest request = validRequest();
         OperationalDecision decision = decision(900L, OperationalDecisionOutcome.INTERNAL_MAINTENANCE);
         request.setCreatedAtBusinessDate(decision.getDecidedAt().minusMinutes(30));
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User coordinator = coordinatorInDepartment(40L, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(operationalDecisionRepository.findById(900L)).thenReturn(Optional.of(decision));
+        when(operationalDecisionRepository.findDetailedById(900L)).thenReturn(Optional.of(decision));
         when(workOrderRepository.existsByOperationalDecisionId(900L)).thenReturn(false);
 
         assertThatThrownBy(() -> workOrderService.createWorkOrder(request, 40L))
@@ -274,10 +274,10 @@ class WorkOrderServiceTest {
         CreateWorkOrderRequest request = validRequest();
         request.setCreatedAtBusinessDate(LocalDateTime.now().plusDays(1));
         OperationalDecision decision = decision(900L, OperationalDecisionOutcome.INTERNAL_MAINTENANCE);
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User coordinator = coordinatorInDepartment(40L, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(operationalDecisionRepository.findById(900L)).thenReturn(Optional.of(decision));
+        when(operationalDecisionRepository.findDetailedById(900L)).thenReturn(Optional.of(decision));
         when(workOrderRepository.existsByOperationalDecisionId(900L)).thenReturn(false);
 
         assertThatThrownBy(() -> workOrderService.createWorkOrder(request, 40L))
@@ -288,10 +288,10 @@ class WorkOrderServiceTest {
     void createWorkOrder_shouldAllowOperationalCoordinator() {
         CreateWorkOrderRequest request = validRequest();
         OperationalDecision decision = decision(900L, OperationalDecisionOutcome.INTERNAL_MAINTENANCE);
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User coordinator = coordinatorInDepartment(40L, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(operationalDecisionRepository.findById(900L)).thenReturn(Optional.of(decision));
+        when(operationalDecisionRepository.findDetailedById(900L)).thenReturn(Optional.of(decision));
         when(workOrderRepository.existsByOperationalDecisionId(900L)).thenReturn(false);
         when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(invocation -> {
             WorkOrder workOrder = invocation.getArgument(0);
@@ -347,10 +347,10 @@ class WorkOrderServiceTest {
     void createWorkOrder_shouldNotCreateMaintenanceActivity() {
         CreateWorkOrderRequest request = validRequest();
         OperationalDecision decision = decision(900L, OperationalDecisionOutcome.INTERNAL_MAINTENANCE);
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User coordinator = coordinatorInDepartment(40L, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(operationalDecisionRepository.findById(900L)).thenReturn(Optional.of(decision));
+        when(operationalDecisionRepository.findDetailedById(900L)).thenReturn(Optional.of(decision));
         when(workOrderRepository.existsByOperationalDecisionId(900L)).thenReturn(false);
         when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(invocation -> {
             WorkOrder workOrder = invocation.getArgument(0);
@@ -370,11 +370,11 @@ class WorkOrderServiceTest {
     void assignWorkOrder_shouldAssignInternalMaintenanceToFieldEmployee() {
         AssignWorkOrderRequest request = validAssignRequest(20L);
         WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
-        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        User coordinator = coordinatorInDepartment(40L, 1L);
+        User fieldEmployee = userInDepartment(20L, UserRole.FIELD_EMPLOYEE, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.of(workOrder));
         when(userService.getById(20L)).thenReturn(fieldEmployee);
         when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -394,11 +394,11 @@ class WorkOrderServiceTest {
     void assignWorkOrder_shouldAssignContractorWorkToContractor() {
         AssignWorkOrderRequest request = validAssignRequest(25L);
         WorkOrder workOrder = createdWorkOrder(1000L, WorkType.CONTRACTOR_WORK);
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
-        User contractor = user(25L, UserRole.CONTRACTOR);
+        User coordinator = coordinatorInDepartment(40L, 1L);
+        User contractor = userInDepartment(25L, UserRole.CONTRACTOR, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.of(workOrder));
         when(userService.getById(25L)).thenReturn(contractor);
         when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -412,11 +412,11 @@ class WorkOrderServiceTest {
     void assignWorkOrder_shouldRejectContractorForInternalMaintenance() {
         AssignWorkOrderRequest request = validAssignRequest(25L);
         WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
-        User contractor = user(25L, UserRole.CONTRACTOR);
+        User coordinator = coordinatorInDepartment(40L, 1L);
+        User contractor = userInDepartment(25L, UserRole.CONTRACTOR, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.of(workOrder));
         when(userService.getById(25L)).thenReturn(contractor);
 
         assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
@@ -429,11 +429,11 @@ class WorkOrderServiceTest {
     void assignWorkOrder_shouldRejectFieldEmployeeForContractorWork() {
         AssignWorkOrderRequest request = validAssignRequest(20L);
         WorkOrder workOrder = createdWorkOrder(1000L, WorkType.CONTRACTOR_WORK);
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
-        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        User coordinator = coordinatorInDepartment(40L, 1L);
+        User fieldEmployee = userInDepartment(20L, UserRole.FIELD_EMPLOYEE, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.of(workOrder));
         when(userService.getById(20L)).thenReturn(fieldEmployee);
 
         assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
@@ -443,10 +443,10 @@ class WorkOrderServiceTest {
     @Test
     void assignWorkOrder_shouldRejectInvalidWorkOrder() {
         AssignWorkOrderRequest request = validAssignRequest(20L);
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User coordinator = coordinatorInDepartment(40L, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(workOrderRepository.findById(1000L)).thenReturn(Optional.empty());
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
                 .isInstanceOf(NotFoundException.class);
@@ -457,10 +457,10 @@ class WorkOrderServiceTest {
         AssignWorkOrderRequest request = validAssignRequest(20L);
         WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
         workOrder.assign(20L, 40L, LocalDateTime.now().minusMinutes(10));
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User coordinator = coordinatorInDepartment(40L, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.of(workOrder));
 
         assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
                 .isInstanceOf(ConflictException.class);
@@ -470,10 +470,10 @@ class WorkOrderServiceTest {
     void assignWorkOrder_shouldRejectMissingAssignedUser() {
         AssignWorkOrderRequest request = validAssignRequest(null);
         WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User coordinator = coordinatorInDepartment(40L, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.of(workOrder));
 
         assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
                 .isInstanceOf(BusinessValidationException.class);
@@ -484,10 +484,10 @@ class WorkOrderServiceTest {
         AssignWorkOrderRequest request = validAssignRequest(20L);
         request.setAssignedAt(null);
         WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User coordinator = coordinatorInDepartment(40L, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.of(workOrder));
 
         assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
                 .isInstanceOf(BusinessValidationException.class);
@@ -498,10 +498,10 @@ class WorkOrderServiceTest {
         AssignWorkOrderRequest request = validAssignRequest(20L);
         WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
         request.setAssignedAt(workOrder.getCreatedAtBusinessDate().minusMinutes(30));
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User coordinator = coordinatorInDepartment(40L, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.of(workOrder));
 
         assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
                 .isInstanceOf(BusinessValidationException.class);
@@ -512,10 +512,10 @@ class WorkOrderServiceTest {
         AssignWorkOrderRequest request = validAssignRequest(20L);
         request.setAssignedAt(LocalDateTime.now().plusDays(1));
         WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User coordinator = coordinatorInDepartment(40L, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.of(workOrder));
 
         assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
                 .isInstanceOf(BusinessValidationException.class);
@@ -525,11 +525,11 @@ class WorkOrderServiceTest {
     void assignWorkOrder_shouldAllowOperationalCoordinator() {
         AssignWorkOrderRequest request = validAssignRequest(20L);
         WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
-        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        User coordinator = coordinatorInDepartment(40L, 1L);
+        User fieldEmployee = userInDepartment(20L, UserRole.FIELD_EMPLOYEE, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.of(workOrder));
         when(userService.getById(20L)).thenReturn(fieldEmployee);
         when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -581,11 +581,11 @@ class WorkOrderServiceTest {
     void assignWorkOrder_shouldNotCreateMaintenanceActivity() {
         AssignWorkOrderRequest request = validAssignRequest(20L);
         WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
-        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        User coordinator = coordinatorInDepartment(40L, 1L);
+        User fieldEmployee = userInDepartment(20L, UserRole.FIELD_EMPLOYEE, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.of(workOrder));
         when(userService.getById(20L)).thenReturn(fieldEmployee);
         when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -597,13 +597,63 @@ class WorkOrderServiceTest {
         verifyNoMoreInteractions(workOrderRepository, operationalDecisionRepository, assetHistoryEventRepository);
     }
 
+    @Test
+    void createWorkOrder_shouldRejectCrossDepartmentOperationalDecision() {
+        CreateWorkOrderRequest request = validRequest();
+        OperationalDecision decision = decision(900L, OperationalDecisionOutcome.INTERNAL_MAINTENANCE);
+        User coordinator = coordinatorInDepartment(40L, 2L);
+
+        when(userService.getById(40L)).thenReturn(coordinator);
+        when(operationalDecisionRepository.findDetailedById(900L)).thenReturn(Optional.of(decision));
+
+        assertThatThrownBy(() -> workOrderService.createWorkOrder(request, 40L))
+                .isInstanceOf(ForbiddenOperationException.class);
+
+        verify(workOrderRepository, never()).save(any());
+    }
+
+    @Test
+    void assignWorkOrder_shouldRejectDisabledFieldEmployee() {
+        AssignWorkOrderRequest request = validAssignRequest(20L);
+        WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
+        User coordinator = coordinatorInDepartment(40L, 1L);
+        User disabledFieldEmployee = userInDepartment(20L, UserRole.FIELD_EMPLOYEE, 1L);
+        disabledFieldEmployee.setEnabled(false);
+
+        when(userService.getById(40L)).thenReturn(coordinator);
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.of(workOrder));
+        when(userService.getById(20L)).thenReturn(disabledFieldEmployee);
+
+        assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
+                .isInstanceOf(ForbiddenOperationException.class);
+
+        verify(workOrderRepository, never()).save(any());
+    }
+
+    @Test
+    void assignWorkOrder_shouldRejectCrossDepartmentFieldEmployee() {
+        AssignWorkOrderRequest request = validAssignRequest(20L);
+        WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
+        User coordinator = coordinatorInDepartment(40L, 1L);
+        User crossDepartmentFieldEmployee = userInDepartment(20L, UserRole.FIELD_EMPLOYEE, 2L);
+
+        when(userService.getById(40L)).thenReturn(coordinator);
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.of(workOrder));
+        when(userService.getById(20L)).thenReturn(crossDepartmentFieldEmployee);
+
+        assertThatThrownBy(() -> workOrderService.assignWorkOrder(1000L, request, 40L))
+                .isInstanceOf(ForbiddenOperationException.class);
+
+        verify(workOrderRepository, never()).save(any());
+    }
+
     private void assertRejectedOutcome(OperationalDecisionOutcome outcome) {
         CreateWorkOrderRequest request = validRequest();
         OperationalDecision decision = decision(900L, outcome);
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        User coordinator = coordinatorInDepartment(40L, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(operationalDecisionRepository.findById(900L)).thenReturn(Optional.of(decision));
+        when(operationalDecisionRepository.findDetailedById(900L)).thenReturn(Optional.of(decision));
 
         assertThatThrownBy(() -> workOrderService.createWorkOrder(request, 40L))
                 .isInstanceOf(BusinessValidationException.class);
@@ -721,5 +771,21 @@ class WorkOrderServiceTest {
         user.setId(id);
         user.setEnabled(true);
         return user;
+    }
+
+    private User coordinatorInDepartment(Long id, Long departmentId) {
+        User coordinator = user(id, UserRole.OPERATIONAL_COORDINATOR);
+        Department department = new Department("Department " + departmentId);
+        department.setId(departmentId);
+        coordinator.setDepartment(department);
+        return coordinator;
+    }
+
+    private User userInDepartment(Long id, UserRole role, Long departmentId) {
+        User worker = user(id, role);
+        Department department = new Department("Department " + departmentId);
+        department.setId(departmentId);
+        worker.setDepartment(department);
+        return worker;
     }
 }

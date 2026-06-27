@@ -38,6 +38,19 @@ public class UserService {
                 .toList();
     }
 
+    public List<UserSummary> getEligibleWorkersForAssignment(Long departmentId, UserRole role) {
+        if (departmentId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Department is required");
+        }
+        if (role == null || (!role.isFieldEmployee() && !role.isContractor())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role must be field employee or contractor");
+        }
+        return userRepository.findByRoleAndDepartmentIdAndEnabledTrueOrderByNameAsc(role, departmentId)
+                .stream()
+                .map(UserSummary::new)
+                .toList();
+    }
+
     public List<UserSummary> getManagers() {
         return userRepository.findByRoleOrderByNameAsc(UserRole.MANAGER).stream()
                 .map(UserSummary::new)

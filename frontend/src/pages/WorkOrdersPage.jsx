@@ -29,8 +29,6 @@ import {
 import '../styles/ReferenceDataPage.css';
 import '../styles/WorkOrdersPage.css';
 
-const PHYSICAL_WORK_OUTCOMES = ['INTERNAL_MAINTENANCE', 'CONTRACTOR_WORK'];
-
 function toDateTimeLocalValue(date = new Date()) {
   const pad = (value) => String(value).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
@@ -45,7 +43,7 @@ export default function WorkOrdersPage() {
   const [listLoading, setListLoading] = useState(false);
   const [maintenanceActivities, setMaintenanceActivities] = useState([]);
   const [decisions, setDecisions] = useState([]);
-  const [workers, setWorkers] = useState([]);
+  const [eligibleAssignees, setEligibleAssignees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [assigning, setAssigning] = useState(false);
@@ -82,15 +80,6 @@ export default function WorkOrdersPage() {
   const canReview = canRecordCompletionReview(auth?.user?.role);
   const currentUserId = auth?.user?.userId;
 
-  const eligibleDecisions = useMemo(() => {
-    const decidedIds = new Set(workOrders.map((order) => order.operationalDecisionId));
-    return decisions.filter(
-      (decision) =>
-        PHYSICAL_WORK_OUTCOMES.includes(decision.outcome)
-        && !decidedIds.has(decision.id)
-    );
-  }, [decisions, workOrders]);
-
   const selectedDecision = useMemo(
     () => decisions.find((decision) => String(decision.id) === String(formData.operationalDecisionId)),
     [decisions, formData.operationalDecisionId]
@@ -106,15 +95,21 @@ export default function WorkOrdersPage() {
     [workOrders, assignFormData.workOrderId]
   );
 
-  const eligibleAssignees = useMemo(() => {
-    if (!selectedAssignWorkOrder) {
-      return [];
+  useEffect(() => {
+    if (!selectedAssignWorkOrder?.assetDepartmentId) {
+      setEligibleAssignees([]);
+      return;
     }
     const requiredRole = selectedAssignWorkOrder.workType === 'INTERNAL_MAINTENANCE'
       ? USER_ROLES.FIELD_EMPLOYEE
       : USER_ROLES.CONTRACTOR;
-    return workers.filter((worker) => worker.role === requiredRole);
-  }, [selectedAssignWorkOrder, workers]);
+    workOrderApi.listEligibleWorkers(selectedAssignWorkOrder.assetDepartmentId, requiredRole)
+      .then(setEligibleAssignees)
+      .catch((err) => {
+        setEligibleAssignees([]);
+        setError(getApiErrorMessage(err, 'Failed to load eligible assignees.'));
+      });
+  }, [selectedAssignWorkOrder]);
 
   const assignedWorkOrdersForCurrentUser = useMemo(
     () => workOrders.filter(
@@ -172,17 +167,17 @@ export default function WorkOrdersPage() {
     try {
       setLoading(true);
       setError(null);
-      const [workOrderPage, decisionData, workerData, maintenanceActivityData] = await Promise.all([
+      const [workOrderPage, decisionData, maintenanceActivityData] = await Promise.all([
         workOrderApi.list(page),
-        operationalDecisionApi.list(0, MAX_PAGE_SIZE),
-        canAssign ? workOrderApi.listWorkers() : Promise.resolve([]),
+        canCreate
+          ? operationalDecisionApi.listEligibleForWorkOrderCreation(0, MAX_PAGE_SIZE)
+          : Promise.resolve(null),
         maintenanceActivityApi.list(),
       ]);
       setWorkOrders(unwrapPageContent(workOrderPage));
       setWorkOrdersPage(getPageNumber(workOrderPage, page));
       setWorkOrdersTotalPages(getTotalPages(workOrderPage));
-      setDecisions(unwrapPageContent(decisionData));
-      setWorkers(workerData);
+      setDecisions(decisionData ? unwrapPageContent(decisionData) : []);
       setMaintenanceActivities(maintenanceActivityData);
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to load work orders.'));
@@ -380,7 +375,7 @@ export default function WorkOrdersPage() {
         {canCreate ? (
           <CreateWorkOrderForm
             formData={formData}
-            eligibleDecisions={eligibleDecisions}
+            eligibleDecisions={decisions}
             selectedDecision={selectedDecision}
             submitting={submitting}
             onChange={handleChange}

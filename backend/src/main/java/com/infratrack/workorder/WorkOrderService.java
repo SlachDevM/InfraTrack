@@ -87,6 +87,7 @@ public class WorkOrderService {
         );
 
         Asset asset = decision.getAsset();
+        authorizationService.requireCoordinatorOwnDepartment(coordinator, asset);
         WorkOrder workOrder = workOrderRepository.save(new WorkOrder(
                 decision,
                 asset,
@@ -104,16 +105,19 @@ public class WorkOrderService {
 
     @Transactional
     public WorkOrderResponse assignWorkOrder(Long workOrderId, AssignWorkOrderRequest request, Long userId) {
-        User coordinator = authorizationService.requireOperationalCoordinatorForAssignment(userId);
+        authorizationService.requireOperationalCoordinatorForAssignment(userId);
         WorkOrder workOrder = findWorkOrderOrThrow(workOrderId);
         requireCreatedStatus(workOrder);
         LocalDateTime assignedAt = validateAssignedAt(request.getAssignedAt(), workOrder);
-        User assignee = findEligibleAssigneeOrThrow(request.getAssignedToUserId(), workOrder.getWorkType());
+        User assignee = authorizationService.requireEligibleAssignee(
+                request.getAssignedToUserId(),
+                workOrder.getWorkType(),
+                workOrder.getAsset());
 
-        workOrder.assign(assignee.getId(), coordinator.getId(), assignedAt);
+        workOrder.assign(assignee.getId(), userId, assignedAt);
         workOrderRepository.save(workOrder);
 
-        historyRecorder.recordWorkOrderAssigned(workOrder.getAsset(), coordinator.getId(), assignedAt.toLocalDate());
+        historyRecorder.recordWorkOrderAssigned(workOrder.getAsset(), userId, assignedAt.toLocalDate());
 
         operationalEventNotificationService.notifyWorkOrderAssigned(assignee.getId());
 
@@ -134,20 +138,17 @@ public class WorkOrderService {
         }
     }
 
-    private User findEligibleAssigneeOrThrow(Long assignedToUserId, WorkType workType) {
-        if (assignedToUserId == null) {
-            throw new BusinessValidationException("Assigned user is required");
+    private WorkOrder findWorkOrderOrThrow(Long id) {
+        return workOrderRepository.findDetailedById(id)
+                .orElseThrow(() -> new NotFoundException("Work order not found"));
+    }
+
+    private OperationalDecision findOperationalDecisionOrThrow(Long operationalDecisionId) {
+        if (operationalDecisionId == null) {
+            throw new BusinessValidationException("Operational decision is required");
         }
-        User user = userService.getById(assignedToUserId);
-        if (workType == WorkType.INTERNAL_MAINTENANCE && !user.getRole().isFieldEmployee()) {
-            throw new BusinessValidationException(
-                    "Internal maintenance work orders must be assigned to a field employee");
-        }
-        if (workType == WorkType.CONTRACTOR_WORK && !user.getRole().isContractor()) {
-            throw new BusinessValidationException(
-                    "Contractor work orders must be assigned to a contractor");
-        }
-        return user;
+        return operationalDecisionRepository.findDetailedById(operationalDecisionId)
+                .orElseThrow(() -> new BusinessValidationException("Operational decision not found"));
     }
 
     private LocalDateTime validateAssignedAt(LocalDateTime assignedAt, WorkOrder workOrder) {
@@ -163,19 +164,6 @@ public class WorkOrderService {
                     "Assignment date and time cannot be in the future");
         }
         return assignedAt;
-    }
-
-    private WorkOrder findWorkOrderOrThrow(Long id) {
-        return workOrderRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Work order not found"));
-    }
-
-    private OperationalDecision findOperationalDecisionOrThrow(Long operationalDecisionId) {
-        if (operationalDecisionId == null) {
-            throw new BusinessValidationException("Operational decision is required");
-        }
-        return operationalDecisionRepository.findById(operationalDecisionId)
-                .orElseThrow(() -> new BusinessValidationException("Operational decision not found"));
     }
 
     private WorkType requirePhysicalWorkOutcome(OperationalDecision decision) {

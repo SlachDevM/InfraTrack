@@ -86,11 +86,11 @@ class WorkOrderServiceNotificationTest {
         request.setAssignedAt(LocalDateTime.now().minusMinutes(5));
 
         WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
-        User coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
-        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        User coordinator = userInDepartment(40L, UserRole.OPERATIONAL_COORDINATOR, 1L);
+        User fieldEmployee = userInDepartment(20L, UserRole.FIELD_EMPLOYEE, 1L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.of(workOrder));
         when(userService.getById(20L)).thenReturn(fieldEmployee);
         when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(notificationService.create(anyLong(), anyString(), anyString(), anyString()))
@@ -191,5 +191,13 @@ class WorkOrderServiceNotificationTest {
         user.setId(id);
         user.setEnabled(true);
         return user;
+    }
+
+    private User userInDepartment(Long id, UserRole role, Long departmentId) {
+        User worker = user(id, role);
+        Department department = new Department("Department " + departmentId);
+        department.setId(departmentId);
+        worker.setDepartment(department);
+        return worker;
     }
 }
