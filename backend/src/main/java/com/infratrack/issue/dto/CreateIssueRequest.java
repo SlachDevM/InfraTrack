@@ -1,6 +1,7 @@
 package com.infratrack.issue.dto;
 
 import com.infratrack.issue.IssueSeverity;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -12,6 +13,7 @@ public class CreateIssueRequest {
 
     @NotNull
     @Positive
+    @Schema(description = "Completed inspection that identified the issue")
     private Long inspectionId;
 
     @NotBlank
@@ -19,6 +21,7 @@ public class CreateIssueRequest {
     private String description;
 
     @NotNull
+    @Schema(description = "Business severity of the issue")
     private IssueSeverity severity;
 
     @NotNull

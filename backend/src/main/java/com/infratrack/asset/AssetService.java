@@ -20,6 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Registers assets and manages asset lifecycle status (UC-001, UC-002).
+ */
 @Service
 public class AssetService {
 

@@ -20,6 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
+/**
+ * Records manager completion reviews of maintenance activities (UC-010).
+ */
 @Service
 public class CompletionReviewService {
 

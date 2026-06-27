@@ -1,6 +1,12 @@
 package com.infratrack.assethistory;
 
 import com.infratrack.config.PaginationSupport;
+import com.infratrack.config.openapi.StandardApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -15,6 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/assets")
 @CrossOrigin(origins = "http://localhost:3000")
+@Tag(name = "Asset History", description = "Permanent operational history for an asset (UC-011)")
+@StandardApiResponses
+@SecurityRequirement(name = "bearerAuth")
 public class AssetHistoryController {
 
     private final AssetHistoryService assetHistoryService;
@@ -24,10 +33,14 @@ public class AssetHistoryController {
     }
 
     @GetMapping("/{id}/history")
+    @Operation(
+            summary = "Get asset history",
+            description = "Returns paginated operational history events ordered by event date (UC-011).")
+    @ApiResponse(responseCode = "200", description = "Paginated history events")
     public ResponseEntity<Page<AssetHistoryResponse>> getAssetHistory(
             @PathVariable Long id,
-            @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer size) {
+            @Parameter(description = "Zero-based page index") @RequestParam(required = false) Integer page,
+            @Parameter(description = "Page size (max 100)") @RequestParam(required = false) Integer size) {
         Pageable pageable = PaginationSupport.pageable(
                 page,
                 size,

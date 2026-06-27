@@ -1,6 +1,7 @@
 package com.infratrack.workorder.dto;
 
 import com.infratrack.workorder.WorkOrderPriority;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -19,6 +20,7 @@ public class CreateWorkOrderRequest {
     private String description;
 
     @NotNull
+    @Schema(description = "Operational priority for the work order")
     private WorkOrderPriority priority;
 
     @NotNull

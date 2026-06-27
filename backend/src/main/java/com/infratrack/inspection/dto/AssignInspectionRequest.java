@@ -1,6 +1,7 @@
 package com.infratrack.inspection.dto;
 
 import com.infratrack.inspection.InspectionPriority;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
@@ -10,12 +11,14 @@ public class AssignInspectionRequest {
 
     @NotNull
     @Positive
+    @Schema(description = "Business trigger that initiated the inspection")
     private Long businessTriggerId;
 
     @NotNull
     @Positive
     private Long assignedToUserId;
 
+    @Schema(description = "Operational priority for the assigned inspection")
     private InspectionPriority priority;
 
     private LocalDate expectedCompletionDate;

@@ -8,6 +8,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 
+/**
+ * Writes permanent asset history entries when operational documents are uploaded.
+ */
 @Service
 public class OperationalDocumentHistoryRecorder {
 

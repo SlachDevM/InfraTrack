@@ -3,6 +3,7 @@ package com.infratrack.operationaldocument.dto;
 import com.infratrack.operationaldocument.OperationalDocument;
 import com.infratrack.operationaldocument.OperationalDocumentOwnerType;
 import com.infratrack.operationaldocument.OperationalDocumentType;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -14,10 +15,12 @@ public class OperationalDocumentResponse {
     private String assetName;
     private OperationalDocumentOwnerType ownerType;
     private Long ownerId;
+    @Schema(description = "Business document classification")
     private OperationalDocumentType documentType;
     private String originalFileName;
     private String contentType;
     private Long fileSize;
+    @Schema(description = "Business date associated with the document content")
     private LocalDate documentDate;
     private Long uploadedByUserId;
     private LocalDateTime uploadedAt;

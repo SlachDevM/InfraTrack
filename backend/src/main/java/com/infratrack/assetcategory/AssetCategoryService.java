@@ -11,6 +11,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * Asset category reference data used during asset registration.
+ */
 @Service
 public class AssetCategoryService {
 

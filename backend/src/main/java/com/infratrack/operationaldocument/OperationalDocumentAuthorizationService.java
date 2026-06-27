@@ -16,6 +16,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.Objects;
 
+/**
+ * Validates upload permissions and resolves operational document ownership context.
+ */
 @Service
 public class OperationalDocumentAuthorizationService {
 

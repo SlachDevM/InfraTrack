@@ -8,6 +8,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Resolves users by identity and role for authentication and operational lookups.
+ */
 @Service
 public class UserService {
 

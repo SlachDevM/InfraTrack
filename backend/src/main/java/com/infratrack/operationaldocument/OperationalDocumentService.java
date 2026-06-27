@@ -17,6 +17,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Uploads, lists and downloads operational documents linked to assets (UC-012).
+ */
 @Service
 public class OperationalDocumentService {
 

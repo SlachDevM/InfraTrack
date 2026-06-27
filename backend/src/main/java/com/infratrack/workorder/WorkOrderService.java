@@ -25,6 +25,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Creates, assigns and completes work orders (UC-008) following operational decision outcomes.
+ */
 @Service
 public class WorkOrderService {
 

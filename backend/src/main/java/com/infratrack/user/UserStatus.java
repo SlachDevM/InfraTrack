@@ -1,12 +1,11 @@
 package com.infratrack.user;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
  * Represents the activation/availability status of a user.
- *
- * PENDING_ACTIVATION: User has been invited but has not yet activated their account.
- * ACTIVE: User is fully activated and can log in.
- * DISABLED: User has been deactivated by an administrator and cannot log in.
  */
+@Schema(description = "User account lifecycle status")
 public enum UserStatus {
     PENDING_ACTIVATION,
     ACTIVE,

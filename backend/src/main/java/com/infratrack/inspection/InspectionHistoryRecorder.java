@@ -8,6 +8,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 
+/**
+ * Writes permanent asset history entries for inspection lifecycle events.
+ */
 @Service
 public class InspectionHistoryRecorder {
 

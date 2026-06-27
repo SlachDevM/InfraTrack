@@ -1,6 +1,7 @@
 package com.infratrack.operationaldecision.dto;
 
 import com.infratrack.operationaldecision.OperationalDecisionOutcome;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -15,6 +16,7 @@ public class CreateOperationalDecisionRequest {
     private Long issueId;
 
     @NotNull
+    @Schema(description = "Manager decision outcome for the issue")
     private OperationalDecisionOutcome outcome;
 
     @NotBlank

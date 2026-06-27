@@ -1,5 +1,6 @@
 package com.infratrack.delegatedauthority.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -22,9 +23,11 @@ public class CreateDelegatedAuthorityRequest {
     private Long targetDepartmentId;
 
     @NotNull
+    @Schema(description = "Start of the delegation period (inclusive)")
     private LocalDateTime validFrom;
 
     @NotNull
+    @Schema(description = "End of the delegation period (inclusive)")
     private LocalDateTime validUntil;
 
     @NotBlank

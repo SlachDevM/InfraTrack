@@ -1,24 +1,39 @@
 package com.infratrack.user;
 
-import com.infratrack.security.JwtAuthenticationToken;
 import com.infratrack.auth.ActivationService;
+import com.infratrack.config.openapi.StandardApiResponses;
+import com.infratrack.security.JwtAuthenticationToken;
 import com.infratrack.user.dto.CreateEmployeeRequest;
 import com.infratrack.user.dto.FcmTokenRequest;
 import com.infratrack.user.dto.UpdateUserRequest;
 import com.infratrack.user.dto.UserManagementResponse;
 import com.infratrack.user.dto.UserProfileResponse;
 import com.infratrack.user.dto.UserSummary;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
 @CrossOrigin(origins = "http://localhost:3000")
+@Tag(name = "Users", description = "User management, profile and role-based directory endpoints")
+@StandardApiResponses
+@SecurityRequirement(name = "bearerAuth")
 public class UserController {
 
     private final UserService userService;
@@ -34,10 +49,10 @@ public class UserController {
         this.userManagementService = userManagementService;
     }
 
-    /**
-     * Lists all users. Only administrators can access.
-     */
     @GetMapping
+    @Operation(summary = "List users", description = "Returns all users. Administrator only.")
+    @ApiResponse(responseCode = "200", description = "User list")
+    @ApiResponse(responseCode = "403", description = "Not an administrator")
     public ResponseEntity<List<UserManagementResponse>> listUsers(Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         if (!userService.isAdministrator(userId)) {
@@ -46,10 +61,10 @@ public class UserController {
         return ResponseEntity.ok(userManagementService.listAllUsers());
     }
 
-    /**
-     * Gets a single user by ID. Only administrators can access.
-     */
     @GetMapping("/{id}")
+    @Operation(summary = "Get user by ID", description = "Administrator only.")
+    @ApiResponse(responseCode = "200", description = "User details")
+    @ApiResponse(responseCode = "403", description = "Not an administrator")
     public ResponseEntity<UserManagementResponse> getUser(
             @PathVariable Long id,
             Authentication authentication) {
@@ -61,6 +76,10 @@ public class UserController {
     }
 
     @PostMapping("/invitations")
+    @Operation(
+            summary = "Invite employee",
+            description = "Creates a pending user and sends an activation link. Administrator only.")
+    @ApiResponse(responseCode = "201", description = "Invitation created")
     public ResponseEntity<UserProfileResponse> createEmployeeInvitation(
             @Valid @RequestBody CreateEmployeeRequest request,
             Authentication authentication) {
@@ -73,16 +92,14 @@ public class UserController {
                 request.getName(),
                 request.getEmail(),
                 request.getRole(),
-                request.getDepartmentId()
-        );
+                request.getDepartmentId());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(UserProfileResponse.from(invitedUser));
     }
 
-    /**
-     * Updates a user's name and/or email. Only administrators can update users.
-     */
     @PutMapping("/{id}")
+    @Operation(summary = "Update user", description = "Updates name and/or email. Administrator only.")
+    @ApiResponse(responseCode = "200", description = "Updated user")
     public ResponseEntity<UserManagementResponse> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UpdateUserRequest request,
@@ -92,10 +109,9 @@ public class UserController {
         return ResponseEntity.ok(updatedUser);
     }
 
-    /**
-     * Deactivates a user. Only administrators can deactivate users.
-     */
     @PostMapping("/{id}/deactivate")
+    @Operation(summary = "Deactivate user", description = "Administrator only.")
+    @ApiResponse(responseCode = "204", description = "User deactivated")
     public ResponseEntity<Void> deactivateUser(
             @PathVariable Long id,
             Authentication authentication) {
@@ -104,10 +120,9 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Reactivates a user. Only administrators can reactivate users.
-     */
     @PostMapping("/{id}/reactivate")
+    @Operation(summary = "Reactivate user", description = "Administrator only.")
+    @ApiResponse(responseCode = "204", description = "User reactivated")
     public ResponseEntity<Void> reactivateUser(
             @PathVariable Long id,
             Authentication authentication) {
@@ -116,10 +131,9 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Resends activation link to a pending user. Only administrators can resend activation links.
-     */
     @PostMapping("/{id}/resend-activation")
+    @Operation(summary = "Resend activation link", description = "Administrator only; pending users only.")
+    @ApiResponse(responseCode = "204", description = "Activation link resent")
     public ResponseEntity<Void> resendActivationLink(
             @PathVariable Long id,
             Authentication authentication) {
@@ -129,6 +143,8 @@ public class UserController {
     }
 
     @GetMapping("/me")
+    @Operation(summary = "Get current user profile")
+    @ApiResponse(responseCode = "200", description = "Authenticated user profile")
     public ResponseEntity<UserProfileResponse> getCurrentUser(Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         User user = userService.getById(userId);
@@ -136,6 +152,12 @@ public class UserController {
     }
 
     @GetMapping("/workers")
+    @Operation(
+            summary = "List workers",
+            description = "Returns field employees and contractors for assignment. "
+                    + "Administrator, Manager or Operational Coordinator only.")
+    @ApiResponse(responseCode = "200", description = "Worker summaries")
+    @ApiResponse(responseCode = "403", description = "Insufficient role")
     public ResponseEntity<List<UserSummary>> getWorkers(Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         if (!userService.isAdministrator(userId)
@@ -147,6 +169,9 @@ public class UserController {
     }
 
     @GetMapping("/managers")
+    @Operation(summary = "List managers", description = "Manager role only.")
+    @ApiResponse(responseCode = "200", description = "Manager summaries")
+    @ApiResponse(responseCode = "403", description = "Not a manager")
     public ResponseEntity<List<UserSummary>> getManagers(Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         if (!userService.isManager(userId)) {
@@ -156,6 +181,9 @@ public class UserController {
     }
 
     @PutMapping("/me/fcm-token")
+    @Operation(summary = "Update FCM token", description = "Stores the device token for push notifications.")
+    @ApiResponse(responseCode = "204", description = "Token updated")
+    @ApiResponse(responseCode = "400", description = "Token missing or blank")
     public ResponseEntity<Void> updateFcmToken(
             @Valid @RequestBody FcmTokenRequest request,
             Authentication authentication) {

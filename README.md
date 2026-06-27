@@ -106,10 +106,35 @@ docker compose up --build
 After starting:
 
 - Frontend: `http://localhost:3000`
-- Swagger API: `http://localhost:4000/swagger-ui/index.html`
+- Swagger UI: `http://localhost:4000/swagger-ui/index.html`
+- OpenAPI JSON: `http://localhost:4000/v3/api-docs`
 - Health: `http://localhost:4000/actuator/health`
 - Build info: `http://localhost:4000/actuator/info`
 - Mailpit (dev email): `http://localhost:8025`
+
+---
+
+## API Developer Guide
+
+InfraTrack exposes a single REST API consumed by the React web app, future Android clients, and third-party integrations.
+
+**Interactive documentation:** Use Swagger UI at `http://localhost:4000/swagger-ui/index.html`. Every public endpoint is annotated with operation summaries, request/response schemas, and common error codes (400, 401, 403, 404, 409). Authenticated endpoints show the **Authorize** button — paste the JWT from login as `Bearer <token>`.
+
+**Authentication:** `POST /api/auth/login` returns a JWT. Send it on subsequent requests:
+
+```
+Authorization: Bearer <token>
+```
+
+See [Authentication Flow](#authentication-flow) below for activation and lifecycle details.
+
+**Pagination:** Paginated endpoints accept optional `page` (zero-based, default `0`) and `size` (default `20`, maximum `100`) query parameters. Responses use Spring Data `Page` JSON (`content`, `totalElements`, `totalPages`, etc.). Non-paginated list endpoints return a plain JSON array.
+
+**Versioning:** V1 REST paths are stable under `/api/...`. The API description version in OpenAPI is `1.0.1` (release label). Breaking changes require a new major version; additive DTO fields may be introduced without a path change.
+
+**Errors:** Business and validation failures return plain-text bodies with appropriate HTTP status codes. Swagger documents the common responses on each controller via `@StandardApiResponses`.
+
+**Actuator:** Only `health` and `info` are exposed in production. See [Operations & Monitoring](#operations--monitoring).
 
 ---
 

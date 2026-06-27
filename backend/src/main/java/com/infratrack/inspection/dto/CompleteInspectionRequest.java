@@ -1,6 +1,7 @@
 package com.infratrack.inspection.dto;
 
 import com.infratrack.inspection.PhysicalCondition;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -10,12 +11,14 @@ import java.time.LocalDateTime;
 public class CompleteInspectionRequest {
 
     @NotNull
+    @Schema(description = "Observed physical condition at completion")
     private PhysicalCondition observedCondition;
 
     @NotBlank
     @Size(max = 4000)
     private String observations;
 
+    @Schema(description = "Whether a new issue was identified during inspection")
     private Boolean issueIdentified;
 
     @NotNull

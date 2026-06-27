@@ -5,6 +5,9 @@ import com.infratrack.user.User;
 import com.infratrack.user.UserService;
 import org.springframework.stereotype.Service;
 
+/**
+ * Enforces role and assignment rules for work order operations.
+ */
 @Service
 public class WorkOrderAuthorizationService {
 

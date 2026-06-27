@@ -24,6 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Assigns and completes inspections (UC-003, UC-004) and records asset history events.
+ */
 @Service
 public class InspectionService {
 

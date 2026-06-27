@@ -21,6 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Records issues identified from completed inspections (UC-005).
+ */
 @Service
 public class IssueService {
 

@@ -13,6 +13,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * Council department reference data for user and operational context.
+ */
 @Service
 public class DepartmentService {
 

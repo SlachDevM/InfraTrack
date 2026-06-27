@@ -9,6 +9,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+/**
+ * Actuator health contributor verifying the operational document storage directory exists and is writable.
+ */
 @Component
 public class OperationalDocumentStorageHealthIndicator implements HealthIndicator {
 

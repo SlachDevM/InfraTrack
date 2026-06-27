@@ -1,5 +1,8 @@
 package com.infratrack.asset;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Permanent asset history event type (UC-011)")
 public enum AssetHistoryEventType {
     ASSET_REGISTERED,
     BUSINESS_TRIGGER_CREATED,

@@ -13,6 +13,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Manages in-app notification persistence and read state for users (UC-013).
+ */
 @Service
 public class NotificationService {
 

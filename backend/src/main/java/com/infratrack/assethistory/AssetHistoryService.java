@@ -16,6 +16,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Returns paginated permanent operational history for an asset (UC-011).
+ */
 @Service
 public class AssetHistoryService {
 

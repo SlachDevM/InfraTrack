@@ -26,6 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Records maintenance performed against assigned work orders (UC-009).
+ */
 @Service
 public class MaintenanceActivityService {
 

@@ -10,6 +10,9 @@ import org.springframework.stereotype.Component;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Actuator info contributor exposing application name, build version and git commit.
+ */
 @Component
 public class InfraTrackInfoContributor implements InfoContributor {
 

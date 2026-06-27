@@ -18,6 +18,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Creates and revokes temporary manager authority delegations (UC-008).
+ */
 @Service
 public class DelegatedAuthorityService {
 

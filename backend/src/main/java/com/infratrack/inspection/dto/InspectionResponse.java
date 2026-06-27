@@ -6,6 +6,7 @@ import com.infratrack.inspection.InspectionPriority;
 import com.infratrack.inspection.InspectionStatus;
 import com.infratrack.inspection.PhysicalCondition;
 import com.infratrack.user.User;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -22,10 +23,12 @@ public class InspectionResponse {
     private String assignedToUserName;
     private Long assignedByUserId;
     private InspectionStatus status;
+    @Schema(description = "Operational priority")
     private InspectionPriority priority;
     private LocalDate expectedCompletionDate;
     private PhysicalCondition observedCondition;
     private String observations;
+    @Schema(description = "Whether an issue was identified during completion")
     private boolean issueIdentified;
     private LocalDateTime completedAt;
     private Long completedByUserId;

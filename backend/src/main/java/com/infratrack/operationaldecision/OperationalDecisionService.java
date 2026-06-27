@@ -24,6 +24,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Records manager operational decisions on issues (UC-007).
+ */
 @Service
 public class OperationalDecisionService {
 

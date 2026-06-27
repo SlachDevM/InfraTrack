@@ -14,6 +14,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+/**
+ * Administrator user lifecycle operations: invitation, update, activation and deactivation.
+ */
 @Service
 @Slf4j
 public class UserManagementService {

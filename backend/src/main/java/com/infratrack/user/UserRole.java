@@ -1,5 +1,8 @@
 package com.infratrack.user;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Business role determining operational and administrative permissions")
 public enum UserRole {
     ADMINISTRATOR,
     MANAGER,

@@ -17,6 +17,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.security.SecureRandom;
 import java.util.Base64;
 
+/**
+ * Creates pending user accounts and processes account activation.
+ */
 @Service
 @Slf4j
 public class ActivationService {

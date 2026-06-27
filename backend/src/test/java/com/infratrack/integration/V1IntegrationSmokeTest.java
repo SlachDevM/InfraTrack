@@ -252,7 +252,10 @@ class V1IntegrationSmokeTest {
                 "file",
                 "evidence.jpg",
                 "image/jpeg",
-                new byte[] {0x01, 0x02, 0x03});
+                new byte[] {
+                        (byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0,
+                        0x00, 0x10, 0x4A, 0x46, 0x49, 0x46
+                });
         MockMultipartFile documentType = new MockMultipartFile(
                 "documentType",
                 "",

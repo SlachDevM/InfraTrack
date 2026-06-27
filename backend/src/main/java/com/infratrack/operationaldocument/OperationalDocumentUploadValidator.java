@@ -11,6 +11,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Validates operational document uploads using extension, declared content type and Tika content inspection.
+ */
 @Component
 public class OperationalDocumentUploadValidator {
 

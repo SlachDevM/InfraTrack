@@ -18,6 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * Records operational business triggers against assets (UC-006).
+ */
 @Service
 public class BusinessTriggerService {
 
