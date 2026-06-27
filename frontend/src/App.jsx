@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import Login from './pages/Login';
+import ActivationPage from './pages/ActivationPage';
 import PlatformShell from './pages/PlatformShell';
 import NotificationPage from './pages/NotificationPage';
 import UserManagementPage from './pages/UserManagementPage';
@@ -33,6 +34,7 @@ function App() {
         <NotificationProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/activate" element={<ActivationPage />} />
             <Route
               path="/"
               element={

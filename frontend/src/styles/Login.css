@@ -62,6 +62,39 @@
   border: 1px solid #f5c6cb;
 }
 
+.success-message {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  border: 1px solid #c3e6cb;
+}
+
+.activation-subtitle {
+  color: #666;
+  font-size: 0.95rem;
+  margin-top: 0.5rem;
+}
+
+.activation-footer {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.activation-footer a,
+.activation-login-link {
+  color: #2d6b4d;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.activation-login-link {
+  display: block;
+  text-align: center;
+  margin-top: 1rem;
+}
+
 .form-group {
   margin-bottom: 1.5rem;
 }
