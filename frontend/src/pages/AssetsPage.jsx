@@ -24,6 +24,46 @@ import {
 import '../styles/ReferenceDataPage.css';
 import '../styles/AssetsPage.css';
 
+function extractApiErrorMessage(rawMessage) {
+  if (!rawMessage) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(rawMessage);
+    return parsed.message || parsed.detail || parsed.error || null;
+  } catch {
+    const trimmed = rawMessage.trim();
+    if (trimmed && trimmed.length <= 300) {
+      return trimmed;
+    }
+    return null;
+  }
+}
+
+function appendRequestPart(formData, name, value) {
+  formData.append(
+    name,
+    new Blob([JSON.stringify(value)], { type: 'application/json' }),
+  );
+}
+
+function isUploadAuthorizationError(status, message) {
+  if (status !== 403) {
+    return false;
+  }
+
+  if (!message) {
+    return false;
+  }
+
+  if (/media type|octet-stream|multipart|unsupported/i.test(message)) {
+    return false;
+  }
+
+  return /unauthorized|forbidden|cannot upload|permission|administrator/i.test(message);
+}
+
 function todayIsoDate() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -192,19 +232,19 @@ export default function AssetsPage() {
       setDocumentUploading(true);
       setError(null);
       setSuccess(null);
-      const formData = new FormData();
-      formData.append('file', documentForm.file);
-      formData.append('documentType', documentForm.documentType);
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', documentForm.file);
+      appendRequestPart(uploadFormData, 'documentType', documentForm.documentType);
       if (documentForm.ownerType) {
-        formData.append('ownerType', documentForm.ownerType);
+        appendRequestPart(uploadFormData, 'ownerType', documentForm.ownerType);
       }
       if (documentForm.ownerId) {
-        formData.append('ownerId', documentForm.ownerId);
+        appendRequestPart(uploadFormData, 'ownerId', Number(documentForm.ownerId));
       }
       if (documentForm.documentDate) {
-        formData.append('documentDate', documentForm.documentDate);
+        appendRequestPart(uploadFormData, 'documentDate', documentForm.documentDate);
       }
-      await operationalDocumentApi.upload(Number(selectedAssetId), formData);
+      await operationalDocumentApi.upload(Number(selectedAssetId), uploadFormData);
       setSuccess('Operational document uploaded successfully.');
       setDocumentForm({
         documentType: '',
@@ -218,12 +258,13 @@ export default function AssetsPage() {
       const history = await assetApi.getHistory(Number(selectedAssetId));
       setAssetHistory(history);
     } catch (err) {
-      if (err.status === 403) {
+      const apiMessage = extractApiErrorMessage(err.message);
+      if (isUploadAuthorizationError(err.status, apiMessage)) {
         setError('You do not have permission to upload documents for this context.');
       } else if (err.status === 404) {
         setError('Asset or operational owner not found.');
       } else {
-        setError(`Failed to upload document: ${err.message}`);
+        setError(apiMessage || 'Document upload failed.');
       }
     } finally {
       setDocumentUploading(false);

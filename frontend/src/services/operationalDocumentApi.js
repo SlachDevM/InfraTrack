@@ -9,7 +9,12 @@ const ENDPOINTS = {
 
 export const operationalDocumentApi = {
   list: (assetId) => apiClient.get(ENDPOINTS.LIST(assetId)),
-  upload: (assetId, formData) => apiClient.postMultipart(ENDPOINTS.UPLOAD(assetId), formData),
+  upload: (assetId, formData) => {
+    if (!(formData instanceof FormData)) {
+      return Promise.reject(new TypeError('upload requires FormData'));
+    }
+    return apiClient.postMultipart(ENDPOINTS.UPLOAD(assetId), formData);
+  },
   download: async (id, token) => {
     const response = await fetch(`${API_CONFIG.BASE_URL}${ENDPOINTS.DOWNLOAD(id)}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},

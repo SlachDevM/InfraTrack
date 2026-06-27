@@ -1,5 +1,9 @@
 import API_CONFIG from '../config/apiConfig';
 
+function isFormDataBody(body) {
+  return typeof FormData !== 'undefined' && body instanceof FormData;
+}
+
 class ApiClient {
   constructor(baseURL, token = null) {
     this.baseURL = baseURL;
@@ -20,54 +24,64 @@ class ApiClient {
     return headers;
   }
 
+  buildAuthHeaders() {
+    return this.token ? { Authorization: `Bearer ${this.token}` } : {};
+  }
+
+  async parseResponse(response) {
+    if (!response.ok) {
+      const text = await response.text();
+      const error = new Error(text || `API request failed: ${response.status}`);
+      error.status = response.status;
+      error.statusText = response.statusText;
+
+      if (response.status === 401) {
+        error.type = 'UNAUTHORIZED';
+      } else if (response.status === 403) {
+        error.type = 'FORBIDDEN';
+      } else if (response.status === 404) {
+        error.type = 'NOT_FOUND';
+      } else if (response.status === 409) {
+        error.type = 'CONFLICT';
+      } else if (response.status >= 500) {
+        error.type = 'SERVER_ERROR';
+      }
+
+      throw error;
+    }
+
+    if (response.status === 204) {
+      return null;
+    }
+
+    const text = await response.text();
+    if (!text) {
+      return null;
+    }
+
+    return JSON.parse(text);
+  }
+
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
-    const isFormData = options.body instanceof FormData;
-    const defaultHeaders = isFormData
-      ? (this.token ? { Authorization: `Bearer ${this.token}` } : {})
-      : this.getHeaders();
+    const isFormData = isFormDataBody(options.body);
+    const headers = isFormData
+      ? { ...this.buildAuthHeaders(), ...options.headers }
+      : { ...this.getHeaders(), ...options.headers };
+
+    if (isFormData) {
+      delete headers['Content-Type'];
+      delete headers['content-type'];
+    }
+
     const config = {
       ...options,
-      headers: {
-        ...defaultHeaders,
-        ...options.headers,
-      },
+      headers,
     };
 
     try {
       const response = await fetch(url, config);
-
-      if (!response.ok) {
-        const text = await response.text();
-        const error = new Error(text || `API request failed: ${response.status}`);
-        error.status = response.status;
-        error.statusText = response.statusText;
-
-        if (response.status === 401) {
-          error.type = 'UNAUTHORIZED';
-        } else if (response.status === 403) {
-          error.type = 'FORBIDDEN';
-        } else if (response.status === 404) {
-          error.type = 'NOT_FOUND';
-        } else if (response.status === 409) {
-          error.type = 'CONFLICT';
-        } else if (response.status >= 500) {
-          error.type = 'SERVER_ERROR';
-        }
-
-        throw error;
-      }
-
-      if (response.status === 204) {
-        return null;
-      }
-
-      const text = await response.text();
-      if (!text) {
-        return null;
-      }
-
-      return JSON.parse(text);
+      return await this.parseResponse(response);
     } catch (err) {
       if (err instanceof TypeError) {
         err.type = 'NETWORK_ERROR';
@@ -88,6 +102,10 @@ class ApiClient {
   }
 
   postMultipart(endpoint, formData) {
+    if (!isFormDataBody(formData)) {
+      throw new TypeError('postMultipart requires FormData');
+    }
+
     return this.request(endpoint, {
       method: 'POST',
       body: formData,
