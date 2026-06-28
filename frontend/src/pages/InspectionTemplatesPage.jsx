@@ -203,6 +203,27 @@ export default function InspectionTemplatesPage() {
     }
   };
 
+  const handlePublish = async (id) => {
+    if (!window.confirm('Publish this inspection template? Published templates cannot be edited.')) return;
+
+    try {
+      setError(null);
+      setSuccess(null);
+      await inspectionTemplateApi.publish(id);
+      setSuccess('Inspection template published successfully.');
+      if (editingId === id) {
+        resetForm();
+      }
+      await loadTemplates(templatesPage);
+    } catch (err) {
+      if (isForbidden(err)) {
+        setError('You do not have permission to publish inspection templates.');
+      } else {
+        setError(getApiErrorMessage(err, 'Failed to publish inspection template.'));
+      }
+    }
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -382,14 +403,26 @@ export default function InspectionTemplatesPage() {
                       {canManage && template.status !== 'ARCHIVED' && (
                         <>
                           {' '}
-                          <button
-                            type="button"
-                            className="btn-link"
-                            onClick={() => handleEdit(template)}
-                          >
-                            Edit
-                          </button>
-                          {' '}
+                          {template.status === 'DRAFT' && (
+                            <>
+                              <button
+                                type="button"
+                                className="btn-link"
+                                onClick={() => handleEdit(template)}
+                              >
+                                Edit
+                              </button>
+                              {' '}
+                              <button
+                                type="button"
+                                className="btn-link"
+                                onClick={() => handlePublish(template.id)}
+                              >
+                                Publish
+                              </button>
+                              {' '}
+                            </>
+                          )}
                           <button
                             type="button"
                             className="btn-link"

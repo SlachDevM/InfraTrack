@@ -3,6 +3,7 @@ package com.infratrack.inspectiontemplate;
 import com.infratrack.assetcategory.AssetCategory;
 import com.infratrack.assetcategory.AssetCategoryRepository;
 import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ConflictException;
 import com.infratrack.exception.NotFoundException;
 import com.infratrack.inspectiontemplate.dto.CreateInspectionTemplateRequest;
 import com.infratrack.inspectiontemplate.dto.InspectionTemplateResponse;
@@ -22,12 +23,15 @@ public class InspectionTemplateService {
 
     private final InspectionTemplateRepository inspectionTemplateRepository;
     private final AssetCategoryRepository assetCategoryRepository;
+    private final InspectionTemplateQuestionRepository questionRepository;
 
     public InspectionTemplateService(
             InspectionTemplateRepository inspectionTemplateRepository,
-            AssetCategoryRepository assetCategoryRepository) {
+            AssetCategoryRepository assetCategoryRepository,
+            InspectionTemplateQuestionRepository questionRepository) {
         this.inspectionTemplateRepository = inspectionTemplateRepository;
         this.assetCategoryRepository = assetCategoryRepository;
+        this.questionRepository = questionRepository;
     }
 
     @Transactional(readOnly = true)
@@ -63,10 +67,26 @@ public class InspectionTemplateService {
     @Transactional
     public InspectionTemplateResponse update(Long id, UpdateInspectionTemplateRequest request) {
         InspectionTemplate template = findTemplateOrThrow(id);
-        requireNotArchived(template);
+        requireDraft(template);
 
         template.setName(normalizeName(request.getName()));
         template.setDescription(normalizeOptionalDescription(request.getDescription()));
+        template.touchUpdatedAt();
+        return InspectionTemplateResponse.from(inspectionTemplateRepository.save(template));
+    }
+
+    @Transactional
+    public InspectionTemplateResponse publish(Long id) {
+        InspectionTemplate template = findTemplateOrThrow(id);
+        requireDraft(template);
+
+        int activeQuestions = questionRepository.countByInspectionTemplateIdAndActiveTrue(id);
+        if (activeQuestions == 0) {
+            throw new BusinessValidationException(
+                    "Inspection template must have at least one active question before publishing");
+        }
+
+        template.setStatus(InspectionTemplateStatus.PUBLISHED);
         template.touchUpdatedAt();
         return InspectionTemplateResponse.from(inspectionTemplateRepository.save(template));
     }
@@ -92,9 +112,9 @@ public class InspectionTemplateService {
                 .orElseThrow(() -> new NotFoundException("Asset category not found"));
     }
 
-    private void requireNotArchived(InspectionTemplate template) {
-        if (template.getStatus() == InspectionTemplateStatus.ARCHIVED) {
-            throw new BusinessValidationException("Archived inspection templates cannot be modified");
+    private void requireDraft(InspectionTemplate template) {
+        if (template.getStatus() != InspectionTemplateStatus.DRAFT) {
+            throw new ConflictException("Only draft inspection templates can be modified");
         }
     }
 
