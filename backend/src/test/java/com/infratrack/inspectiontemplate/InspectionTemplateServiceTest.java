@@ -3,6 +3,7 @@ package com.infratrack.inspectiontemplate;
 import com.infratrack.assetcategory.AssetCategory;
 import com.infratrack.assetcategory.AssetCategoryRepository;
 import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ConflictException;
 import com.infratrack.exception.NotFoundException;
 import com.infratrack.inspectiontemplate.dto.CreateInspectionTemplateRequest;
 import com.infratrack.inspectiontemplate.dto.InspectionTemplateResponse;
@@ -35,6 +36,9 @@ class InspectionTemplateServiceTest {
 
     @Mock
     private AssetCategoryRepository assetCategoryRepository;
+
+    @Mock
+    private InspectionTemplateQuestionRepository questionRepository;
 
     @InjectMocks
     private InspectionTemplateService inspectionTemplateService;
@@ -114,8 +118,69 @@ class InspectionTemplateServiceTest {
                 .thenReturn(Optional.of(template(100L, InspectionTemplateStatus.ARCHIVED)));
 
         assertThatThrownBy(() -> inspectionTemplateService.update(100L, request))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Only draft inspection templates can be modified");
+    }
+
+    @Test
+    void update_shouldRejectPublishedTemplate() {
+        UpdateInspectionTemplateRequest request = new UpdateInspectionTemplateRequest();
+        request.setName("Updated Pump Template");
+
+        when(inspectionTemplateRepository.findDetailedById(100L))
+                .thenReturn(Optional.of(template(100L, InspectionTemplateStatus.PUBLISHED)));
+
+        assertThatThrownBy(() -> inspectionTemplateService.update(100L, request))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Only draft inspection templates can be modified");
+    }
+
+    @Test
+    void publish_shouldTransitionDraftToPublished() {
+        InspectionTemplate template = template(100L, InspectionTemplateStatus.DRAFT);
+        when(inspectionTemplateRepository.findDetailedById(100L)).thenReturn(Optional.of(template));
+        when(questionRepository.countByInspectionTemplateIdAndActiveTrue(100L)).thenReturn(3);
+        when(inspectionTemplateRepository.save(any(InspectionTemplate.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        InspectionTemplateResponse response = inspectionTemplateService.publish(100L);
+
+        assertThat(response.getStatus()).isEqualTo(InspectionTemplateStatus.PUBLISHED);
+        ArgumentCaptor<InspectionTemplate> captor = ArgumentCaptor.forClass(InspectionTemplate.class);
+        verify(inspectionTemplateRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(InspectionTemplateStatus.PUBLISHED);
+    }
+
+    @Test
+    void publish_shouldRejectTemplateWithNoActiveQuestions() {
+        InspectionTemplate template = template(100L, InspectionTemplateStatus.DRAFT);
+        when(inspectionTemplateRepository.findDetailedById(100L)).thenReturn(Optional.of(template));
+        when(questionRepository.countByInspectionTemplateIdAndActiveTrue(100L)).thenReturn(0);
+
+        assertThatThrownBy(() -> inspectionTemplateService.publish(100L))
                 .isInstanceOf(BusinessValidationException.class)
-                .hasMessage("Archived inspection templates cannot be modified");
+                .hasMessage("Inspection template must have at least one active question before publishing");
+
+        verify(inspectionTemplateRepository, never()).save(any());
+    }
+
+    @Test
+    void publish_shouldRejectAlreadyPublishedTemplate() {
+        when(inspectionTemplateRepository.findDetailedById(100L))
+                .thenReturn(Optional.of(template(100L, InspectionTemplateStatus.PUBLISHED)));
+
+        assertThatThrownBy(() -> inspectionTemplateService.publish(100L))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Only draft inspection templates can be modified");
+    }
+
+    @Test
+    void publish_shouldRejectArchivedTemplate() {
+        when(inspectionTemplateRepository.findDetailedById(100L))
+                .thenReturn(Optional.of(template(100L, InspectionTemplateStatus.ARCHIVED)));
+
+        assertThatThrownBy(() -> inspectionTemplateService.publish(100L))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Only draft inspection templates can be modified");
     }
 
     @Test

@@ -107,4 +107,16 @@ public class InspectionTemplateController {
         authorizationService.requireAdministrator(userId);
         return ResponseEntity.ok(inspectionTemplateService.archive(id));
     }
+
+    @PostMapping("/{id}/publish")
+    @Operation(summary = "Publish inspection template",
+            description = "Administrator only. Transitions status from DRAFT to PUBLISHED. Template must have at least one active question.")
+    @ApiResponse(responseCode = "200", description = "Inspection template published")
+    public ResponseEntity<InspectionTemplateResponse> publishInspectionTemplate(
+            @PathVariable Long id,
+            Authentication authentication) {
+        Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+        authorizationService.requireAdministrator(userId);
+        return ResponseEntity.ok(inspectionTemplateService.publish(id));
+    }
 }
