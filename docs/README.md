@@ -85,3 +85,21 @@ Live OpenAPI documentation is served by the backend (Swagger UI). See [04-api/RE
 ### 05 — Deployment
 
 Deployment, secrets, security hardening, backup/restore, and troubleshooting. See [05-deployment/README.md](05-deployment/README.md), [secrets.md](05-deployment/secrets.md), [security.md](05-deployment/security.md), [backup-restore.md](05-deployment/backup-restore.md), [production-checklist.md](05-deployment/production-checklist.md), and [troubleshooting.md](05-deployment/troubleshooting.md).
+
+### Continuous Integration
+
+GitHub Actions (`.github/workflows/ci.yml`) runs backend tests, frontend tests, Docker validation, and OWASP dependency scanning on every push to `main`.
+
+**Backend code coverage (JaCoCo):**
+
+| Output | Location |
+|--------|----------|
+| Local HTML report | `backend/target/site/jacoco/index.html` |
+| Local XML report | `backend/target/site/jacoco/jacoco.xml` |
+| CI HTML artifact | Actions → workflow run → **jacoco-html-report** |
+| CI XML artifact | Actions → workflow run → **jacoco-xml-report** |
+| CI summary | Job summary tab on the backend job |
+
+Generate locally with `cd backend && mvn clean test`. Coverage is informational only in Sprint 0; an 80% instruction coverage gate may be enabled later.
+
+See also the [project README Testing section](../README.md#testing).

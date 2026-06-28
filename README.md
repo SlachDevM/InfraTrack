@@ -353,7 +353,25 @@ docker compose -f docker-compose.prod.yml up -d
 ```bash
 cd backend
 mvn clean test
+mvn clean package -DskipTests
 ```
+
+**Backend code coverage** (JaCoCo, informational — no build failure on thresholds):
+
+After `mvn clean test`, reports are generated at:
+
+- HTML: `backend/target/site/jacoco/index.html`
+- XML: `backend/target/site/jacoco/jacoco.xml`
+
+Open the HTML report in a browser to inspect package and class coverage locally.
+
+On every push to `main`, GitHub Actions publishes:
+
+- **jacoco-html-report** — downloadable HTML report (Actions → workflow run → Artifacts)
+- **jacoco-xml-report** — machine-readable XML for tooling
+- **Job summary** — instruction, branch, and line coverage percentages
+
+Coverage is measured but not enforced in Sprint 0. A future quality gate of **80% minimum instruction coverage** is planned but not enabled.
 
 **Frontend** (Vitest, React Testing Library):
 
