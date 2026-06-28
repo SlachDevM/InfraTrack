@@ -13,6 +13,7 @@ import RegisterAssetForm from '../components/assets/RegisterAssetForm';
 import AssetList from '../components/assets/AssetList';
 import AssetHistoryPanel from '../components/assets/AssetHistoryPanel';
 import OperationalDocumentsPanel from '../components/assets/OperationalDocumentsPanel';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { canRegisterAssets, canUploadOperationalDocuments } from '../constants/userRoles';
 import { ASSET_STATUSES } from '../constants/assetStatuses';
 import {
@@ -29,6 +30,7 @@ import {
 } from '../utils/pagination';
 import '../styles/ReferenceDataPage.css';
 import '../styles/AssetsPage.css';
+import '../styles/UserManagementPage.css';
 
 function appendRequestPart(formData, name, value) {
   formData.append(
@@ -66,15 +68,18 @@ export default function AssetsPage() {
   const [documentsTotalPages, setDocumentsTotalPages] = useState(0);
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [documentUploading, setDocumentUploading] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState(null);
+  const [documentDeleting, setDocumentDeleting] = useState(false);
   const [documentForm, setDocumentForm] = useState({
     documentType: '',
     ownerType: '',
-    ownerId: '',
     documentDate: '',
     file: null,
   });
+  const [selectedOwnerId, setSelectedOwnerId] = useState('');
   const [eligibleOwners, setEligibleOwners] = useState([]);
   const [eligibleOwnersLoading, setEligibleOwnersLoading] = useState(false);
+  const [eligibleOwnersError, setEligibleOwnersError] = useState(null);
   const [selectableAssets, setSelectableAssets] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
@@ -234,16 +239,34 @@ export default function AssetsPage() {
   useEffect(() => {
     if (!selectedAssetId || !documentForm.ownerType || !canUploadDocuments) {
       setEligibleOwners([]);
-      return;
+      setEligibleOwnersError(null);
+      return undefined;
     }
+
+    let cancelled = false;
     setEligibleOwnersLoading(true);
+    setEligibleOwnersError(null);
     operationalDocumentApi.listEligibleOwners(Number(selectedAssetId), documentForm.ownerType)
-      .then(setEligibleOwners)
-      .catch((err) => {
-        setEligibleOwners([]);
-        setError(getApiErrorMessage(err, 'Failed to load eligible owners.'));
+      .then((owners) => {
+        if (!cancelled) {
+          setEligibleOwners(owners);
+        }
       })
-      .finally(() => setEligibleOwnersLoading(false));
+      .catch((err) => {
+        if (!cancelled) {
+          setEligibleOwners([]);
+          setEligibleOwnersError(getApiErrorMessage(err, 'Failed to load eligible owners.'));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setEligibleOwnersLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedAssetId, documentForm.ownerType, canUploadDocuments]);
 
   const handleAssetHistoryChange = async (e) => {
@@ -258,11 +281,12 @@ export default function AssetsPage() {
     setDocumentForm({
       documentType: '',
       ownerType: '',
-      ownerId: '',
       documentDate: '',
       file: null,
     });
+    setSelectedOwnerId('');
     setEligibleOwners([]);
+    setEligibleOwnersError(null);
 
     if (!assetId) {
       return;
@@ -276,8 +300,16 @@ export default function AssetsPage() {
     setDocumentForm((prev) => ({
       ...prev,
       [name]: value,
-      ...(name === 'ownerType' ? { ownerId: '' } : {}),
     }));
+    if (name === 'ownerType') {
+      setSelectedOwnerId('');
+      setEligibleOwners([]);
+      setEligibleOwnersError(null);
+    }
+  };
+
+  const handleOwnerSelect = (e) => {
+    setSelectedOwnerId(e.target.value);
   };
 
   const handleDocumentFileChange = (e) => {
@@ -290,6 +322,9 @@ export default function AssetsPage() {
     if (!canUploadDocuments || !selectedAssetId || !documentForm.file || !documentForm.documentType) {
       return;
     }
+    if (documentForm.ownerType && !selectedOwnerId) {
+      return;
+    }
 
     try {
       setDocumentUploading(true);
@@ -300,9 +335,7 @@ export default function AssetsPage() {
       appendRequestPart(uploadFormData, 'documentType', documentForm.documentType);
       if (documentForm.ownerType) {
         appendRequestPart(uploadFormData, 'ownerType', documentForm.ownerType);
-      }
-      if (documentForm.ownerId) {
-        appendRequestPart(uploadFormData, 'ownerId', Number(documentForm.ownerId));
+        appendRequestPart(uploadFormData, 'ownerId', Number(selectedOwnerId));
       }
       if (documentForm.documentDate) {
         appendRequestPart(uploadFormData, 'documentDate', documentForm.documentDate);
@@ -312,10 +345,12 @@ export default function AssetsPage() {
       setDocumentForm({
         documentType: '',
         ownerType: '',
-        ownerId: '',
         documentDate: '',
         file: null,
       });
+      setSelectedOwnerId('');
+      setEligibleOwners([]);
+      setEligibleOwnersError(null);
       const documentsPageResponse = await operationalDocumentApi.list(
         Number(selectedAssetId),
         documentsPage,
@@ -352,6 +387,60 @@ export default function AssetsPage() {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to download document.'));
+    }
+  };
+
+  const handleDocumentDeleteClick = (document) => {
+    setDocumentToDelete(document);
+  };
+
+  const handleDocumentDeleteCancel = () => {
+    if (!documentDeleting) {
+      setDocumentToDelete(null);
+    }
+  };
+
+  const handleDocumentDeleteConfirm = async () => {
+    if (!documentToDelete || !selectedAssetId) {
+      return;
+    }
+
+    try {
+      setDocumentDeleting(true);
+      setError(null);
+      setSuccess(null);
+      await operationalDocumentApi.delete(documentToDelete.id);
+
+      let pageToLoad = documentsPage;
+      if (assetDocuments.length === 1 && documentsPage > 0) {
+        pageToLoad = documentsPage - 1;
+      }
+
+      const documentsPageResponse = await operationalDocumentApi.list(
+        Number(selectedAssetId),
+        pageToLoad,
+      );
+      setAssetDocuments(unwrapPageContent(documentsPageResponse));
+      setDocumentsPage(getPageNumber(documentsPageResponse, pageToLoad));
+      setDocumentsTotalPages(getTotalPages(documentsPageResponse));
+
+      const historyPageResponse = await assetApi.getHistory(Number(selectedAssetId), historyPage);
+      setAssetHistory(unwrapPageContent(historyPageResponse));
+      setHistoryPage(getPageNumber(historyPageResponse, historyPage));
+      setHistoryTotalPages(getTotalPages(historyPageResponse));
+
+      setSuccess(`Operational document "${documentToDelete.originalFileName}" deleted.`);
+      setDocumentToDelete(null);
+    } catch (err) {
+      if (isForbidden(err)) {
+        setError('You do not have permission to delete this document.');
+      } else if (err.status === 404) {
+        setError('Document not found.');
+      } else {
+        setError(getApiErrorMessage(err, 'Failed to delete document.'));
+      }
+    } finally {
+      setDocumentDeleting(false);
     }
   };
 
@@ -430,21 +519,37 @@ export default function AssetsPage() {
           canUploadDocuments={canUploadDocuments}
           selectedAssetId={selectedAssetId}
           documentForm={documentForm}
+          selectedOwnerId={selectedOwnerId}
           eligibleOwners={eligibleOwners}
           eligibleOwnersLoading={eligibleOwnersLoading}
+          eligibleOwnersError={eligibleOwnersError}
           assetDocuments={assetDocuments}
           documentsLoading={documentsLoading}
           documentUploading={documentUploading}
           documentsPage={documentsPage}
           documentsTotalPages={documentsTotalPages}
           onDocumentFormChange={handleDocumentFormChange}
+          onOwnerSelect={handleOwnerSelect}
           onDocumentFileChange={handleDocumentFileChange}
           onUpload={handleDocumentUpload}
           onDownload={handleDocumentDownload}
+          onDeleteClick={handleDocumentDeleteClick}
           onDocumentsPrevious={() => loadAssetDetails(selectedAssetId, historyPage, documentsPage - 1)}
           onDocumentsNext={() => loadAssetDetails(selectedAssetId, historyPage, documentsPage + 1)}
         />
       </main>
+
+      {documentToDelete && (
+        <ConfirmDialog
+          title="Delete Operational Document"
+          message={`Delete document "${documentToDelete.originalFileName}"? This action cannot be undone.`}
+          confirmLabel="Delete"
+          onConfirm={handleDocumentDeleteConfirm}
+          onCancel={handleDocumentDeleteCancel}
+          isLoading={documentDeleting}
+          isDangerous
+        />
+      )}
     </div>
   );
 }

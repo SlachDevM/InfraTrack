@@ -41,6 +41,20 @@ public class OperationalDocumentFileStore {
         }
     }
 
+    public void delete(String storagePath) {
+        try {
+            Path filePath = Path.of(storagePath).normalize();
+            if (!filePath.startsWith(storageRoot)) {
+                throw new NotFoundException("Document not found");
+            }
+            Files.deleteIfExists(filePath);
+        } catch (NotFoundException ex) {
+            throw ex;
+        } catch (IOException ex) {
+            throw new BusinessValidationException("Failed to delete document");
+        }
+    }
+
     public Resource loadAsResource(String storagePath) {
         try {
             Path filePath = Path.of(storagePath).normalize();

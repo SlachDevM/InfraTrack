@@ -8,29 +8,45 @@ import {
 import PaginationControls from '../PaginationControls';
 
 function formatOwnerOptionLabel(owner) {
-  const datePart = owner.businessDate ? ` — ${owner.businessDate}` : '';
-  const summaryPart = owner.contextSummary ? ` — ${owner.contextSummary}` : '';
-  return `${owner.label}${datePart}${summaryPart}`;
+  const parts = [owner.label];
+  if (owner.status) {
+    parts.push(owner.status);
+  }
+  if (owner.businessDate) {
+    parts.push(owner.businessDate);
+  }
+  if (owner.contextSummary) {
+    parts.push(owner.contextSummary);
+  }
+  return parts.join(' — ');
 }
 
 export default function OperationalDocumentsPanel({
   canUploadDocuments,
   selectedAssetId,
   documentForm,
+  selectedOwnerId,
   eligibleOwners,
   eligibleOwnersLoading,
+  eligibleOwnersError,
   assetDocuments,
   documentsLoading,
   documentUploading,
   documentsPage,
   documentsTotalPages,
   onDocumentFormChange,
+  onOwnerSelect,
   onDocumentFileChange,
   onUpload,
   onDownload,
+  onDeleteClick,
   onDocumentsPrevious,
   onDocumentsNext,
 }) {
+  const requiresOwnerSelection = Boolean(documentForm.ownerType);
+  const canSubmitWithOwner = !requiresOwnerSelection
+    || (selectedOwnerId && eligibleOwners.length > 0);
+
   return (
     <section className="asset-documents-section">
       <h2>Operational Documents</h2>
@@ -81,12 +97,12 @@ export default function OperationalDocumentsPanel({
 
           {documentForm.ownerType && (
             <div className="form-row">
-              <label htmlFor="ownerId">Owner</label>
+              <label htmlFor="selectedOwnerId">Owner</label>
               <select
-                id="ownerId"
-                name="ownerId"
-                value={documentForm.ownerId}
-                onChange={onDocumentFormChange}
+                id="selectedOwnerId"
+                name="selectedOwnerId"
+                value={selectedOwnerId}
+                onChange={onOwnerSelect}
                 required
                 disabled={documentUploading || eligibleOwnersLoading || eligibleOwners.length === 0}
               >
@@ -100,9 +116,12 @@ export default function OperationalDocumentsPanel({
               {eligibleOwnersLoading && (
                 <p className="read-only-note">Loading eligible owners...</p>
               )}
-              {!eligibleOwnersLoading && eligibleOwners.length === 0 && (
+              {eligibleOwnersError && (
+                <p className="read-only-note">{eligibleOwnersError}</p>
+              )}
+              {!eligibleOwnersLoading && !eligibleOwnersError && eligibleOwners.length === 0 && (
                 <p className="read-only-note">
-                  No eligible records found for this asset and owner type.
+                  No eligible records found for this owner type.
                 </p>
               )}
             </div>
@@ -133,7 +152,11 @@ export default function OperationalDocumentsPanel({
             />
           </div>
 
-          <button type="submit" className="btn-primary" disabled={documentUploading}>
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={documentUploading || !canSubmitWithOwner}
+          >
             {documentUploading ? 'Uploading...' : 'Upload Document'}
           </button>
         </form>
@@ -159,7 +182,7 @@ export default function OperationalDocumentsPanel({
               <th>Type</th>
               <th>Owner</th>
               <th>Uploaded</th>
-              <th>Action</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -172,7 +195,7 @@ export default function OperationalDocumentsPanel({
                   {document.ownerId ? ` #${document.ownerId}` : ''}
                 </td>
                 <td>{document.uploadedAt?.replace('T', ' ')}</td>
-                <td>
+                <td className="actions-cell">
                   <button
                     type="button"
                     className="btn-secondary"
@@ -180,6 +203,15 @@ export default function OperationalDocumentsPanel({
                   >
                     Download
                   </button>
+                  {canUploadDocuments && (
+                    <button
+                      type="button"
+                      className="action-btn delete-btn"
+                      onClick={() => onDeleteClick(document)}
+                    >
+                      Delete
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

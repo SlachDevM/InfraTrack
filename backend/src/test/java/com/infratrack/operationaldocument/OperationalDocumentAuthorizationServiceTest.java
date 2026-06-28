@@ -83,6 +83,19 @@ class OperationalDocumentAuthorizationServiceTest {
     }
 
     @Test
+    void requireDeleteAuthorized_shouldUseUploadAuthorizationRules() {
+        User manager = managerInDepartment(30L, 1L);
+        OperationalDocumentOwnerContext context = ownerContext(asset(5L));
+
+        when(delegatedAuthorityService.canManagerActForAssetDepartment(
+                eq(manager), eq(context.asset().getDepartment()), any(LocalDateTime.class)))
+                .thenReturn(true);
+
+        assertThatCode(() -> authorizationService.requireDeleteAuthorized(manager, context))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
     void requireUploadAuthorized_shouldRejectManagerForCrossDepartmentAssetWithoutDelegation() {
         User manager = managerInDepartment(30L, 2L);
         OperationalDocumentOwnerContext context = ownerContext(asset(5L));

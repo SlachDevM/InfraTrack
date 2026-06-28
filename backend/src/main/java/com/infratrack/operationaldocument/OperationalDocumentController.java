@@ -21,6 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -109,5 +110,14 @@ public class OperationalDocumentController {
                         "attachment; filename=\"" + download.originalFileName() + "\"")
                 .contentType(MediaType.parseMediaType(download.contentType()))
                 .body(download.resource());
+    }
+
+    @DeleteMapping("/api/operational-documents/{id}")
+    @Operation(summary = "Delete operational document", description = "Removes the stored document and metadata.")
+    @ApiResponse(responseCode = "204", description = "Document deleted")
+    public ResponseEntity<Void> deleteDocument(@PathVariable Long id, Authentication authentication) {
+        Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+        operationalDocumentService.deleteDocument(id, userId);
+        return ResponseEntity.noContent().build();
     }
 }

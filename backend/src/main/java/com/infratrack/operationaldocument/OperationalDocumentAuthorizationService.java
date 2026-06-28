@@ -45,6 +45,10 @@ public class OperationalDocumentAuthorizationService {
         this.delegatedAuthorityService = delegatedAuthorityService;
     }
 
+    public void requireDeleteAuthorized(User user, OperationalDocumentOwnerContext ownerContext) {
+        requireUploadAuthorized(user, ownerContext);
+    }
+
     public void requireUploadAuthorized(User user, OperationalDocumentOwnerContext ownerContext) {
         UserRole role = user.getRole();
         if (role == null) {

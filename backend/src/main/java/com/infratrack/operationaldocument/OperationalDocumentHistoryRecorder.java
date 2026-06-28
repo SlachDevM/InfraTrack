@@ -28,4 +28,13 @@ public class OperationalDocumentHistoryRecorder {
                 eventDate
         ));
     }
+
+    public void recordDeleted(Asset asset, Long userId, LocalDate eventDate) {
+        assetHistoryEventRepository.save(new AssetHistoryEvent(
+                asset,
+                AssetHistoryEventType.OPERATIONAL_DOCUMENT_DELETED,
+                userId,
+                eventDate
+        ));
+    }
 }

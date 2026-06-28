@@ -6,6 +6,7 @@ const ENDPOINTS = {
   LIST: (assetId) => `/api/assets/${assetId}/documents`,
   UPLOAD: (assetId) => `/api/assets/${assetId}/documents`,
   DOWNLOAD: (id) => `/api/operational-documents/${id}/download`,
+  DELETE: (id) => `/api/operational-documents/${id}`,
 };
 
 export const operationalDocumentApi = {
@@ -35,6 +36,7 @@ export const operationalDocumentApi = {
     const filename = match ? match[1] : `document-${id}`;
     return { blob, filename };
   },
+  delete: (id) => apiClient.delete(ENDPOINTS.DELETE(id)),
 };
 
 export default operationalDocumentApi;

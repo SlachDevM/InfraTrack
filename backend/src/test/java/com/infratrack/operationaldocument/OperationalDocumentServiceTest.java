@@ -600,6 +600,97 @@ class OperationalDocumentServiceTest {
         assertThat(response.getOriginalFileName()).isEqualTo("scan.pdf");
     }
 
+    @Test
+    void deleteDocument_shouldDeleteAuthorizedDocument() {
+        Asset asset = asset(5L);
+        User manager = user(30L, UserRole.MANAGER);
+        OperationalDocument document = savedDocument(103L, asset);
+
+        when(userService.getById(30L)).thenReturn(manager);
+        when(operationalDocumentRepository.findById(103L)).thenReturn(Optional.of(document));
+        when(delegatedAuthorityService.canManagerActForAssetDepartment(
+                eq(manager), eq(asset.getDepartment()), any(LocalDateTime.class)))
+                .thenReturn(true);
+
+        operationalDocumentService.deleteDocument(103L, 30L);
+
+        verify(fileStore).delete("/tmp/stored-file");
+        verify(operationalDocumentRepository).delete(document);
+        ArgumentCaptor<AssetHistoryEvent> captor = ArgumentCaptor.forClass(AssetHistoryEvent.class);
+        verify(assetHistoryEventRepository).save(captor.capture());
+        AssetHistoryEvent event = captor.getValue();
+        assertThat(event.getEventType()).isEqualTo(AssetHistoryEventType.OPERATIONAL_DOCUMENT_DELETED);
+        assertThat(event.getAsset().getId()).isEqualTo(5L);
+        assertThat(event.getPerformedByUserId()).isEqualTo(30L);
+        assertThat(event.getEventDate()).isEqualTo(LocalDate.now());
+    }
+
+    @Test
+    void deleteDocument_shouldRejectCrossDepartmentUser() {
+        Asset asset = asset(5L);
+        User coordinator = userInDepartment(10L, UserRole.OPERATIONAL_COORDINATOR, 2L);
+        OperationalDocument document = savedDocument(103L, asset);
+
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(operationalDocumentRepository.findById(103L)).thenReturn(Optional.of(document));
+
+        assertThatThrownBy(() -> operationalDocumentService.deleteDocument(103L, 10L))
+                .isInstanceOf(ForbiddenOperationException.class);
+        verify(operationalDocumentRepository, never()).delete(any());
+        verify(fileStore, never()).delete(any());
+    }
+
+    @Test
+    void deleteDocument_shouldRejectNonexistentDocument() {
+        User manager = user(30L, UserRole.MANAGER);
+        when(userService.getById(30L)).thenReturn(manager);
+        when(operationalDocumentRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> operationalDocumentService.deleteDocument(999L, 30L))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Document not found");
+    }
+
+    @Test
+    void deleteDocument_shouldRejectUnauthorizedUser() {
+        Asset asset = asset(5L);
+        User administrator = user(1L, UserRole.ADMINISTRATOR);
+        OperationalDocument document = savedDocument(103L, asset);
+
+        when(userService.getById(1L)).thenReturn(administrator);
+        when(operationalDocumentRepository.findById(103L)).thenReturn(Optional.of(document));
+
+        assertThatThrownBy(() -> operationalDocumentService.deleteDocument(103L, 1L))
+                .isInstanceOf(ForbiddenOperationException.class);
+    }
+
+    @Test
+    void deleteDocument_shouldPreventDownloadAfterDeletion() {
+        when(operationalDocumentRepository.findById(103L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> operationalDocumentService.downloadDocument(103L))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Document not found");
+    }
+
+    private OperationalDocument savedDocument(Long id, Asset asset) {
+        OperationalDocument document = new OperationalDocument(
+                asset,
+                OperationalDocumentOwnerType.ASSET,
+                asset.getId(),
+                OperationalDocumentType.REPORT,
+                "report.pdf",
+                "stored-file",
+                "application/pdf",
+                1024L,
+                "/tmp/stored-file",
+                null,
+                30L,
+                LocalDateTime.of(2026, 6, 20, 10, 0));
+        document.setId(id);
+        return document;
+    }
+
     private MultipartFile file(String originalFilename, String contentType, long size) {
         MultipartFile file = mock(MultipartFile.class);
         lenient().when(file.isEmpty()).thenReturn(false);

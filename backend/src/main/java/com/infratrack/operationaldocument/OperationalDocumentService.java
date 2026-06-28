@@ -118,6 +118,23 @@ public class OperationalDocumentService {
         return new OperationalDocumentDownload(resource, document.getOriginalFileName(), document.getContentType());
     }
 
+    @Transactional
+    public void deleteDocument(Long documentId, Long userId) {
+        User user = userService.getById(userId);
+        OperationalDocument document = operationalDocumentRepository.findById(documentId)
+                .orElseThrow(() -> new NotFoundException("Document not found"));
+        OperationalDocumentOwnerContext ownerContext = ownerResolver.resolveForAsset(
+                document.getAsset(),
+                document.getOwnerType(),
+                document.getOwnerId());
+        authorizationService.requireDeleteAuthorized(user, ownerContext);
+
+        fileStore.delete(document.getStoragePath());
+        operationalDocumentRepository.delete(document);
+
+        historyRecorder.recordDeleted(document.getAsset(), user.getId(), LocalDate.now());
+    }
+
     private OperationalDocumentType validateDocumentType(OperationalDocumentType documentType) {
         if (documentType == null) {
             throw new BusinessValidationException("Document type is required");
