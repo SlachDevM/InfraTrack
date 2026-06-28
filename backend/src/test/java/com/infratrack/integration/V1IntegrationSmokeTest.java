@@ -41,7 +41,6 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -119,10 +118,12 @@ class V1IntegrationSmokeTest {
         Department department = departmentRepository.save(new Department("Smoke Dept " + System.nanoTime()));
         AssetCategory category = assetCategoryRepository.save(new AssetCategory("Smoke Cat " + System.nanoTime()));
 
-        User coordinator = userRepository.save(buildUser(
+        User coordinator = buildUser(
                 "coordinator+" + System.nanoTime() + "@smoke.test",
                 "Smoke Coordinator",
-                UserRole.OPERATIONAL_COORDINATOR));
+                UserRole.OPERATIONAL_COORDINATOR);
+        coordinator.setDepartment(department);
+        coordinator = userRepository.save(coordinator);
         User fieldEmployee = userRepository.save(buildUser(
                 "field+" + System.nanoTime() + "@smoke.test",
                 "Smoke Field Employee",
@@ -256,15 +257,10 @@ class V1IntegrationSmokeTest {
                         (byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0,
                         0x00, 0x10, 0x4A, 0x46, 0x49, 0x46
                 });
-        MockMultipartFile documentType = new MockMultipartFile(
-                "documentType",
-                "",
-                MediaType.TEXT_PLAIN_VALUE,
-                "PHOTO".getBytes(StandardCharsets.UTF_8));
 
         mockMvc.perform(multipart("/api/assets/" + assetId + "/documents")
                         .file(file)
-                        .file(documentType)
+                        .param("documentType", "PHOTO")
                         .header("Authorization", bearerToken(coordinatorUserId, coordinatorEmail)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.documentType").value("PHOTO"))
