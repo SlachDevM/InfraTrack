@@ -81,10 +81,10 @@ public class OperationalDocumentController {
     public ResponseEntity<OperationalDocumentResponse> uploadDocument(
             @PathVariable Long assetId,
             @Parameter(description = "PDF, PNG, JPEG, DOCX, or XLSX file") @RequestPart("file") MultipartFile file,
-            @Parameter(description = "Business document type") @RequestPart("documentType") OperationalDocumentType documentType,
-            @RequestPart(value = "ownerType", required = false) OperationalDocumentOwnerType ownerType,
-            @RequestPart(value = "ownerId", required = false) Long ownerId,
-            @RequestPart(value = "documentDate", required = false)
+            @Parameter(description = "Business document type") @RequestParam("documentType") OperationalDocumentType documentType,
+            @RequestParam(value = "ownerType", required = false) OperationalDocumentOwnerType ownerType,
+            @RequestParam(value = "ownerId", required = false) Long ownerId,
+            @RequestParam(value = "documentDate", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate documentDate,
             Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
