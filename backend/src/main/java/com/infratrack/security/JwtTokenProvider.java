@@ -3,6 +3,7 @@ package com.infratrack.security;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -20,32 +21,37 @@ public class JwtTokenProvider {
     @Value("${jwt.expiration:86400000}")
     private int jwtExpirationMs;
 
-    private SecretKey getSigningKey() {
-        byte[] secretBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
+    private SecretKey signingKey;
+
+    @PostConstruct
+    void initializeSigningKey() {
+        this.signingKey = buildSigningKey(jwtSecret);
+    }
+
+    private static SecretKey buildSigningKey(String secret) {
+        byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-512");
             byte[] hashed = digest.digest(secretBytes);
             return Keys.hmacShaKeyFor(hashed);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("Unable to hash JWT secret for HS512", e);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("Unable to hash JWT secret for HS512", exception);
         }
     }
 
     public String generateToken(Long userId, String email) {
-        SecretKey key = getSigningKey();
         return Jwts.builder()
                 .subject(email)
                 .claim("userId", userId)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
-                .signWith(key, SignatureAlgorithm.HS512)
+                .signWith(signingKey, SignatureAlgorithm.HS512)
                 .compact();
     }
 
     public String getEmailFromToken(String token) {
-        SecretKey key = getSigningKey();
         return Jwts.parser()
-                .verifyWith(key)
+                .verifyWith(signingKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload()
@@ -53,9 +59,8 @@ public class JwtTokenProvider {
     }
 
     public Long getUserIdFromToken(String token) {
-        SecretKey key = getSigningKey();
         return ((Number) Jwts.parser()
-                .verifyWith(key)
+                .verifyWith(signingKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload()
@@ -64,13 +69,12 @@ public class JwtTokenProvider {
 
     public boolean validateToken(String token) {
         try {
-            SecretKey key = getSigningKey();
             Jwts.parser()
-                    .verifyWith(key)
+                    .verifyWith(signingKey)
                     .build()
                     .parseSignedClaims(token);
             return true;
-        } catch (Exception e) {
+        } catch (Exception exception) {
             return false;
         }
     }

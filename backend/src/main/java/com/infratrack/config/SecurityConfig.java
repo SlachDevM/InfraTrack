@@ -30,6 +30,12 @@ public class SecurityConfig {
     @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:80,http://localhost}")
     private String allowedOrigins;
 
+    @Value("${springdoc.swagger-ui.enabled:true}")
+    private boolean swaggerUiEnabled;
+
+    @Value("${springdoc.api-docs.enabled:true}")
+    private boolean apiDocsEnabled;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -37,6 +43,8 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        boolean openApiEndpointsEnabled = swaggerUiEnabled || apiDocsEnabled;
+
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
@@ -53,17 +61,29 @@ public class SecurityConfig {
                                         + "microphone=(), payment=(), usb=()"))
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(authz -> authz
-                        .requestMatchers(
-                                "/api/auth/**",
-                                "/actuator/health",
-                                "/actuator/info",
+                .authorizeHttpRequests(authz -> {
+                    authz.requestMatchers(
+                            "/api/auth/**",
+                            "/actuator/health",
+                            "/actuator/info"
+                    ).permitAll();
+
+                    if (openApiEndpointsEnabled) {
+                        authz.requestMatchers(
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**"
-                        ).permitAll()
-                        .anyRequest().authenticated()
-                )
+                        ).permitAll();
+                    } else {
+                        authz.requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**"
+                        ).denyAll();
+                    }
+
+                    authz.anyRequest().authenticated();
+                })
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

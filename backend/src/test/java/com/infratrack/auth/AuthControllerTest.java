@@ -5,6 +5,7 @@ import com.infratrack.auth.dto.LoginRequest;
 import com.infratrack.auth.dto.LoginResponse;
 import com.infratrack.auth.dto.RegisterRequest;
 import com.infratrack.user.UserRole;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -21,6 +22,12 @@ class AuthControllerTest {
 
     @Mock
     private AuthService authService;
+
+    @Mock
+    private LoginRateLimiter loginRateLimiter;
+
+    @Mock
+    private HttpServletRequest httpServletRequest;
 
     @Test
     void registerEndpointEnabled_inDevelopmentProfile() {
@@ -55,7 +62,7 @@ class AuthControllerTest {
     @Test
     void register_throwsForbidden_whenEndpointDisabledInProduction() {
         AuthController.RegisterEndpointProperty disabledProperty = new AuthController.RegisterEndpointProperty("prod");
-        AuthController controller = new AuthController(authService, disabledProperty);
+        AuthController controller = new AuthController(authService, loginRateLimiter, disabledProperty);
 
         RegisterRequest request = new RegisterRequest();
         request.setEmail("test@example.com");
@@ -73,7 +80,7 @@ class AuthControllerTest {
     @Test
     void register_callsAuthService_whenEndpointEnabledInDevelopment() {
         AuthController.RegisterEndpointProperty enabledProperty = new AuthController.RegisterEndpointProperty("dev");
-        AuthController controller = new AuthController(authService, enabledProperty);
+        AuthController controller = new AuthController(authService, loginRateLimiter, enabledProperty);
 
         RegisterRequest request = new RegisterRequest();
         request.setEmail("test@example.com");
@@ -98,7 +105,7 @@ class AuthControllerTest {
     @Test
     void login_callsAuthServiceAndReturnsResponse() {
         AuthController.RegisterEndpointProperty property = new AuthController.RegisterEndpointProperty("dev");
-        AuthController controller = new AuthController(authService, property);
+        AuthController controller = new AuthController(authService, loginRateLimiter, property);
 
         LoginRequest request = new LoginRequest("test@example.com", "password");
         LoginResponse expectedResponse = new LoginResponse();
@@ -108,18 +115,50 @@ class AuthControllerTest {
         expectedResponse.setRole(UserRole.FIELD_EMPLOYEE);
 
         when(authService.login(request)).thenReturn(expectedResponse);
+        when(httpServletRequest.getRemoteAddr()).thenReturn("127.0.0.1");
 
-        var response = controller.login(request);
+        var response = controller.login(request, httpServletRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo(expectedResponse);
+        verify(loginRateLimiter).checkAllowed("127.0.0.1", "test@example.com");
         verify(authService).login(request);
+    }
+
+    @Test
+    void login_shouldReturn429WhenRateLimitExceeded() {
+        AuthController.RegisterEndpointProperty property = new AuthController.RegisterEndpointProperty("dev");
+        AuthController controller = new AuthController(authService, loginRateLimiter, property);
+
+        LoginRequest request = new LoginRequest("test@example.com", "password");
+        when(httpServletRequest.getRemoteAddr()).thenReturn("127.0.0.1");
+        doThrow(new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, LoginRateLimiter.RATE_LIMIT_MESSAGE))
+                .when(loginRateLimiter)
+                .checkAllowed("127.0.0.1", "test@example.com");
+
+        assertThatThrownBy(() -> controller.login(request, httpServletRequest))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(exception -> {
+                    ResponseStatusException responseStatusException = (ResponseStatusException) exception;
+                    assertThat(responseStatusException.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+                    assertThat(responseStatusException.getReason()).isEqualTo(LoginRateLimiter.RATE_LIMIT_MESSAGE);
+                });
+
+        verify(authService, never()).login(any(LoginRequest.class));
+    }
+
+    @Test
+    void resolveClientIp_shouldUseFirstForwardedForAddress() {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(request.getHeader("X-Forwarded-For")).thenReturn("203.0.113.10, 192.168.1.1");
+
+        assertThat(AuthController.resolveClientIp(request)).isEqualTo("203.0.113.10");
     }
 
     @Test
     void activateAccount_callsAuthServiceAndReturnsResponse() {
         AuthController.RegisterEndpointProperty property = new AuthController.RegisterEndpointProperty("dev");
-        AuthController controller = new AuthController(authService, property);
+        AuthController controller = new AuthController(authService, loginRateLimiter, property);
 
         ActivateAccountRequest request = new ActivateAccountRequest();
         request.setToken("activation-token-12345");

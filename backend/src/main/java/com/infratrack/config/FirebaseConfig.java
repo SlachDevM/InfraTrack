@@ -6,8 +6,8 @@ import com.google.firebase.FirebaseOptions;
 import com.google.firebase.messaging.FirebaseMessaging;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 
 import java.io.FileInputStream;
@@ -17,20 +17,14 @@ import java.io.IOException;
 @Slf4j
 public class FirebaseConfig {
 
-    @Value("${firebase.service-account-path:}")
-    private String serviceAccountPath;
-
     @Bean
-    @ConditionalOnExpression("'${firebase.service-account-path:}'.trim().length() > 0")
-    public FirebaseMessaging firebaseMessaging() throws IOException {
-        if (serviceAccountPath == null || serviceAccountPath.isBlank()) {
-            log.warn("Firebase service account path not configured. FCM notifications will be skipped.");
-            return null;
-        }
-
-        try {
+    @Conditional(FirebaseCredentialsAvailableCondition.class)
+    public FirebaseMessaging firebaseMessaging(
+            @Value("${firebase.service-account-path}") String serviceAccountPath
+    ) {
+        try (FileInputStream serviceAccountStream = new FileInputStream(serviceAccountPath)) {
             GoogleCredentials credentials = GoogleCredentials
-                    .fromStream(new FileInputStream(serviceAccountPath))
+                    .fromStream(serviceAccountStream)
                     .createScoped("https://www.googleapis.com/auth/cloud-platform");
 
             FirebaseOptions options = FirebaseOptions.builder()
@@ -41,11 +35,14 @@ public class FirebaseConfig {
                 FirebaseApp.initializeApp(options);
             }
 
-            log.info("Firebase Admin SDK initialized successfully");
             return FirebaseMessaging.getInstance();
-        } catch (IOException e) {
-            log.error("Failed to initialize Firebase Admin SDK: {}", e.getMessage());
-            throw e;
+        } catch (IOException exception) {
+            log.error(
+                    "Failed to load Firebase credentials from {}: {}. FCM push notifications are disabled.",
+                    serviceAccountPath,
+                    exception.getMessage()
+            );
+            return null;
         }
     }
 }

@@ -70,7 +70,7 @@ See [docs/README.md](docs/README.md) for the full structure and reading order.
 | System Blueprint | [`docs/02-system-blueprint/`](docs/02-system-blueprint/) | Engineering standards and development workflow |
 | Architecture | [`docs/03-architecture/`](docs/03-architecture/) | Detailed architecture (in progress) |
 | API | [`docs/04-api/`](docs/04-api/) | OpenAPI / Swagger reference |
-| Deployment | [`docs/05-deployment/`](docs/05-deployment/) | Deployment and operations (in progress) |
+| Deployment | [`docs/05-deployment/`](docs/05-deployment/) | Deployment, secrets, and security hardening |
 
 Key entry points:
 
@@ -186,6 +186,9 @@ UI → API Client → Backend
 - JWT authentication on all `/api/**` endpoints except auth and actuator
 - Role-based authorization enforced in backend services
 - CORS configured globally in `SecurityConfig` (not per-controller)
+- Login rate limiting on `POST /api/auth/login` (10 attempts per minute per IP and email)
+- Swagger UI and OpenAPI docs disabled in production (`prod` profile)
+- Firebase credentials optional at runtime (see [Secrets management](docs/05-deployment/secrets.md))
 
 ---
 
@@ -239,6 +242,8 @@ Administrative permissions do not automatically grant operational authority.
 All configuration is externalized via environment variables. See `backend/src/main/resources/application.properties` and `.env.example` for available options.
 
 **Firebase credentials** are not committed to Git. FCM is optional — when `FIREBASE_SERVICE_ACCOUNT_PATH` is unset, push notifications are skipped and all other features work normally. See [Secrets management](docs/05-deployment/secrets.md) for local and production setup.
+
+**Production security:** Swagger is disabled in the `prod` profile. Login attempts are rate limited. See [Security hardening](docs/05-deployment/security.md).
 
 **Development:**
 

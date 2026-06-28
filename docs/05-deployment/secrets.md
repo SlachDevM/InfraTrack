@@ -19,6 +19,12 @@ Push notifications use the Firebase Admin SDK. The backend reads a Google servic
 
 When credentials are missing or invalid, business workflows continue. Notification records are still created in the database.
 
+Startup logging (see also [security.md](security.md)):
+
+- Missing path: `Firebase credentials not configured. FCM push notifications are disabled.`
+- Missing file: `Firebase credentials file not found at …`
+- Success: `Firebase messaging enabled.`
+
 ---
 
 ## What is committed to Git

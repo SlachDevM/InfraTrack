@@ -1,10 +1,11 @@
 # Deployment
 
-Operational deployment and secrets management for InfraTrack.
+Operational deployment, security hardening, and secrets management for InfraTrack.
 
 | Document | Description |
 |----------|-------------|
 | [Secrets management](secrets.md) | Firebase credentials, environment variables, rotation, and Git history cleanup |
+| [Security hardening](security.md) | Swagger lockdown, login rate limiting, JWT and Firebase startup behaviour |
 
 ## Related configuration
 

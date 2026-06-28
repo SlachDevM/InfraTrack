@@ -8,6 +8,7 @@ import com.infratrack.config.openapi.StandardApiResponses;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
@@ -22,10 +23,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final LoginRateLimiter loginRateLimiter;
     private final boolean registerEndpointEnabled;
 
-    public AuthController(AuthService authService, RegisterEndpointProperty registerEndpointProperty) {
+    public AuthController(
+            AuthService authService,
+            LoginRateLimiter loginRateLimiter,
+            RegisterEndpointProperty registerEndpointProperty
+    ) {
         this.authService = authService;
+        this.loginRateLimiter = loginRateLimiter;
         this.registerEndpointEnabled = registerEndpointProperty.isEnabled();
     }
 
@@ -51,9 +58,22 @@ public class AuthController {
     @ApiResponse(responseCode = "200", description = "Login successful")
     @ApiResponse(responseCode = "401", description = "Invalid credentials")
     @ApiResponse(responseCode = "403", description = "Account not activated or disabled")
+    @ApiResponse(responseCode = "429", description = "Too many login attempts")
     @StandardApiResponses
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponse> login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        loginRateLimiter.checkAllowed(resolveClientIp(httpRequest), request.getEmail());
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    static String resolveClientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 
     @PostMapping("/activate-account")
