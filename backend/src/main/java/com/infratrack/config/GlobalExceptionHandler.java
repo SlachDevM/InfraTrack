@@ -1,10 +1,13 @@
 package com.infratrack.config;
 
+import com.infratrack.auth.LoginRateLimitExceededException;
+import com.infratrack.auth.dto.LoginRateLimitErrorResponse;
 import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.ConflictException;
 import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.exception.NotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -15,6 +18,19 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(LoginRateLimitExceededException.class)
+    public ResponseEntity<LoginRateLimitErrorResponse> handleLoginRateLimitExceededException(
+            LoginRateLimitExceededException ex
+    ) {
+        LoginRateLimitErrorResponse body = new LoginRateLimitErrorResponse(
+                ex.getMessage(),
+                ex.getRetryAfterSeconds()
+        );
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()))
+                .body(body);
+    }
 
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<String> handleResponseStatusException(ResponseStatusException ex) {

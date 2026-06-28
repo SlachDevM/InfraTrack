@@ -84,4 +84,4 @@ Live OpenAPI documentation is served by the backend (Swagger UI). See [04-api/RE
 
 ### 05 — Deployment
 
-Deployment, secrets, and security hardening. See [05-deployment/README.md](05-deployment/README.md), [secrets.md](05-deployment/secrets.md), and [security.md](05-deployment/security.md).
+Deployment, secrets, security hardening, backup/restore, and troubleshooting. See [05-deployment/README.md](05-deployment/README.md), [secrets.md](05-deployment/secrets.md), [security.md](05-deployment/security.md), [backup-restore.md](05-deployment/backup-restore.md), [production-checklist.md](05-deployment/production-checklist.md), and [troubleshooting.md](05-deployment/troubleshooting.md).

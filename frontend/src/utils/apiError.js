@@ -5,6 +5,10 @@ export function getApiErrorMessage(error, fallback = 'Request failed.') {
 
   try {
     const parsed = JSON.parse(error.message);
+    const retryAfterSeconds = Number(parsed.retryAfterSeconds);
+    if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+      return `Too many login attempts. Please try again in ${retryAfterSeconds} seconds.`;
+    }
     return parsed.message || parsed.detail || parsed.error || fallback;
   } catch {
     const trimmed = error.message.trim();

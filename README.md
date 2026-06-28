@@ -51,7 +51,7 @@ The backend is the single source of truth for all business rules. Clients consum
 
 - Native Android field application (same REST API)
 - Expanded pagination on remaining list endpoints
-- Detailed architecture and deployment guides under `docs/03-architecture/` and `docs/05-deployment/`
+- Detailed architecture guides under `docs/03-architecture/`
 
 See [Functional Use Cases](docs/01-functional-analysis/functional-use-cases.md) for the authoritative business scope.
 
@@ -83,22 +83,105 @@ Key entry points:
 
 ## Quick Start
 
+### Prerequisites
+
+| Tool | Version | Notes |
+|------|---------|-------|
+| Docker & Docker Compose | Recent | Recommended for full stack |
+| Java | 21 | Backend development and tests |
+| Maven | 3.9+ | Backend build |
+| Node.js | 22 LTS | Frontend development and tests |
+| npm | 10+ | Frontend package manager |
+| Git | 2.x | Clone and version control |
+
+Docker Desktop (or Docker Engine + Compose plugin) is the fastest way to run InfraTrack locally. For backend-only or frontend-only work, install Java/Maven or Node separately.
+
+### Docker Compose (recommended)
+
 ```bash
 git clone <repository-url>
 cd InfraTrack
-docker compose up --build
+docker compose up --build -d
 ```
 
 After starting:
 
-- Frontend: `http://localhost:3000`
-- Swagger UI: `http://localhost:4000/swagger-ui/index.html`
-- OpenAPI JSON: `http://localhost:4000/v3/api-docs`
-- Health: `http://localhost:4000/actuator/health`
-- Build info: `http://localhost:4000/actuator/info`
-- Mailpit (dev email): `http://localhost:8025`
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:3000 |
+| Backend API | http://localhost:4000 |
+| Swagger UI (dev only) | http://localhost:4000/swagger-ui/index.html |
+| OpenAPI JSON (dev only) | http://localhost:4000/v3/api-docs |
+| Actuator health | http://localhost:4000/actuator/health |
+| Actuator info | http://localhost:4000/actuator/info |
+| Mailpit (dev email UI) | http://localhost:8025 |
 
 Default bootstrap administrator (development only): `admin@infratrack.local` / `change-me`
+
+### Backend commands
+
+```bash
+cd backend
+mvn spring-boot:run                    # Run locally (requires PostgreSQL)
+mvn clean test                         # Unit and integration tests
+mvn clean package -DskipTests          # Production JAR
+mvn org.owasp:dependency-check-maven:check   # Dependency vulnerability scan
+```
+
+Integration tests use Testcontainers and require Docker.
+
+### Frontend commands
+
+```bash
+cd frontend
+npm ci --legacy-peer-deps              # Install dependencies
+npm run dev                            # Vite dev server
+npm test -- --run                      # Vitest unit tests
+npm run build                          # Production build
+npm run test:e2e                       # Playwright E2E (requires browser install)
+```
+
+### Environment variables
+
+Configuration is externalized via environment variables. Templates:
+
+- [`.env.example`](.env.example) — production deployment
+- [`backend/src/main/resources/application.properties`](backend/src/main/resources/application.properties) — defaults and property keys
+
+Key variables:
+
+| Variable | Required (prod) | Purpose |
+|----------|-----------------|---------|
+| `JWT_SECRET` | Yes | JWT signing key |
+| `SPRING_DATASOURCE_*` | Yes | PostgreSQL connection |
+| `FRONTEND_ORIGIN` | Yes | CORS allowed origin |
+| `SPRING_MAIL_*` | Yes | SMTP for activation emails |
+| `ACTIVATION_LINK_BASE_URL` | Yes | Account activation links |
+| `FIREBASE_SERVICE_ACCOUNT_PATH` | No | FCM push (optional) |
+| `SPRING_PROFILES_ACTIVE` | Yes | `dev` locally, `prod` in production |
+
+See [Deployment documentation](docs/05-deployment/README.md) for the full list.
+
+### Secrets policy
+
+- **Never commit** real credentials, `.env` files, or Firebase service account JSON.
+- Use [`backend/firebase-service-account.example.json`](backend/firebase-service-account.example.json) as a structural reference only.
+- Store production secrets outside Git (environment variables, secret manager, or host-mounted files).
+- Optional local FCM: copy [`docker-compose.firebase.example.yml`](docker-compose.firebase.example.yml) to `docker-compose.override.yml`.
+
+Full guide: [docs/05-deployment/secrets.md](docs/05-deployment/secrets.md)
+
+### Release validation
+
+Before tagging or deploying a release:
+
+1. `cd backend && mvn clean test && mvn clean package -DskipTests`
+2. `cd frontend && npm ci --legacy-peer-deps && npm test -- --run && npm run build`
+3. `docker compose up --build -d` — verify health at `/actuator/health`
+4. Confirm Swagger works in dev and is disabled with `prod` profile
+5. Confirm login rate limit returns HTTP 429 with `Retry-After`
+
+Full checklist: [docs/05-deployment/production-checklist.md](docs/05-deployment/production-checklist.md)
 
 ---
 
@@ -297,7 +380,7 @@ Integration tests require Docker for Testcontainers; they are skipped when Docke
 
 Production deployment uses `docker-compose.prod.yml` and `.env.example` as the configuration template. The frontend is served by nginx; the backend runs as a non-root container with health checks on both services.
 
-See [docs/README.md](docs/README.md) and [docs/05-deployment/secrets.md](docs/05-deployment/secrets.md) for deployment and secrets documentation.
+See [docs/README.md](docs/README.md) and [docs/05-deployment/README.md](docs/05-deployment/README.md) for deployment guides, backup/restore, troubleshooting, and secrets documentation.
 
 ---
 

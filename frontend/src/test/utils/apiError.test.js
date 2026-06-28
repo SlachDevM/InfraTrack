@@ -41,6 +41,27 @@ describe('getApiErrorMessage', () => {
     const error = { message: 'x'.repeat(301) };
     expect(getApiErrorMessage(error, 'Too long')).toBe('Too long');
   });
+
+  it('returns countdown message when retryAfterSeconds is present', () => {
+    const error = {
+      message: JSON.stringify({
+        message: 'Too many login attempts. Please try again later.',
+        retryAfterSeconds: 60,
+      }),
+    };
+    expect(getApiErrorMessage(error)).toBe(
+      'Too many login attempts. Please try again in 60 seconds.'
+    );
+  });
+
+  it('returns generic JSON message when retryAfterSeconds is absent', () => {
+    const error = {
+      message: JSON.stringify({
+        message: 'Too many login attempts. Please try again later.',
+      }),
+    };
+    expect(getApiErrorMessage(error)).toBe('Too many login attempts. Please try again later.');
+  });
 });
 
 describe('isForbidden', () => {

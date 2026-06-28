@@ -2,9 +2,6 @@ package com.infratrack.auth;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpStatus;
-import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.server.ResponseStatusException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -35,11 +32,11 @@ class LoginRateLimiterTest {
         }
 
         assertThatThrownBy(() -> loginRateLimiter.checkAllowed("10.0.0.1", "second@example.com"))
-                .isInstanceOf(ResponseStatusException.class)
+                .isInstanceOf(LoginRateLimitExceededException.class)
                 .satisfies(exception -> {
-                    ResponseStatusException responseStatusException = (ResponseStatusException) exception;
-                    assertThat(responseStatusException.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
-                    assertThat(responseStatusException.getReason()).isEqualTo(LoginRateLimiter.RATE_LIMIT_MESSAGE);
+                    LoginRateLimitExceededException rateLimitException = (LoginRateLimitExceededException) exception;
+                    assertThat(rateLimitException.getMessage()).isEqualTo(LoginRateLimiter.RATE_LIMIT_MESSAGE);
+                    assertThat(rateLimitException.getRetryAfterSeconds()).isPositive();
                 });
     }
 
@@ -50,11 +47,11 @@ class LoginRateLimiterTest {
         }
 
         assertThatThrownBy(() -> loginRateLimiter.checkAllowed("10.0.0.99", "shared@example.com"))
-                .isInstanceOf(ResponseStatusException.class)
+                .isInstanceOf(LoginRateLimitExceededException.class)
                 .satisfies(exception -> {
-                    ResponseStatusException responseStatusException = (ResponseStatusException) exception;
-                    assertThat(responseStatusException.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
-                    assertThat(responseStatusException.getReason()).isEqualTo(LoginRateLimiter.RATE_LIMIT_MESSAGE);
+                    LoginRateLimitExceededException rateLimitException = (LoginRateLimitExceededException) exception;
+                    assertThat(rateLimitException.getMessage()).isEqualTo(LoginRateLimiter.RATE_LIMIT_MESSAGE);
+                    assertThat(rateLimitException.getRetryAfterSeconds()).isPositive();
                 });
     }
 
@@ -72,8 +69,6 @@ class LoginRateLimiterTest {
         }
 
         assertThatThrownBy(() -> loginRateLimiter.checkAllowed("10.0.0.6", "user@example.com"))
-                .isInstanceOf(ResponseStatusException.class)
-                .extracting(exception -> ((ResponseStatusException) exception).getStatusCode())
-                .isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+                .isInstanceOf(LoginRateLimitExceededException.class);
     }
 }

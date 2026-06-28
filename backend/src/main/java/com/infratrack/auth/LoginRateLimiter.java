@@ -5,17 +5,16 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.infratrack.user.EmailNormalizer;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
+import io.github.bucket4j.ConsumptionProbe;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 
 @Component
 public class LoginRateLimiter {
 
-    static final String RATE_LIMIT_MESSAGE = "Too many login attempts. Please try again later.";
+    public static final String RATE_LIMIT_MESSAGE = "Too many login attempts. Please try again later.";
 
     private final int maxAttemptsPerMinute;
     private final Cache<String, Bucket> buckets;
@@ -32,14 +31,20 @@ public class LoginRateLimiter {
 
     public void checkAllowed(String clientIp, String email) {
         String normalizedEmail = email != null ? EmailNormalizer.normalize(email) : "";
-        if (!tryConsume("ip:" + clientIp) || !tryConsume("email:" + normalizedEmail)) {
-            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, RATE_LIMIT_MESSAGE);
-        }
+        consumeOrThrow("ip:" + clientIp);
+        consumeOrThrow("email:" + normalizedEmail);
     }
 
-    private boolean tryConsume(String key) {
+    private void consumeOrThrow(String key) {
         Bucket bucket = buckets.get(key, ignored -> createBucket());
-        return bucket.tryConsume(1);
+        ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
+        if (!probe.isConsumed()) {
+            long retryAfterSeconds = Math.max(
+                    1L,
+                    Duration.ofNanos(probe.getNanosToWaitForRefill()).toSeconds()
+            );
+            throw new LoginRateLimitExceededException(RATE_LIMIT_MESSAGE, retryAfterSeconds);
+        }
     }
 
     private Bucket createBucket() {

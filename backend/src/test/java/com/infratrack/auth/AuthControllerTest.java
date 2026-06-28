@@ -132,16 +132,16 @@ class AuthControllerTest {
 
         LoginRequest request = new LoginRequest("test@example.com", "password");
         when(httpServletRequest.getRemoteAddr()).thenReturn("127.0.0.1");
-        doThrow(new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, LoginRateLimiter.RATE_LIMIT_MESSAGE))
+        doThrow(new LoginRateLimitExceededException(LoginRateLimiter.RATE_LIMIT_MESSAGE, 60))
                 .when(loginRateLimiter)
                 .checkAllowed("127.0.0.1", "test@example.com");
 
         assertThatThrownBy(() -> controller.login(request, httpServletRequest))
-                .isInstanceOf(ResponseStatusException.class)
+                .isInstanceOf(LoginRateLimitExceededException.class)
                 .satisfies(exception -> {
-                    ResponseStatusException responseStatusException = (ResponseStatusException) exception;
-                    assertThat(responseStatusException.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
-                    assertThat(responseStatusException.getReason()).isEqualTo(LoginRateLimiter.RATE_LIMIT_MESSAGE);
+                    LoginRateLimitExceededException rateLimitException = (LoginRateLimitExceededException) exception;
+                    assertThat(rateLimitException.getMessage()).isEqualTo(LoginRateLimiter.RATE_LIMIT_MESSAGE);
+                    assertThat(rateLimitException.getRetryAfterSeconds()).isEqualTo(60);
                 });
 
         verify(authService, never()).login(any(LoginRequest.class));

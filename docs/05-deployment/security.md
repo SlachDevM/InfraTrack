@@ -41,8 +41,17 @@ For local development, use:
 When exceeded:
 
 - HTTP `429 Too Many Requests`
-- Message: `Too many login attempts. Please try again later.`
-- No indication whether the email exists
+- Header: `Retry-After: <remaining_seconds>`
+- JSON body:
+
+```json
+{
+  "message": "Too many login attempts. Please try again later.",
+  "retryAfterSeconds": 60
+}
+```
+
+No indication whether the email exists.
 
 Other auth endpoints (`/api/auth/activate-account`, `/api/auth/register`) are **not** rate limited by this control.
 
