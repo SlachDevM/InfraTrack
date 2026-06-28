@@ -1,5 +1,5 @@
 $files = @(
-  (Join-Path $PSScriptRoot '..\docs\01-functional-analysis\functional-use-cases.md'),
+  (Join-Path $PSScriptRoot '..\docs\01-business-architecture\functional-use-cases.md'),
   (Join-Path $PSScriptRoot '..\docs\02-system-blueprint\INFRATRACK_SYSTEM_BLUEPRINT_V1_SKELETON.md')
 )
 

@@ -2,7 +2,7 @@ $base = Join-Path $PSScriptRoot '..\docs' | Resolve-Path
 
 $dirs = @(
   '00-business-discovery',
-  '01-functional-analysis',
+  '01-business-architecture',
   '02-system-blueprint',
   '03-architecture',
   '04-api',
@@ -28,7 +28,7 @@ foreach ($f in $business) {
 }
 
 $srcFunc = Join-Path $base 'functional-use-case.md'
-$dstFunc = Join-Path (Join-Path $base '01-functional-analysis') 'functional-use-cases.md'
+$dstFunc = Join-Path (Join-Path $base '01-business-architecture') 'functional-use-cases.md'
 if (Test-Path $srcFunc) { Move-Item -Force $srcFunc $dstFunc }
 
 $srcBp = Join-Path $base 'INFRATRACK_SYSTEM_BLUEPRINT_V1_SKELETON.md'

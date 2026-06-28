@@ -53,7 +53,7 @@ The backend is the single source of truth for all business rules. Clients consum
 - Expanded pagination on remaining list endpoints
 - Detailed architecture guides under `docs/03-architecture/`
 
-See [Functional Use Cases](docs/01-functional-analysis/functional-use-cases.md) for the authoritative business scope.
+See [Functional Use Cases](docs/01-business-architecture/functional-use-cases.md) for the authoritative business scope.
 
 ---
 
@@ -66,7 +66,7 @@ See [docs/README.md](docs/README.md) for the full structure and reading order.
 | Phase | Folder | Description |
 |-------|--------|-------------|
 | Business Discovery | [`docs/00-business-discovery/`](docs/00-business-discovery/) | Domain model, actors, workflows and business rules |
-| Functional Analysis | [`docs/01-functional-analysis/`](docs/01-functional-analysis/) | Use cases |
+| Business Architecture | [`docs/01-business-architecture/`](docs/01-business-architecture/) | Business architecture and use cases |
 | System Blueprint | [`docs/02-system-blueprint/`](docs/02-system-blueprint/) | Engineering standards and development workflow |
 | Architecture | [`docs/03-architecture/`](docs/03-architecture/) | Detailed architecture (in progress) |
 | API | [`docs/04-api/`](docs/04-api/) | OpenAPI / Swagger reference |
@@ -76,7 +76,7 @@ Key entry points:
 
 - [Development Philosophy](docs/00-business-discovery/00-development-philosophy.md)
 - [Domain Overview](docs/00-business-discovery/02-domain-overview.md)
-- [Functional Use Cases](docs/01-functional-analysis/functional-use-cases.md)
+- [Functional Use Cases](docs/01-business-architecture/functional-use-cases.md)
 - [System Blueprint](docs/02-system-blueprint/INFRATRACK_SYSTEM_BLUEPRINT_V1_SKELETON.md)
 
 ---
