@@ -5,7 +5,7 @@ import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
 import com.infratrack.user.User;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -18,9 +18,7 @@ public class FirebaseNotificationService {
 
     private final Optional<FirebaseMessaging> firebaseMessaging;
 
-    public FirebaseNotificationService(
-            @Autowired(required = false) FirebaseMessaging firebaseMessaging
-    ) {
+    public FirebaseNotificationService(@Nullable FirebaseMessaging firebaseMessaging) {
         this.firebaseMessaging = Optional.ofNullable(firebaseMessaging);
     }
 

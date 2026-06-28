@@ -56,6 +56,26 @@ class UserManagementServiceTest {
     }
 
     @Test
+    void listAllUsers_shouldMapDepartmentFields() {
+        Department department = new Department("Parks");
+        department.setId(10L);
+
+        User user = new User("user@test.com", "password", "Test User", UserRole.FIELD_EMPLOYEE);
+        user.setId(1L);
+        user.setEnabled(true);
+        user.setDepartment(department);
+
+        when(userRepository.findAll()).thenReturn(List.of(user));
+        lenient().when(activationService.hasValidActivationToken(1L)).thenReturn(false);
+
+        List<UserManagementResponse> result = userManagementService.listAllUsers();
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getDepartmentId()).isEqualTo(10L);
+        assertThat(result.get(0).getDepartmentName()).isEqualTo("Parks");
+    }
+
+    @Test
     void getUserById_shouldReturnUser() {
         User user = new User("user@test.com", "password", "Test User", UserRole.FIELD_EMPLOYEE);
         user.setId(1L);

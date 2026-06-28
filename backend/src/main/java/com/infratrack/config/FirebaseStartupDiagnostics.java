@@ -2,7 +2,7 @@ package com.infratrack.config;
 
 import com.google.firebase.messaging.FirebaseMessaging;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -14,11 +14,14 @@ import java.io.File;
 @Slf4j
 public class FirebaseStartupDiagnostics {
 
+    private final ObjectProvider<FirebaseMessaging> firebaseMessagingProvider;
+
     @Value("${firebase.service-account-path:}")
     private String serviceAccountPath;
 
-    @Autowired(required = false)
-    private FirebaseMessaging firebaseMessaging;
+    public FirebaseStartupDiagnostics(ObjectProvider<FirebaseMessaging> firebaseMessagingProvider) {
+        this.firebaseMessagingProvider = firebaseMessagingProvider;
+    }
 
     @EventListener(ApplicationReadyEvent.class)
     public void logFirebaseStatus() {
@@ -36,6 +39,7 @@ public class FirebaseStartupDiagnostics {
             return;
         }
 
+        FirebaseMessaging firebaseMessaging = firebaseMessagingProvider.getIfAvailable();
         if (firebaseMessaging != null) {
             log.info("Firebase messaging enabled.");
         } else {

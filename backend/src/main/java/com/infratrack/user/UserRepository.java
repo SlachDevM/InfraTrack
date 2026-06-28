@@ -15,6 +15,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @EntityGraph(attributePaths = {"department"})
     Optional<User> findById(Long id);
 
+    /**
+     * Loads all users with departments in a single query to avoid N+1 when mapping
+     * {@code UserManagementResponse} department fields.
+     */
+    @Override
+    @EntityGraph(attributePaths = {"department"})
+    List<User> findAll();
+
     List<User> findByRoleInOrderByNameAsc(List<UserRole> roles);
 
     List<User> findByName(String name);

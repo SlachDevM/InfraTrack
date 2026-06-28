@@ -1,7 +1,7 @@
 package com.infratrack.mail;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -11,8 +11,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class EmailService {
 
-    @Autowired(required = false)
-    private JavaMailSender mailSender;
+    private final ObjectProvider<JavaMailSender> mailSenderProvider;
 
     @Value("${app.activation-link-base-url:app://activate-account}")
     private String activationLinkBaseUrl;
@@ -22,6 +21,10 @@ public class EmailService {
 
     @Value("${spring.profiles.active:dev}")
     private String activeProfile;
+
+    public EmailService(ObjectProvider<JavaMailSender> mailSenderProvider) {
+        this.mailSenderProvider = mailSenderProvider;
+    }
 
     /**
      * Sends an account activation email to the user.
@@ -37,9 +40,10 @@ public class EmailService {
      */
     public void sendActivationEmail(String email, String token, String userName) {
         String activationLink = buildActivationLink(token);
+        JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
 
         if (mailSender != null) {
-            sendEmailViaSMTP(email, activationLink, userName);
+            sendEmailViaSMTP(mailSender, email, activationLink, userName);
         } else if (isDevelopment()) {
             logActivationLink(email, activationLink, userName);
         } else {
@@ -79,7 +83,7 @@ public class EmailService {
         log.info("═══════════════════════════════════════════════════════════════");
     }
 
-    private void sendEmailViaSMTP(String email, String link, String userName) {
+    private void sendEmailViaSMTP(JavaMailSender mailSender, String email, String link, String userName) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
@@ -117,8 +121,10 @@ public class EmailService {
      * @param userName the user's name
      */
     public void sendEmailChangeNotification(String oldEmail, String newEmail, String userName) {
+        JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
+
         if (mailSender != null) {
-            sendEmailChangeViaSMTP(oldEmail, newEmail, userName);
+            sendEmailChangeViaSMTP(mailSender, oldEmail, newEmail, userName);
         } else if (isDevelopment()) {
             logEmailChangeNotification(oldEmail, newEmail, userName);
         } else {
@@ -136,7 +142,7 @@ public class EmailService {
         log.info("═══════════════════════════════════════════════════════════════");
     }
 
-    private void sendEmailChangeViaSMTP(String oldEmail, String newEmail, String userName) {
+    private void sendEmailChangeViaSMTP(JavaMailSender mailSender, String oldEmail, String newEmail, String userName) {
         try {
             // Send notification to old email
             SimpleMailMessage message = new SimpleMailMessage();

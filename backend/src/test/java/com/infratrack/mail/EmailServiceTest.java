@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -15,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class EmailServiceTest {
@@ -22,12 +24,14 @@ class EmailServiceTest {
     @Mock
     private JavaMailSender mailSender;
 
+    @Mock
+    private ObjectProvider<JavaMailSender> mailSenderProvider;
+
     private EmailService emailService;
 
     @BeforeEach
     void setUp() {
-        emailService = new EmailService();
-        ReflectionTestUtils.setField(emailService, "mailSender", mailSender);
+        emailService = new EmailService(mailSenderProvider);
         ReflectionTestUtils.setField(emailService, "activationLinkBaseUrl", "app://activate-account");
         ReflectionTestUtils.setField(emailService, "fromEmail", "noreply@infratrack.local");
         ReflectionTestUtils.setField(emailService, "activeProfile", "dev");
@@ -49,6 +53,8 @@ class EmailServiceTest {
 
     @Test
     void sendActivationEmail_sendsViaSmtp_whenMailSenderConfigured() {
+        when(mailSenderProvider.getIfAvailable()).thenReturn(mailSender);
+
         emailService.sendActivationEmail("user@test.com", "secret-token-123", "Test User");
 
         ArgumentCaptor<SimpleMailMessage> messageCaptor = ArgumentCaptor.forClass(SimpleMailMessage.class);
@@ -63,7 +69,7 @@ class EmailServiceTest {
 
     @Test
     void sendActivationEmail_logsOnly_whenMailSenderUnavailableInDevelopment() {
-        ReflectionTestUtils.setField(emailService, "mailSender", null);
+        when(mailSenderProvider.getIfAvailable()).thenReturn(null);
 
         assertThatNoException().isThrownBy(() ->
                 emailService.sendActivationEmail("user@test.com", "secret-token-123", "Test User")
@@ -74,7 +80,7 @@ class EmailServiceTest {
 
     @Test
     void sendActivationEmail_doesNotLogTokenInProduction_whenMailSenderUnavailable() {
-        ReflectionTestUtils.setField(emailService, "mailSender", null);
+        when(mailSenderProvider.getIfAvailable()).thenReturn(null);
         ReflectionTestUtils.setField(emailService, "activeProfile", "prod");
 
         assertThatNoException().isThrownBy(() ->
