@@ -8,10 +8,21 @@ export const FIELD_EMPLOYEE_ROUTES = new Set([
   '/assets',
 ]);
 
+export const INSPECTION_TEMPLATES_ROUTE = '/inspection-templates';
+
+const INSPECTION_TEMPLATE_ROUTE_PREFIX = '/inspection-templates/';
+
+const INSPECTION_TEMPLATE_VIEWER_ROLES = new Set([
+  USER_ROLES.ADMINISTRATOR,
+  USER_ROLES.MANAGER,
+  USER_ROLES.OPERATIONAL_COORDINATOR,
+]);
+
 export const APP_NAVIGATION_ITEMS = [
   { path: '/assets', label: 'Assets', fieldEmployeeLabel: 'Documents' },
   { path: '/business-triggers', label: 'Business Triggers' },
   { path: '/inspections', label: 'Inspections' },
+  { path: '/inspection-templates', label: 'Inspection Templates' },
   { path: '/issues', label: 'Issues' },
   { path: '/operational-decisions', label: 'Decisions' },
   { path: '/delegated-authorities', label: 'Delegations' },
@@ -38,11 +49,19 @@ export function isFieldEmployeeRole(role) {
 }
 
 export function canAccessRoute(role, path) {
+  const normalizedPath = normalizePath(path);
+  const normalizedRole = normalizeRole(role);
+
+  if (normalizedPath === INSPECTION_TEMPLATES_ROUTE
+      || normalizedPath.startsWith(INSPECTION_TEMPLATE_ROUTE_PREFIX)) {
+    return INSPECTION_TEMPLATE_VIEWER_ROLES.has(normalizedRole);
+  }
+
   if (!isFieldEmployeeRole(role)) {
     return true;
   }
 
-  return FIELD_EMPLOYEE_ROUTES.has(normalizePath(path));
+  return FIELD_EMPLOYEE_ROUTES.has(normalizedPath);
 }
 
 export function getNavigationItems(role) {

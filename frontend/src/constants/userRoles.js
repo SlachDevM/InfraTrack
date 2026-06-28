@@ -25,6 +25,18 @@ export function canManageUsers(role) {
   return role === USER_ROLES.ADMINISTRATOR;
 }
 
+export function canViewInspectionTemplates(role) {
+  return (
+    role === USER_ROLES.ADMINISTRATOR
+    || role === USER_ROLES.MANAGER
+    || role === USER_ROLES.OPERATIONAL_COORDINATOR
+  );
+}
+
+export function canManageInspectionTemplates(role) {
+  return role === USER_ROLES.ADMINISTRATOR;
+}
+
 export function canRegisterAssets(role) {
   if (!role) {
     return false;

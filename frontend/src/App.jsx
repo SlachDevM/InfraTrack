@@ -16,6 +16,8 @@ import IssuesPage from './pages/IssuesPage';
 import OperationalDecisionsPage from './pages/OperationalDecisionsPage';
 import DelegatedAuthoritiesPage from './pages/DelegatedAuthoritiesPage';
 import WorkOrdersPage from './pages/WorkOrdersPage';
+import InspectionTemplatesPage from './pages/InspectionTemplatesPage';
+import InspectionTemplateQuestionsPage from './pages/InspectionTemplateQuestionsPage';
 import './App.css';
 
 function App() {
@@ -87,6 +89,22 @@ function App() {
               element={
                 <PrivateRoute>
                   <InspectionsPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/inspection-templates"
+              element={
+                <PrivateRoute>
+                  <InspectionTemplatesPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/inspection-templates/:templateId/questions"
+              element={
+                <PrivateRoute>
+                  <InspectionTemplateQuestionsPage />
                 </PrivateRoute>
               }
             />

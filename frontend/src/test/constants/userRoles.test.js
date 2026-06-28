@@ -7,6 +7,8 @@ import {
   canPerformInspections,
   canCreateWorkOrders,
   canManageUsers,
+  canViewInspectionTemplates,
+  canManageInspectionTemplates,
 } from '../../constants/userRoles';
 
 describe('canRegisterAssets', () => {
@@ -61,5 +63,19 @@ describe('other role helpers', () => {
   it('restricts user management to Administrator', () => {
     expect(canManageUsers(USER_ROLES.ADMINISTRATOR)).toBe(true);
     expect(canManageUsers(USER_ROLES.MANAGER)).toBe(false);
+  });
+
+  it('allows inspection template viewing for admin manager and coordinator', () => {
+    expect(canViewInspectionTemplates(USER_ROLES.ADMINISTRATOR)).toBe(true);
+    expect(canViewInspectionTemplates(USER_ROLES.MANAGER)).toBe(true);
+    expect(canViewInspectionTemplates(USER_ROLES.OPERATIONAL_COORDINATOR)).toBe(true);
+    expect(canViewInspectionTemplates(USER_ROLES.FIELD_EMPLOYEE)).toBe(false);
+    expect(canViewInspectionTemplates(USER_ROLES.CONTRACTOR)).toBe(false);
+  });
+
+  it('restricts inspection template management to Administrator', () => {
+    expect(canManageInspectionTemplates(USER_ROLES.ADMINISTRATOR)).toBe(true);
+    expect(canManageInspectionTemplates(USER_ROLES.MANAGER)).toBe(false);
+    expect(canManageInspectionTemplates(USER_ROLES.OPERATIONAL_COORDINATOR)).toBe(false);
   });
 });

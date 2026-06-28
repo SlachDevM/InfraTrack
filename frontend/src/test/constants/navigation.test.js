@@ -29,6 +29,17 @@ describe('canAccessRoute', () => {
     expect(canAccessRoute(USER_ROLES.FIELD_EMPLOYEE, '/delegated-authorities')).toBe(false);
     expect(canAccessRoute(USER_ROLES.FIELD_EMPLOYEE, '/business-triggers')).toBe(false);
     expect(canAccessRoute(USER_ROLES.FIELD_EMPLOYEE, '/asset-categories')).toBe(false);
+    expect(canAccessRoute(USER_ROLES.FIELD_EMPLOYEE, '/inspection-templates')).toBe(false);
+  });
+
+  it('blocks contractor from inspection templates', () => {
+    expect(canAccessRoute(USER_ROLES.CONTRACTOR, '/inspection-templates')).toBe(false);
+    expect(canAccessRoute(USER_ROLES.CONTRACTOR, '/inspection-templates/100/questions')).toBe(false);
+    expect(canAccessRoute(USER_ROLES.CONTRACTOR, '/inspections')).toBe(true);
+  });
+
+  it('allows manager to access template question routes', () => {
+    expect(canAccessRoute(USER_ROLES.MANAGER, '/inspection-templates/100/questions')).toBe(true);
   });
 
   it('does not restrict manager navigation', () => {
@@ -68,6 +79,7 @@ describe('getNavigationItems', () => {
     expect(labels).toContain('Issues');
     expect(labels).toContain('Decisions');
     expect(labels).toContain('Delegations');
+    expect(labels).toContain('Inspection Templates');
   });
 
   it('returns full navigation for operational coordinators', () => {
