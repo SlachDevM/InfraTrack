@@ -17,7 +17,6 @@ services:
       - SPRING_DATASOURCE_PASSWORD=apppass
       - SPRING_JPA_HIBERNATE_DDL_AUTO=validate
       - JWT_SECRET=local-dev-secret-change-me
-      - FIREBASE_SERVICE_ACCOUNT_PATH=/app/firebase-service-account.json
       - SPRING_MAIL_HOST=mailpit
       - SPRING_MAIL_PORT=1025
       - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=false
@@ -33,7 +32,6 @@ services:
       - TZ=Australia/Sydney
       - JAVA_TOOL_OPTIONS=-Duser.timezone=Australia/Sydney
     volumes:
-      - ./backend/firebase-service-account.json:/app/firebase-service-account.json:ro
       - operational-documents-data:/app/data/operational-documents
     depends_on:
       postgres:

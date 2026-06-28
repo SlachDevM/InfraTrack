@@ -74,11 +74,10 @@ services:
       - "4000:4000"
     
     volumes:
-      # Firebase service account (read-only, outside Git)
-      # Note: FIREBASE_SERVICE_ACCOUNT_PATH must be set in .env for production
-      - ./backend/firebase-service-account.json:/app/firebase-service-account.json:ro
       # Operational document files (UC-012 local filesystem storage)
       - operational-documents-data:/app/data/operational-documents
+      # When FCM is enabled, mount credentials from a host path outside Git (see docs/05-deployment/secrets.md):
+      # - ${FIREBASE_CREDENTIALS_HOST_PATH}:/app/firebase-service-account.json:ro
     
     depends_on:
       postgres:
@@ -179,9 +178,10 @@ networks:
 #    - Generate strong FRONTEND_ORIGIN value
 # 
 # 4. Firebase Service Account:
-#    - Keep firebase-service-account.json outside Git
-#    - Mount it securely (read-only)
-#    - Restrict file permissions
+#    - Never commit service account JSON files to Git
+#    - Store outside the repository (e.g. /opt/infratrack/secrets/)
+#    - Mount read-only via FIREBASE_CREDENTIALS_HOST_PATH (see docs/05-deployment/secrets.md)
+#    - Rotate keys if a credential was ever exposed
 # 
 # 5. Email (SMTP):
 #    - Configure with a real SMTP provider (SendGrid, AWS SES, etc.)

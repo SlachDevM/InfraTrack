@@ -1,0 +1,15 @@
+# Optional Docker Compose overlay for local Firebase Cloud Messaging (FCM).
+#
+# 1. Copy your real service account JSON to backend/firebase-service-account.local.json
+#    (this file is gitignored — never commit it).
+# 2. Copy this file to docker-compose.override.yml in the repository root.
+# 3. Run: docker compose up --build
+#
+# Without this overlay, the backend starts normally and skips push notifications.
+
+services:
+  backend:
+    environment:
+      FIREBASE_SERVICE_ACCOUNT_PATH: /app/firebase-service-account.json
+    volumes:
+      - ./backend/firebase-service-account.local.json:/app/firebase-service-account.json:ro

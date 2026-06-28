@@ -238,11 +238,15 @@ Administrative permissions do not automatically grant operational authority.
 
 All configuration is externalized via environment variables. See `backend/src/main/resources/application.properties` and `.env.example` for available options.
 
+**Firebase credentials** are not committed to Git. FCM is optional — when `FIREBASE_SERVICE_ACCOUNT_PATH` is unset, push notifications are skipped and all other features work normally. See [Secrets management](docs/05-deployment/secrets.md) for local and production setup.
+
 **Development:**
 
 ```bash
 docker compose up --build
 ```
+
+Optional FCM for local testing: copy `docker-compose.firebase.example.yml` to `docker-compose.override.yml` and place credentials in `backend/firebase-service-account.local.json` (gitignored).
 
 **Production:**
 
@@ -288,7 +292,7 @@ Integration tests require Docker for Testcontainers; they are skipped when Docke
 
 Production deployment uses `docker-compose.prod.yml` and `.env.example` as the configuration template. The frontend is served by nginx; the backend runs as a non-root container with health checks on both services.
 
-See [docs/README.md](docs/README.md) and [docs/05-deployment/](docs/05-deployment/) for deployment documentation as it is added.
+See [docs/README.md](docs/README.md) and [docs/05-deployment/secrets.md](docs/05-deployment/secrets.md) for deployment and secrets documentation.
 
 ---
 

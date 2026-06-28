@@ -6,7 +6,7 @@ import com.google.firebase.FirebaseOptions;
 import com.google.firebase.messaging.FirebaseMessaging;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -21,7 +21,7 @@ public class FirebaseConfig {
     private String serviceAccountPath;
 
     @Bean
-    @ConditionalOnProperty(name = "firebase.service-account-path", matchIfMissing = false)
+    @ConditionalOnExpression("'${firebase.service-account-path:}'.trim().length() > 0")
     public FirebaseMessaging firebaseMessaging() throws IOException {
         if (serviceAccountPath == null || serviceAccountPath.isBlank()) {
             log.warn("Firebase service account path not configured. FCM notifications will be skipped.");

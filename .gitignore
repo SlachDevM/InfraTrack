@@ -29,6 +29,14 @@ Thumbs.db
 
 # Environment files
 .env
+docker-compose.override.yml
+
+# Firebase and other credentials (never commit real keys)
+backend/firebase-service-account.json
+backend/firebase-service-account.local.json
+*.service-account.json
+*firebase*credentials*.json
+secrets/
 
 # Local operational document storage (V1)
 data/
