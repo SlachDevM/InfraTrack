@@ -3,6 +3,7 @@ package com.infratrack.operationaldocument;
 import com.infratrack.asset.Asset;
 import com.infratrack.asset.AssetStatus;
 import com.infratrack.assetcategory.AssetCategory;
+import com.infratrack.delegatedauthority.DelegatedAuthorityService;
 import com.infratrack.department.Department;
 import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.inspection.Inspection;
@@ -20,10 +21,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
-import java.util.Optional;
+import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,6 +44,9 @@ class OperationalDocumentAuthorizationServiceTest {
     @Mock
     private MaintenanceActivityRepository maintenanceActivityRepository;
 
+    @Mock
+    private DelegatedAuthorityService delegatedAuthorityService;
+
     private OperationalDocumentAuthorizationService authorizationService;
 
     @BeforeEach
@@ -49,7 +55,8 @@ class OperationalDocumentAuthorizationServiceTest {
                 inspectionRepository,
                 issueRepository,
                 workOrderRepository,
-                maintenanceActivityRepository);
+                maintenanceActivityRepository,
+                delegatedAuthorityService);
     }
 
     @Test
@@ -63,24 +70,52 @@ class OperationalDocumentAuthorizationServiceTest {
     }
 
     @Test
-    void requireUploadAuthorized_shouldAllowManagerForAnyContext() {
-        User manager = user(30L, UserRole.MANAGER);
+    void requireUploadAuthorized_shouldAllowManagerForOwnDepartmentAsset() {
+        User manager = managerInDepartment(30L, 1L);
         OperationalDocumentOwnerContext context = ownerContext(asset(5L));
+
+        when(delegatedAuthorityService.canManagerActForAssetDepartment(
+                eq(manager), eq(context.asset().getDepartment()), any(LocalDateTime.class)))
+                .thenReturn(true);
 
         assertThatCode(() -> authorizationService.requireUploadAuthorized(manager, context))
                 .doesNotThrowAnyException();
     }
 
     @Test
+    void requireUploadAuthorized_shouldRejectManagerForCrossDepartmentAssetWithoutDelegation() {
+        User manager = managerInDepartment(30L, 2L);
+        OperationalDocumentOwnerContext context = ownerContext(asset(5L));
+
+        when(delegatedAuthorityService.canManagerActForAssetDepartment(
+                eq(manager), eq(context.asset().getDepartment()), any(LocalDateTime.class)))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> authorizationService.requireUploadAuthorized(manager, context))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You may only upload operational documents for assets in your own department.");
+    }
+
+    @Test
+    void requireUploadAuthorized_shouldRejectOperationalCoordinatorFromAnotherDepartment() {
+        User coordinator = userInDepartment(40L, UserRole.OPERATIONAL_COORDINATOR, 2L);
+        OperationalDocumentOwnerContext context = ownerContext(asset(5L));
+
+        assertThatThrownBy(() -> authorizationService.requireUploadAuthorized(coordinator, context))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You may only upload operational documents for assets in your own department.");
+    }
+
+    @Test
     void requireUploadAuthorized_shouldAllowAssignedFieldEmployeeForInspection() {
         Asset asset = asset(5L);
-        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        User fieldEmployee = userInDepartment(20L, UserRole.FIELD_EMPLOYEE, 1L);
         Inspection inspection = new Inspection(asset, null, 20L, 10L, InspectionPriority.NORMAL, null);
         inspection.setId(100L);
         OperationalDocumentOwnerContext context = new OperationalDocumentOwnerContext(
                 asset, OperationalDocumentOwnerType.INSPECTION, 100L);
 
-        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(inspectionRepository.findById(100L)).thenReturn(java.util.Optional.of(inspection));
 
         assertThatCode(() -> authorizationService.requireUploadAuthorized(fieldEmployee, context))
                 .doesNotThrowAnyException();
@@ -88,7 +123,7 @@ class OperationalDocumentAuthorizationServiceTest {
 
     @Test
     void requireUploadAuthorized_shouldDenyFieldEmployeeForAssetLevelUpload() {
-        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        User fieldEmployee = userInDepartment(20L, UserRole.FIELD_EMPLOYEE, 1L);
         OperationalDocumentOwnerContext context = ownerContext(asset(5L));
 
         assertThatThrownBy(() -> authorizationService.requireUploadAuthorized(fieldEmployee, context))
@@ -121,6 +156,18 @@ class OperationalDocumentAuthorizationServiceTest {
         User user = new User("user@test.com", "password", "User", role);
         user.setId(id);
         user.setEnabled(true);
+        return user;
+    }
+
+    private User managerInDepartment(Long id, Long departmentId) {
+        return userInDepartment(id, UserRole.MANAGER, departmentId);
+    }
+
+    private User userInDepartment(Long id, UserRole role, Long departmentId) {
+        User user = user(id, role);
+        Department department = new Department("Department " + departmentId);
+        department.setId(departmentId);
+        user.setDepartment(department);
         return user;
     }
 }

@@ -17,19 +17,24 @@ import java.util.Set;
 @Component
 public class OperationalDocumentUploadValidator {
 
-    private static final Set<String> ALLOWED_EXTENSIONS = Set.of("pdf", "png", "jpeg", "jpg");
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
+            "pdf", "png", "jpeg", "jpg", "docx", "xlsx");
 
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             "application/pdf",
             "image/png",
-            "image/jpeg"
+            "image/jpeg",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
 
     private static final Map<String, String> EXTENSION_TO_CONTENT_TYPE = Map.of(
             "pdf", "application/pdf",
             "png", "image/png",
             "jpeg", "image/jpeg",
-            "jpg", "image/jpeg"
+            "jpg", "image/jpeg",
+            "docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
 
     private static final Set<String> BLOCKED_CONTENT_TYPES = Set.of(

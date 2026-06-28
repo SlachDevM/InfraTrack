@@ -7,10 +7,18 @@ import {
 } from '../../constants/operationalDocumentTypes';
 import PaginationControls from '../PaginationControls';
 
+function formatOwnerOptionLabel(owner) {
+  const datePart = owner.businessDate ? ` — ${owner.businessDate}` : '';
+  const summaryPart = owner.contextSummary ? ` — ${owner.contextSummary}` : '';
+  return `${owner.label}${datePart}${summaryPart}`;
+}
+
 export default function OperationalDocumentsPanel({
   canUploadDocuments,
   selectedAssetId,
   documentForm,
+  eligibleOwners,
+  eligibleOwnersLoading,
   assetDocuments,
   documentsLoading,
   documentUploading,
@@ -71,18 +79,34 @@ export default function OperationalDocumentsPanel({
             </select>
           </div>
 
-          <div className="form-row">
-            <label htmlFor="ownerId">Owner ID (optional)</label>
-            <input
-              id="ownerId"
-              name="ownerId"
-              type="number"
-              min="1"
-              value={documentForm.ownerId}
-              onChange={onDocumentFormChange}
-              disabled={documentUploading || !documentForm.ownerType}
-            />
-          </div>
+          {documentForm.ownerType && (
+            <div className="form-row">
+              <label htmlFor="ownerId">Owner</label>
+              <select
+                id="ownerId"
+                name="ownerId"
+                value={documentForm.ownerId}
+                onChange={onDocumentFormChange}
+                required
+                disabled={documentUploading || eligibleOwnersLoading || eligibleOwners.length === 0}
+              >
+                <option value="">Select owner</option>
+                {eligibleOwners.map((owner) => (
+                  <option key={owner.id} value={owner.id}>
+                    {formatOwnerOptionLabel(owner)}
+                  </option>
+                ))}
+              </select>
+              {eligibleOwnersLoading && (
+                <p className="read-only-note">Loading eligible owners...</p>
+              )}
+              {!eligibleOwnersLoading && eligibleOwners.length === 0 && (
+                <p className="read-only-note">
+                  No eligible records found for this asset and owner type.
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="form-row">
             <label htmlFor="documentDate">Document Date (optional)</label>
@@ -102,6 +126,7 @@ export default function OperationalDocumentsPanel({
               id="documentFile"
               name="documentFile"
               type="file"
+              accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx,application/pdf,image/png,image/jpeg,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               onChange={onDocumentFileChange}
               required
               disabled={documentUploading}

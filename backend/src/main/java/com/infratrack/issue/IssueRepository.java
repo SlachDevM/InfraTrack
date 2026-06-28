@@ -23,6 +23,9 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
     Optional<Issue> findDetailedById(Long id);
 
     @EntityGraph(attributePaths = {"asset", "asset.department", "inspection"})
+    List<Issue> findAllByAsset_IdOrderByRecordedAtDesc(Long assetId);
+
+    @EntityGraph(attributePaths = {"asset", "asset.department", "inspection"})
     @Query("""
             SELECT i FROM Issue i
             WHERE NOT EXISTS (SELECT 1 FROM OperationalDecision od WHERE od.issue.id = i.id)

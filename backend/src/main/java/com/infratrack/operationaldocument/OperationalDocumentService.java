@@ -2,6 +2,7 @@ package com.infratrack.operationaldocument;
 
 import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.NotFoundException;
+import com.infratrack.operationaldocument.dto.OperationalDocumentEligibleOwnerResponse;
 import com.infratrack.operationaldocument.dto.OperationalDocumentResponse;
 import com.infratrack.operationaldocument.dto.OperationalDocumentSummaryResponse;
 import org.springframework.data.domain.Page;
@@ -30,6 +31,7 @@ public class OperationalDocumentService {
     private final OperationalDocumentFileStore fileStore;
     private final OperationalDocumentUploadValidator uploadValidator;
     private final UserService userService;
+    private final OperationalDocumentOwnerLookupService ownerLookupService;
 
     public OperationalDocumentService(
             OperationalDocumentRepository operationalDocumentRepository,
@@ -38,7 +40,8 @@ public class OperationalDocumentService {
             OperationalDocumentHistoryRecorder historyRecorder,
             OperationalDocumentFileStore fileStore,
             OperationalDocumentUploadValidator uploadValidator,
-            UserService userService) {
+            UserService userService,
+            OperationalDocumentOwnerLookupService ownerLookupService) {
         this.operationalDocumentRepository = operationalDocumentRepository;
         this.ownerResolver = ownerResolver;
         this.authorizationService = authorizationService;
@@ -46,6 +49,7 @@ public class OperationalDocumentService {
         this.fileStore = fileStore;
         this.uploadValidator = uploadValidator;
         this.userService = userService;
+        this.ownerLookupService = ownerLookupService;
     }
 
     @Transactional
@@ -89,6 +93,14 @@ public class OperationalDocumentService {
         historyRecorder.recordUploaded(ownerContext.asset(), user.getId(), eventDate);
 
         return OperationalDocumentResponse.from(document);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OperationalDocumentEligibleOwnerResponse> listEligibleOwners(
+            Long assetId,
+            OperationalDocumentOwnerType ownerType,
+            Long userId) {
+        return ownerLookupService.listEligibleOwners(assetId, ownerType, userId);
     }
 
     @Transactional(readOnly = true)

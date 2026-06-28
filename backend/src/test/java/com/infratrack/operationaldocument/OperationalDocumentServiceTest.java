@@ -13,6 +13,7 @@ import com.infratrack.assetcategory.AssetCategory;
 import com.infratrack.businesstrigger.BusinessTrigger;
 import com.infratrack.businesstrigger.BusinessTriggerType;
 import com.infratrack.completionreview.CompletionReviewRepository;
+import com.infratrack.delegatedauthority.DelegatedAuthorityService;
 import com.infratrack.department.Department;
 import com.infratrack.inspection.Inspection;
 import com.infratrack.inspection.InspectionPriority;
@@ -92,6 +93,9 @@ class OperationalDocumentServiceTest {
     @Mock
     private UserService userService;
 
+    @Mock
+    private DelegatedAuthorityService delegatedAuthorityService;
+
     private OperationalDocumentService operationalDocumentService;
 
     @BeforeEach
@@ -108,7 +112,18 @@ class OperationalDocumentServiceTest {
                 inspectionRepository,
                 issueRepository,
                 workOrderRepository,
-                maintenanceActivityRepository);
+                maintenanceActivityRepository,
+                delegatedAuthorityService);
+        OperationalDocumentOwnerLookupService ownerLookupService = new OperationalDocumentOwnerLookupService(
+                assetRepository,
+                inspectionRepository,
+                issueRepository,
+                operationalDecisionRepository,
+                workOrderRepository,
+                maintenanceActivityRepository,
+                completionReviewRepository,
+                authorizationService,
+                userService);
         OperationalDocumentHistoryRecorder historyRecorder =
                 new OperationalDocumentHistoryRecorder(assetHistoryEventRepository);
         operationalDocumentService = new OperationalDocumentService(
@@ -118,7 +133,10 @@ class OperationalDocumentServiceTest {
                 historyRecorder,
                 fileStore,
                 uploadValidator,
-                userService);
+                userService,
+                ownerLookupService);
+        lenient().when(delegatedAuthorityService.canManagerActForAssetDepartment(
+                any(User.class), any(Department.class), any(LocalDateTime.class))).thenReturn(true);
     }
 
     @Test
@@ -213,6 +231,24 @@ class OperationalDocumentServiceTest {
 
         assertThat(response.getOwnerType()).isEqualTo(OperationalDocumentOwnerType.MAINTENANCE_ACTIVITY);
         assertThat(response.getOwnerId()).isEqualTo(500L);
+    }
+
+    @Test
+    void uploadDocument_shouldRejectCrossDepartmentAsset() {
+        Asset asset = asset(5L);
+        User coordinator = userInDepartment(10L, UserRole.OPERATIONAL_COORDINATOR, 2L);
+        MultipartFile file = file("manual.pdf", "application/pdf", 2048L);
+
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
+        when(uploadValidator.validate(file)).thenReturn(
+                new OperationalDocumentUploadValidator.ValidatedUpload("manual.pdf", "application/pdf"));
+
+        assertThatThrownBy(() -> operationalDocumentService.uploadDocument(
+                5L, file, OperationalDocumentType.MANUAL, null, null, null, 10L))
+                .isInstanceOf(ForbiddenOperationException.class);
+
+        verify(operationalDocumentRepository, never()).save(any());
     }
 
     @Test
@@ -674,6 +710,19 @@ class OperationalDocumentServiceTest {
         User user = new User("user@test.com", "password", "User", role);
         user.setId(id);
         user.setEnabled(true);
+        Department department = new Department("Parks");
+        department.setId(1L);
+        user.setDepartment(department);
+        return user;
+    }
+
+    private User userInDepartment(Long id, UserRole role, Long departmentId) {
+        User user = new User("user@test.com", "password", "User", role);
+        user.setId(id);
+        user.setEnabled(true);
+        Department department = new Department("Department " + departmentId);
+        department.setId(departmentId);
+        user.setDepartment(department);
         return user;
     }
 }

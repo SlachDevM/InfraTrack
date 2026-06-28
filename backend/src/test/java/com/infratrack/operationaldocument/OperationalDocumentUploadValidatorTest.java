@@ -20,6 +20,62 @@ class OperationalDocumentUploadValidatorTest {
     }
 
     @Test
+    void validate_shouldAcceptValidDocx() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "report.docx",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                OfficeDocumentTestSamples.minimalDocx());
+
+        OperationalDocumentUploadValidator.ValidatedUpload validated = validator.validate(file);
+
+        assertThat(validated.sanitizedFileName()).isEqualTo("report.docx");
+        assertThat(validated.detectedContentType())
+                .isEqualTo("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    }
+
+    @Test
+    void validate_shouldAcceptValidXlsx() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "data.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                OfficeDocumentTestSamples.minimalXlsx());
+
+        OperationalDocumentUploadValidator.ValidatedUpload validated = validator.validate(file);
+
+        assertThat(validated.sanitizedFileName()).isEqualTo("data.xlsx");
+        assertThat(validated.detectedContentType())
+                .isEqualTo("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    }
+
+    @Test
+    void validate_shouldRejectSpoofedDocxWithPdfContent() {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "report.docx",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "%PDF-1.4\n% fake pdf content".getBytes(StandardCharsets.UTF_8));
+
+        assertThatThrownBy(() -> validator.validate(file))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Invalid document");
+    }
+
+    @Test
+    void validate_shouldRejectSpoofedXlsxWithPdfContent() {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "data.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "%PDF-1.4\n% fake pdf content".getBytes(StandardCharsets.UTF_8));
+
+        assertThatThrownBy(() -> validator.validate(file))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Invalid document");
+    }
+
+    @Test
     void validate_shouldAcceptValidPdf() {
         MockMultipartFile file = new MockMultipartFile(
                 "file",

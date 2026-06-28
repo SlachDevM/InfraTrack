@@ -2,6 +2,7 @@ package com.infratrack.operationaldocument;
 
 import com.infratrack.config.PaginationSupport;
 import com.infratrack.config.openapi.StandardApiResponses;
+import com.infratrack.operationaldocument.dto.OperationalDocumentEligibleOwnerResponse;
 import com.infratrack.operationaldocument.dto.OperationalDocumentResponse;
 import com.infratrack.operationaldocument.dto.OperationalDocumentSummaryResponse;
 import com.infratrack.security.JwtAuthenticationToken;
@@ -29,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @Tag(name = "Operational Documents", description = "Operational document upload, listing and download (UC-012)")
@@ -43,12 +45,24 @@ public class OperationalDocumentController {
     }
 
     @GetMapping("/api/assets/{assetId}/documents")
-    @Operation(summary = "List operational documents for an asset", description = "Returns paginated document summaries for the asset.")
-    @ApiResponse(responseCode = "200", description = "Paginated document summaries")
-    public ResponseEntity<Page<OperationalDocumentSummaryResponse>> listDocuments(
+    @Operation(
+            summary = "List operational documents for an asset",
+            description = "Returns paginated document summaries for the asset. "
+                    + "When eligibleOwners is true, returns owners eligible for document upload for the given ownerType.")
+    @ApiResponse(responseCode = "200", description = "Paginated document summaries or eligible owners")
+    public ResponseEntity<?> listDocuments(
             @PathVariable Long assetId,
             @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer size) {
+            @RequestParam(required = false) Integer size,
+            @Parameter(description = "When true, returns eligible operational owners for document upload")
+            @RequestParam(required = false) Boolean eligibleOwners,
+            @Parameter(description = "Required when eligibleOwners is true")
+            @RequestParam(required = false) OperationalDocumentOwnerType ownerType,
+            Authentication authentication) {
+        if (Boolean.TRUE.equals(eligibleOwners)) {
+            Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+            return ResponseEntity.ok(operationalDocumentService.listEligibleOwners(assetId, ownerType, userId));
+        }
         Pageable pageable = PaginationSupport.pageable(
                 page,
                 size,
@@ -59,13 +73,13 @@ public class OperationalDocumentController {
     @PostMapping(value = "/api/assets/{assetId}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(
             summary = "Upload operational document",
-            description = "Uploads PDF, PNG, or JPEG evidence linked to an asset or operational owner (UC-012). "
+            description = "Uploads PDF, PNG, JPEG, DOCX, or XLSX evidence linked to an asset or operational owner (UC-012). "
                     + "File content is validated server-side; maximum size 10 MB.")
     @ApiResponse(responseCode = "201", description = "Document uploaded")
     @ApiResponse(responseCode = "400", description = "Invalid file, filename, or document type")
     public ResponseEntity<OperationalDocumentResponse> uploadDocument(
             @PathVariable Long assetId,
-            @Parameter(description = "PDF, PNG, or JPEG file") @RequestPart("file") MultipartFile file,
+            @Parameter(description = "PDF, PNG, JPEG, DOCX, or XLSX file") @RequestPart("file") MultipartFile file,
             @Parameter(description = "Business document type") @RequestPart("documentType") OperationalDocumentType documentType,
             @RequestPart(value = "ownerType", required = false) OperationalDocumentOwnerType ownerType,
             @RequestPart(value = "ownerId", required = false) Long ownerId,

@@ -22,6 +22,9 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, Long> {
     Optional<WorkOrder> findDetailedById(Long id);
 
     @EntityGraph(attributePaths = {"asset", "asset.department", "operationalDecision"})
+    List<WorkOrder> findAllByAsset_IdOrderByCreatedAtDesc(Long assetId);
+
+    @EntityGraph(attributePaths = {"asset", "asset.department", "operationalDecision"})
     @Query("""
             SELECT wo FROM WorkOrder wo
             WHERE wo.status = com.infratrack.workorder.WorkOrderStatus.CREATED

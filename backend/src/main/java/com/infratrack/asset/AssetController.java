@@ -48,11 +48,18 @@ public class AssetController {
     @ApiResponse(responseCode = "200", description = "Paginated asset summaries")
     public ResponseEntity<Page<AssetSummaryResponse>> listAssets(
             @Parameter(description = "Zero-based page index") @RequestParam(required = false) Integer page,
-            @Parameter(description = "Page size (max 100)") @RequestParam(required = false) Integer size) {
+            @Parameter(description = "Page size (max 100)") @RequestParam(required = false) Integer size,
+            @Parameter(description = "When true, returns only assets eligible for operational document upload")
+            @RequestParam(required = false) Boolean eligibleForOperationalDocumentUpload,
+            Authentication authentication) {
         Pageable pageable = PaginationSupport.pageable(
                 page,
                 size,
                 Sort.by(Sort.Direction.DESC, "registrationDate"));
+        if (Boolean.TRUE.equals(eligibleForOperationalDocumentUpload)) {
+            Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+            return ResponseEntity.ok(assetService.listEligibleForOperationalDocumentUploadPage(userId, pageable));
+        }
         return ResponseEntity.ok(assetService.listPage(pageable));
     }
 

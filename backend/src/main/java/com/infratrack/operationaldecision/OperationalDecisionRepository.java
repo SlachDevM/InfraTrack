@@ -22,6 +22,9 @@ public interface OperationalDecisionRepository extends JpaRepository<Operational
     Optional<OperationalDecision> findDetailedById(Long id);
 
     @EntityGraph(attributePaths = {"asset", "asset.department", "issue"})
+    List<OperationalDecision> findAllByAsset_IdOrderByDecidedAtDesc(Long assetId);
+
+    @EntityGraph(attributePaths = {"asset", "asset.department", "issue"})
     @Query("""
             SELECT od FROM OperationalDecision od
             WHERE od.outcome IN (

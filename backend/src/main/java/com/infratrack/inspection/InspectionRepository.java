@@ -33,4 +33,7 @@ public interface InspectionRepository extends JpaRepository<Inspection, Long> {
             @Param("userId") Long userId,
             @Param("departmentId") Long departmentId,
             Pageable pageable);
+
+    @EntityGraph(attributePaths = {"asset", "businessTrigger"})
+    List<Inspection> findAllByAsset_IdOrderByCompletedAtDesc(Long assetId);
 }

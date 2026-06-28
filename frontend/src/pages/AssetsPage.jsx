@@ -73,6 +73,9 @@ export default function AssetsPage() {
     documentDate: '',
     file: null,
   });
+  const [eligibleOwners, setEligibleOwners] = useState([]);
+  const [eligibleOwnersLoading, setEligibleOwnersLoading] = useState(false);
+  const [selectableAssets, setSelectableAssets] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
     departmentId: '',
@@ -98,8 +101,12 @@ export default function AssetsPage() {
     try {
       setListLoading(true);
       setError(null);
-      const assetPage = await assetApi.list(page);
-      setAssets(unwrapPageContent(assetPage));
+      const assetPage = canUploadDocuments
+        ? await assetApi.listEligibleForOperationalDocumentUpload(page)
+        : await assetApi.list(page);
+      const content = unwrapPageContent(assetPage);
+      setAssets(content);
+      setSelectableAssets(content);
       setAssetsPage(getPageNumber(assetPage, page));
       setAssetsTotalPages(getTotalPages(assetPage));
     } catch (err) {
@@ -114,7 +121,9 @@ export default function AssetsPage() {
       setLoading(true);
       setError(null);
       const requests = [
-        assetApi.list(DEFAULT_PAGE),
+        canUploadDocuments
+          ? assetApi.listEligibleForOperationalDocumentUpload(DEFAULT_PAGE)
+          : assetApi.list(DEFAULT_PAGE),
         departmentApi.list(),
         assetCategoryApi.list(),
       ];
@@ -122,7 +131,9 @@ export default function AssetsPage() {
         requests.push(userApi.getCurrentUser());
       }
       const [assetPage, departmentData, categoryData, profile] = await Promise.all(requests);
-      setAssets(unwrapPageContent(assetPage));
+      const assetContent = unwrapPageContent(assetPage);
+      setAssets(assetContent);
+      setSelectableAssets(assetContent);
       setAssetsPage(getPageNumber(assetPage, DEFAULT_PAGE));
       setAssetsTotalPages(getTotalPages(assetPage));
       setDepartments(departmentData);
@@ -220,6 +231,21 @@ export default function AssetsPage() {
     }
   };
 
+  useEffect(() => {
+    if (!selectedAssetId || !documentForm.ownerType || !canUploadDocuments) {
+      setEligibleOwners([]);
+      return;
+    }
+    setEligibleOwnersLoading(true);
+    operationalDocumentApi.listEligibleOwners(Number(selectedAssetId), documentForm.ownerType)
+      .then(setEligibleOwners)
+      .catch((err) => {
+        setEligibleOwners([]);
+        setError(getApiErrorMessage(err, 'Failed to load eligible owners.'));
+      })
+      .finally(() => setEligibleOwnersLoading(false));
+  }, [selectedAssetId, documentForm.ownerType, canUploadDocuments]);
+
   const handleAssetHistoryChange = async (e) => {
     const assetId = e.target.value;
     setSelectedAssetId(assetId);
@@ -229,6 +255,14 @@ export default function AssetsPage() {
     setHistoryTotalPages(0);
     setDocumentsPage(DEFAULT_PAGE);
     setDocumentsTotalPages(0);
+    setDocumentForm({
+      documentType: '',
+      ownerType: '',
+      ownerId: '',
+      documentDate: '',
+      file: null,
+    });
+    setEligibleOwners([]);
 
     if (!assetId) {
       return;
@@ -239,7 +273,11 @@ export default function AssetsPage() {
 
   const handleDocumentFormChange = (e) => {
     const { name, value } = e.target;
-    setDocumentForm((prev) => ({ ...prev, [name]: value }));
+    setDocumentForm((prev) => ({
+      ...prev,
+      [name]: value,
+      ...(name === 'ownerType' ? { ownerId: '' } : {}),
+    }));
   };
 
   const handleDocumentFileChange = (e) => {
@@ -376,7 +414,7 @@ export default function AssetsPage() {
         />
 
         <AssetHistoryPanel
-          assets={assets}
+          assets={canUploadDocuments ? selectableAssets : assets}
           selectedAssetId={selectedAssetId}
           selectedAsset={selectedAsset}
           assetHistory={assetHistory}
@@ -392,6 +430,8 @@ export default function AssetsPage() {
           canUploadDocuments={canUploadDocuments}
           selectedAssetId={selectedAssetId}
           documentForm={documentForm}
+          eligibleOwners={eligibleOwners}
+          eligibleOwnersLoading={eligibleOwnersLoading}
           assetDocuments={assetDocuments}
           documentsLoading={documentsLoading}
           documentUploading={documentUploading}

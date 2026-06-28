@@ -38,4 +38,7 @@ public interface MaintenanceActivityRepository extends JpaRepository<Maintenance
             @Param("managerId") Long managerId,
             @Param("managerDepartmentId") Long managerDepartmentId,
             @Param("at") LocalDateTime at);
+
+    @EntityGraph(attributePaths = {"workOrder", "asset"})
+    List<MaintenanceActivity> findAllByAsset_IdOrderByCompletedAtDesc(Long assetId);
 }

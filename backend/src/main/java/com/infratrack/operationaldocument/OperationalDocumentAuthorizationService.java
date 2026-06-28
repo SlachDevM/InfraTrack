@@ -1,5 +1,8 @@
 package com.infratrack.operationaldocument;
 
+import com.infratrack.asset.Asset;
+import com.infratrack.delegatedauthority.DelegatedAuthorityService;
+import com.infratrack.department.Department;
 import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.exception.NotFoundException;
 import com.infratrack.inspection.Inspection;
@@ -14,6 +17,7 @@ import com.infratrack.workorder.WorkOrder;
 import com.infratrack.workorder.WorkOrderRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
@@ -26,16 +30,19 @@ public class OperationalDocumentAuthorizationService {
     private final IssueRepository issueRepository;
     private final WorkOrderRepository workOrderRepository;
     private final MaintenanceActivityRepository maintenanceActivityRepository;
+    private final DelegatedAuthorityService delegatedAuthorityService;
 
     public OperationalDocumentAuthorizationService(
             InspectionRepository inspectionRepository,
             IssueRepository issueRepository,
             WorkOrderRepository workOrderRepository,
-            MaintenanceActivityRepository maintenanceActivityRepository) {
+            MaintenanceActivityRepository maintenanceActivityRepository,
+            DelegatedAuthorityService delegatedAuthorityService) {
         this.inspectionRepository = inspectionRepository;
         this.issueRepository = issueRepository;
         this.workOrderRepository = workOrderRepository;
         this.maintenanceActivityRepository = maintenanceActivityRepository;
+        this.delegatedAuthorityService = delegatedAuthorityService;
     }
 
     public void requireUploadAuthorized(User user, OperationalDocumentOwnerContext ownerContext) {
@@ -43,15 +50,49 @@ public class OperationalDocumentAuthorizationService {
         if (role == null) {
             throw forbiddenUpload();
         }
+        if (role.isAdministrator()) {
+            throw new ForbiddenOperationException(
+                    "Administrators cannot upload operational evidence");
+        }
+
+        requireAssetDepartmentAuthorized(user, ownerContext.asset());
 
         switch (role) {
-            case ADMINISTRATOR -> throw new ForbiddenOperationException(
-                    "Administrators cannot upload operational evidence");
             case MANAGER, OPERATIONAL_COORDINATOR -> {
-                // UC-012: Managers and Operational Coordinators may upload in any context.
+                // Department ownership verified above.
             }
             case FIELD_EMPLOYEE, CONTRACTOR -> requireFieldUploadAuthorized(user, ownerContext);
             default -> throw forbiddenUpload();
+        }
+    }
+
+    public void requireAssetDepartmentAuthorized(User user, Asset asset) {
+        UserRole role = user.getRole();
+        if (role == null) {
+            throw forbiddenUpload();
+        }
+        if (role.isManager()) {
+            if (!delegatedAuthorityService.canManagerActForAssetDepartment(
+                    user, asset.getDepartment(), LocalDateTime.now())) {
+                throw new ForbiddenOperationException(
+                        "You may only upload operational documents for assets in your own department.");
+            }
+            return;
+        }
+        if (role.isOperationalCoordinator() || role.isFieldEmployee() || role.isContractor()) {
+            requireSameDepartment(user, asset);
+            return;
+        }
+        throw forbiddenUpload();
+    }
+
+    private void requireSameDepartment(User user, Asset asset) {
+        Department userDepartment = user.getDepartment();
+        Department assetDepartment = asset.getDepartment();
+        if (userDepartment == null || assetDepartment == null
+                || !userDepartment.getId().equals(assetDepartment.getId())) {
+            throw new ForbiddenOperationException(
+                    "You may only upload operational documents for assets in your own department.");
         }
     }
 

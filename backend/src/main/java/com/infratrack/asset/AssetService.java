@@ -18,6 +18,7 @@ import com.infratrack.user.UserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -48,6 +49,32 @@ public class AssetService {
     @Transactional(readOnly = true)
     public Page<AssetSummaryResponse> listPage(Pageable pageable) {
         return assetRepository.findAllByOrderByRegistrationDateDesc(pageable)
+                .map(AssetSummaryResponse::from);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AssetSummaryResponse> listEligibleForOperationalDocumentUploadPage(
+            Long userId,
+            Pageable pageable) {
+        User user = userService.getById(userId);
+        requireCanUploadOperationalDocuments(user);
+        Long userDepartmentId = user.getDepartment() != null
+                ? user.getDepartment().getId()
+                : null;
+        if (user.getRole().isManager()) {
+            return assetRepository.findEligibleForOperationalDocumentUpload(
+                            user.getId(),
+                            userDepartmentId,
+                            LocalDateTime.now(),
+                            pageable)
+                    .map(AssetSummaryResponse::from);
+        }
+        if (userDepartmentId == null) {
+            return Page.empty(pageable);
+        }
+        return assetRepository.findAllByDepartment_IdOrderByRegistrationDateDesc(
+                        userDepartmentId,
+                        pageable)
                 .map(AssetSummaryResponse::from);
     }
 
@@ -113,6 +140,16 @@ public class AssetService {
                 || !userDepartment.getId().equals(requestedDepartmentId)) {
             throw new ForbiddenOperationException(
                     "You may only register assets for your own department.");
+        }
+    }
+
+    void requireCanUploadOperationalDocuments(User user) {
+        if (!user.getRole().isManager()
+                && !user.getRole().isOperationalCoordinator()
+                && !user.getRole().isFieldEmployee()
+                && !user.getRole().isContractor()) {
+            throw new ForbiddenOperationException(
+                    "Unauthorized to upload operational evidence");
         }
     }
 

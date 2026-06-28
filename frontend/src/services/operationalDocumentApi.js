@@ -11,6 +11,8 @@ const ENDPOINTS = {
 export const operationalDocumentApi = {
   list: (assetId, page = DEFAULT_PAGE, size = DEFAULT_SIZE) =>
     apiClient.get(`${ENDPOINTS.LIST(assetId)}?${paginatedQuery(page, size)}`),
+  listEligibleOwners: (assetId, ownerType) =>
+    apiClient.get(`${ENDPOINTS.LIST(assetId)}?eligibleOwners=true&ownerType=${ownerType}`),
   upload: (assetId, formData) => {
     if (!(formData instanceof FormData)) {
       return Promise.reject(new TypeError('upload requires FormData'));
