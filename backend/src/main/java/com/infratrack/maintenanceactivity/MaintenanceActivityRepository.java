@@ -1,7 +1,11 @@
 package com.infratrack.maintenanceactivity;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface MaintenanceActivityRepository extends JpaRepository<MaintenanceActivity, Long> {
@@ -9,4 +13,29 @@ public interface MaintenanceActivityRepository extends JpaRepository<Maintenance
     boolean existsByWorkOrderId(Long workOrderId);
 
     List<MaintenanceActivity> findAllByOrderByCompletedAtDesc();
+
+    @EntityGraph(attributePaths = {"asset", "asset.department", "workOrder"})
+    @Query("""
+            SELECT ma FROM MaintenanceActivity ma
+            WHERE ma.workOrder.status = com.infratrack.workorder.WorkOrderStatus.COMPLETED
+              AND NOT EXISTS (
+                SELECT 1 FROM CompletionReview cr WHERE cr.maintenanceActivity.id = ma.id
+              )
+              AND (
+                (:managerDepartmentId IS NOT NULL AND ma.asset.department.id = :managerDepartmentId)
+                OR EXISTS (
+                  SELECT 1 FROM DelegatedAuthority d
+                  WHERE d.delegateManagerUserId = :managerId
+                    AND d.targetDepartment.id = ma.asset.department.id
+                    AND d.revoked = false
+                    AND d.validFrom <= :at
+                    AND d.validUntil > :at
+                )
+              )
+            ORDER BY ma.completedAt DESC
+            """)
+    List<MaintenanceActivity> findEligibleForCompletionReview(
+            @Param("managerId") Long managerId,
+            @Param("managerDepartmentId") Long managerDepartmentId,
+            @Param("at") LocalDateTime at);
 }

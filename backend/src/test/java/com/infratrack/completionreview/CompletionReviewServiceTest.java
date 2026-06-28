@@ -18,7 +18,6 @@ import com.infratrack.operationaldecision.OperationalDecision;
 import com.infratrack.operationaldecision.OperationalDecisionOutcome;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
-import com.infratrack.user.UserService;
 import com.infratrack.workorder.WorkOrder;
 import com.infratrack.workorder.WorkOrderPriority;
 import com.infratrack.workorder.WorkOrderStatus;
@@ -37,6 +36,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -52,7 +52,7 @@ class CompletionReviewServiceTest {
     private AssetHistoryEventRepository assetHistoryEventRepository;
 
     @Mock
-    private UserService userService;
+    private CompletionReviewAuthorizationService authorizationService;
 
     @InjectMocks
     private CompletionReviewService completionReviewService;
@@ -63,9 +63,11 @@ class CompletionReviewServiceTest {
         MaintenanceActivity maintenanceActivity = completedMaintenanceActivity(5000L, 1000L);
         User manager = user(30L, UserRole.MANAGER);
 
-        when(userService.getById(30L)).thenReturn(manager);
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
         when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
         when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
+        doNothing().when(authorizationService).requireManagerAuthorizedForAsset(
+                eq(manager), eq(maintenanceActivity.getAsset()), any(LocalDateTime.class));
         when(completionReviewRepository.save(any(CompletionReview.class))).thenAnswer(invocation -> {
             CompletionReview review = invocation.getArgument(0);
             review.setId(7000L);
@@ -85,9 +87,11 @@ class CompletionReviewServiceTest {
         MaintenanceActivity maintenanceActivity = completedMaintenanceActivity(5000L, 1000L);
         User manager = user(30L, UserRole.MANAGER);
 
-        when(userService.getById(30L)).thenReturn(manager);
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
         when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
         when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
+        doNothing().when(authorizationService).requireManagerAuthorizedForAsset(
+                eq(manager), eq(maintenanceActivity.getAsset()), any(LocalDateTime.class));
         when(completionReviewRepository.save(any(CompletionReview.class))).thenAnswer(invocation -> {
             CompletionReview review = invocation.getArgument(0);
             review.setId(7001L);
@@ -105,9 +109,11 @@ class CompletionReviewServiceTest {
         MaintenanceActivity maintenanceActivity = completedMaintenanceActivity(5000L, 1000L);
         User manager = user(30L, UserRole.MANAGER);
 
-        when(userService.getById(30L)).thenReturn(manager);
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
         when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
         when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
+        doNothing().when(authorizationService).requireManagerAuthorizedForAsset(
+                eq(manager), eq(maintenanceActivity.getAsset()), any(LocalDateTime.class));
         when(completionReviewRepository.save(any(CompletionReview.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         completionReviewService.recordCompletionReview(5000L, request, 30L);
@@ -126,9 +132,11 @@ class CompletionReviewServiceTest {
         MaintenanceActivity maintenanceActivity = completedMaintenanceActivity(5000L, 1000L);
         User manager = user(30L, UserRole.MANAGER);
 
-        when(userService.getById(30L)).thenReturn(manager);
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
         when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
         when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
+        doNothing().when(authorizationService).requireManagerAuthorizedForAsset(
+                eq(manager), eq(maintenanceActivity.getAsset()), any(LocalDateTime.class));
         when(completionReviewRepository.save(any(CompletionReview.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         completionReviewService.recordCompletionReview(5000L, request, 30L);
@@ -146,9 +154,11 @@ class CompletionReviewServiceTest {
         MaintenanceActivity maintenanceActivity = completedMaintenanceActivity(5000L, 1000L);
         User manager = user(30L, UserRole.MANAGER);
 
-        when(userService.getById(30L)).thenReturn(manager);
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
         when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
         when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
+        doNothing().when(authorizationService).requireManagerAuthorizedForAsset(
+                eq(manager), eq(maintenanceActivity.getAsset()), any(LocalDateTime.class));
         when(completionReviewRepository.save(any(CompletionReview.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         completionReviewService.recordCompletionReview(5000L, request, 30L);
@@ -164,9 +174,11 @@ class CompletionReviewServiceTest {
         LocalDateTime originalCompletedAt = maintenanceActivity.getCompletedAt();
         User manager = user(30L, UserRole.MANAGER);
 
-        when(userService.getById(30L)).thenReturn(manager);
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
         when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
         when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
+        doNothing().when(authorizationService).requireManagerAuthorizedForAsset(
+                eq(manager), eq(maintenanceActivity.getAsset()), any(LocalDateTime.class));
         when(completionReviewRepository.save(any(CompletionReview.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         completionReviewService.recordCompletionReview(5000L, request, 30L);
@@ -183,9 +195,11 @@ class CompletionReviewServiceTest {
         AssetStatus originalStatus = maintenanceActivity.getAsset().getStatus();
         User manager = user(30L, UserRole.MANAGER);
 
-        when(userService.getById(30L)).thenReturn(manager);
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
         when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
         when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
+        doNothing().when(authorizationService).requireManagerAuthorizedForAsset(
+                eq(manager), eq(maintenanceActivity.getAsset()), any(LocalDateTime.class));
         when(completionReviewRepository.save(any(CompletionReview.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         completionReviewService.recordCompletionReview(5000L, request, 30L);
@@ -199,7 +213,7 @@ class CompletionReviewServiceTest {
         MaintenanceActivity maintenanceActivity = completedMaintenanceActivity(5000L, 1000L);
         User manager = user(30L, UserRole.MANAGER);
 
-        when(userService.getById(30L)).thenReturn(manager);
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
         when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
         when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(true);
 
@@ -214,7 +228,7 @@ class CompletionReviewServiceTest {
         RecordCompletionReviewRequest request = approvedRequest();
         User manager = user(30L, UserRole.MANAGER);
 
-        when(userService.getById(30L)).thenReturn(manager);
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
         when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> completionReviewService.recordCompletionReview(5000L, request, 30L))
@@ -227,7 +241,7 @@ class CompletionReviewServiceTest {
         MaintenanceActivity maintenanceActivity = assignedMaintenanceActivity(5000L, 1000L);
         User manager = user(30L, UserRole.MANAGER);
 
-        when(userService.getById(30L)).thenReturn(manager);
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
         when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
 
         assertThatThrownBy(() -> completionReviewService.recordCompletionReview(5000L, request, 30L))
@@ -241,7 +255,7 @@ class CompletionReviewServiceTest {
         MaintenanceActivity maintenanceActivity = maintenanceActivity(5000L, workOrder);
         User manager = user(30L, UserRole.MANAGER);
 
-        when(userService.getById(30L)).thenReturn(manager);
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
         when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
 
         assertThatThrownBy(() -> completionReviewService.recordCompletionReview(5000L, request, 30L))
@@ -255,7 +269,7 @@ class CompletionReviewServiceTest {
         MaintenanceActivity maintenanceActivity = completedMaintenanceActivity(5000L, 1000L);
         User manager = user(30L, UserRole.MANAGER);
 
-        when(userService.getById(30L)).thenReturn(manager);
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
         when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
         when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
 
@@ -270,7 +284,7 @@ class CompletionReviewServiceTest {
         MaintenanceActivity maintenanceActivity = completedMaintenanceActivity(5000L, 1000L);
         User manager = user(30L, UserRole.MANAGER);
 
-        when(userService.getById(30L)).thenReturn(manager);
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
         when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
         when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
 
@@ -285,7 +299,7 @@ class CompletionReviewServiceTest {
         MaintenanceActivity maintenanceActivity = completedMaintenanceActivity(5000L, 1000L);
         User manager = user(30L, UserRole.MANAGER);
 
-        when(userService.getById(30L)).thenReturn(manager);
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
         when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
         when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
 
@@ -300,7 +314,7 @@ class CompletionReviewServiceTest {
         request.setReviewedAt(maintenanceActivity.getCompletedAt().minusMinutes(1));
         User manager = user(30L, UserRole.MANAGER);
 
-        when(userService.getById(30L)).thenReturn(manager);
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
         when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
         when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
 
@@ -315,7 +329,7 @@ class CompletionReviewServiceTest {
         MaintenanceActivity maintenanceActivity = completedMaintenanceActivity(5000L, 1000L);
         User manager = user(30L, UserRole.MANAGER);
 
-        when(userService.getById(30L)).thenReturn(manager);
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
         when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
         when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
 
@@ -358,9 +372,11 @@ class CompletionReviewServiceTest {
         MaintenanceActivity maintenanceActivity = completedMaintenanceActivity(5000L, 1000L);
         User manager = user(30L, UserRole.MANAGER);
 
-        when(userService.getById(30L)).thenReturn(manager);
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
         when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
         when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
+        doNothing().when(authorizationService).requireManagerAuthorizedForAsset(
+                eq(manager), eq(maintenanceActivity.getAsset()), any(LocalDateTime.class));
         when(completionReviewRepository.save(any(CompletionReview.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         completionReviewService.recordCompletionReview(5000L, request, 30L);
@@ -370,12 +386,57 @@ class CompletionReviewServiceTest {
         verify(maintenanceActivityRepository, never()).save(any());
     }
 
+    @Test
+    void recordCompletionReview_shouldRejectManagerFromAnotherDepartment() {
+        RecordCompletionReviewRequest request = approvedRequest();
+        MaintenanceActivity maintenanceActivity = completedMaintenanceActivity(5000L, 1000L);
+        User manager = managerInDepartment(30L, 2L);
+
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
+        when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
+        when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
+        doThrow(new ForbiddenOperationException(
+                "You may only record completion reviews for assets in your own department."))
+                .when(authorizationService)
+                .requireManagerAuthorizedForAsset(
+                        eq(manager), eq(maintenanceActivity.getAsset()), any(LocalDateTime.class));
+
+        assertThatThrownBy(() -> completionReviewService.recordCompletionReview(5000L, request, 30L))
+                .isInstanceOf(ForbiddenOperationException.class);
+
+        verify(completionReviewRepository, never()).save(any());
+    }
+
+    @Test
+    void recordCompletionReview_shouldAllowManagerWithActiveDelegation() {
+        RecordCompletionReviewRequest request = approvedRequest();
+        MaintenanceActivity maintenanceActivity = completedMaintenanceActivity(5000L, 1000L);
+        User manager = managerInDepartment(30L, 2L);
+
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
+        when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
+        when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
+        doNothing().when(authorizationService).requireManagerAuthorizedForAsset(
+                eq(manager), eq(maintenanceActivity.getAsset()), any(LocalDateTime.class));
+        when(completionReviewRepository.save(any(CompletionReview.class))).thenAnswer(invocation -> {
+            CompletionReview review = invocation.getArgument(0);
+            review.setId(7000L);
+            return review;
+        });
+
+        var response = completionReviewService.recordCompletionReview(5000L, request, 30L);
+
+        assertThat(response.getDecision()).isEqualTo(CompletionReviewDecision.APPROVED);
+        verify(completionReviewRepository).save(any(CompletionReview.class));
+    }
+
     private void assertRejectedRole(UserRole role, Long userId) {
         RecordCompletionReviewRequest request = approvedRequest();
         MaintenanceActivity maintenanceActivity = completedMaintenanceActivity(5000L, 1000L);
         User actor = user(userId, role);
 
-        when(userService.getById(userId)).thenReturn(actor);
+        when(authorizationService.requireManager(userId))
+                .thenThrow(new ForbiddenOperationException("Only managers can record completion reviews"));
 
         assertThatThrownBy(() -> completionReviewService.recordCompletionReview(5000L, request, userId))
                 .isInstanceOf(ForbiddenOperationException.class);
@@ -467,6 +528,14 @@ class CompletionReviewServiceTest {
         );
         asset.setId(5L);
         return asset;
+    }
+
+    private User managerInDepartment(Long id, Long departmentId) {
+        User manager = user(id, UserRole.MANAGER);
+        Department department = new Department("Department " + departmentId);
+        department.setId(departmentId);
+        manager.setDepartment(department);
+        return manager;
     }
 
     private User user(Long id, UserRole role) {

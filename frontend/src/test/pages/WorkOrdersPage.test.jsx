@@ -34,6 +34,8 @@ vi.mock('../../services/operationalDecisionApi', () => ({
 vi.mock('../../services/maintenanceActivityApi', () => ({
   default: {
     list: vi.fn(),
+    listEligibleForCompletionReview: vi.fn(),
+    recordCompletionReview: vi.fn(),
   },
 }));
 
@@ -88,10 +90,12 @@ describe('WorkOrdersPage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAuth.user = { userId: 40, role: 'OPERATIONAL_COORDINATOR' };
     workOrderApi.list.mockResolvedValue(pageResponse([]));
     workOrderApi.listEligibleForAssignment.mockResolvedValue(pageResponse([]));
     operationalDecisionApi.listEligibleForWorkOrderCreation.mockResolvedValue(pageResponse([]));
     maintenanceActivityApi.list.mockResolvedValue([]);
+    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue([]);
     workOrderApi.listEligibleWorkers.mockResolvedValue([]);
   });
 
@@ -223,6 +227,93 @@ describe('WorkOrdersPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('You do not have permission to assign work orders.')).toBeInTheDocument();
+    });
+  });
+});
+
+describe('WorkOrdersPage completion review', () => {
+  afterEach(cleanup);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockAuth.user = { userId: 30, role: 'MANAGER' };
+    workOrderApi.list.mockResolvedValue(pageResponse([]));
+    maintenanceActivityApi.list.mockResolvedValue([]);
+    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue([]);
+  });
+
+  it('shows only eligible maintenance activities from backend in review selector', async () => {
+    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue([
+      {
+        id: 500,
+        workOrderId: 100,
+        assetName: 'Central Playground',
+        workOrderStatus: 'COMPLETED',
+        completionReviewDecision: null,
+      },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <WorkOrdersPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole('option', {
+      name: /#500 — WO #100 — Central Playground/i,
+    })).toBeInTheDocument();
+    expect(maintenanceActivityApi.listEligibleForCompletionReview).toHaveBeenCalled();
+    expect(screen.queryByRole('option', { name: /Other Department Asset/i })).not.toBeInTheDocument();
+  });
+
+  it('hides already reviewed maintenance activities from backend response', async () => {
+    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue([
+      {
+        id: 500,
+        workOrderId: 100,
+        assetName: 'Central Playground',
+        workOrderStatus: 'COMPLETED',
+        completionReviewDecision: null,
+      },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <WorkOrdersPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByRole('option', { name: /#500 — WO #100 — Central Playground/i });
+    expect(screen.queryByRole('option', { name: /Already Reviewed Asset/i })).not.toBeInTheDocument();
+  });
+
+  it('displays forbidden message when completion review is rejected', async () => {
+    const user = userEvent.setup();
+    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue([
+      {
+        id: 500,
+        workOrderId: 100,
+        assetName: 'Central Playground',
+        workOrderStatus: 'COMPLETED',
+        completionReviewDecision: null,
+      },
+    ]);
+    maintenanceActivityApi.recordCompletionReview.mockRejectedValue({ status: 403 });
+
+    render(
+      <MemoryRouter>
+        <WorkOrdersPage />
+      </MemoryRouter>
+    );
+
+    await user.selectOptions(await screen.findByLabelText('Maintenance Activity'), '500');
+    await user.type(screen.getByLabelText('Review Notes'), 'Work completed to standard');
+    await user.click(screen.getByRole('button', { name: 'Record Completion Review' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(
+        'You do not have permission to record completion reviews for this maintenance activity.'
+      )).toBeInTheDocument();
     });
   });
 });

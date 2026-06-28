@@ -42,6 +42,7 @@ export default function WorkOrdersPage() {
   const [workOrdersTotalPages, setWorkOrdersTotalPages] = useState(0);
   const [listLoading, setListLoading] = useState(false);
   const [maintenanceActivities, setMaintenanceActivities] = useState([]);
+  const [reviewableMaintenanceActivities, setReviewableMaintenanceActivities] = useState([]);
   const [decisions, setDecisions] = useState([]);
   const [assignableWorkOrders, setAssignableWorkOrders] = useState([]);
   const [eligibleAssignees, setEligibleAssignees] = useState([]);
@@ -121,19 +122,11 @@ export default function WorkOrdersPage() {
     [workOrders, completeFormData.workOrderId]
   );
 
-  const reviewableMaintenanceActivities = useMemo(
-    () => maintenanceActivities.filter(
-      (activity) => activity.workOrderStatus === 'COMPLETED'
-        && !activity.completionReviewDecision
-    ),
-    [maintenanceActivities]
-  );
-
   const selectedReviewActivity = useMemo(
-    () => maintenanceActivities.find(
+    () => reviewableMaintenanceActivities.find(
       (activity) => String(activity.id) === String(reviewFormData.maintenanceActivityId)
     ),
-    [maintenanceActivities, reviewFormData.maintenanceActivityId]
+    [reviewableMaintenanceActivities, reviewFormData.maintenanceActivityId]
   );
 
   useEffect(() => {
@@ -163,15 +156,18 @@ export default function WorkOrdersPage() {
     try {
       setLoading(true);
       setError(null);
-      const [workOrderPage, decisionData, maintenanceActivityData, assignablePage] = await Promise.all([
+      const [workOrderPage, decisionData, maintenanceActivityData, assignablePage, reviewableActivityData] = await Promise.all([
         workOrderApi.list(page),
         canCreate
           ? operationalDecisionApi.listEligibleForWorkOrderCreation(0, MAX_PAGE_SIZE)
           : Promise.resolve(null),
-        maintenanceActivityApi.list(),
+        canComplete ? maintenanceActivityApi.list() : Promise.resolve([]),
         canAssign
           ? workOrderApi.listEligibleForAssignment(0, MAX_PAGE_SIZE)
           : Promise.resolve(null),
+        canReview
+          ? maintenanceActivityApi.listEligibleForCompletionReview()
+          : Promise.resolve([]),
       ]);
       setWorkOrders(unwrapPageContent(workOrderPage));
       setWorkOrdersPage(getPageNumber(workOrderPage, page));
@@ -179,6 +175,7 @@ export default function WorkOrdersPage() {
       setDecisions(decisionData ? unwrapPageContent(decisionData) : []);
       setAssignableWorkOrders(assignablePage ? unwrapPageContent(assignablePage) : []);
       setMaintenanceActivities(maintenanceActivityData);
+      setReviewableMaintenanceActivities(reviewableActivityData);
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to load work orders.'));
     } finally {
@@ -329,7 +326,7 @@ export default function WorkOrdersPage() {
       await loadPageData(workOrdersPage);
     } catch (err) {
       if (isForbidden(err)) {
-        setError('You do not have permission to record completion reviews.');
+        setError('You do not have permission to record completion reviews for this maintenance activity.');
       } else {
         setError(getApiErrorMessage(err, 'Failed to record completion review.'));
       }

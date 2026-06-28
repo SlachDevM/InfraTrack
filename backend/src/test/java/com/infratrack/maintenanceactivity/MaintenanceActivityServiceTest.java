@@ -18,6 +18,7 @@ import com.infratrack.inspection.InspectionPriority;
 import com.infratrack.inspection.PhysicalCondition;
 import com.infratrack.issue.Issue;
 import com.infratrack.issue.IssueSeverity;
+import com.infratrack.completionreview.CompletionReviewAuthorizationService;
 import com.infratrack.completionreview.CompletionReviewRepository;
 import com.infratrack.maintenanceactivity.dto.CompleteMaintenanceActivityRequest;
 import com.infratrack.notification.OperationalEventNotificationService;
@@ -45,6 +46,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -67,6 +69,9 @@ class MaintenanceActivityServiceTest {
 
     @Mock
     private OperationalEventNotificationService operationalEventNotificationService;
+
+    @Mock
+    private CompletionReviewAuthorizationService completionReviewAuthorizationService;
 
     @InjectMocks
     private MaintenanceActivityService maintenanceActivityService;
@@ -476,5 +481,55 @@ class MaintenanceActivityServiceTest {
         user.setId(id);
         user.setEnabled(true);
         return user;
+    }
+
+    @Test
+    void listEligibleForCompletionReview_shouldReturnActivitiesForManagerDepartment() {
+        User manager = managerInDepartment(30L, 1L);
+        MaintenanceActivity eligibleActivity = completedMaintenanceActivity(5000L, 1000L);
+
+        when(completionReviewAuthorizationService.requireManager(30L)).thenReturn(manager);
+        when(maintenanceActivityRepository.findEligibleForCompletionReview(
+                eq(30L), eq(1L), any(LocalDateTime.class)))
+                .thenReturn(java.util.List.of(eligibleActivity));
+
+        var responses = maintenanceActivityService.listEligibleForCompletionReview(30L);
+
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).getId()).isEqualTo(5000L);
+        assertThat(responses.get(0).getCompletionReviewDecision()).isNull();
+    }
+
+    @Test
+    void listEligibleForCompletionReview_shouldRejectNonManager() {
+        when(completionReviewAuthorizationService.requireManager(30L))
+                .thenThrow(new ForbiddenOperationException("Only managers can record completion reviews"));
+
+        assertThatThrownBy(() -> maintenanceActivityService.listEligibleForCompletionReview(30L))
+                .isInstanceOf(ForbiddenOperationException.class);
+
+        verify(maintenanceActivityRepository, never()).findEligibleForCompletionReview(any(), any(), any());
+    }
+
+    private User managerInDepartment(Long id, Long departmentId) {
+        User manager = user(id, UserRole.MANAGER);
+        Department department = new Department("Department " + departmentId);
+        department.setId(departmentId);
+        manager.setDepartment(department);
+        return manager;
+    }
+
+    private MaintenanceActivity completedMaintenanceActivity(Long id, Long workOrderId) {
+        WorkOrder workOrder = assignedWorkOrder(workOrderId, WorkType.INTERNAL_MAINTENANCE, 20L);
+        workOrder.complete();
+        MaintenanceActivity maintenanceActivity = new MaintenanceActivity(
+                workOrder,
+                workOrder.getAsset(),
+                20L,
+                "Replaced damaged swing chain",
+                LocalDateTime.now().minusHours(2)
+        );
+        maintenanceActivity.setId(id);
+        return maintenanceActivity;
     }
 }

@@ -6,6 +6,7 @@ import com.infratrack.asset.AssetStatus;
 import com.infratrack.assetcategory.AssetCategory;
 import com.infratrack.businesstrigger.BusinessTrigger;
 import com.infratrack.businesstrigger.BusinessTriggerType;
+import com.infratrack.completionreview.CompletionReviewAuthorizationService;
 import com.infratrack.completionreview.CompletionReviewRepository;
 import com.infratrack.department.Department;
 import com.infratrack.inspection.Inspection;
@@ -69,6 +70,9 @@ class MaintenanceActivityServiceNotificationTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private CompletionReviewAuthorizationService completionReviewAuthorizationService;
+
     private MaintenanceActivityService maintenanceActivityService;
 
     @BeforeEach
@@ -81,7 +85,8 @@ class MaintenanceActivityServiceNotificationTest {
                 assetHistoryEventRepository,
                 userService,
                 completionReviewRepository,
-                operationalEventNotificationService);
+                operationalEventNotificationService,
+                completionReviewAuthorizationService);
     }
 
     @Test

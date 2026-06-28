@@ -7,6 +7,7 @@ import com.infratrack.asset.AssetHistoryEventType;
 import com.infratrack.completionreview.CompletionReview;
 import com.infratrack.completionreview.CompletionReviewDecision;
 import com.infratrack.completionreview.CompletionReviewRepository;
+import com.infratrack.completionreview.CompletionReviewAuthorizationService;
 import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.ConflictException;
 import com.infratrack.exception.ForbiddenOperationException;
@@ -38,6 +39,7 @@ public class MaintenanceActivityService {
     private final UserService userService;
     private final CompletionReviewRepository completionReviewRepository;
     private final OperationalEventNotificationService operationalEventNotificationService;
+    private final CompletionReviewAuthorizationService completionReviewAuthorizationService;
 
     public MaintenanceActivityService(
             MaintenanceActivityRepository maintenanceActivityRepository,
@@ -45,19 +47,36 @@ public class MaintenanceActivityService {
             AssetHistoryEventRepository assetHistoryEventRepository,
             UserService userService,
             CompletionReviewRepository completionReviewRepository,
-            OperationalEventNotificationService operationalEventNotificationService) {
+            OperationalEventNotificationService operationalEventNotificationService,
+            CompletionReviewAuthorizationService completionReviewAuthorizationService) {
         this.maintenanceActivityRepository = maintenanceActivityRepository;
         this.workOrderRepository = workOrderRepository;
         this.assetHistoryEventRepository = assetHistoryEventRepository;
         this.userService = userService;
         this.completionReviewRepository = completionReviewRepository;
         this.operationalEventNotificationService = operationalEventNotificationService;
+        this.completionReviewAuthorizationService = completionReviewAuthorizationService;
     }
 
     @Transactional(readOnly = true)
     public List<MaintenanceActivityResponse> listAll() {
         return maintenanceActivityRepository.findAllByOrderByCompletedAtDesc().stream()
                 .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<MaintenanceActivityResponse> listEligibleForCompletionReview(Long userId) {
+        User manager = completionReviewAuthorizationService.requireManager(userId);
+        Long managerDepartmentId = manager.getDepartment() != null
+                ? manager.getDepartment().getId()
+                : null;
+        return maintenanceActivityRepository.findEligibleForCompletionReview(
+                        manager.getId(),
+                        managerDepartmentId,
+                        LocalDateTime.now())
+                .stream()
+                .map(maintenanceActivity -> MaintenanceActivityResponse.from(maintenanceActivity, null))
                 .toList();
     }
 

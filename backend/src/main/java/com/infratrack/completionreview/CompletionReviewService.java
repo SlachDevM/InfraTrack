@@ -8,12 +8,10 @@ import com.infratrack.completionreview.dto.CompletionReviewResponse;
 import com.infratrack.completionreview.dto.RecordCompletionReviewRequest;
 import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.ConflictException;
-import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.exception.NotFoundException;
 import com.infratrack.maintenanceactivity.MaintenanceActivity;
 import com.infratrack.maintenanceactivity.MaintenanceActivityRepository;
 import com.infratrack.user.User;
-import com.infratrack.user.UserService;
 import com.infratrack.workorder.WorkOrderStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,17 +27,17 @@ public class CompletionReviewService {
     private final CompletionReviewRepository completionReviewRepository;
     private final MaintenanceActivityRepository maintenanceActivityRepository;
     private final AssetHistoryEventRepository assetHistoryEventRepository;
-    private final UserService userService;
+    private final CompletionReviewAuthorizationService authorizationService;
 
     public CompletionReviewService(
             CompletionReviewRepository completionReviewRepository,
             MaintenanceActivityRepository maintenanceActivityRepository,
             AssetHistoryEventRepository assetHistoryEventRepository,
-            UserService userService) {
+            CompletionReviewAuthorizationService authorizationService) {
         this.completionReviewRepository = completionReviewRepository;
         this.maintenanceActivityRepository = maintenanceActivityRepository;
         this.assetHistoryEventRepository = assetHistoryEventRepository;
-        this.userService = userService;
+        this.authorizationService = authorizationService;
     }
 
     @Transactional
@@ -47,7 +45,7 @@ public class CompletionReviewService {
             Long maintenanceActivityId,
             RecordCompletionReviewRequest request,
             Long userId) {
-        User manager = requireManager(userId);
+        User manager = authorizationService.requireManager(userId);
         MaintenanceActivity maintenanceActivity = findMaintenanceActivityOrThrow(maintenanceActivityId);
         requireCompletedWorkOrder(maintenanceActivity);
         requireNoExistingCompletionReview(maintenanceActivityId);
@@ -57,6 +55,7 @@ public class CompletionReviewService {
         LocalDateTime reviewedAt = validateReviewedAt(request.getReviewedAt(), maintenanceActivity);
 
         Asset asset = maintenanceActivity.getAsset();
+        authorizationService.requireManagerAuthorizedForAsset(manager, asset, reviewedAt);
         CompletionReview completionReview = completionReviewRepository.save(new CompletionReview(
                 maintenanceActivity,
                 asset,
@@ -74,15 +73,6 @@ public class CompletionReviewService {
         ));
 
         return CompletionReviewResponse.from(completionReview);
-    }
-
-    private User requireManager(Long userId) {
-        User user = userService.getById(userId);
-        if (!user.getRole().isManager()) {
-            throw new ForbiddenOperationException(
-                    "Only managers can record completion reviews");
-        }
-        return user;
     }
 
     private MaintenanceActivity findMaintenanceActivityOrThrow(Long maintenanceActivityId) {
