@@ -1,11 +1,13 @@
 package com.infratrack.config;
 
+import com.infratrack.exception.BusinessValidationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class PaginationSupportTest {
 
@@ -32,7 +34,44 @@ class PaginationSupportTest {
     }
 
     @Test
-    void normalizeSize_shouldEnforceMinimumOfOne() {
-        assertThat(PaginationSupport.normalizeSize(0)).isEqualTo(1);
+    void normalizePage_shouldRejectNegativePageIndex() {
+        assertThatThrownBy(() -> PaginationSupport.normalizePage(-1))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Page index must be greater than or equal to 0.");
+    }
+
+    @Test
+    void normalizeSize_shouldRejectZeroSize() {
+        assertThatThrownBy(() -> PaginationSupport.normalizeSize(0))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Page size must be greater than 0.");
+    }
+
+    @Test
+    void normalizeSize_shouldRejectNegativeSize() {
+        assertThatThrownBy(() -> PaginationSupport.normalizeSize(-5))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Page size must be greater than 0.");
+    }
+
+    @Test
+    void pageable_shouldRejectNegativePageIndex() {
+        assertThatThrownBy(() -> PaginationSupport.pageable(-1, 20, Sort.unsorted()))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Page index must be greater than or equal to 0.");
+    }
+
+    @Test
+    void pageable_shouldRejectZeroSize() {
+        assertThatThrownBy(() -> PaginationSupport.pageable(0, 0, Sort.unsorted()))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Page size must be greater than 0.");
+    }
+
+    @Test
+    void pageable_shouldRejectNegativeSize() {
+        assertThatThrownBy(() -> PaginationSupport.pageable(0, -5, Sort.unsorted()))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Page size must be greater than 0.");
     }
 }
