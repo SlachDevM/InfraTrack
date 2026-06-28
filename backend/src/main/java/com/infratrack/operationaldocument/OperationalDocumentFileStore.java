@@ -48,8 +48,6 @@ public class OperationalDocumentFileStore {
                 throw new NotFoundException("Document not found");
             }
             Files.deleteIfExists(filePath);
-        } catch (NotFoundException ex) {
-            throw ex;
         } catch (IOException ex) {
             throw new BusinessValidationException("Failed to delete document");
         }
@@ -66,8 +64,6 @@ public class OperationalDocumentFileStore {
                 throw new NotFoundException("Document not found");
             }
             return resource;
-        } catch (NotFoundException ex) {
-            throw ex;
         } catch (Exception ex) {
             throw new NotFoundException("Document not found");
         }

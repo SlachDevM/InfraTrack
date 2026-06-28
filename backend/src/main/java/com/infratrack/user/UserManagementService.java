@@ -43,6 +43,7 @@ public class UserManagementService {
      *
      * @return list of all users as UserManagementResponse DTOs
      */
+    @Transactional(readOnly = true)
     public List<UserManagementResponse> listAllUsers() {
         return userRepository.findAll().stream()
                 .map(this::toUserManagementResponse)
@@ -55,6 +56,7 @@ public class UserManagementService {
      * @param userId the user's ID
      * @return UserManagementResponse DTO
      */
+    @Transactional(readOnly = true)
     public UserManagementResponse getUserById(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
