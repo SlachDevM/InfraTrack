@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import PrivateRoute from './components/PrivateRoute';
 import Login from './pages/Login';
 import ActivationPage from './pages/ActivationPage';
 import PlatformShell from './pages/PlatformShell';
@@ -16,16 +17,6 @@ import OperationalDecisionsPage from './pages/OperationalDecisionsPage';
 import DelegatedAuthoritiesPage from './pages/DelegatedAuthoritiesPage';
 import WorkOrdersPage from './pages/WorkOrdersPage';
 import './App.css';
-
-function PrivateRoute({ children }) {
-  const { auth, loading } = useAuth();
-
-  if (loading) {
-    return <div className="loading">Loading...</div>;
-  }
-
-  return auth ? children : <Navigate to="/login" />;
-}
 
 function App() {
   return (
