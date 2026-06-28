@@ -13,6 +13,7 @@ export const issueApi = {
     apiClient.get(`${ENDPOINTS.LIST}?${paginatedQuery(page, size)}&eligibleForOperationalDecision=true`),
   get: (id) => apiClient.get(ENDPOINTS.DETAIL(id)),
   record: (request) => apiClient.post(ENDPOINTS.LIST, request),
+  updateCapa: (id, request) => apiClient.patch(`${ENDPOINTS.DETAIL(id)}/capa`, request),
 };
 
 export default issueApi;

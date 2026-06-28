@@ -14,8 +14,13 @@ import com.infratrack.completionreview.dto.RecordCompletionReviewRequest;
 import com.infratrack.department.Department;
 import com.infratrack.maintenanceactivity.MaintenanceActivity;
 import com.infratrack.maintenanceactivity.MaintenanceActivityRepository;
-import com.infratrack.operationaldecision.OperationalDecision;
+import com.infratrack.issue.Issue;
+import com.infratrack.issue.IssueRepository;
+import com.infratrack.issue.IssueSeverity;
+import com.infratrack.issue.IssueType;
+import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.operationaldecision.OperationalDecisionOutcome;
+import com.infratrack.operationaldecision.OperationalDecision;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.workorder.WorkOrder;
@@ -54,6 +59,12 @@ class CompletionReviewServiceTest {
     @Mock
     private CompletionReviewAuthorizationService authorizationService;
 
+    @Mock
+    private IssueRepository issueRepository;
+
+    @Mock
+    private OperationalEventNotificationService operationalEventNotificationService;
+
     @InjectMocks
     private CompletionReviewService completionReviewService;
 
@@ -79,6 +90,8 @@ class CompletionReviewServiceTest {
         assertThat(response.getDecision()).isEqualTo(CompletionReviewDecision.APPROVED);
         assertThat(response.getMaintenanceActivityId()).isEqualTo(5000L);
         assertThat(response.getWorkOrderStatus()).isEqualTo(WorkOrderStatus.COMPLETED);
+        assertThat(response.getReworkIssueId()).isNull();
+        verify(issueRepository, never()).save(any());
     }
 
     @Test
@@ -97,10 +110,16 @@ class CompletionReviewServiceTest {
             review.setId(7001L);
             return review;
         });
+        when(issueRepository.save(any(Issue.class))).thenAnswer(invocation -> {
+            Issue issue = invocation.getArgument(0);
+            issue.setId(8001L);
+            return issue;
+        });
 
         var response = completionReviewService.recordCompletionReview(5000L, request, 30L);
 
         assertThat(response.getDecision()).isEqualTo(CompletionReviewDecision.REWORK_REQUIRED);
+        assertThat(response.getReworkIssueId()).isEqualTo(8001L);
     }
 
     @Test
@@ -384,6 +403,167 @@ class CompletionReviewServiceTest {
         verify(completionReviewRepository).save(any(CompletionReview.class));
         verify(assetHistoryEventRepository).save(any(AssetHistoryEvent.class));
         verify(maintenanceActivityRepository, never()).save(any());
+        verify(issueRepository, never()).save(any());
+        verify(operationalEventNotificationService, never())
+                .notifyReworkIssueRequiresOperationalDecision(any(), anyLong());
+    }
+
+    @Test
+    void recordCompletionReview_shouldCreateReworkIssueWhenReworkRequired() {
+        RecordCompletionReviewRequest request = reworkRequest();
+        MaintenanceActivity maintenanceActivity = completedMaintenanceActivity(5000L, 1000L);
+        User manager = user(30L, UserRole.MANAGER);
+
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
+        when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
+        when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
+        doNothing().when(authorizationService).requireManagerAuthorizedForAsset(
+                eq(manager), eq(maintenanceActivity.getAsset()), any(LocalDateTime.class));
+        when(completionReviewRepository.save(any(CompletionReview.class))).thenAnswer(invocation -> {
+            CompletionReview review = invocation.getArgument(0);
+            review.setId(7001L);
+            return review;
+        });
+        when(issueRepository.existsBySourceCompletionReviewId(7001L)).thenReturn(false);
+        when(issueRepository.save(any(Issue.class))).thenAnswer(invocation -> {
+            Issue issue = invocation.getArgument(0);
+            issue.setId(8001L);
+            return issue;
+        });
+
+        completionReviewService.recordCompletionReview(5000L, request, 30L);
+
+        ArgumentCaptor<Issue> issueCaptor = ArgumentCaptor.forClass(Issue.class);
+        verify(issueRepository).save(issueCaptor.capture());
+        Issue savedIssue = issueCaptor.getValue();
+        assertThat(savedIssue.getAsset().getId()).isEqualTo(5L);
+        assertThat(savedIssue.getSourceCompletionReview().getId()).isEqualTo(7001L);
+        assertThat(savedIssue.getInspection()).isNull();
+        assertThat(savedIssue.getIssueType()).isEqualTo(IssueType.REWORK);
+        assertThat(savedIssue.getDescription())
+                .isEqualTo("Rework required following Completion Review #7001: Chain still loose, rework required");
+        assertThat(savedIssue.getSeverity()).isEqualTo(IssueSeverity.HIGH);
+        assertThat(savedIssue.getRootCause()).isEqualTo("Missing lubrication");
+        assertThat(savedIssue.getCorrectiveAction()).isEqualTo("Re-grease chain bearings");
+        assertThat(savedIssue.getPreventiveAction()).isEqualTo("Monthly lubrication check");
+        assertThat(savedIssue.getRecordedByUserId()).isEqualTo(30L);
+    }
+
+    @Test
+    void recordCompletionReview_shouldCreateReworkIssueAssetHistoryEvent() {
+        RecordCompletionReviewRequest request = reworkRequest();
+        MaintenanceActivity maintenanceActivity = completedMaintenanceActivity(5000L, 1000L);
+        User manager = user(30L, UserRole.MANAGER);
+
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
+        when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
+        when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
+        doNothing().when(authorizationService).requireManagerAuthorizedForAsset(
+                eq(manager), eq(maintenanceActivity.getAsset()), any(LocalDateTime.class));
+        when(completionReviewRepository.save(any(CompletionReview.class))).thenAnswer(invocation -> {
+            CompletionReview review = invocation.getArgument(0);
+            review.setId(7001L);
+            return review;
+        });
+        when(issueRepository.existsBySourceCompletionReviewId(7001L)).thenReturn(false);
+        when(issueRepository.save(any(Issue.class))).thenAnswer(invocation -> {
+            Issue issue = invocation.getArgument(0);
+            issue.setId(8001L);
+            return issue;
+        });
+
+        completionReviewService.recordCompletionReview(5000L, request, 30L);
+
+        ArgumentCaptor<AssetHistoryEvent> historyCaptor = ArgumentCaptor.forClass(AssetHistoryEvent.class);
+        verify(assetHistoryEventRepository, times(2)).save(historyCaptor.capture());
+        assertThat(historyCaptor.getAllValues())
+                .extracting(AssetHistoryEvent::getEventType)
+                .containsExactly(
+                        AssetHistoryEventType.COMPLETION_REVIEW_RECORDED,
+                        AssetHistoryEventType.REWORK_ISSUE_CREATED);
+        AssetHistoryEvent reworkHistoryEvent = historyCaptor.getAllValues().get(1);
+        assertThat(reworkHistoryEvent.getDetails())
+                .isEqualTo("Issue type: REWORK | Severity: HIGH | Root cause: Missing lubrication");
+    }
+
+    @Test
+    void recordCompletionReview_shouldRejectReworkRequiredWithoutSeverity() {
+        RecordCompletionReviewRequest request = reworkRequest();
+        request.setReworkSeverity(null);
+        MaintenanceActivity maintenanceActivity = completedMaintenanceActivity(5000L, 1000L);
+        User manager = user(30L, UserRole.MANAGER);
+
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
+        when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
+        when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
+
+        assertThatThrownBy(() -> completionReviewService.recordCompletionReview(5000L, request, 30L))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Rework severity is required when rework is required");
+
+        verify(completionReviewRepository, never()).save(any());
+        verify(issueRepository, never()).save(any());
+    }
+
+    @Test
+    void buildReworkIssueHistoryDetails_shouldOmitRootCauseWhenNotProvided() {
+        assertThat(CompletionReviewService.buildReworkIssueHistoryDetails(IssueSeverity.LOW, null))
+                .isEqualTo("Issue type: REWORK | Severity: LOW");
+    }
+
+    @Test
+    void recordCompletionReview_shouldNotifyManagersWhenReworkIssueCreated() {
+        RecordCompletionReviewRequest request = reworkRequest();
+        MaintenanceActivity maintenanceActivity = completedMaintenanceActivity(5000L, 1000L);
+        User manager = user(30L, UserRole.MANAGER);
+
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
+        when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
+        when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
+        doNothing().when(authorizationService).requireManagerAuthorizedForAsset(
+                eq(manager), eq(maintenanceActivity.getAsset()), any(LocalDateTime.class));
+        when(completionReviewRepository.save(any(CompletionReview.class))).thenAnswer(invocation -> {
+            CompletionReview review = invocation.getArgument(0);
+            review.setId(7001L);
+            return review;
+        });
+        when(issueRepository.existsBySourceCompletionReviewId(7001L)).thenReturn(false);
+        when(issueRepository.save(any(Issue.class))).thenAnswer(invocation -> {
+            Issue issue = invocation.getArgument(0);
+            issue.setId(8001L);
+            return issue;
+        });
+
+        completionReviewService.recordCompletionReview(5000L, request, 30L);
+
+        verify(operationalEventNotificationService).notifyReworkIssueRequiresOperationalDecision(
+                eq(maintenanceActivity.getAsset().getDepartment()),
+                eq(8001L));
+    }
+
+    @Test
+    void recordCompletionReview_shouldNotCreateReworkIssueWhenApproved() {
+        RecordCompletionReviewRequest request = approvedRequest();
+        MaintenanceActivity maintenanceActivity = completedMaintenanceActivity(5000L, 1000L);
+        User manager = user(30L, UserRole.MANAGER);
+
+        when(authorizationService.requireManager(30L)).thenReturn(manager);
+        when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
+        when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
+        doNothing().when(authorizationService).requireManagerAuthorizedForAsset(
+                eq(manager), eq(maintenanceActivity.getAsset()), any(LocalDateTime.class));
+        when(completionReviewRepository.save(any(CompletionReview.class))).thenAnswer(invocation -> {
+            CompletionReview review = invocation.getArgument(0);
+            review.setId(7000L);
+            return review;
+        });
+
+        var response = completionReviewService.recordCompletionReview(5000L, request, 30L);
+
+        assertThat(response.getReworkIssueId()).isNull();
+        verify(issueRepository, never()).save(any());
+        verify(operationalEventNotificationService, never())
+                .notifyReworkIssueRequiresOperationalDecision(any(), anyLong());
     }
 
     @Test
@@ -457,6 +637,10 @@ class CompletionReviewServiceTest {
         RecordCompletionReviewRequest request = approvedRequest();
         request.setDecision(CompletionReviewDecision.REWORK_REQUIRED);
         request.setReviewNotes("Chain still loose, rework required");
+        request.setReworkSeverity(IssueSeverity.HIGH);
+        request.setRootCause("Missing lubrication");
+        request.setCorrectiveAction("Re-grease chain bearings");
+        request.setPreventiveAction("Monthly lubrication check");
         return request;
     }
 

@@ -135,6 +135,49 @@ class OperationalEventNotificationServiceTest {
                 eq(OperationalEventNotificationService.WORK_ORDERS_ROUTE));
     }
 
+    @Test
+    void notifyReworkIssueRequiresOperationalDecision_shouldNotifyEnabledManagersInDepartment() {
+        Department department = department(1L);
+        User manager = user(30L, UserRole.MANAGER, department);
+        manager.setEnabled(true);
+
+        when(userRepository.findByRoleAndDepartmentIdAndEnabledTrueOrderByNameAsc(UserRole.MANAGER, 1L))
+                .thenReturn(List.of(manager));
+
+        operationalEventNotificationService.notifyReworkIssueRequiresOperationalDecision(department, 8001L);
+
+        verify(notificationService).create(
+                30L,
+                OperationalEventNotificationService.REWORK_ISSUE_REQUIRES_DECISION_TITLE,
+                OperationalEventNotificationService.REWORK_ISSUE_REQUIRES_DECISION_MESSAGE,
+                OperationalEventNotificationService.ISSUES_ROUTE);
+    }
+
+    @Test
+    void notifyReworkIssueRequiresOperationalDecision_shouldNotNotifyDisabledManagers() {
+        Department department = department(1L);
+
+        when(userRepository.findByRoleAndDepartmentIdAndEnabledTrueOrderByNameAsc(UserRole.MANAGER, 1L))
+                .thenReturn(List.of());
+
+        operationalEventNotificationService.notifyReworkIssueRequiresOperationalDecision(department, 8001L);
+
+        verify(notificationService, never()).create(anyLong(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void notifyReworkIssueRequiresOperationalDecision_shouldNotNotifyCrossDepartmentManagers() {
+        Department assetDepartment = department(1L);
+
+        when(userRepository.findByRoleAndDepartmentIdAndEnabledTrueOrderByNameAsc(UserRole.MANAGER, 1L))
+                .thenReturn(List.of());
+
+        operationalEventNotificationService.notifyReworkIssueRequiresOperationalDecision(assetDepartment, 8001L);
+
+        verify(userRepository, never()).findByRoleAndDepartmentId(any(), eq(2L));
+        verify(notificationService, never()).create(anyLong(), anyString(), anyString(), anyString());
+    }
+
     private Department department(Long id) {
         Department department = new Department("Parks");
         department.setId(id);

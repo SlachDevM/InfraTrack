@@ -18,10 +18,15 @@ public class CompletionReviewResponse {
     private Long reviewedByUserId;
     private LocalDateTime reviewedAt;
     private WorkOrderStatus workOrderStatus;
+    private Long reworkIssueId;
     private Long createdAt;
     private Long updatedAt;
 
     public static CompletionReviewResponse from(CompletionReview completionReview) {
+        return from(completionReview, null);
+    }
+
+    public static CompletionReviewResponse from(CompletionReview completionReview, Long reworkIssueId) {
         CompletionReviewResponse response = new CompletionReviewResponse();
         response.id = completionReview.getId();
         response.maintenanceActivityId = completionReview.getMaintenanceActivity().getId();
@@ -33,6 +38,7 @@ public class CompletionReviewResponse {
         response.reviewedByUserId = completionReview.getReviewedByUserId();
         response.reviewedAt = completionReview.getReviewedAt();
         response.workOrderStatus = completionReview.getMaintenanceActivity().getWorkOrder().getStatus();
+        response.reworkIssueId = reworkIssueId;
         response.createdAt = completionReview.getCreatedAt();
         response.updatedAt = completionReview.getUpdatedAt();
         return response;
@@ -76,6 +82,10 @@ public class CompletionReviewResponse {
 
     public WorkOrderStatus getWorkOrderStatus() {
         return workOrderStatus;
+    }
+
+    public Long getReworkIssueId() {
+        return reworkIssueId;
     }
 
     public Long getCreatedAt() {

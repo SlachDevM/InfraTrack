@@ -19,6 +19,7 @@ import com.infratrack.inspection.InspectionStatus;
 import com.infratrack.inspection.PhysicalCondition;
 import com.infratrack.issue.dto.CreateIssueRequest;
 import com.infratrack.issue.dto.IssueResponse;
+import com.infratrack.issue.dto.UpdateIssueCapaRequest;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
@@ -86,17 +87,100 @@ class IssueServiceTest {
         assertThat(response.getDescription()).isEqualTo("Broken swing chain requires replacement");
         assertThat(response.getSeverity()).isEqualTo(IssueSeverity.HIGH);
         assertThat(response.getRecordedByUserId()).isEqualTo(20L);
+        assertThat(response.getIssueType()).isEqualTo(IssueType.NORMAL);
 
         ArgumentCaptor<Issue> issueCaptor = ArgumentCaptor.forClass(Issue.class);
         verify(issueRepository).save(issueCaptor.capture());
         assertThat(issueCaptor.getValue().getInspection().getId()).isEqualTo(100L);
         assertThat(issueCaptor.getValue().getAsset().getId()).isEqualTo(5L);
+        assertThat(issueCaptor.getValue().getIssueType()).isEqualTo(IssueType.NORMAL);
 
         ArgumentCaptor<AssetHistoryEvent> historyCaptor = ArgumentCaptor.forClass(AssetHistoryEvent.class);
         verify(assetHistoryEventRepository).save(historyCaptor.capture());
         assertThat(historyCaptor.getValue().getEventType()).isEqualTo(AssetHistoryEventType.ISSUE_RECORDED);
         assertThat(historyCaptor.getValue().getAsset().getId()).isEqualTo(5L);
         assertThat(historyCaptor.getValue().getPerformedByUserId()).isEqualTo(20L);
+    }
+
+    @Test
+    void recordIssue_shouldPersistCapaMetadataWhenProvided() {
+        CreateIssueRequest request = validRequest();
+        request.setRootCause("Incorrect installation");
+        request.setCorrectiveAction("Reinstalled component");
+        request.setPreventiveAction("Monthly inspection");
+        request.setLessonsLearned("Update installation procedure");
+        Inspection inspection = completedInspectionWithIssue(100L, 20L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(issueRepository.existsByInspectionId(100L)).thenReturn(false);
+        when(issueRepository.save(any(Issue.class))).thenAnswer(invocation -> {
+            Issue issue = invocation.getArgument(0);
+            issue.setId(500L);
+            return issue;
+        });
+
+        IssueResponse response = issueService.recordIssue(request, 20L);
+
+        assertThat(response.getRootCause()).isEqualTo("Incorrect installation");
+        assertThat(response.getCorrectiveAction()).isEqualTo("Reinstalled component");
+        assertThat(response.getPreventiveAction()).isEqualTo("Monthly inspection");
+        assertThat(response.getLessonsLearned()).isEqualTo("Update installation procedure");
+
+        ArgumentCaptor<Issue> issueCaptor = ArgumentCaptor.forClass(Issue.class);
+        verify(issueRepository).save(issueCaptor.capture());
+        assertThat(issueCaptor.getValue().getLessonsLearned()).isEqualTo("Update installation procedure");
+    }
+
+    @Test
+    void updateCapa_shouldPersistLessonsLearnedForManagerInSameDepartment() {
+        UpdateIssueCapaRequest request = new UpdateIssueCapaRequest();
+        request.setLessonsLearned("Supplier component quality should be reviewed");
+        Issue issue = issue(500L);
+        User manager = managerInDepartment(30L, 1L);
+
+        when(userService.getById(30L)).thenReturn(manager);
+        when(issueRepository.findDetailedById(500L)).thenReturn(Optional.of(issue));
+        when(issueRepository.save(any(Issue.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        IssueResponse response = issueService.updateCapa(500L, request, 30L);
+
+        assertThat(response.getLessonsLearned()).isEqualTo("Supplier component quality should be reviewed");
+        ArgumentCaptor<Issue> issueCaptor = ArgumentCaptor.forClass(Issue.class);
+        verify(issueRepository).save(issueCaptor.capture());
+        assertThat(issueCaptor.getValue().getLessonsLearned())
+                .isEqualTo("Supplier component quality should be reviewed");
+    }
+
+    @Test
+    void updateCapa_shouldRejectManagerFromAnotherDepartment() {
+        UpdateIssueCapaRequest request = new UpdateIssueCapaRequest();
+        request.setLessonsLearned("Review supplier quality");
+        Issue issue = issue(500L);
+        User manager = managerInDepartment(30L, 2L);
+
+        when(userService.getById(30L)).thenReturn(manager);
+        when(issueRepository.findDetailedById(500L)).thenReturn(Optional.of(issue));
+
+        assertThatThrownBy(() -> issueService.updateCapa(500L, request, 30L))
+                .isInstanceOf(ForbiddenOperationException.class);
+
+        verify(issueRepository, never()).save(any());
+    }
+
+    @Test
+    void updateCapa_shouldRejectNonManager() {
+        UpdateIssueCapaRequest request = new UpdateIssueCapaRequest();
+        request.setLessonsLearned("Review supplier quality");
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        assertThatThrownBy(() -> issueService.updateCapa(500L, request, 20L))
+                .isInstanceOf(ForbiddenOperationException.class);
+
+        verify(issueRepository, never()).findDetailedById(any());
     }
 
     @Test

@@ -57,6 +57,7 @@ export default function AssetHistoryPanel({
             <tr>
               <th>Event Date</th>
               <th>Event Type</th>
+              <th>Details</th>
               <th>Responsible User</th>
             </tr>
           </thead>
@@ -65,6 +66,7 @@ export default function AssetHistoryPanel({
               <tr key={`${entry.eventType}-${entry.eventDate}-${index}`}>
                 <td>{entry.eventDate}</td>
                 <td>{getAssetHistoryEventTypeLabel(entry.eventType)}</td>
+                <td>{entry.details || '-'}</td>
                 <td>{entry.responsibleUserName || `#${entry.responsibleUserId}`}</td>
               </tr>
             ))}

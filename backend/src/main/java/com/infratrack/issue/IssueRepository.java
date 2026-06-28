@@ -19,17 +19,22 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
 
     boolean existsByInspectionId(Long inspectionId);
 
-    @EntityGraph(attributePaths = {"asset", "asset.department", "inspection"})
+    boolean existsBySourceCompletionReviewId(Long sourceCompletionReviewId);
+
+    @EntityGraph(attributePaths = {"asset", "asset.department", "inspection", "sourceCompletionReview"})
     Optional<Issue> findDetailedById(Long id);
 
-    @EntityGraph(attributePaths = {"asset", "asset.department", "inspection"})
+    @EntityGraph(attributePaths = {"asset", "asset.department", "inspection", "sourceCompletionReview"})
     List<Issue> findAllByAsset_IdOrderByRecordedAtDesc(Long assetId);
 
-    @EntityGraph(attributePaths = {"asset", "asset.department", "inspection"})
+    @EntityGraph(attributePaths = {"asset", "asset.department", "inspection", "sourceCompletionReview"})
     @Query("""
             SELECT i FROM Issue i
             WHERE NOT EXISTS (SELECT 1 FROM OperationalDecision od WHERE od.issue.id = i.id)
-              AND i.inspection.status = com.infratrack.inspection.InspectionStatus.COMPLETED
+              AND (
+                i.issueType = com.infratrack.issue.IssueType.REWORK
+                OR i.inspection.status = com.infratrack.inspection.InspectionStatus.COMPLETED
+              )
               AND (
                 (:managerDepartmentId IS NOT NULL AND i.asset.department.id = :managerDepartmentId)
                 OR EXISTS (

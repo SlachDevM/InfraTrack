@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import apiClient from '../services/apiClient';
 import workOrderApi from '../services/workOrderApi';
@@ -15,6 +15,7 @@ import { canAssignWorkOrders, canCompleteMaintenance, canCreateWorkOrders, canRe
 import {
   COMPLETION_REVIEW_DECISION_OPTIONS,
 } from '../constants/completionReviewDecisions';
+import { ISSUE_SEVERITY_OPTIONS } from '../constants/issueSeverities';
 import {
   WORK_ORDER_PRIORITIES,
 } from '../constants/workOrderPriorities';
@@ -53,6 +54,7 @@ export default function WorkOrdersPage() {
   const [reviewing, setReviewing] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [showReworkDecisionLink, setShowReworkDecisionLink] = useState(false);
   const [formData, setFormData] = useState({
     operationalDecisionId: '',
     description: '',
@@ -74,12 +76,17 @@ export default function WorkOrdersPage() {
     decision: 'APPROVED',
     reviewNotes: '',
     reviewedAt: toDateTimeLocalValue(),
+    reworkSeverity: 'MEDIUM',
+    rootCause: '',
+    correctiveAction: '',
+    preventiveAction: '',
   });
 
   const canCreate = canCreateWorkOrders(auth?.user?.role);
   const canAssign = canAssignWorkOrders(auth?.user?.role);
   const canComplete = canCompleteMaintenance(auth?.user?.role);
   const canReview = canRecordCompletionReview(auth?.user?.role);
+  const isReworkRequired = reviewFormData.decision === 'REWORK_REQUIRED';
   const currentUserId = auth?.user?.userId;
 
   const selectedDecision = useMemo(
@@ -308,20 +315,46 @@ export default function WorkOrdersPage() {
       setReviewing(true);
       setError(null);
       setSuccess(null);
-      await maintenanceActivityApi.recordCompletionReview(
-        Number(reviewFormData.maintenanceActivityId),
-        {
-          decision: reviewFormData.decision,
-          reviewNotes: reviewFormData.reviewNotes,
-          reviewedAt: `${reviewFormData.reviewedAt}:00`,
+      setShowReworkDecisionLink(false);
+      const payload = {
+        decision: reviewFormData.decision,
+        reviewNotes: reviewFormData.reviewNotes,
+        reviewedAt: `${reviewFormData.reviewedAt}:00`,
+      };
+      if (reviewFormData.decision === 'REWORK_REQUIRED') {
+        payload.reworkSeverity = reviewFormData.reworkSeverity;
+        if (reviewFormData.rootCause.trim()) {
+          payload.rootCause = reviewFormData.rootCause.trim();
         }
+        if (reviewFormData.correctiveAction.trim()) {
+          payload.correctiveAction = reviewFormData.correctiveAction.trim();
+        }
+        if (reviewFormData.preventiveAction.trim()) {
+          payload.preventiveAction = reviewFormData.preventiveAction.trim();
+        }
+      }
+      const response = await maintenanceActivityApi.recordCompletionReview(
+        Number(reviewFormData.maintenanceActivityId),
+        payload
       );
-      setSuccess('Completion review recorded successfully.');
+      if (response?.decision === 'REWORK_REQUIRED') {
+        setSuccess(
+          'Completion Review recorded. A rework Issue has been created for managerial decision.'
+        );
+        setShowReworkDecisionLink(true);
+      } else {
+        setSuccess('Completion review recorded successfully.');
+        setShowReworkDecisionLink(false);
+      }
       setReviewFormData({
         maintenanceActivityId: '',
         decision: 'APPROVED',
         reviewNotes: '',
         reviewedAt: toDateTimeLocalValue(),
+        reworkSeverity: 'MEDIUM',
+        rootCause: '',
+        correctiveAction: '',
+        preventiveAction: '',
       });
       await loadPageData(workOrdersPage);
     } catch (err) {
@@ -367,7 +400,17 @@ export default function WorkOrdersPage() {
 
       <main className="reference-content work-orders-content">
         {error && <div className="error-message">{error}</div>}
-        {success && <div className="success-message">{success}</div>}
+        {success && (
+          <div className="success-message">
+            {success}
+            {showReworkDecisionLink && (
+              <>
+                {' '}
+                <Link to="/operational-decisions">Go to Operational Decisions</Link>
+              </>
+            )}
+          </div>
+        )}
 
         {canCreate ? (
           <CreateWorkOrderForm
@@ -481,6 +524,64 @@ export default function WorkOrdersPage() {
                   rows={3}
                 />
               </div>
+
+              {isReworkRequired && (
+                <>
+                  <div className="form-row">
+                    <label htmlFor="reworkSeverity">Rework Severity</label>
+                    <select
+                      id="reworkSeverity"
+                      name="reworkSeverity"
+                      value={reviewFormData.reworkSeverity}
+                      onChange={handleReviewChange}
+                      required
+                      disabled={reviewing}
+                    >
+                      {ISSUE_SEVERITY_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-row">
+                    <label htmlFor="rootCause">Root Cause</label>
+                    <textarea
+                      id="rootCause"
+                      name="rootCause"
+                      value={reviewFormData.rootCause}
+                      onChange={handleReviewChange}
+                      disabled={reviewing}
+                      rows={2}
+                    />
+                  </div>
+
+                  <div className="form-row">
+                    <label htmlFor="correctiveAction">Corrective Action</label>
+                    <textarea
+                      id="correctiveAction"
+                      name="correctiveAction"
+                      value={reviewFormData.correctiveAction}
+                      onChange={handleReviewChange}
+                      disabled={reviewing}
+                      rows={2}
+                    />
+                  </div>
+
+                  <div className="form-row">
+                    <label htmlFor="preventiveAction">Preventive Action</label>
+                    <textarea
+                      id="preventiveAction"
+                      name="preventiveAction"
+                      value={reviewFormData.preventiveAction}
+                      onChange={handleReviewChange}
+                      disabled={reviewing}
+                      rows={2}
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="form-row">
                 <label htmlFor="reviewedAt">Review Date & Time</label>

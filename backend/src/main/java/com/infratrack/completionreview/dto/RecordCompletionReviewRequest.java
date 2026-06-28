@@ -1,6 +1,7 @@
 package com.infratrack.completionreview.dto;
 
 import com.infratrack.completionreview.CompletionReviewDecision;
+import com.infratrack.issue.IssueSeverity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -20,6 +21,18 @@ public class RecordCompletionReviewRequest {
 
     @NotNull
     private LocalDateTime reviewedAt;
+
+    @Schema(description = "Severity for the rework issue when decision is REWORK_REQUIRED")
+    private IssueSeverity reworkSeverity;
+
+    @Size(max = 4000)
+    private String rootCause;
+
+    @Size(max = 4000)
+    private String correctiveAction;
+
+    @Size(max = 4000)
+    private String preventiveAction;
 
     public CompletionReviewDecision getDecision() {
         return decision;
@@ -43,5 +56,37 @@ public class RecordCompletionReviewRequest {
 
     public void setReviewedAt(LocalDateTime reviewedAt) {
         this.reviewedAt = reviewedAt;
+    }
+
+    public IssueSeverity getReworkSeverity() {
+        return reworkSeverity;
+    }
+
+    public void setReworkSeverity(IssueSeverity reworkSeverity) {
+        this.reworkSeverity = reworkSeverity;
+    }
+
+    public String getRootCause() {
+        return rootCause;
+    }
+
+    public void setRootCause(String rootCause) {
+        this.rootCause = rootCause;
+    }
+
+    public String getCorrectiveAction() {
+        return correctiveAction;
+    }
+
+    public void setCorrectiveAction(String correctiveAction) {
+        this.correctiveAction = correctiveAction;
+    }
+
+    public String getPreventiveAction() {
+        return preventiveAction;
+    }
+
+    public void setPreventiveAction(String preventiveAction) {
+        this.preventiveAction = preventiveAction;
     }
 }

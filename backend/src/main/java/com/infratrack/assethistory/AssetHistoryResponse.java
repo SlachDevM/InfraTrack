@@ -10,16 +10,19 @@ public class AssetHistoryResponse {
     private AssetHistoryEventType eventType;
     private Long responsibleUserId;
     private String responsibleUserName;
+    private String details;
 
     public AssetHistoryResponse(
             LocalDate eventDate,
             AssetHistoryEventType eventType,
             Long responsibleUserId,
-            String responsibleUserName) {
+            String responsibleUserName,
+            String details) {
         this.eventDate = eventDate;
         this.eventType = eventType;
         this.responsibleUserId = responsibleUserId;
         this.responsibleUserName = responsibleUserName;
+        this.details = details;
     }
 
     public LocalDate getEventDate() {
@@ -36,5 +39,9 @@ public class AssetHistoryResponse {
 
     public String getResponsibleUserName() {
         return responsibleUserName;
+    }
+
+    public String getDetails() {
+        return details;
     }
 }

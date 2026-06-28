@@ -27,9 +27,13 @@ public class OperationalEventNotificationService {
     public static final String MAINTENANCE_COMPLETED_MESSAGE = "Maintenance has been completed.";
     public static final String COMPLETION_REVIEW_REQUIRED_TITLE = "Completion Review Required";
     public static final String COMPLETION_REVIEW_REQUIRED_MESSAGE = "Contractor maintenance requires completion review.";
+    public static final String REWORK_ISSUE_REQUIRES_DECISION_TITLE = "Rework Issue Requires Operational Decision";
+    public static final String REWORK_ISSUE_REQUIRES_DECISION_MESSAGE =
+            "A rework issue requires an operational decision.";
 
     public static final String INSPECTIONS_ROUTE = "/inspections";
     public static final String WORK_ORDERS_ROUTE = "/work-orders";
+    public static final String ISSUES_ROUTE = "/issues";
 
     private final NotificationService notificationService;
     private final UserRepository userRepository;
@@ -73,6 +77,23 @@ public class OperationalEventNotificationService {
                 COMPLETION_REVIEW_REQUIRED_TITLE,
                 COMPLETION_REVIEW_REQUIRED_MESSAGE,
                 WORK_ORDERS_ROUTE);
+    }
+
+    public void notifyReworkIssueRequiresOperationalDecision(Department department, Long issueId) {
+        if (department == null || department.getId() == null || issueId == null) {
+            return;
+        }
+
+        List<User> recipients = userRepository.findByRoleAndDepartmentIdAndEnabledTrueOrderByNameAsc(
+                UserRole.MANAGER,
+                department.getId());
+        for (User recipient : recipients) {
+            sendSafely(
+                    recipient.getId(),
+                    REWORK_ISSUE_REQUIRES_DECISION_TITLE,
+                    REWORK_ISSUE_REQUIRES_DECISION_MESSAGE,
+                    ISSUES_ROUTE);
+        }
     }
 
     private void notifyRoleInDepartment(

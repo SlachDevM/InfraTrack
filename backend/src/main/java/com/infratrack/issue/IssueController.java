@@ -4,6 +4,7 @@ import com.infratrack.config.PaginationSupport;
 import com.infratrack.config.openapi.StandardApiResponses;
 import com.infratrack.issue.dto.CreateIssueRequest;
 import com.infratrack.issue.dto.IssueResponse;
+import com.infratrack.issue.dto.UpdateIssueCapaRequest;
 import com.infratrack.security.JwtAuthenticationToken;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -18,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -77,5 +79,18 @@ public class IssueController {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         IssueResponse response = issueService.recordIssue(request, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PatchMapping("/{id}/capa")
+    @Operation(
+            summary = "Update issue CAPA metadata",
+            description = "Updates optional root cause, corrective action, preventive action, and lessons learned.")
+    @ApiResponse(responseCode = "200", description = "Issue CAPA metadata updated")
+    public ResponseEntity<IssueResponse> updateIssueCapa(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateIssueCapaRequest request,
+            Authentication authentication) {
+        Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+        return ResponseEntity.ok(issueService.updateCapa(id, request, userId));
     }
 }

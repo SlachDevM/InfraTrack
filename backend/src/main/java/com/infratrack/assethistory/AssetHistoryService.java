@@ -61,7 +61,8 @@ public class AssetHistoryService {
                 event.getEventDate(),
                 event.getEventType(),
                 event.getPerformedByUserId(),
-                responsibleUserName
+                responsibleUserName,
+                event.getDetails()
         );
     }
 

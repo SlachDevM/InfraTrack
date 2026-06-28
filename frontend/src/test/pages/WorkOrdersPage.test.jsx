@@ -316,4 +316,116 @@ describe('WorkOrdersPage completion review', () => {
       )).toBeInTheDocument();
     });
   });
+
+  it('displays rework success message when REWORK_REQUIRED is recorded', async () => {
+    const user = userEvent.setup();
+    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue([
+      {
+        id: 500,
+        workOrderId: 100,
+        assetName: 'Central Playground',
+        workOrderStatus: 'COMPLETED',
+        completionReviewDecision: null,
+      },
+    ]);
+    maintenanceActivityApi.recordCompletionReview.mockResolvedValue({
+      decision: 'REWORK_REQUIRED',
+      reworkIssueId: 8001,
+    });
+
+    render(
+      <MemoryRouter>
+        <WorkOrdersPage />
+      </MemoryRouter>
+    );
+
+    await user.selectOptions(await screen.findByLabelText('Maintenance Activity'), '500');
+    await user.selectOptions(screen.getByLabelText('Review Decision'), 'REWORK_REQUIRED');
+    await user.selectOptions(screen.getByLabelText('Rework Severity'), 'HIGH');
+    await user.type(screen.getByLabelText('Review Notes'), 'Chain still loose, rework required');
+    await user.type(screen.getByLabelText('Root Cause'), 'Missing lubrication');
+    await user.click(screen.getByRole('button', { name: 'Record Completion Review' }));
+
+    await waitFor(() => {
+      expect(maintenanceActivityApi.recordCompletionReview).toHaveBeenCalledWith(500, {
+        decision: 'REWORK_REQUIRED',
+        reviewNotes: 'Chain still loose, rework required',
+        reviewedAt: expect.any(String),
+        reworkSeverity: 'HIGH',
+        rootCause: 'Missing lubrication',
+      });
+      expect(screen.getByText(
+        'Completion Review recorded. A rework Issue has been created for managerial decision.'
+      )).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Go to Operational Decisions' }))
+        .toHaveAttribute('href', '/operational-decisions');
+    });
+  });
+
+  it('shows rework fields when REWORK_REQUIRED is selected and hides them for APPROVED', async () => {
+    const user = userEvent.setup();
+    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue([
+      {
+        id: 500,
+        workOrderId: 100,
+        assetName: 'Central Playground',
+        workOrderStatus: 'COMPLETED',
+        completionReviewDecision: null,
+      },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <WorkOrdersPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByLabelText('Review Decision');
+    expect(screen.queryByLabelText('Rework Severity')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Root Cause')).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText('Review Decision'), 'REWORK_REQUIRED');
+
+    expect(screen.getByLabelText('Rework Severity')).toBeInTheDocument();
+    expect(screen.getByLabelText('Root Cause')).toBeInTheDocument();
+    expect(screen.getByLabelText('Corrective Action')).toBeInTheDocument();
+    expect(screen.getByLabelText('Preventive Action')).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText('Review Decision'), 'APPROVED');
+
+    expect(screen.queryByLabelText('Rework Severity')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Root Cause')).not.toBeInTheDocument();
+  });
+
+  it('displays standard success message when APPROVED is recorded', async () => {
+    const user = userEvent.setup();
+    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue([
+      {
+        id: 500,
+        workOrderId: 100,
+        assetName: 'Central Playground',
+        workOrderStatus: 'COMPLETED',
+        completionReviewDecision: null,
+      },
+    ]);
+    maintenanceActivityApi.recordCompletionReview.mockResolvedValue({
+      decision: 'APPROVED',
+      reworkIssueId: null,
+    });
+
+    render(
+      <MemoryRouter>
+        <WorkOrdersPage />
+      </MemoryRouter>
+    );
+
+    await user.selectOptions(await screen.findByLabelText('Maintenance Activity'), '500');
+    await user.type(screen.getByLabelText('Review Notes'), 'Work completed to standard');
+    await user.click(screen.getByRole('button', { name: 'Record Completion Review' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Completion review recorded successfully.')).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Go to Operational Decisions' })).not.toBeInTheDocument();
+    });
+  });
 });

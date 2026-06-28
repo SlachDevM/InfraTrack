@@ -26,6 +26,9 @@ public class AssetHistoryEvent {
     @Column(name = "event_date", nullable = false)
     private LocalDate eventDate;
 
+    @Column(columnDefinition = "TEXT")
+    private String details;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Long createdAt;
 
@@ -37,10 +40,20 @@ public class AssetHistoryEvent {
             AssetHistoryEventType eventType,
             Long performedByUserId,
             LocalDate eventDate) {
+        this(asset, eventType, performedByUserId, eventDate, null);
+    }
+
+    public AssetHistoryEvent(
+            Asset asset,
+            AssetHistoryEventType eventType,
+            Long performedByUserId,
+            LocalDate eventDate,
+            String details) {
         this.asset = asset;
         this.eventType = eventType;
         this.performedByUserId = performedByUserId;
         this.eventDate = eventDate;
+        this.details = details;
         this.createdAt = System.currentTimeMillis();
     }
 
@@ -62,6 +75,10 @@ public class AssetHistoryEvent {
 
     public LocalDate getEventDate() {
         return eventDate;
+    }
+
+    public String getDetails() {
+        return details;
     }
 
     public Long getCreatedAt() {

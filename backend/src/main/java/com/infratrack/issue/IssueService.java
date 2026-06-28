@@ -13,6 +13,7 @@ import com.infratrack.inspection.InspectionRepository;
 import com.infratrack.inspection.InspectionStatus;
 import com.infratrack.issue.dto.CreateIssueRequest;
 import com.infratrack.issue.dto.IssueResponse;
+import com.infratrack.issue.dto.UpdateIssueCapaRequest;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
 import org.springframework.data.domain.Page;
@@ -82,14 +83,20 @@ public class IssueService {
         LocalDateTime recordedAt = validateRecordedAt(request.getRecordedAt(), inspection);
 
         Asset asset = inspection.getAsset();
-        Issue issue = issueRepository.save(new Issue(
+        Issue issue = new Issue(
                 inspection,
                 asset,
                 description,
                 severity,
                 recorder.getId(),
                 recordedAt
-        ));
+        );
+        issue.applyCapaMetadata(
+                normalizeOptionalText(request.getRootCause()),
+                normalizeOptionalText(request.getCorrectiveAction()),
+                normalizeOptionalText(request.getPreventiveAction()),
+                normalizeOptionalText(request.getLessonsLearned()));
+        issue = issueRepository.save(issue);
 
         assetHistoryEventRepository.save(new AssetHistoryEvent(
                 asset,
@@ -99,6 +106,39 @@ public class IssueService {
         ));
 
         return IssueResponse.from(issue);
+    }
+
+    @Transactional
+    public IssueResponse updateCapa(Long issueId, UpdateIssueCapaRequest request, Long userId) {
+        User manager = requireManager(userId);
+        Issue issue = findIssueOrThrow(issueId);
+        requireManagerAuthorizedForIssueAsset(manager, issue);
+
+        issue.applyCapaMetadata(
+                normalizeOptionalText(request.getRootCause()),
+                normalizeOptionalText(request.getCorrectiveAction()),
+                normalizeOptionalText(request.getPreventiveAction()),
+                normalizeOptionalText(request.getLessonsLearned()));
+
+        return IssueResponse.from(issueRepository.save(issue));
+    }
+
+    private void requireManagerAuthorizedForIssueAsset(User manager, Issue issue) {
+        Long managerDepartmentId = manager.getDepartment() != null
+                ? manager.getDepartment().getId()
+                : null;
+        Long assetDepartmentId = issue.getAsset().getDepartment().getId();
+        if (managerDepartmentId == null || !managerDepartmentId.equals(assetDepartmentId)) {
+            throw new ForbiddenOperationException(
+                    "You may only update issue CAPA metadata for assets in your own department.");
+        }
+    }
+
+    private String normalizeOptionalText(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 
     private Issue findIssueOrThrow(Long id) {

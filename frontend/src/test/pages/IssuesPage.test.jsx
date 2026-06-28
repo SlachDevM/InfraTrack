@@ -18,6 +18,7 @@ vi.mock('../../services/issueApi', () => ({
   default: {
     list: vi.fn(),
     record: vi.fn(),
+    updateCapa: vi.fn(),
   },
 }));
 
@@ -147,6 +148,7 @@ describe('IssuesPage', () => {
       '10'
     );
     await user.type(screen.getByLabelText('Description'), 'Broken swing chain');
+    await user.type(screen.getByLabelText('Lessons Learned'), 'Update installation procedure');
     await user.click(screen.getByRole('button', { name: 'Record Issue' }));
 
     await waitFor(() => {
@@ -154,8 +156,50 @@ describe('IssuesPage', () => {
         inspectionId: 10,
         description: 'Broken swing chain',
         severity: 'MEDIUM',
+        lessonsLearned: 'Update installation procedure',
       }));
     });
+  });
+
+  it('displays CAPA fields on the record issue form', async () => {
+    inspectionApi.listEligibleForIssueRecording.mockResolvedValue(
+      pageResponse([eligibleInspection])
+    );
+
+    render(
+      <MemoryRouter>
+        <IssuesPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByLabelText('Root Cause')).toBeInTheDocument();
+    expect(screen.getByLabelText('Corrective Action')).toBeInTheDocument();
+    expect(screen.getByLabelText('Preventive Action')).toBeInTheDocument();
+    expect(screen.getByLabelText('Lessons Learned')).toBeInTheDocument();
+  });
+
+  it('renders lessons learned from API response in issue list', async () => {
+    issueApi.list.mockResolvedValue(pageResponse([
+      {
+        id: 1,
+        assetName: 'Central Playground',
+        inspectionId: 10,
+        description: 'Broken swing',
+        severity: 'HIGH',
+        rootCause: 'Component fatigue',
+        lessonsLearned: 'Review supplier quality',
+        recordedAt: '2026-06-01T09:00:00',
+      },
+    ]));
+
+    render(
+      <MemoryRouter>
+        <IssuesPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('Review supplier quality')).toBeInTheDocument();
+    expect(screen.getByText('Component fatigue')).toBeInTheDocument();
   });
 
   it('displays API error message when loading fails', async () => {

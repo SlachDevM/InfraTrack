@@ -6,7 +6,7 @@ import issueApi from '../services/issueApi';
 import inspectionApi from '../services/inspectionApi';
 import NotificationButton from '../components/NotificationButton';
 import PaginationControls from '../components/PaginationControls';
-import { canRecordIssues } from '../constants/userRoles';
+import { canMakeOperationalDecisions, canRecordIssues } from '../constants/userRoles';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
 import {
   DEFAULT_PAGE,
@@ -29,6 +29,33 @@ function toDateTimeLocalValue(date = new Date()) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+function appendOptionalCapaFields(payload, formData) {
+  if (formData.rootCause.trim()) {
+    payload.rootCause = formData.rootCause.trim();
+  }
+  if (formData.correctiveAction.trim()) {
+    payload.correctiveAction = formData.correctiveAction.trim();
+  }
+  if (formData.preventiveAction.trim()) {
+    payload.preventiveAction = formData.preventiveAction.trim();
+  }
+  if (formData.lessonsLearned.trim()) {
+    payload.lessonsLearned = formData.lessonsLearned.trim();
+  }
+  return payload;
+}
+
+function displayCapaValue(value) {
+  return value || '-';
+}
+
+const EMPTY_CAPA_FIELDS = {
+  rootCause: '',
+  correctiveAction: '',
+  preventiveAction: '',
+  lessonsLearned: '',
+};
+
 export default function IssuesPage() {
   const navigate = useNavigate();
   const { auth, logout } = useAuth();
@@ -39,6 +66,7 @@ export default function IssuesPage() {
   const [eligibleInspections, setEligibleInspections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [updatingCapa, setUpdatingCapa] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [formData, setFormData] = useState({
@@ -46,15 +74,26 @@ export default function IssuesPage() {
     description: '',
     severity: ISSUE_SEVERITIES.MEDIUM,
     recordedAt: toDateTimeLocalValue(),
+    ...EMPTY_CAPA_FIELDS,
+  });
+  const [capaEditFormData, setCapaEditFormData] = useState({
+    issueId: '',
+    ...EMPTY_CAPA_FIELDS,
   });
 
   const canRecord = canRecordIssues(auth?.user?.role);
+  const canEditCapa = canMakeOperationalDecisions(auth?.user?.role);
 
   const selectedInspection = useMemo(
     () => eligibleInspections.find(
       (inspection) => String(inspection.id) === String(formData.inspectionId)
     ),
     [eligibleInspections, formData.inspectionId]
+  );
+
+  const selectedCapaIssue = useMemo(
+    () => issues.find((issue) => String(issue.id) === String(capaEditFormData.issueId)),
+    [issues, capaEditFormData.issueId]
   );
 
   useEffect(() => {
@@ -109,6 +148,22 @@ export default function IssuesPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleCapaEditChange = (e) => {
+    const { name, value } = e.target;
+    if (name === 'issueId') {
+      const issue = issues.find((entry) => String(entry.id) === String(value));
+      setCapaEditFormData({
+        issueId: value,
+        rootCause: issue?.rootCause || '',
+        correctiveAction: issue?.correctiveAction || '',
+        preventiveAction: issue?.preventiveAction || '',
+        lessonsLearned: issue?.lessonsLearned || '',
+      });
+      return;
+    }
+    setCapaEditFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!canRecord) return;
@@ -117,18 +172,20 @@ export default function IssuesPage() {
       setSubmitting(true);
       setError(null);
       setSuccess(null);
-      await issueApi.record({
+      const payload = appendOptionalCapaFields({
         inspectionId: Number(formData.inspectionId),
         description: formData.description,
         severity: formData.severity,
         recordedAt: `${formData.recordedAt}:00`,
-      });
+      }, formData);
+      await issueApi.record(payload);
       setSuccess('Issue recorded successfully.');
       setFormData({
         inspectionId: '',
         description: '',
         severity: ISSUE_SEVERITIES.MEDIUM,
         recordedAt: toDateTimeLocalValue(),
+        ...EMPTY_CAPA_FIELDS,
       });
       await loadPageData(issuesPage);
     } catch (err) {
@@ -139,6 +196,37 @@ export default function IssuesPage() {
       }
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleCapaEditSubmit = async (e) => {
+    e.preventDefault();
+    if (!canEditCapa || !capaEditFormData.issueId) return;
+
+    try {
+      setUpdatingCapa(true);
+      setError(null);
+      setSuccess(null);
+      await issueApi.updateCapa(Number(capaEditFormData.issueId), {
+        rootCause: capaEditFormData.rootCause.trim() || null,
+        correctiveAction: capaEditFormData.correctiveAction.trim() || null,
+        preventiveAction: capaEditFormData.preventiveAction.trim() || null,
+        lessonsLearned: capaEditFormData.lessonsLearned.trim() || null,
+      });
+      setSuccess('Issue CAPA metadata updated successfully.');
+      setCapaEditFormData({
+        issueId: '',
+        ...EMPTY_CAPA_FIELDS,
+      });
+      await loadPageData(issuesPage);
+    } catch (err) {
+      if (isForbidden(err)) {
+        setError('You do not have permission to update CAPA metadata for this issue.');
+      } else {
+        setError(getApiErrorMessage(err, 'Failed to update issue CAPA metadata.'));
+      }
+    } finally {
+      setUpdatingCapa(false);
     }
   };
 
@@ -244,6 +332,54 @@ export default function IssuesPage() {
               </div>
 
               <div className="form-row">
+                <label htmlFor="rootCause">Root Cause</label>
+                <textarea
+                  id="rootCause"
+                  name="rootCause"
+                  value={formData.rootCause}
+                  onChange={handleChange}
+                  disabled={submitting}
+                  rows={2}
+                />
+              </div>
+
+              <div className="form-row">
+                <label htmlFor="correctiveAction">Corrective Action</label>
+                <textarea
+                  id="correctiveAction"
+                  name="correctiveAction"
+                  value={formData.correctiveAction}
+                  onChange={handleChange}
+                  disabled={submitting}
+                  rows={2}
+                />
+              </div>
+
+              <div className="form-row">
+                <label htmlFor="preventiveAction">Preventive Action</label>
+                <textarea
+                  id="preventiveAction"
+                  name="preventiveAction"
+                  value={formData.preventiveAction}
+                  onChange={handleChange}
+                  disabled={submitting}
+                  rows={2}
+                />
+              </div>
+
+              <div className="form-row">
+                <label htmlFor="lessonsLearned">Lessons Learned</label>
+                <textarea
+                  id="lessonsLearned"
+                  name="lessonsLearned"
+                  value={formData.lessonsLearned}
+                  onChange={handleChange}
+                  disabled={submitting}
+                  rows={2}
+                />
+              </div>
+
+              <div className="form-row">
                 <label htmlFor="recordedAt">Recorded Date & Time</label>
                 <input
                   id="recordedAt"
@@ -276,6 +412,96 @@ export default function IssuesPage() {
           </p>
         )}
 
+        {canEditCapa ? (
+          <section className="issue-form-section">
+            <h2>Update Issue CAPA</h2>
+            <form className="issue-form" onSubmit={handleCapaEditSubmit}>
+              <div className="form-row">
+                <label htmlFor="issueId">Issue</label>
+                <select
+                  id="issueId"
+                  name="issueId"
+                  value={capaEditFormData.issueId}
+                  onChange={handleCapaEditChange}
+                  required
+                  disabled={updatingCapa || issues.length === 0}
+                >
+                  <option value="">Select issue</option>
+                  {issues.map((issue) => (
+                    <option key={issue.id} value={issue.id}>
+                      #{issue.id} — {issue.assetName} — {issue.description}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedCapaIssue && (
+                <div className="linked-inspection-info">
+                  <strong>Asset:</strong> {selectedCapaIssue.assetName}
+                  <br />
+                  <strong>Description:</strong> {selectedCapaIssue.description}
+                </div>
+              )}
+
+              <div className="form-row">
+                <label htmlFor="editRootCause">Root Cause</label>
+                <textarea
+                  id="editRootCause"
+                  name="rootCause"
+                  value={capaEditFormData.rootCause}
+                  onChange={handleCapaEditChange}
+                  disabled={updatingCapa}
+                  rows={2}
+                />
+              </div>
+
+              <div className="form-row">
+                <label htmlFor="editCorrectiveAction">Corrective Action</label>
+                <textarea
+                  id="editCorrectiveAction"
+                  name="correctiveAction"
+                  value={capaEditFormData.correctiveAction}
+                  onChange={handleCapaEditChange}
+                  disabled={updatingCapa}
+                  rows={2}
+                />
+              </div>
+
+              <div className="form-row">
+                <label htmlFor="editPreventiveAction">Preventive Action</label>
+                <textarea
+                  id="editPreventiveAction"
+                  name="preventiveAction"
+                  value={capaEditFormData.preventiveAction}
+                  onChange={handleCapaEditChange}
+                  disabled={updatingCapa}
+                  rows={2}
+                />
+              </div>
+
+              <div className="form-row">
+                <label htmlFor="editLessonsLearned">Lessons Learned</label>
+                <textarea
+                  id="editLessonsLearned"
+                  name="lessonsLearned"
+                  value={capaEditFormData.lessonsLearned}
+                  onChange={handleCapaEditChange}
+                  disabled={updatingCapa}
+                  rows={2}
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={updatingCapa || issues.length === 0}
+              >
+                {updatingCapa ? 'Updating...' : 'Update CAPA Metadata'}
+              </button>
+            </form>
+          </section>
+        ) : null}
+
         <section className="issue-list-section">
           <h2>Recorded Issues</h2>
           {issues.length === 0 ? (
@@ -288,6 +514,8 @@ export default function IssuesPage() {
                   <th>Inspection</th>
                   <th>Description</th>
                   <th>Severity</th>
+                  <th>Root Cause</th>
+                  <th>Lessons Learned</th>
                   <th>Recorded</th>
                 </tr>
               </thead>
@@ -295,9 +523,11 @@ export default function IssuesPage() {
                 {issues.map((issue) => (
                   <tr key={issue.id}>
                     <td>{issue.assetName}</td>
-                    <td>#{issue.inspectionId}</td>
+                    <td>{issue.inspectionId ? `#${issue.inspectionId}` : '-'}</td>
                     <td>{issue.description}</td>
                     <td>{getIssueSeverityLabel(issue.severity)}</td>
+                    <td>{displayCapaValue(issue.rootCause)}</td>
+                    <td>{displayCapaValue(issue.lessonsLearned)}</td>
                     <td>
                       {issue.recordedAt
                         ? new Date(issue.recordedAt).toLocaleString()
