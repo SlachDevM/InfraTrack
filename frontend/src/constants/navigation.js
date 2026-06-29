@@ -9,6 +9,7 @@ export const FIELD_EMPLOYEE_ROUTES = new Set([
 ]);
 
 export const INSPECTION_TEMPLATES_ROUTE = '/inspection-templates';
+export const PREVENTIVE_MAINTENANCE_PLANS_ROUTE = '/preventive-maintenance-plans';
 
 const INSPECTION_TEMPLATE_ROUTE_PREFIX = '/inspection-templates/';
 
@@ -18,11 +19,14 @@ const INSPECTION_TEMPLATE_VIEWER_ROLES = new Set([
   USER_ROLES.OPERATIONAL_COORDINATOR,
 ]);
 
+const PREVENTIVE_MAINTENANCE_PLAN_VIEWER_ROLES = INSPECTION_TEMPLATE_VIEWER_ROLES;
+
 export const APP_NAVIGATION_ITEMS = [
   { path: '/assets', label: 'Assets', fieldEmployeeLabel: 'Documents' },
   { path: '/business-triggers', label: 'Business Triggers' },
   { path: '/inspections', label: 'Inspections' },
   { path: '/inspection-templates', label: 'Inspection Templates' },
+  { path: '/preventive-maintenance-plans', label: 'Preventive Maintenance Plans' },
   { path: '/issues', label: 'Issues' },
   { path: '/operational-decisions', label: 'Decisions' },
   { path: '/delegated-authorities', label: 'Delegations' },
@@ -55,6 +59,10 @@ export function canAccessRoute(role, path) {
   if (normalizedPath === INSPECTION_TEMPLATES_ROUTE
       || normalizedPath.startsWith(INSPECTION_TEMPLATE_ROUTE_PREFIX)) {
     return INSPECTION_TEMPLATE_VIEWER_ROLES.has(normalizedRole);
+  }
+
+  if (normalizedPath === PREVENTIVE_MAINTENANCE_PLANS_ROUTE) {
+    return PREVENTIVE_MAINTENANCE_PLAN_VIEWER_ROLES.has(normalizedRole);
   }
 
   if (!isFieldEmployeeRole(role)) {

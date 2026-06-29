@@ -9,6 +9,8 @@ import {
   canManageUsers,
   canViewInspectionTemplates,
   canManageInspectionTemplates,
+  canViewPreventiveMaintenancePlans,
+  canManagePreventiveMaintenancePlans,
 } from '../../constants/userRoles';
 
 describe('canRegisterAssets', () => {
@@ -77,5 +79,19 @@ describe('other role helpers', () => {
     expect(canManageInspectionTemplates(USER_ROLES.ADMINISTRATOR)).toBe(true);
     expect(canManageInspectionTemplates(USER_ROLES.MANAGER)).toBe(false);
     expect(canManageInspectionTemplates(USER_ROLES.OPERATIONAL_COORDINATOR)).toBe(false);
+  });
+
+  it('allows preventive maintenance plan viewing for admin manager and coordinator', () => {
+    expect(canViewPreventiveMaintenancePlans(USER_ROLES.ADMINISTRATOR)).toBe(true);
+    expect(canViewPreventiveMaintenancePlans(USER_ROLES.MANAGER)).toBe(true);
+    expect(canViewPreventiveMaintenancePlans(USER_ROLES.OPERATIONAL_COORDINATOR)).toBe(true);
+    expect(canViewPreventiveMaintenancePlans(USER_ROLES.FIELD_EMPLOYEE)).toBe(false);
+    expect(canViewPreventiveMaintenancePlans(USER_ROLES.CONTRACTOR)).toBe(false);
+  });
+
+  it('restricts preventive maintenance plan management to Administrator', () => {
+    expect(canManagePreventiveMaintenancePlans(USER_ROLES.ADMINISTRATOR)).toBe(true);
+    expect(canManagePreventiveMaintenancePlans(USER_ROLES.MANAGER)).toBe(false);
+    expect(canManagePreventiveMaintenancePlans(USER_ROLES.OPERATIONAL_COORDINATOR)).toBe(false);
   });
 });

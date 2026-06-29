@@ -528,6 +528,180 @@ No automatic Issues, Operational Decisions, notifications, or workflow execution
 
 Suggestions in A3.4–A3.5 are **decision support**. Automation (A3.6) would execute accepted outcomes — out of scope until then.
 
+## Sprint B1.1 — Preventive Maintenance Domain
+
+Sprint B1.1 introduces the **Preventive Maintenance Plan** domain model. A plan defines **when** something should eventually happen and **what** should eventually happen. Execution is explicitly out of scope.
+
+### Preventive Maintenance Plan
+
+A **Preventive Maintenance Plan** belongs to a single **Asset**. One Asset may have many plans.
+
+Each plan includes:
+
+- name and description;
+- status (`DRAFT`, `ACTIVE`, `PAUSED`, `ARCHIVED`);
+- priority (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`);
+- exactly one **target action** (`CREATE_INSPECTION`, `CREATE_WORK_ORDER`, `CREATE_MAINTENANCE`);
+- optional **Inspection Template** reference (for inspection-oriented plans).
+
+Only `ACTIVE` plans may eventually generate work in future sprints. Archived plans remain visible but cannot be modified.
+
+### Business Trigger (plan configuration)
+
+Each plan has exactly one **Business Trigger** configuration record (1:1). This is stored in `preventive_plan_business_triggers` and is distinct from the V1 operational `business_triggers` table used for UC-006 workflow events.
+
+Fields:
+
+- `triggerType` — `TIME`, `METER`, or `EVENT`;
+- `configurationJson` — valid JSON only (interpretation deferred);
+- `active` — whether the trigger configuration is enabled.
+
+Example configurations:
+
+| Type | Example JSON |
+|------|----------------|
+| TIME | `{"every":1,"unit":"MONTH"}` |
+| METER | `{"meter":"OPERATING_HOURS","every":250}` |
+| EVENT | `{"event":"COMPLETION_REVIEW"}` |
+
+The Business Trigger model is intentionally generic. Future sprints will reuse it for preventive maintenance scheduling, IoT meter events, calendar integrations, and external trigger sources.
+
+### Target actions
+
+Every plan defines exactly one target action. B1.1 stores the intent only — no Inspections, Work Orders, or Maintenance Activities are created.
+
+### Future execution engine
+
+A future **execution engine** will:
+
+- evaluate trigger configurations against time, meters, or events;
+- create operational `BusinessTrigger` records or workflow items for `ACTIVE` plans;
+- honour optional Inspection Template references.
+
+B1.1 does **not** schedule, evaluate triggers, simulate execution, or send notifications.
+
+### Sprint B1.2 — Trigger Definition
+
+Sprint B1.2 finalizes the **Trigger Definition** for Preventive Maintenance Plans.
+
+#### Trigger Definition concept
+
+A Trigger Definition answers: **under which business condition should this plan become eligible for execution?** Execution remains out of scope.
+
+Trigger configurations are **business-validated** before any execution engine exists so that stored plans are future-proof and cannot enter the system with ambiguous or unsupported definitions.
+
+#### Plan identity
+
+Each plan now includes:
+
+- **planCode** — required, uppercase snake_case, unique, immutable after creation (for example `PUMP_MONTHLY`, `COMPRESSOR_500H`);
+- **version** — positive integer, defaults to `1` on create; no publish workflow, cloning, or version history yet.
+
+#### Trigger validation
+
+`TriggerDefinitionValidator` replaces generic JSON-only checks:
+
+| Type | Configuration | Rules |
+|------|---------------|-------|
+| TIME | `{"every":1,"unit":"MONTH"}` | `every` > 0; `unit` ∈ `DAY`, `WEEK`, `MONTH`, `YEAR` |
+| METER | `{"meter":"OPERATING_HOURS","every":250}` | `meter` required; `every` > 0 |
+| EVENT | `{"event":"COMPLETION_REVIEW"}` | `event` ∈ `COMPLETION_REVIEW`, `INSPECTION_COMPLETED`, `WORK_ORDER_COMPLETED`, `MAINTENANCE_COMPLETED` |
+
+No dates, cron expressions, meter readings, or event evaluation.
+
+#### Trigger summary
+
+`TriggerDefinitionSummaryBuilder` generates a human-readable **triggerSummary** at read time (never stored). Examples:
+
+- `Every month`
+- `Every 250 operating hours`
+- `After Completion Review`
+
+The frontend uses structured trigger forms; JSON is generated internally for the API.
+
+#### B1.2 scope limitation
+
+**B1.2 validates trigger definitions only.**
+
+No trigger evaluation, scheduling, Inspection or Work Order creation, reports, or notifications.
+
+### Sprint B1.3 — Trigger Evaluation Engine
+
+Sprint B1.3 introduces an in-memory **Trigger Evaluation Engine** that determines whether a plan is currently eligible for execution.
+
+#### Trigger Evaluation concept
+
+The engine answers **"Today, is this plan eligible?"** — never **"What should we execute?"**
+
+#### Trigger Evaluation Context
+
+`TriggerEvaluationContext` carries the plan, asset, business trigger, `currentDateTime`, and optional future meter values and business events. Only `currentDateTime` is used in B1.3.
+
+#### Trigger Definition abstraction
+
+`TriggerDefinition` is implemented by `TimeTriggerDefinition`, `MeterTriggerDefinition`, and `EventTriggerDefinition`. Each implementation parses configuration, builds a `TriggerSummary`, and evaluates eligibility without switch statements spread across the codebase.
+
+#### Trigger Evaluation Result
+
+`TriggerEvaluationResultResponse` includes `planId`, `planCode`, `triggerType`, `eligible`, `evaluationReason`, `evaluatedAt`, and `evaluationDurationMs`. Results are **not persisted**.
+
+#### Evaluation rules (B1.3)
+
+| Trigger | B1.3 behaviour |
+|---------|----------------|
+| TIME | Eligible when full intervals (day/week/month/year) have elapsed since plan creation |
+| METER | Always not eligible — `Meter values are not available yet.` |
+| EVENT | Always not eligible — `Business event evaluation is not implemented yet.` |
+
+Plan status handling:
+
+- `ACTIVE` — trigger evaluated
+- `DRAFT` — not eligible (`Plan is still in draft.`)
+- `PAUSED` / `ARCHIVED` — skipped in bulk evaluation; single-plan evaluation returns not eligible with status reason
+
+#### Trigger Summary (structured)
+
+`TriggerSummary` replaces the plain string with:
+
+- `title` — e.g. `Every month`
+- `description` — e.g. `Eligible once every full month from plan creation.`
+- `triggerType`
+
+Used by plan responses, evaluation API, and the frontend.
+
+#### B1.3 API
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/preventive-maintenance-plans/evaluation` | Evaluate all active plans in memory |
+| `GET /api/preventive-maintenance-plans/{id}/evaluation` | Evaluate one plan in memory |
+
+#### B1.3 scope limitation
+
+**B1.3 evaluates eligibility only.**
+
+No scheduling, polling, background jobs, database writes, Inspections, Work Orders, Maintenance Activities, or notifications.
+
+### B1.1 API
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/preventive-maintenance-plans` | Paginated list (filters: asset, status, trigger type) |
+| `GET /api/preventive-maintenance-plans/{id}` | Plan detail with business trigger |
+| `POST /api/preventive-maintenance-plans` | Create plan with trigger (Administrator) |
+| `PUT /api/preventive-maintenance-plans/{id}` | Update plan and trigger (Administrator) |
+| `POST /api/preventive-maintenance-plans/{id}/archive` | Archive plan (Administrator) |
+
+### B1.1 authorization
+
+| Role | Access |
+|------|--------|
+| Administrator | Full CRUD and archive |
+| Manager | View only |
+| Operational Coordinator | View only |
+| Field Employee | No access |
+| Contractor | No access |
+
 ## Future sprints
 
 Planned extensions to the Domain Engine include:
@@ -542,8 +716,8 @@ Planned extensions to the Domain Engine include:
 
 | Role | Access |
 |------|--------|
-| Administrator | Create, update, archive templates; manage checklist questions and decision rules on draft templates; view all |
-| Manager | View templates, checklist questions, and decision rules |
-| Operational Coordinator | View templates, checklist questions, and decision rules |
+| Administrator | Create, update, archive templates and preventive maintenance plans; manage checklist questions and decision rules on draft templates; view all |
+| Manager | View templates, checklist questions, decision rules, and preventive maintenance plans |
+| Operational Coordinator | View templates, checklist questions, decision rules, and preventive maintenance plans |
 | Field Employee | No access |
 | Contractor | No access |

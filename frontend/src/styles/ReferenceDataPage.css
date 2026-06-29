@@ -121,3 +121,35 @@
   min-width: 8rem;
   text-align: center;
 }
+
+.evaluation-result {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.evaluation-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.evaluation-badge-eligible {
+  background: #e6f4ea;
+  color: #1e6b3a;
+}
+
+.evaluation-badge-not-eligible {
+  background: #fdecea;
+  color: #8a1f17;
+}
+
+.evaluation-reason {
+  color: #333;
+}
+
+.evaluation-timestamp {
+  color: #666;
+  font-size: 0.85rem;
+}

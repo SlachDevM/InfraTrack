@@ -30,6 +30,7 @@ describe('canAccessRoute', () => {
     expect(canAccessRoute(USER_ROLES.FIELD_EMPLOYEE, '/business-triggers')).toBe(false);
     expect(canAccessRoute(USER_ROLES.FIELD_EMPLOYEE, '/asset-categories')).toBe(false);
     expect(canAccessRoute(USER_ROLES.FIELD_EMPLOYEE, '/inspection-templates')).toBe(false);
+    expect(canAccessRoute(USER_ROLES.FIELD_EMPLOYEE, '/preventive-maintenance-plans')).toBe(false);
   });
 
   it('blocks contractor from inspection templates', () => {
@@ -80,6 +81,7 @@ describe('getNavigationItems', () => {
     expect(labels).toContain('Decisions');
     expect(labels).toContain('Delegations');
     expect(labels).toContain('Inspection Templates');
+    expect(labels).toContain('Preventive Maintenance Plans');
   });
 
   it('returns full navigation for operational coordinators', () => {
