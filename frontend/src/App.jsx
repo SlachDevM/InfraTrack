@@ -19,6 +19,7 @@ import WorkOrdersPage from './pages/WorkOrdersPage';
 import InspectionTemplatesPage from './pages/InspectionTemplatesPage';
 import InspectionTemplateQuestionsPage from './pages/InspectionTemplateQuestionsPage';
 import PreventiveMaintenancePlansPage from './pages/PreventiveMaintenancePlansPage';
+import PreventiveExecutionCandidatesPage from './pages/PreventiveExecutionCandidatesPage';
 import './App.css';
 
 function App() {
@@ -114,6 +115,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <PreventiveMaintenancePlansPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/preventive-execution-candidates"
+              element={
+                <PrivateRoute>
+                  <PreventiveExecutionCandidatesPage />
                 </PrivateRoute>
               }
             />

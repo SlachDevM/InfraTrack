@@ -41,6 +41,24 @@ class TimeTriggerDefinitionTest {
 
         assertThat(outcome.isEligible()).isFalse();
         assertThat(outcome.getEvaluationReason()).isEqualTo("Next execution interval has not been reached.");
+        assertThat(outcome.getNextEligibleAt()).isEqualTo(
+                LocalDate.of(2024, 7, 27).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli());
+    }
+
+    @Test
+    void evaluate_shouldReturnNullNextEligibleAtWhenEligible() {
+        TriggerDefinition definition = TriggerDefinitionFactory.from(
+                PlanTriggerType.TIME,
+                "{\"every\":1,\"unit\":\"MONTH\"}");
+        PreventiveMaintenancePlan plan = activePlan(
+                LocalDate.of(2024, 1, 1),
+                PlanTriggerType.TIME,
+                "{\"every\":1,\"unit\":\"MONTH\"}");
+
+        TriggerEvaluationOutcome outcome = definition.evaluate(context(plan, LocalDateTime.of(2024, 2, 1, 9, 0)));
+
+        assertThat(outcome.isEligible()).isTrue();
+        assertThat(outcome.getNextEligibleAt()).isNull();
     }
 
     @Test

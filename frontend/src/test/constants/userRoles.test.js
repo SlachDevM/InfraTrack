@@ -11,6 +11,9 @@ import {
   canManageInspectionTemplates,
   canViewPreventiveMaintenancePlans,
   canManagePreventiveMaintenancePlans,
+  canViewPreventiveExecutionCandidates,
+  canGeneratePreventiveExecutionCandidates,
+  canReviewPreventiveExecutionCandidates,
 } from '../../constants/userRoles';
 
 describe('canRegisterAssets', () => {
@@ -93,5 +96,26 @@ describe('other role helpers', () => {
     expect(canManagePreventiveMaintenancePlans(USER_ROLES.ADMINISTRATOR)).toBe(true);
     expect(canManagePreventiveMaintenancePlans(USER_ROLES.MANAGER)).toBe(false);
     expect(canManagePreventiveMaintenancePlans(USER_ROLES.OPERATIONAL_COORDINATOR)).toBe(false);
+  });
+
+  it('allows execution candidate viewing for admin manager and coordinator', () => {
+    expect(canViewPreventiveExecutionCandidates(USER_ROLES.ADMINISTRATOR)).toBe(true);
+    expect(canViewPreventiveExecutionCandidates(USER_ROLES.MANAGER)).toBe(true);
+    expect(canViewPreventiveExecutionCandidates(USER_ROLES.OPERATIONAL_COORDINATOR)).toBe(true);
+    expect(canViewPreventiveExecutionCandidates(USER_ROLES.FIELD_EMPLOYEE)).toBe(false);
+  });
+
+  it('allows execution candidate generation for admin and manager only', () => {
+    expect(canGeneratePreventiveExecutionCandidates(USER_ROLES.ADMINISTRATOR)).toBe(true);
+    expect(canGeneratePreventiveExecutionCandidates(USER_ROLES.MANAGER)).toBe(true);
+    expect(canGeneratePreventiveExecutionCandidates(USER_ROLES.OPERATIONAL_COORDINATOR)).toBe(false);
+    expect(canGeneratePreventiveExecutionCandidates(USER_ROLES.FIELD_EMPLOYEE)).toBe(false);
+  });
+
+  it('allows execution candidate review for admin and manager only', () => {
+    expect(canReviewPreventiveExecutionCandidates(USER_ROLES.ADMINISTRATOR)).toBe(true);
+    expect(canReviewPreventiveExecutionCandidates(USER_ROLES.MANAGER)).toBe(true);
+    expect(canReviewPreventiveExecutionCandidates(USER_ROLES.OPERATIONAL_COORDINATOR)).toBe(false);
+    expect(canReviewPreventiveExecutionCandidates(USER_ROLES.FIELD_EMPLOYEE)).toBe(false);
   });
 });

@@ -3,6 +3,7 @@ package com.infratrack.inspection;
 import com.infratrack.asset.Asset;
 import com.infratrack.businesstrigger.BusinessTrigger;
 import com.infratrack.inspectiontemplate.InspectionTemplate;
+import com.infratrack.preventivemaintenance.PreventiveExecutionCandidate;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
@@ -27,6 +28,10 @@ public class Inspection {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "inspection_template_id")
     private InspectionTemplate inspectionTemplate;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "preventive_execution_candidate_id")
+    private PreventiveExecutionCandidate preventiveExecutionCandidate;
 
     @Column(name = "assigned_to_user_id", nullable = false)
     private Long assignedToUserId;
@@ -127,6 +132,14 @@ public class Inspection {
 
     public void setInspectionTemplate(InspectionTemplate inspectionTemplate) {
         this.inspectionTemplate = inspectionTemplate;
+    }
+
+    public PreventiveExecutionCandidate getPreventiveExecutionCandidate() {
+        return preventiveExecutionCandidate;
+    }
+
+    public void setPreventiveExecutionCandidate(PreventiveExecutionCandidate preventiveExecutionCandidate) {
+        this.preventiveExecutionCandidate = preventiveExecutionCandidate;
     }
 
     public Long getAssignedToUserId() {

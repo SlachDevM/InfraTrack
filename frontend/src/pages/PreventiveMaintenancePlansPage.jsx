@@ -754,6 +754,13 @@ export default function PreventiveMaintenancePlansPage() {
                             {' '}
                             {formatTimestamp(evaluationResults[plan.id].evaluatedAt)}
                           </div>
+                          {evaluationResults[plan.id].nextEligibleAt && (
+                            <div className="evaluation-timestamp">
+                              Next eligible:
+                              {' '}
+                              {formatTimestamp(evaluationResults[plan.id].nextEligibleAt)}
+                            </div>
+                          )}
                         </div>
                       )}
                       {canManage && plan.status !== 'ARCHIVED' && (

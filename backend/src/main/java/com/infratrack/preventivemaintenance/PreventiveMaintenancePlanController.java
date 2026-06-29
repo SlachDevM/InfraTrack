@@ -3,6 +3,7 @@ package com.infratrack.preventivemaintenance;
 import com.infratrack.config.PaginationSupport;
 import com.infratrack.config.openapi.StandardApiResponses;
 import com.infratrack.preventivemaintenance.dto.CreatePreventiveMaintenancePlanRequest;
+import com.infratrack.preventivemaintenance.dto.ExecutionCandidateGenerationResultResponse;
 import com.infratrack.preventivemaintenance.dto.PreventiveMaintenancePlanResponse;
 import com.infratrack.preventivemaintenance.dto.TriggerEvaluationResultResponse;
 import com.infratrack.preventivemaintenance.dto.UpdatePreventiveMaintenancePlanRequest;
@@ -40,14 +41,20 @@ public class PreventiveMaintenancePlanController {
     private final PreventiveMaintenancePlanService planService;
     private final TriggerEvaluationService triggerEvaluationService;
     private final PreventiveMaintenancePlanAuthorizationService authorizationService;
+    private final PreventiveExecutionCandidateService executionCandidateService;
+    private final PreventiveExecutionCandidateAuthorizationService executionCandidateAuthorizationService;
 
     public PreventiveMaintenancePlanController(
             PreventiveMaintenancePlanService planService,
             TriggerEvaluationService triggerEvaluationService,
-            PreventiveMaintenancePlanAuthorizationService authorizationService) {
+            PreventiveMaintenancePlanAuthorizationService authorizationService,
+            PreventiveExecutionCandidateService executionCandidateService,
+            PreventiveExecutionCandidateAuthorizationService executionCandidateAuthorizationService) {
         this.planService = planService;
         this.triggerEvaluationService = triggerEvaluationService;
         this.authorizationService = authorizationService;
+        this.executionCandidateService = executionCandidateService;
+        this.executionCandidateAuthorizationService = executionCandidateAuthorizationService;
     }
 
     @GetMapping
@@ -88,6 +95,17 @@ public class PreventiveMaintenancePlanController {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         authorizationService.requireCanViewPlans(userId);
         return ResponseEntity.ok(triggerEvaluationService.evaluatePlan(id));
+    }
+
+    @PostMapping("/{id}/execution-candidate")
+    @Operation(summary = "Generate execution candidate for one plan")
+    @ApiResponse(responseCode = "200", description = "Generation result for the plan")
+    public ResponseEntity<ExecutionCandidateGenerationResultResponse> generateExecutionCandidate(
+            @PathVariable Long id,
+            Authentication authentication) {
+        Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+        executionCandidateAuthorizationService.requireCanGenerateCandidates(userId);
+        return ResponseEntity.ok(executionCandidateService.generateCandidateForPlan(id));
     }
 
     @GetMapping("/{id}")

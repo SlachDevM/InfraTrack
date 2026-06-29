@@ -46,9 +46,26 @@ final class TimeTriggerDefinition implements TriggerDefinition {
         LocalDate currentDate = context.getCurrentDateTime().toLocalDate();
         long elapsed = elapsedUnits(referenceDate, currentDate);
         if (elapsed >= every) {
-            return new TriggerEvaluationOutcome(true, eligibleReason());
+            return new TriggerEvaluationOutcome(true, eligibleReason(), null);
         }
-        return new TriggerEvaluationOutcome(false, "Next execution interval has not been reached.");
+        LocalDate nextEligibleDate = advanceByInterval(referenceDate);
+        return new TriggerEvaluationOutcome(
+                false,
+                "Next execution interval has not been reached.",
+                toEpochMillis(nextEligibleDate));
+    }
+
+    private LocalDate advanceByInterval(LocalDate referenceDate) {
+        return switch (unit) {
+            case DAY -> referenceDate.plusDays(every);
+            case WEEK -> referenceDate.plusWeeks(every);
+            case MONTH -> referenceDate.plusMonths(every);
+            case YEAR -> referenceDate.plusYears(every);
+        };
+    }
+
+    private static Long toEpochMillis(LocalDate date) {
+        return date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
 
     private long elapsedUnits(LocalDate referenceDate, LocalDate currentDate) {

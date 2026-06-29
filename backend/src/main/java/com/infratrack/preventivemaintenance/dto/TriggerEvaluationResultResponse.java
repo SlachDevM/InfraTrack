@@ -13,6 +13,7 @@ public class TriggerEvaluationResultResponse {
     private String evaluationReason;
     private Long evaluatedAt;
     private long evaluationDurationMs;
+    private Long nextEligibleAt;
     private TriggerSummaryResponse triggerSummary;
 
     public static TriggerEvaluationResultResponse from(
@@ -31,6 +32,7 @@ public class TriggerEvaluationResultResponse {
         response.evaluationReason = outcome.getEvaluationReason();
         response.evaluatedAt = evaluatedAt;
         response.evaluationDurationMs = evaluationDurationMs;
+        response.nextEligibleAt = outcome.getNextEligibleAt();
         response.triggerSummary = TriggerSummaryResponse.from(summary);
         return response;
     }
@@ -61,6 +63,10 @@ public class TriggerEvaluationResultResponse {
 
     public long getEvaluationDurationMs() {
         return evaluationDurationMs;
+    }
+
+    public Long getNextEligibleAt() {
+        return nextEligibleAt;
     }
 
     public TriggerSummaryResponse getTriggerSummary() {

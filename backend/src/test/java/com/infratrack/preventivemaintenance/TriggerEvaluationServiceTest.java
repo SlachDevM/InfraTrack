@@ -51,6 +51,7 @@ class TriggerEvaluationServiceTest {
         assertThat(result.getTriggerSummary().getTitle()).isEqualTo("Every month");
         assertThat(result.getEvaluatedAt()).isPositive();
         assertThat(result.getEvaluationDurationMs()).isGreaterThanOrEqualTo(0);
+        assertThat(result.getNextEligibleAt()).isNull();
         verify(planRepository, never()).save(any());
     }
 
@@ -117,8 +118,10 @@ class TriggerEvaluationServiceTest {
 
         assertThat(triggerEvaluationService.evaluatePlan(200L).getEvaluationReason())
                 .isEqualTo("Meter values are not available yet.");
+        assertThat(triggerEvaluationService.evaluatePlan(200L).getNextEligibleAt()).isNull();
         assertThat(triggerEvaluationService.evaluatePlan(201L).getEvaluationReason())
                 .isEqualTo("Business event evaluation is not implemented yet.");
+        assertThat(triggerEvaluationService.evaluatePlan(201L).getNextEligibleAt()).isNull();
     }
 
     @Test

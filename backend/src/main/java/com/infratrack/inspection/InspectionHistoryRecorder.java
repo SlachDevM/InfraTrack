@@ -42,4 +42,22 @@ public class InspectionHistoryRecorder {
                 details
         ));
     }
+
+    public void recordPreventiveInspectionCreated(
+            Asset asset,
+            Long userId,
+            LocalDate eventDate,
+            Long candidateId,
+            String planCodeSnapshot) {
+        assetHistoryEventRepository.save(new AssetHistoryEvent(
+                asset,
+                AssetHistoryEventType.PREVENTIVE_INSPECTION_CREATED,
+                userId,
+                eventDate,
+                "Preventive inspection created from candidate "
+                        + candidateId
+                        + " for plan "
+                        + planCodeSnapshot
+                        + "."));
+    }
 }

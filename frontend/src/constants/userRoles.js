@@ -49,6 +49,22 @@ export function canManagePreventiveMaintenancePlans(role) {
   return role === USER_ROLES.ADMINISTRATOR;
 }
 
+export function canViewPreventiveExecutionCandidates(role) {
+  return (
+    role === USER_ROLES.ADMINISTRATOR
+    || role === USER_ROLES.MANAGER
+    || role === USER_ROLES.OPERATIONAL_COORDINATOR
+  );
+}
+
+export function canGeneratePreventiveExecutionCandidates(role) {
+  return role === USER_ROLES.ADMINISTRATOR || role === USER_ROLES.MANAGER;
+}
+
+export function canReviewPreventiveExecutionCandidates(role) {
+  return role === USER_ROLES.ADMINISTRATOR || role === USER_ROLES.MANAGER;
+}
+
 export function canRegisterAssets(role) {
   if (!role) {
     return false;

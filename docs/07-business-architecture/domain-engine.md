@@ -682,6 +682,148 @@ Used by plan responses, evaluation API, and the frontend.
 
 No scheduling, polling, background jobs, database writes, Inspections, Work Orders, Maintenance Activities, or notifications.
 
+### Sprint B2 — Execution Candidate Engine
+
+Sprint B2 transforms eligible preventive maintenance plans into reviewable **Execution Candidates**.
+
+#### Execution Candidate concept
+
+Trigger Evaluation answers: **"Is this plan eligible now?"**
+
+The Execution Candidate Engine answers: **"This plan is eligible and should be reviewed for execution."**
+
+Candidates are persisted for manager review. No workflow execution occurs in B2.
+
+#### nextEligibleAt
+
+`TriggerEvaluationResultResponse` now includes `nextEligibleAt`:
+
+| Trigger | Behaviour |
+|---------|-----------|
+| TIME, not eligible | Timestamp when the next full interval from plan creation will be reached |
+| TIME, eligible | `null` |
+| METER / EVENT | `null` (deferred) |
+
+#### Preventive Execution Candidate
+
+`PreventiveExecutionCandidate` stores:
+
+- plan and asset references;
+- `candidateStatus` (`PENDING`, `APPROVED`, `REJECTED`, `DISMISSED`, `EXECUTED`);
+- trigger type, eligibility reason, `evaluatedAt`, `nextEligibleAt`;
+- snapshot fields (`planCodeSnapshot`, `planVersionSnapshot`, `planNameSnapshot`, `targetActionSnapshot`, trigger summary snapshots).
+
+B2 creates **PENDING** candidates only. No approve, reject, dismiss, or execute actions yet.
+
+#### Duplicate prevention
+
+For a given plan, if a **PENDING** candidate already exists, generation is skipped and the existing candidate is returned. A partial unique index enforces one pending candidate per plan at the database level.
+
+#### Candidate generation
+
+`PreventiveExecutionCandidateService`:
+
+- evaluates **ACTIVE** plans;
+- creates a **PENDING** candidate when eligible;
+- creates nothing when not eligible;
+- no scheduler, notifications, or workflow side effects.
+
+#### B2 API
+
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /api/preventive-execution-candidates/generate` | Generate candidates for all active eligible plans |
+| `POST /api/preventive-maintenance-plans/{planId}/execution-candidate` | Generate candidate for one plan |
+| `GET /api/preventive-execution-candidates` | List candidates (filters: status, asset, plan) |
+| `GET /api/preventive-execution-candidates/{id}` | Candidate detail |
+
+#### B2 authorization
+
+| Role | Access |
+|------|--------|
+| Administrator | Generate and view |
+| Manager | Generate and view |
+| Operational Coordinator | View only |
+| Field Employee / Contractor | No access |
+
+#### Relationship to future Preventive Decision Assistant
+
+Execution Candidates in B2 form the review queue that a future **Preventive Decision Assistant** will use for manager decisions and optional workflow execution — analogous to Suggested Actions → Decision Assistant in Phase A.
+
+#### B2 scope limitation
+
+**B2 generates review candidates only.**
+
+No Inspections, Work Orders, Maintenance Activities, notifications, scheduler, or background jobs.
+
+### Sprint B3 — Preventive Decision Assistant
+
+Sprint B3 allows Managers and Administrators to review **Execution Candidates** and decide what happens next.
+
+#### Preventive Decision Assistant concept
+
+Flow:
+
+```text
+Preventive Maintenance Plan → Trigger Evaluation → Execution Candidate
+→ Preventive Decision Assistant → Manager Decision → Optional Inspection creation
+```
+
+The system proposes; the Manager decides. Automation remains intentionally absent.
+
+#### Candidate lifecycle (B3)
+
+Allowed transitions:
+
+```text
+PENDING → APPROVED
+PENDING → REJECTED
+PENDING → DISMISSED
+```
+
+`EXECUTED` remains reserved for future automation.
+
+#### Approval behaviour
+
+When a Manager approves a `CREATE_INSPECTION` candidate:
+
+- an Inspection is created through the existing Inspection workflow;
+- the candidate becomes `APPROVED` with `createdInspectionId`;
+- the Inspection references the `PreventiveExecutionCandidate`;
+- plan snapshots on the candidate are preserved;
+- Asset History records `PREVENTIVE_INSPECTION_CREATED`;
+- existing Inspection assignment notifications are preserved.
+
+`CREATE_WORK_ORDER` and `CREATE_MAINTENANCE` return *Target action not supported yet.*
+
+#### Reject and dismiss
+
+Reject and dismiss update candidate status and decision metadata only. No Inspection, Work Order, Maintenance Activity, or Asset History event is created.
+
+#### B3 API
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/preventive-execution-candidates/{id}` | Candidate detail |
+| `POST /api/preventive-execution-candidates/{id}/approve` | Approve and create Inspection |
+| `POST /api/preventive-execution-candidates/{id}/reject` | Reject candidate |
+| `POST /api/preventive-execution-candidates/{id}/dismiss` | Dismiss candidate |
+
+#### B3 authorization
+
+| Role | Access |
+|------|--------|
+| Administrator | Approve, reject, dismiss, view (any department) |
+| Manager | Approve, reject, dismiss, view (own department assets) |
+| Operational Coordinator | View only |
+| Field Employee / Contractor | No access |
+
+#### B3 scope limitation
+
+**B3 adds manual decision-making only.**
+
+No scheduler, background jobs, automatic candidate generation, Work Orders, Maintenance Activities, or automation beyond optional Inspection creation on approval.
+
 ### B1.1 API
 
 | Endpoint | Purpose |
@@ -717,7 +859,7 @@ Planned extensions to the Domain Engine include:
 | Role | Access |
 |------|--------|
 | Administrator | Create, update, archive templates and preventive maintenance plans; manage checklist questions and decision rules on draft templates; view all |
-| Manager | View templates, checklist questions, decision rules, and preventive maintenance plans |
-| Operational Coordinator | View templates, checklist questions, decision rules, and preventive maintenance plans |
+| Manager | View templates, checklist questions, decision rules, preventive maintenance plans, and execution candidates; generate and review execution candidates |
+| Operational Coordinator | View templates, checklist questions, decision rules, preventive maintenance plans, and execution candidates |
 | Field Employee | No access |
 | Contractor | No access |

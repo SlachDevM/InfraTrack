@@ -3,6 +3,7 @@ package com.infratrack.inspection;
 import com.infratrack.asset.Asset;
 import com.infratrack.businesstrigger.BusinessTrigger;
 import com.infratrack.businesstrigger.BusinessTriggerRepository;
+import com.infratrack.businesstrigger.BusinessTriggerType;
 import com.infratrack.department.Department;
 import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.ForbiddenOperationException;
@@ -15,6 +16,10 @@ import com.infratrack.inspection.dto.InspectionSummaryResponse;
 import com.infratrack.inspectiontemplate.InspectionTemplate;
 import com.infratrack.inspectiontemplate.InspectionTemplateRepository;
 import com.infratrack.inspectiontemplate.InspectionTemplateStatus;
+import com.infratrack.preventivemaintenance.PreventiveExecutionCandidate;
+import com.infratrack.preventivemaintenance.PreventiveMaintenancePlan;
+import com.infratrack.preventivemaintenance.PlanTargetAction;
+import com.infratrack.preventivemaintenance.dto.ApprovePreventiveCandidateRequest;
 import com.infratrack.ruleevaluation.RuleEvaluationReport;
 import com.infratrack.ruleevaluation.RuleEvaluationReportService;
 import com.infratrack.ruleevaluation.dto.RuleEvaluationReportSummaryResponse;
@@ -27,8 +32,10 @@ import com.infratrack.user.UserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -113,6 +120,62 @@ public class InspectionService {
     }
 
     @Transactional
+    public InspectionResponse createInspectionFromApprovedPreventiveCandidate(
+            PreventiveExecutionCandidate candidate,
+            ApprovePreventiveCandidateRequest request,
+            Long decidingUserId) {
+        if (candidate.getTargetActionSnapshot() != PlanTargetAction.CREATE_INSPECTION) {
+            throw new BusinessValidationException("Target action not supported yet.");
+        }
+
+        Asset asset = candidate.getAsset();
+        User assignedToUser = findPreventiveAssigneeOrThrow(request.getAssigneeId(), asset);
+        LocalDate expectedCompletionDate = resolvePlannedDate(request.getPlannedAt());
+        validateExpectedCompletionDate(expectedCompletionDate);
+
+        BusinessTrigger businessTrigger = businessTriggerRepository.save(new BusinessTrigger(
+                asset,
+                BusinessTriggerType.SCHEDULED_INSPECTION,
+                buildPreventiveTriggerReason(candidate),
+                false,
+                decidingUserId));
+
+        PreventiveMaintenancePlan plan = candidate.getPreventiveMaintenancePlan();
+        InspectionTemplate inspectionTemplate = plan != null ? plan.getInspectionTemplate() : null;
+        if (inspectionTemplate != null) {
+            inspectionTemplate = resolveOptionalTemplate(inspectionTemplate.getId(), asset);
+        }
+
+        InspectionPriority priority = mapPlanPriority(plan);
+
+        Inspection inspection = new Inspection(
+                asset,
+                businessTrigger,
+                assignedToUser.getId(),
+                decidingUserId,
+                priority,
+                expectedCompletionDate);
+        inspection.setPreventiveExecutionCandidate(candidate);
+        if (inspectionTemplate != null) {
+            inspection.setInspectionTemplate(inspectionTemplate);
+        }
+        inspection = inspectionRepository.save(inspection);
+
+        historyRecorder.recordInspectionAssigned(asset, decidingUserId, LocalDate.now());
+        historyRecorder.recordPreventiveInspectionCreated(
+                asset,
+                decidingUserId,
+                LocalDate.now(),
+                candidate.getId(),
+                candidate.getPlanCodeSnapshot());
+
+        operationalEventNotificationService.notifyInspectionAssigned(assignedToUser.getId());
+
+        User decidingUser = userService.getById(decidingUserId);
+        return InspectionResponse.from(inspection, assignedToUser, decidingUser);
+    }
+
+    @Transactional
     public InspectionResponse assignInspection(AssignInspectionRequest request, Long userId) {
         User coordinator = userService.getById(userId);
         authorizationService.requireCanAssignInspections(coordinator);
@@ -155,6 +218,53 @@ public class InspectionService {
             throw new ForbiddenOperationException(
                     "You may only assign inspections for assets in your own department.");
         }
+    }
+
+    private User findPreventiveAssigneeOrThrow(Long assignedToUserId, Asset asset) {
+        if (assignedToUserId == null) {
+            throw new BusinessValidationException("Assigned user is required");
+        }
+        User user = userService.getById(assignedToUserId);
+        if (!user.getRole().isFieldEmployee()) {
+            throw new ForbiddenOperationException("Assigned user is not a Field Employee.");
+        }
+        if (!Boolean.TRUE.equals(user.getEnabled())) {
+            throw new ForbiddenOperationException("Assigned worker is disabled.");
+        }
+        Department assigneeDepartment = user.getDepartment();
+        Department assetDepartment = asset.getDepartment();
+        if (assigneeDepartment == null || assetDepartment == null
+                || !assigneeDepartment.getId().equals(assetDepartment.getId())) {
+            throw new ForbiddenOperationException(
+                    "Assigned worker must belong to the asset department.");
+        }
+        return user;
+    }
+
+    private static LocalDate resolvePlannedDate(Long plannedAt) {
+        if (plannedAt == null) {
+            return null;
+        }
+        return Instant.ofEpochMilli(plannedAt).atZone(ZoneId.systemDefault()).toLocalDate();
+    }
+
+    private static String buildPreventiveTriggerReason(PreventiveExecutionCandidate candidate) {
+        return "Preventive maintenance: "
+                + candidate.getPlanCodeSnapshot()
+                + " - "
+                + candidate.getPlanNameSnapshot();
+    }
+
+    private static InspectionPriority mapPlanPriority(PreventiveMaintenancePlan plan) {
+        if (plan == null || plan.getPriority() == null) {
+            return InspectionPriority.NORMAL;
+        }
+        return switch (plan.getPriority()) {
+            case LOW -> InspectionPriority.LOW;
+            case MEDIUM -> InspectionPriority.NORMAL;
+            case HIGH -> InspectionPriority.HIGH;
+            case CRITICAL -> InspectionPriority.URGENT;
+        };
     }
 
     @Transactional
