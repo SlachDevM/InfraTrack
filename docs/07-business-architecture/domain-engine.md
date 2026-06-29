@@ -6,7 +6,111 @@ The Domain Engine holds reusable operational knowledge that applies across asset
 
 Knowledge belongs to the **Asset Category**, not to individual Assets.
 
-## Inspection Template
+### Related documentation
+
+| Document | Purpose |
+|----------|---------|
+| [Business Glossary](../01-business-architecture/glossary.md) | Terminology for stakeholders |
+| [ADR-003 — V2 domain-driven workflow](../03-architecture/adr-003-v2-domain-driven-workflow.md) | How V2 domains interact |
+| [V2 Roadmap](../06-release-notes/v2-roadmap.md) | Phase evolution |
+| [V2 Phase A+B release notes](../06-release-notes/v2-phase-a-b.md) | Milestone summary and validation |
+
+## V2 Phase A+B — Current State
+
+Phase A and Phase B foundational work is **implemented**. InfraTrack now provides two complementary engines on top of the V1 operational workflow:
+
+| Engine | Purpose |
+|--------|---------|
+| **Decision Engine** (Phase A) | Structured inspection knowledge, rule evaluation, suggested actions, and manager review |
+| **Preventive Maintenance Engine** (Phase B) | Plans, trigger evaluation, execution candidates, manager decisions, audit reports, and controlled scheduling |
+
+### Human-in-the-loop principle
+
+Both engines follow the same rule:
+
+```text
+The system proposes.
+The Manager decides.
+```
+
+Rules produce **Suggested Actions**, not automatic Issues. The scheduler generates **Execution Candidates**, not automatic Inspections. Automation of outcomes remains intentionally out of scope.
+
+### Phase A — Decision Engine (implemented)
+
+| Capability | Status |
+|------------|--------|
+| Inspection Templates, Questions, Business Codes | Implemented |
+| Question Choices, Value Model, Units of Measure | Implemented |
+| Inspection Answers (structured completion) | Implemented |
+| Decision Rules | Implemented |
+| Rule Evaluation Engine and Reports | Implemented |
+| Suggested Actions | Implemented |
+| Decision Assistant (approve / reject / dismiss → Issue) | Implemented |
+| Rework workflow, IssueType NORMAL/REWORK, CAPA, Lessons Learned | Implemented (completion review cross-cutting) |
+
+High-level flow:
+
+```text
+Asset Category
+  ↓
+Inspection Template
+  ↓
+Questions
+  ↓
+Answers
+  ↓
+Rules
+  ↓
+Evaluation Report
+  ↓
+Suggested Actions
+  ↓
+Decision Assistant
+```
+
+Authoritative detail: sprint sections A2.x and A3.x below.
+
+### Phase B — Preventive Maintenance Engine (implemented)
+
+| Capability | Status |
+|------------|--------|
+| Preventive Maintenance Plans and Plan Business Triggers | Implemented |
+| Trigger Definitions and Trigger Evaluation | Implemented |
+| Execution Candidates | Implemented |
+| Preventive Decision Assistant | Implemented |
+| Preventive Execution Reports | Implemented |
+| Controlled Preventive Scheduler | Implemented (disabled by default) |
+
+High-level flow:
+
+```text
+Preventive Plan
+  ↓
+Trigger Definition
+  ↓
+Trigger Evaluation
+  ↓
+Execution Candidate
+  ↓
+Preventive Decision Assistant
+  ↓
+Inspection
+```
+
+Authoritative detail: sprint sections B1.x–B5 below.
+
+### What is not automated yet
+
+- Automatic Issue creation from matched rules (without manager approval)
+- Automatic Inspection creation from scheduler or trigger evaluation
+- Work Order or Maintenance Activity creation from preventive plans (`CREATE_WORK_ORDER`, `CREATE_MAINTENANCE` target actions)
+- METER and EVENT trigger evaluation (deferred)
+- KPI dashboards and analytics over execution reports
+- Distributed scheduler locking for multi-instance deployments
+
+See [V2 Phase A+B Release Notes](../06-release-notes/v2-phase-a-b.md) for the milestone summary and validation checklist. Terminology: [Business Glossary](../01-business-architecture/glossary.md).
+
+---
 
 An **Inspection Template** defines the reusable business structure for future Inspections within an Asset Category.
 
@@ -17,22 +121,24 @@ Examples:
 - Building Safety Inspection Template
 - Electrical Panel Inspection Template
 
-### Relationship
+### Relationship (implemented)
 
-```
+```text
 AssetCategory
     ↓
-InspectionTemplate
-```
-
-Future sprints will extend this chain:
-
-```
 InspectionTemplate
     ↓
 InspectionQuestions
     ↓
 InspectionAnswers
+    ↓
+DecisionRules
+    ↓
+RuleEvaluationReport
+    ↓
+SuggestedActions
+    ↓
+DecisionAssistant
 ```
 
 ### Why Asset Category?
@@ -88,7 +194,7 @@ Example for a Pump Inspection Template:
 | `BOOLEAN` | Yes/no answer |
 | `TEXT` | Free-text answer |
 | `NUMBER` | Numeric measurement |
-| `CHOICE` | Selection from options (options defined in a future sprint) |
+| `CHOICE` | Selection from predefined options (see Sprint A2.3.2) |
 | `PHOTO` | Photo capture during inspection |
 
 ### DRAFT-only editing rule
@@ -230,7 +336,7 @@ Answer snapshots preserve question text, type, choice labels, and number constra
 
 ### Future Decision Matrix relationship
 
-The Value Model prepares structured, validated answers that future sprints will evaluate with Decision Matrix rules. A2.3.2 does **not** implement decision rules or automatic Issue creation.
+The Value Model prepares structured, validated answers for Decision Rule evaluation (A3.1+). A2.3.2 does not implement rules or automatic Issue creation.
 
 ### Supported answer types after A2.3.2
 
@@ -275,7 +381,7 @@ Normalized units and versioned snapshots ensure comparable numeric readings, aud
 
 ## Sprint A3.1 — Decision Rule Engine Foundation
 
-Sprint A3.1 introduces **Decision Rules** attached to Inspection Template Questions. A Decision Rule describes a condition on a question answer and the intended future action when that condition is met.
+Sprint A3.1 introduces **Decision Rules** attached to Inspection Template Questions. A Decision Rule describes a condition on a question answer and the intended action when that condition is met (realised as Suggested Actions in A3.4).
 
 Example:
 
@@ -424,9 +530,9 @@ Each **Rule Evaluation Result** stores snapshots of the rule definition (`ruleCo
 
 #### A3.3 scope limitation
 
-**A3.3 persists evaluation only.**
+**A3.3 persists evaluation and enables A3.4 suggestion generation.**
 
-Reports are created as part of the Inspection completion transaction. No Issues, Operational Decisions, Suggested Actions, notifications, or workflow side effects are triggered. Inspection completion behaviour (including existing `issueIdentified` handling) is unchanged.
+Reports are created as part of the Inspection completion transaction. Issues and Operational Decisions are not created automatically. Inspection completion behaviour (including existing `issueIdentified` handling) is unchanged. Suggested Actions are generated in A3.4 from matched results.
 
 When a templated Inspection is completed with structured answers but no active rules exist, a report is still created with `resultCount = 0` for audit clarity. Legacy inspections without a template do not receive a report.
 
@@ -440,9 +546,9 @@ When a templated Inspection is completed with structured answers but no active r
 
 Access requires permission to view the Inspection; cross-department access is rejected.
 
-#### Relationship to future Suggested Actions
+#### Relationship to Suggested Actions
 
-Persisted reports in A3.3 form the audit trail that A3.4 uses to generate **Suggested Actions**.
+Persisted reports in A3.3 form the audit trail that A3.4 uses to generate **Suggested Actions** (implemented).
 
 ### Sprint A3.4 — Suggested Actions
 
@@ -465,7 +571,7 @@ Rule evaluation records **what happened**. Suggested actions record **what the s
 
 **A3.4 generates suggestions only.**
 
-Suggested Actions are created in the same transaction as the evaluation report when matched results exist. Status is `PENDING`. No Issues, Operational Decisions, notifications, Asset History events, or workflow side effects occur. No accept/reject/dismiss endpoints yet.
+Suggested Actions are created in the same transaction as the evaluation report when matched results exist. Initial status is `PENDING`. Manager review is provided by the Decision Assistant (A3.5).
 
 One matched rule result produces one Suggested Action. Action payload JSON is interpreted tolerantly (`title`, `message`, `severity`); unknown fields are ignored and missing fields use readable fallbacks.
 
@@ -476,10 +582,11 @@ One matched rule result produces one Suggested Action. Action payload JSON is in
 | `GET /api/inspections/{inspectionId}/suggested-actions` | List suggestions (optional `status`, `actionType` filters) |
 | `GET /api/inspections/{inspectionId}/suggested-actions/{suggestedActionId}` | Suggestion detail |
 
-#### Future sprints
+#### Later sprints
 
-- **A3.5** — Decision Assistant (manager review, explainability, manual Issue creation);
-- **A3.6** — automation (optional execution of accepted suggestions into Operational Decisions).
+- **A3.6** — optional automation (execute accepted suggestions without manager step);
+- template publish/clone workflow enhancements;
+- analytics dashboards over template-aligned inspection data.
 
 ### Sprint A3.5 — Decision Assistant
 
@@ -544,7 +651,7 @@ Each plan includes:
 - exactly one **target action** (`CREATE_INSPECTION`, `CREATE_WORK_ORDER`, `CREATE_MAINTENANCE`);
 - optional **Inspection Template** reference (for inspection-oriented plans).
 
-Only `ACTIVE` plans may eventually generate work in future sprints. Archived plans remain visible but cannot be modified.
+Only `ACTIVE` plans may generate execution candidates (B2+) or be evaluated by the scheduler (B5). Archived plans remain visible but cannot be modified.
 
 ### Business Trigger (plan configuration)
 
@@ -564,21 +671,23 @@ Example configurations:
 | METER | `{"meter":"OPERATING_HOURS","every":250}` |
 | EVENT | `{"event":"COMPLETION_REVIEW"}` |
 
-The Business Trigger model is intentionally generic. Future sprints will reuse it for preventive maintenance scheduling, IoT meter events, calendar integrations, and external trigger sources.
+The Business Trigger model is intentionally generic. METER and EVENT evaluation remain deferred; TIME evaluation is implemented in B1.3.
 
 ### Target actions
 
-Every plan defines exactly one target action. B1.1 stores the intent only — no Inspections, Work Orders, or Maintenance Activities are created.
+Every plan defines exactly one target action. Only `CREATE_INSPECTION` approval is supported in B3; other target actions return *Target action not supported yet.*
 
-### Future execution engine
+### Execution pipeline (B2–B5, implemented)
 
-A future **execution engine** will:
+The preventive **execution pipeline** (distinct from V1 operational `business_triggers`):
 
-- evaluate trigger configurations against time, meters, or events;
-- create operational `BusinessTrigger` records or workflow items for `ACTIVE` plans;
-- honour optional Inspection Template references.
+- **B1.3** — evaluates TIME triggers for eligibility;
+- **B2** — generates PENDING execution candidates;
+- **B3** — manager approve / reject / dismiss; optional Inspection on approval;
+- **B4** — one audit report per candidate;
+- **B5** — controlled scheduler (candidates only; disabled by default).
 
-B1.1 does **not** schedule, evaluate triggers, simulate execution, or send notifications.
+B1.1 alone does not schedule, evaluate triggers, or create workflow records.
 
 ### Sprint B1.2 — Trigger Definition
 
@@ -713,7 +822,7 @@ Candidates are persisted for manager review. No workflow execution occurs in B2.
 - trigger type, eligibility reason, `evaluatedAt`, `nextEligibleAt`;
 - snapshot fields (`planCodeSnapshot`, `planVersionSnapshot`, `planNameSnapshot`, `targetActionSnapshot`, trigger summary snapshots).
 
-B2 creates **PENDING** candidates only. No approve, reject, dismiss, or execute actions yet.
+B2 introduced **PENDING** candidate generation only. Approve, reject, and dismiss were added in B3.
 
 #### Duplicate prevention
 
@@ -746,9 +855,9 @@ For a given plan, if a **PENDING** candidate already exists, generation is skipp
 | Operational Coordinator | View only |
 | Field Employee / Contractor | No access |
 
-#### Relationship to future Preventive Decision Assistant
+#### Relationship to Preventive Decision Assistant
 
-Execution Candidates in B2 form the review queue that a future **Preventive Decision Assistant** will use for manager decisions and optional workflow execution — analogous to Suggested Actions → Decision Assistant in Phase A.
+Execution Candidates form the review queue for the **Preventive Decision Assistant** (B3, implemented) — analogous to Suggested Actions → Decision Assistant in Phase A.
 
 #### B2 scope limitation
 
@@ -974,15 +1083,17 @@ No automatic approval, Inspection creation, Work Orders, Maintenance Activities,
 | Field Employee | No access |
 | Contractor | No access |
 
-## Future sprints
+## Future work
 
-Planned extensions to the Domain Engine include:
+Planned extensions beyond the current Phase A+B baseline:
 
-- structured answers captured during Inspection completion;
-- publish and archive workflow rules;
-- template version cloning;
-- **human validation and automation of suggested actions**;
-- analytics and KPI dashboards powered by template-aligned inspection data.
+- **A3.6** — optional automation of accepted suggested actions;
+- METER and EVENT trigger evaluation for preventive plans;
+- `CREATE_WORK_ORDER` and `CREATE_MAINTENANCE` preventive target actions;
+- template publish/clone workflow and per-question versioning;
+- preventive and decision-engine KPI dashboards;
+- distributed scheduler locking (ShedLock or equivalent) for multi-instance deployments;
+- native Android field client consuming the same REST API.
 
 ## Authorization summary
 

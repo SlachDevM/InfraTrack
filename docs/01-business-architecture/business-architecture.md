@@ -6,7 +6,7 @@ This document defines the long-term business architecture of InfraTrack V2.
 
 Unlike the technical Blueprint, this document describes the business concepts, their relationships and the evolution strategy of the platform.
 
-It is the reference for all future business features.
+It is the reference for all business features. For terminology, see [Glossary](glossary.md). For V2 workflow architecture, see [ADR-003](../03-architecture/adr-003-v2-domain-driven-workflow.md) and the [V2 Roadmap](../06-release-notes/v2-roadmap.md).
 
 ---
 
@@ -156,9 +156,9 @@ Future capabilities:
 
 # Domain Engine
 
-The Domain Engine will progressively introduce reusable business knowledge.
+The Domain Engine introduces reusable business knowledge for inspections and preventive maintenance. **Phase A+B is implemented** — see [domain-engine.md](../07-business-architecture/domain-engine.md).
 
-Examples:
+Implemented capabilities include Inspection Templates, structured answers, Decision Rules, Suggested Actions, Decision Assistant, Preventive Maintenance Plans, Execution Candidates, and the Controlled Preventive Scheduler. Authoritative detail: [Domain Engine](../07-business-architecture/domain-engine.md).
 
 Inspection Templates
 
@@ -188,13 +188,11 @@ Business knowledge should be attached to Asset Categories rather than individual
 
 # Preventive Maintenance
 
-Preventive Maintenance is generated from Preventive Plans.
+Preventive Maintenance Plans define when attention may be needed. **Phase B** evaluates triggers, generates **Execution Candidates**, and requires Manager approval before an Inspection is created. The **Controlled Scheduler** discovers candidates only.
 
-Preventive Plans generate Business Triggers.
+Approved preventive work joins the existing operational workflow (Inspection → Issue → …). No parallel workflow is introduced.
 
-Business Triggers continue using the existing workflow.
-
-No parallel workflow should be introduced.
+See [Domain Engine — Phase B](../07-business-architecture/domain-engine.md) and [ADR-003](../03-architecture/adr-003-v2-domain-driven-workflow.md).
 
 ---
 
@@ -243,7 +241,7 @@ Operational Management
 
 Business Knowledge
 
-(Phase A)
+(Phase A+B — Decision Engine and Preventive Maintenance Engine)
 
 ---
 
@@ -251,7 +249,7 @@ Business Knowledge
 
 Operational Intelligence
 
-(Android, Preventive Maintenance, Analytics, AI)
+(Phase C onward — dashboards, mobile, analytics, optional decision automation)
 
 ---
 

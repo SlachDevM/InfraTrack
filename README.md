@@ -16,6 +16,8 @@ Operational asset and field operations management platform for Australian Local 
 
 InfraTrack is an enterprise software product for managing public infrastructure operations for Australian Local Governments. Version 1.0.1 delivers the complete V1 operational workflow from asset registration through inspections, issues, operational decisions, work orders, maintenance, completion reviews, operational documents, notifications and delegated authority.
 
+**V2 Phase A+B** adds the **Domain Engine**: structured inspection intelligence (Decision Engine) and preventive maintenance orchestration (Preventive Maintenance Engine), both following a **human-in-the-loop** principle — the system proposes; the Manager decides.
+
 The backend is the single source of truth for all business rules. Clients consume one REST API:
 
 - **React web application** — office-based operational users (included)
@@ -47,13 +49,37 @@ The backend is the single source of truth for all business rules. Clients consum
 
 ---
 
-## Roadmap (Post V1.0.1)
+## V2 Domain Engine (Phase A+B)
+
+| Engine | Capabilities |
+|--------|----------------|
+| **Decision Engine** (Phase A) | Inspection Templates, Questions, Answers, Decision Rules, Rule Evaluation Reports, Suggested Actions, Decision Assistant |
+| **Preventive Maintenance Engine** (Phase B) | Plans, Trigger Evaluation, Execution Candidates, Preventive Decision Assistant, Execution Reports, Controlled Scheduler |
+
+**Human-in-the-loop:** Rules produce suggestions, not automatic Issues. The scheduler generates candidates, not automatic Inspections.
+
+| Document | Description |
+|----------|-------------|
+| [Domain Engine](docs/07-business-architecture/domain-engine.md) | Authoritative V2 business architecture |
+| [V2 Phase A+B Release Notes](docs/06-release-notes/v2-phase-a-b.md) | Milestone summary and validation checklist |
+| [V2 API endpoint groups](docs/04-api/v2-domain-engine-api.md) | Major V2 REST paths |
+| [BDR-001 Human-in-the-loop](docs/03-architecture/bdr-001-human-in-the-loop-decision-engine.md) | Why rules suggest, not execute |
+| [BDR-002 Preventive candidates](docs/03-architecture/bdr-002-preventive-candidates-before-automation.md) | Why scheduler generates candidates only |
+| [ADR-003 V2 workflow](docs/03-architecture/adr-003-v2-domain-driven-workflow.md) | How V2 business domains interact |
+| [Business Glossary](docs/01-business-architecture/glossary.md) | Stakeholder terminology |
+| [V2 Roadmap](docs/06-release-notes/v2-roadmap.md) | Phase evolution |
+
+---
+
+## Roadmap (Post V2 Phase A+B)
 
 - Native Android field application (same REST API)
+- METER and EVENT preventive trigger evaluation
+- Optional automation of accepted suggestions (A3.6)
+- Preventive and decision-engine KPI dashboards
 - Expanded pagination on remaining list endpoints
-- Detailed architecture guides under `docs/03-architecture/`
 
-See [Functional Use Cases](docs/01-business-architecture/functional-use-cases.md) for the authoritative business scope.
+See [Functional Use Cases](docs/01-business-architecture/functional-use-cases.md) for the authoritative V1 business scope, [Domain Engine](docs/07-business-architecture/domain-engine.md) for V2, and [V2 Roadmap](docs/06-release-notes/v2-roadmap.md) for planned phases.
 
 ---
 
@@ -66,11 +92,13 @@ See [docs/README.md](docs/README.md) for the full structure and reading order.
 | Phase | Folder | Description |
 |-------|--------|-------------|
 | Business Discovery | [`docs/00-business-discovery/`](docs/00-business-discovery/) | Domain model, actors, workflows and business rules |
-| Business Architecture | [`docs/01-business-architecture/`](docs/01-business-architecture/) | Business architecture and use cases |
+| Business Architecture | [`docs/01-business-architecture/`](docs/01-business-architecture/) | Business architecture, use cases, and [glossary](docs/01-business-architecture/glossary.md) |
 | System Blueprint | [`docs/02-system-blueprint/`](docs/02-system-blueprint/) | Engineering standards and development workflow |
-| Architecture | [`docs/03-architecture/`](docs/03-architecture/) | Detailed architecture (in progress) |
-| API | [`docs/04-api/`](docs/04-api/) | OpenAPI / Swagger reference |
+| Architecture | [`docs/03-architecture/`](docs/03-architecture/) | ADRs, BDRs, and architecture decisions |
+| API | [`docs/04-api/`](docs/04-api/) | OpenAPI reference and V2 endpoint groups |
 | Deployment | [`docs/05-deployment/`](docs/05-deployment/) | Deployment, secrets, and security hardening |
+| Release Notes | [`docs/06-release-notes/`](docs/06-release-notes/) | Sprint and milestone release notes |
+| V2 Business Architecture | [`docs/07-business-architecture/`](docs/07-business-architecture/) | Domain Engine, Decision Engine, Preventive Maintenance Engine |
 
 Key entry points:
 
@@ -78,6 +106,10 @@ Key entry points:
 - [Domain Overview](docs/00-business-discovery/02-domain-overview.md)
 - [Functional Use Cases](docs/01-business-architecture/functional-use-cases.md)
 - [System Blueprint](docs/02-system-blueprint/INFRATRACK_SYSTEM_BLUEPRINT_V1_SKELETON.md)
+- [Domain Engine (V2)](docs/07-business-architecture/domain-engine.md)
+- [Business Glossary](docs/01-business-architecture/glossary.md)
+- [V2 Phase A+B Release Notes](docs/06-release-notes/v2-phase-a-b.md)
+- [V2 Roadmap](docs/06-release-notes/v2-roadmap.md)
 
 ---
 
@@ -159,6 +191,8 @@ Key variables:
 | `ACTIVATION_LINK_BASE_URL` | Yes | Account activation links |
 | `FIREBASE_SERVICE_ACCOUNT_PATH` | No | FCM push (optional) |
 | `SPRING_PROFILES_ACTIVE` | Yes | `dev` locally, `prod` in production |
+| `PREVENTIVE_SCHEDULER_ENABLED` | No | Default `false`; scheduled candidate generation |
+| `PREVENTIVE_SCHEDULER_CRON` | No | Cron for preventive scheduler (default `0 0 6 * * *`) |
 
 See [Deployment documentation](docs/05-deployment/README.md) for the full list.
 
@@ -406,6 +440,7 @@ See [docs/README.md](docs/README.md) and [docs/05-deployment/README.md](docs/05-
 
 | Version | Summary |
 |---------|---------|
+| **V2 Phase A+B** | Domain Engine — Decision Engine, Preventive Maintenance Engine, Controlled Scheduler (human-in-the-loop) |
 | **1.0.1** | V1 release freeze — complete operational workflow (UC-001–UC-013), OpenAPI documentation, observability, security hardening, frontend test suite |
 | 1.0.0 | Initial React frontend release label (superseded by unified 1.0.1 versioning) |
 

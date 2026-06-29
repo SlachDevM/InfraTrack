@@ -1,6 +1,6 @@
 # InfraTrack API Documentation
 
-The authoritative V1 REST API reference is the live OpenAPI documentation served by the backend.
+The authoritative REST API reference is the live OpenAPI documentation served by the backend.
 
 | Resource | URL (local development) |
 |----------|-------------------------|
@@ -8,5 +8,11 @@ The authoritative V1 REST API reference is the live OpenAPI documentation served
 | OpenAPI JSON | http://localhost:4000/v3/api-docs |
 
 All public endpoints are grouped by business capability (Assets, Inspections, Work Orders, and so on). Authenticated endpoints require a JWT bearer token from `POST /api/auth/login`.
+
+## V2 Domain Engine
+
+Phase A and Phase B introduced additional endpoint groups for the Decision Engine and Preventive Maintenance Engine. See [v2-domain-engine-api.md](v2-domain-engine-api.md) for a concise summary of major paths.
+
+## V1 API
 
 For authentication flow, pagination conventions, error format and versioning policy, see the [API Developer Guide](../../README.md#api-developer-guide) in the project README.

@@ -104,8 +104,28 @@ docker compose -f docker-compose.prod.yml up -d --build
 | `ACTIVATION_LINK_BASE_URL` | Yes | Account activation base URL |
 | `FIREBASE_SERVICE_ACCOUNT_PATH` | No | Enable FCM when credentials are mounted |
 | `BOOTSTRAP_ADMIN_ENABLED` | No | Default `false` in production |
+| `PREVENTIVE_SCHEDULER_ENABLED` | No | Default `false`; enable scheduled preventive candidate generation |
+| `PREVENTIVE_SCHEDULER_CRON` | No | Cron expression (default `0 0 6 * * *`) |
 
 Full list: [`.env.example`](../../.env.example)
+
+### Preventive Scheduler
+
+The **Controlled Preventive Scheduler** (V2 Phase B) generates execution candidates only. It does **not** create Inspections, approve candidates, or send notifications.
+
+| Property / variable | Default | Purpose |
+|---------------------|---------|---------|
+| `app.preventive.scheduler.enabled` / `PREVENTIVE_SCHEDULER_ENABLED` | `false` | When `true`, Spring `@Scheduled` job runs per cron |
+| `app.preventive.scheduler.cron` / `PREVENTIVE_SCHEDULER_CRON` | `0 0 6 * * *` | Daily at 06:00 server time |
+
+**Policy:**
+
+- Scheduled execution is **disabled by default** in all profiles.
+- Manual run (`POST /api/preventive-scheduler/run`) remains available to Administrator and Manager when authenticated.
+- Cron is configured via environment or `application.properties` only — not from the UI.
+- Multi-instance deployments should plan for distributed locking before enabling scheduled runs in production.
+
+See [Domain Engine — B5](../07-business-architecture/domain-engine.md) and [BDR-002](../03-architecture/bdr-002-preventive-candidates-before-automation.md).
 
 ### Production security defaults
 

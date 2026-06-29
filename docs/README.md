@@ -16,7 +16,29 @@ Read documents in phase order when starting a new capability:
 04-api
         ↓
 05-deployment
+        ↓
+06-release-notes
+        ↓
+07-business-architecture   (V2 Domain Engine)
 ```
+
+---
+
+## Quick links (V2 Phase A+B)
+
+| Topic | Document |
+|-------|----------|
+| Domain Engine (authoritative) | [domain-engine.md](07-business-architecture/domain-engine.md) |
+| Business Glossary | [glossary.md](01-business-architecture/glossary.md) |
+| V2 workflow architecture | [adr-003-v2-domain-driven-workflow.md](03-architecture/adr-003-v2-domain-driven-workflow.md) |
+| Phase A+B milestone | [v2-phase-a-b.md](06-release-notes/v2-phase-a-b.md) |
+| V2 Roadmap | [v2-roadmap.md](06-release-notes/v2-roadmap.md) |
+| V2 API endpoint groups | [v2-domain-engine-api.md](04-api/v2-domain-engine-api.md) |
+| Human-in-the-loop (BDR) | [bdr-001](03-architecture/bdr-001-human-in-the-loop-decision-engine.md) |
+| Preventive candidates (BDR) | [bdr-002](03-architecture/bdr-002-preventive-candidates-before-automation.md) |
+| Deployment & scheduler config | [05-deployment/README.md](05-deployment/README.md) |
+| Security | [05-deployment/security.md](05-deployment/security.md) |
+| CI / testing | [Testing (project README)](../README.md#testing) |
 
 ---
 
@@ -26,34 +48,26 @@ Read documents in phase order when starting a new capability:
 docs/
 │
 ├── 00-business-discovery/
-│   ├── 00-development-philosophy.md
-│   ├── 01-project-context.md
-│   ├── 02-domain-overview.md
-│   ├── 03-council-organisation.md
-│   ├── 04-actors-responsibilities.md
-│   ├── 05-asset-operational-lifecycle.md
-│   ├── 06-business-triggers.md
-│   ├── 07-inspection-lifecycle.md
-│   ├── 08-operational-decisions.md
-│   ├── 09-business-rules.md
-│   ├── 10-ubiquitous-language.md
-│   ├── 11-asset-status-model.md
-│   ├── 12-notification-lifecycle.md
-│   └── 13-department-collaboration.md
+│   └── … domain model, actors, workflows, business rules
 │
 ├── 01-business-architecture/
 │   ├── business-architecture.md
-│   └── functional-use-cases.md
+│   ├── functional-use-cases.md
+│   └── glossary.md
 │
 ├── 02-system-blueprint/
 │   └── INFRATRACK_SYSTEM_BLUEPRINT_V1_SKELETON.md
 │
 ├── 03-architecture/
 │   ├── ADR-001-asset-history-starts-with-registration.md
-│   └── ADR-002-inspection-produces-at-most-one-issue-v1.md
+│   ├── ADR-002-inspection-produces-at-most-one-issue-v1.md
+│   ├── adr-003-v2-domain-driven-workflow.md
+│   ├── bdr-001-human-in-the-loop-decision-engine.md
+│   └── bdr-002-preventive-candidates-before-automation.md
 │
 ├── 04-api/
-│   └── README.md
+│   ├── README.md
+│   └── v2-domain-engine-api.md
 │
 ├── 05-deployment/
 │   ├── README.md
@@ -64,7 +78,9 @@ docs/
 │   └── troubleshooting.md
 │
 ├── 06-release-notes/
-│   └── v2-sprint0.md
+│   ├── v2-sprint0.md
+│   ├── v2-phase-a-b.md
+│   └── v2-roadmap.md
 │
 ├── 07-business-architecture/
 │   └── domain-engine.md
@@ -84,7 +100,7 @@ Start with [00-development-philosophy.md](00-business-discovery/00-development-p
 
 ### 01 — Business Architecture
 
-Defines the long-term business architecture and translates business discovery into use cases. See [business-architecture.md](01-business-architecture/business-architecture.md) and [functional-use-cases.md](01-business-architecture/functional-use-cases.md).
+Defines the long-term business architecture and translates business discovery into use cases. See [business-architecture.md](01-business-architecture/business-architecture.md), [functional-use-cases.md](01-business-architecture/functional-use-cases.md), and [glossary.md](01-business-architecture/glossary.md).
 
 ### 02 — System Blueprint
 
@@ -92,11 +108,17 @@ Engineering handbook: architecture principles, coding standards, AI collaboratio
 
 ### 03 — Architecture
 
-Architecture Decision Records (ADRs) and detailed architecture documentation. See [ADR-001](03-architecture/ADR-001-asset-history-starts-with-registration.md) and [ADR-002](03-architecture/ADR-002-inspection-produces-at-most-one-issue-v1.md).
+Architecture Decision Records (ADRs) and Business Decision Records (BDRs):
+
+- [ADR-001](03-architecture/ADR-001-asset-history-starts-with-registration.md) — Asset history starts with registration
+- [ADR-002](03-architecture/ADR-002-inspection-produces-at-most-one-issue-v1.md) — Inspection produces at most one Issue (V1)
+- [ADR-003](03-architecture/adr-003-v2-domain-driven-workflow.md) — V2 domain-driven workflow
+- [BDR-001](03-architecture/bdr-001-human-in-the-loop-decision-engine.md) — Rules suggest; managers decide
+- [BDR-002](03-architecture/bdr-002-preventive-candidates-before-automation.md) — Scheduler generates candidates only
 
 ### 04 — API
 
-Live OpenAPI documentation is served by the backend (Swagger UI). See [04-api/README.md](04-api/README.md) and the [project README API Developer Guide](../README.md#api-developer-guide).
+Live OpenAPI documentation is served by the backend (Swagger UI). See [04-api/README.md](04-api/README.md) and [v2-domain-engine-api.md](04-api/v2-domain-engine-api.md) for V2 endpoint groups. The [project README API Developer Guide](../README.md#api-developer-guide) covers authentication, pagination, and errors.
 
 ### 05 — Deployment
 
@@ -104,11 +126,15 @@ Deployment, secrets, security hardening, backup/restore, and troubleshooting. Se
 
 ### 06 — Release Notes
 
-Sprint and version release notes. See [v2-sprint0.md](06-release-notes/v2-sprint0.md) for the V2 Sprint 0 technical baseline.
+Sprint and milestone release notes:
+
+- [v2-sprint0.md](06-release-notes/v2-sprint0.md) — V2 Sprint 0 technical baseline
+- [v2-phase-a-b.md](06-release-notes/v2-phase-a-b.md) — **V2 Phase A+B milestone** (Decision Engine + Preventive Maintenance Engine)
+- [v2-roadmap.md](06-release-notes/v2-roadmap.md) — V2 phase evolution (C–K)
 
 ### 07 — Business Architecture (V2)
 
-Long-term domain engine and V2 business evolution. See [domain-engine.md](07-business-architecture/domain-engine.md).
+The **Domain Engine** — Inspection Intelligence (Phase A) and Preventive Maintenance (Phase B). See [domain-engine.md](07-business-architecture/domain-engine.md).
 
 ### Continuous Integration
 
@@ -124,6 +150,6 @@ GitHub Actions (`.github/workflows/ci.yml`) runs backend tests, frontend tests, 
 | CI XML artifact | Actions → workflow run → **jacoco-xml-report** |
 | CI summary | Job summary tab on the backend job |
 
-Generate locally with `cd backend && mvn clean test`. Coverage is informational only in Sprint 0; an 80% instruction coverage gate may be enabled later.
+Generate locally with `cd backend && mvn clean test`. Coverage is informational; an 80% instruction coverage gate may be enabled later.
 
-See also the [project README Testing section](../README.md#testing).
+See also the [project README Testing section](../README.md#testing) and the [V2 Phase A+B validation checklist](06-release-notes/v2-phase-a-b.md#manual-validation-checklist).
