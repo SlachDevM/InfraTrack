@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -40,7 +41,7 @@ public class AuthController {
     @Operation(
             summary = "Register user (development only)",
             description = "Public self-registration. Disabled in production; use administrator invitation instead.")
-    @ApiResponse(responseCode = "200", description = "Registration successful; returns JWT")
+    @ApiResponse(responseCode = "201", description = "Registration successful; returns JWT")
     @ApiResponse(responseCode = "403", description = "Public registration disabled")
     @StandardApiResponses
     public ResponseEntity<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
@@ -50,7 +51,7 @@ public class AuthController {
                     "Public registration is disabled. Contact an administrator to request account activation."
             );
         }
-        return ResponseEntity.ok(authService.register(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
     }
 
     @PostMapping("/login")

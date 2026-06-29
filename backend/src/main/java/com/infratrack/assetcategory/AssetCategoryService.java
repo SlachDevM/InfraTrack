@@ -8,6 +8,7 @@ import com.infratrack.exception.NotFoundException;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -34,6 +35,7 @@ public class AssetCategoryService {
         return AssetCategoryResponse.from(findCategoryOrThrow(id));
     }
 
+    @Transactional
     @CacheEvict(value = "assetCategories", allEntries = true)
     public AssetCategoryResponse create(CreateAssetCategoryRequest request) {
         String name = normalizeName(request.getName());
@@ -45,6 +47,7 @@ public class AssetCategoryService {
         return AssetCategoryResponse.from(category);
     }
 
+    @Transactional
     @CacheEvict(value = "assetCategories", allEntries = true)
     public AssetCategoryResponse update(Long id, UpdateAssetCategoryRequest request) {
         AssetCategory category = findCategoryOrThrow(id);
@@ -59,6 +62,7 @@ public class AssetCategoryService {
         return AssetCategoryResponse.from(assetCategoryRepository.save(category));
     }
 
+    @Transactional
     @CacheEvict(value = "assetCategories", allEntries = true)
     public void delete(Long id) {
         if (!assetCategoryRepository.existsById(id)) {

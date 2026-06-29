@@ -10,6 +10,7 @@ import com.infratrack.user.UserRepository;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -43,6 +44,7 @@ public class DepartmentService {
         return DepartmentResponse.from(findDepartmentOrThrow(id));
     }
 
+    @Transactional
     @CacheEvict(value = "departments", allEntries = true)
     public DepartmentResponse create(CreateDepartmentRequest request) {
         String name = normalizeName(request.getName());
@@ -54,6 +56,7 @@ public class DepartmentService {
         return DepartmentResponse.from(department);
     }
 
+    @Transactional
     @CacheEvict(value = "departments", allEntries = true)
     public DepartmentResponse update(Long id, UpdateDepartmentRequest request) {
         Department department = findDepartmentOrThrow(id);
@@ -68,6 +71,7 @@ public class DepartmentService {
         return DepartmentResponse.from(departmentRepository.save(department));
     }
 
+    @Transactional
     @CacheEvict(value = "departments", allEntries = true)
     public void delete(Long id) {
         if (!departmentRepository.existsById(id)) {

@@ -5,6 +5,7 @@ import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.user.dto.UserSummary;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Arrays;
@@ -22,11 +23,13 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
+    @Transactional(readOnly = true)
     public User getById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
+    @Transactional(readOnly = true)
     public List<UserSummary> getWorkers() {
         return userRepository
                 .findByRoleInOrderByNameAsc(
@@ -40,6 +43,7 @@ public class UserService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<UserSummary> getEligibleWorkersForAssignment(Long userId, Long departmentId, UserRole role) {
         if (departmentId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Department is required");
@@ -62,6 +66,7 @@ public class UserService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<UserSummary> getManagers() {
         return userRepository.findByRoleOrderByNameAsc(UserRole.MANAGER).stream()
                 .map(UserSummary::new)
@@ -88,10 +93,12 @@ public class UserService {
         return getById(userId).getRole().isContractor();
     }
 
+    @Transactional(readOnly = true)
     public List<User> findByName(String name) {
         return userRepository.findByName(name);
     }
 
+    @Transactional
     public User updateFcmToken(Long userId, String fcmToken) {
         User user = getById(userId);
         user.setFcmToken(fcmToken);
