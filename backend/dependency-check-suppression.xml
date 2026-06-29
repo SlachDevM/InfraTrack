@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <!--
+        CVE-2026-33186 is an authorization bypass in the *Go* implementation of gRPC (grpc-go).
+        It does NOT affect gRPC-Java. The OWASP scanner incorrectly maps the CVE to Java gRPC
+        artifacts because they share the same product name. This is a false positive.
+        See: https://github.com/advisories/GHSA-p77j-4mvh-x3m3
+    -->
+    <suppress>
+        <notes>CVE-2026-33186 affects gRPC-Go only, not gRPC-Java. False positive.</notes>
+        <packageUrl regex="true">^pkg:maven/io\.grpc/grpc\-.*$</packageUrl>
+        <cve>CVE-2026-33186</cve>
+    </suppress>
+</suppressions>
