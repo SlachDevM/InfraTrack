@@ -9,6 +9,7 @@ import com.infratrack.businesstrigger.BusinessTriggerRepository;
 import com.infratrack.businesstrigger.BusinessTriggerType;
 import com.infratrack.department.Department;
 import com.infratrack.inspection.dto.AssignInspectionRequest;
+import com.infratrack.inspectiontemplate.InspectionTemplateRepository;
 import com.infratrack.notification.NotificationService;
 import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.user.User;
@@ -39,6 +40,18 @@ class InspectionServiceNotificationTest {
     private BusinessTriggerRepository businessTriggerRepository;
 
     @Mock
+    private InspectionTemplateRepository inspectionTemplateRepository;
+
+    @Mock
+    private InspectionAnswerRepository inspectionAnswerRepository;
+
+    @Mock
+    private com.infratrack.inspectiontemplate.InspectionTemplateQuestionRepository inspectionTemplateQuestionRepository;
+
+    @Mock
+    private com.infratrack.inspectiontemplate.InspectionTemplateQuestionChoiceRepository inspectionTemplateQuestionChoiceRepository;
+
+    @Mock
     private AssetHistoryEventRepository assetHistoryEventRepository;
 
     @Mock
@@ -61,11 +74,17 @@ class InspectionServiceNotificationTest {
                 new OperationalEventNotificationService(notificationService, userRepository);
         InspectionAuthorizationService authorizationService = new InspectionAuthorizationService(userService);
         InspectionHistoryRecorder historyRecorder = new InspectionHistoryRecorder(assetHistoryEventRepository);
+        InspectionAnswerService inspectionAnswerService = new InspectionAnswerService(
+                inspectionAnswerRepository,
+                inspectionTemplateQuestionRepository,
+                inspectionTemplateQuestionChoiceRepository);
         inspectionService = new InspectionService(
                 inspectionRepository,
                 businessTriggerRepository,
+                inspectionTemplateRepository,
                 authorizationService,
                 historyRecorder,
+                inspectionAnswerService,
                 userService,
                 userNameLookup,
                 operationalEventNotificationService);

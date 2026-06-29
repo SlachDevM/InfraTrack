@@ -30,11 +30,16 @@ public class InspectionHistoryRecorder {
     }
 
     public void recordInspectionCompleted(Asset asset, Long userId, LocalDate eventDate) {
+        recordInspectionCompleted(asset, userId, eventDate, null);
+    }
+
+    public void recordInspectionCompleted(Asset asset, Long userId, LocalDate eventDate, String details) {
         assetHistoryEventRepository.save(new AssetHistoryEvent(
                 asset,
                 AssetHistoryEventType.INSPECTION_COMPLETED,
                 userId,
-                eventDate
+                eventDate,
+                details
         ));
     }
 }

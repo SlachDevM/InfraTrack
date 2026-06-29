@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import InspectionTemplateQuestionsPage from '../../pages/InspectionTemplateQuestionsPage';
 import inspectionTemplateApi from '../../services/inspectionTemplateApi';
 import inspectionTemplateQuestionApi from '../../services/inspectionTemplateQuestionApi';
+import unitOfMeasureApi from '../../services/unitOfMeasureApi';
 import { USER_ROLES } from '../../constants/userRoles';
 
 const mockNavigate = vi.fn();
@@ -21,6 +22,22 @@ vi.mock('../../services/inspectionTemplateApi', () => ({
 }));
 
 vi.mock('../../services/inspectionTemplateQuestionApi', () => ({
+  default: {
+    list: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    deactivate: vi.fn(),
+    reorder: vi.fn(),
+  },
+}));
+
+vi.mock('../../services/unitOfMeasureApi', () => ({
+  default: {
+    list: vi.fn(),
+  },
+}));
+
+vi.mock('../../services/inspectionTemplateQuestionChoiceApi', () => ({
   default: {
     list: vi.fn(),
     create: vi.fn(),
@@ -114,6 +131,9 @@ describe('InspectionTemplateQuestionsPage', () => {
     mockAuth.user.role = 'ADMINISTRATOR';
     inspectionTemplateApi.get.mockResolvedValue(draftTemplate);
     inspectionTemplateQuestionApi.list.mockResolvedValue(questions);
+    unitOfMeasureApi.list.mockResolvedValue([
+      { id: 1, code: 'CELSIUS', symbol: '°C', name: 'Celsius', quantityType: 'TEMPERATURE', active: true },
+    ]);
     window.confirm = vi.fn(() => true);
   });
 
@@ -340,5 +360,17 @@ describe('InspectionTemplateQuestionsPage', () => {
     expect(screen.getByText('Describe vibration')).toBeInTheDocument();
     expect(screen.getAllByText('Boolean (Yes/No)').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Text').length).toBeGreaterThan(0);
+  });
+
+  it('shows unit dropdown only for NUMBER questions', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText('Is there any visible leak?');
+    expect(screen.queryByLabelText('Unit of Measure')).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText('Question Type'), 'NUMBER');
+    expect(screen.getByLabelText('Unit of Measure')).toBeInTheDocument();
+    expect(screen.getByText('°C — Celsius (TEMPERATURE)')).toBeInTheDocument();
   });
 });

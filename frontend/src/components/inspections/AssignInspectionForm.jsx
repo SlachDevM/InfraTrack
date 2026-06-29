@@ -8,6 +8,7 @@ export default function AssignInspectionForm({
   triggers,
   workers,
   selectedTrigger,
+  publishedTemplates,
   submitting,
   onChange,
   onSubmit,
@@ -46,6 +47,26 @@ export default function AssignInspectionForm({
                 <strong>Urgent trigger</strong>
               </>
             )}
+          </div>
+        )}
+
+        {publishedTemplates.length > 0 && (
+          <div className="form-row">
+            <label htmlFor="inspectionTemplateId">Inspection Template</label>
+            <select
+              id="inspectionTemplateId"
+              name="inspectionTemplateId"
+              value={formData.inspectionTemplateId}
+              onChange={onChange}
+              disabled={submitting}
+            >
+              <option value="">No template (legacy free-text inspection)</option>
+              {publishedTemplates.map((template) => (
+                <option key={template.id} value={template.id}>
+                  {template.name} (v{template.version})
+                </option>
+              ))}
+            </select>
           </div>
         )}
 

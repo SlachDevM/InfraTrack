@@ -15,7 +15,13 @@ import com.infratrack.businesstrigger.BusinessTriggerType;
 import com.infratrack.department.Department;
 import com.infratrack.inspection.dto.AssignInspectionRequest;
 import com.infratrack.inspection.dto.CompleteInspectionRequest;
+import com.infratrack.inspection.dto.InspectionAnswerRequest;
 import com.infratrack.inspection.dto.InspectionSummaryResponse;
+import com.infratrack.inspectiontemplate.InspectionTemplate;
+import com.infratrack.inspectiontemplate.InspectionTemplateQuestion;
+import com.infratrack.inspectiontemplate.InspectionTemplateQuestionType;
+import com.infratrack.inspectiontemplate.InspectionTemplateRepository;
+import com.infratrack.inspectiontemplate.InspectionTemplateStatus;
 import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.user.User;
 import com.infratrack.user.UserNameLookup;
@@ -36,6 +42,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -51,6 +58,18 @@ class InspectionServiceTest {
 
     @Mock
     private BusinessTriggerRepository businessTriggerRepository;
+
+    @Mock
+    private InspectionTemplateRepository inspectionTemplateRepository;
+
+    @Mock
+    private InspectionAnswerRepository inspectionAnswerRepository;
+
+    @Mock
+    private com.infratrack.inspectiontemplate.InspectionTemplateQuestionRepository inspectionTemplateQuestionRepository;
+
+    @Mock
+    private com.infratrack.inspectiontemplate.InspectionTemplateQuestionChoiceRepository inspectionTemplateQuestionChoiceRepository;
 
     @Mock
     private AssetHistoryEventRepository assetHistoryEventRepository;
@@ -70,11 +89,17 @@ class InspectionServiceTest {
     void setUp() {
         InspectionAuthorizationService authorizationService = new InspectionAuthorizationService(userService);
         InspectionHistoryRecorder historyRecorder = new InspectionHistoryRecorder(assetHistoryEventRepository);
+        InspectionAnswerService inspectionAnswerService = new InspectionAnswerService(
+                inspectionAnswerRepository,
+                inspectionTemplateQuestionRepository,
+                inspectionTemplateQuestionChoiceRepository);
         inspectionService = new InspectionService(
                 inspectionRepository,
                 businessTriggerRepository,
+                inspectionTemplateRepository,
                 authorizationService,
                 historyRecorder,
+                inspectionAnswerService,
                 userService,
                 userNameLookup,
                 operationalEventNotificationService);
@@ -658,6 +683,174 @@ class InspectionServiceTest {
                 any(), any(), any(), any());
     }
 
+    @Test
+    void assignInspection_withPublishedTemplate_shouldLinkTemplate() {
+        AssignInspectionRequest request = validRequest();
+        request.setInspectionTemplateId(50L);
+        BusinessTrigger trigger = businessTrigger(1L, false);
+        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        InspectionTemplate template = publishedTemplate(50L, trigger.getAsset().getAssetCategory().getId());
+
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(businessTriggerRepository.findById(1L)).thenReturn(Optional.of(trigger));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.existsByBusinessTriggerIdAndStatus(1L, InspectionStatus.ASSIGNED))
+                .thenReturn(false);
+        when(inspectionTemplateRepository.findDetailedById(50L)).thenReturn(Optional.of(template));
+        when(inspectionRepository.save(any(Inspection.class))).thenAnswer(invocation -> {
+            Inspection inspection = invocation.getArgument(0);
+            inspection.setId(100L);
+            return inspection;
+        });
+
+        var response = inspectionService.assignInspection(request, 10L);
+
+        assertThat(response.getInspectionTemplateId()).isEqualTo(50L);
+        assertThat(response.getInspectionTemplateName()).isEqualTo("Pump Inspection");
+    }
+
+    @Test
+    void assignInspection_shouldRejectDraftTemplate() {
+        AssignInspectionRequest request = validRequest();
+        request.setInspectionTemplateId(50L);
+        BusinessTrigger trigger = businessTrigger(1L, false);
+        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        InspectionTemplate template = draftTemplate(50L, trigger.getAsset().getAssetCategory().getId());
+
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(businessTriggerRepository.findById(1L)).thenReturn(Optional.of(trigger));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.existsByBusinessTriggerIdAndStatus(1L, InspectionStatus.ASSIGNED))
+                .thenReturn(false);
+        when(inspectionTemplateRepository.findDetailedById(50L)).thenReturn(Optional.of(template));
+
+        assertThatThrownBy(() -> inspectionService.assignInspection(request, 10L))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Only published inspection templates can be used for inspections");
+    }
+
+    @Test
+    void assignInspection_shouldRejectTemplateFromDifferentCategory() {
+        AssignInspectionRequest request = validRequest();
+        request.setInspectionTemplateId(50L);
+        BusinessTrigger trigger = businessTrigger(1L, false);
+        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(businessTriggerRepository.findById(1L)).thenReturn(Optional.of(trigger));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.existsByBusinessTriggerIdAndStatus(1L, InspectionStatus.ASSIGNED))
+                .thenReturn(false);
+        when(inspectionTemplateRepository.findDetailedById(50L))
+                .thenReturn(Optional.of(publishedTemplate(50L, 999L)));
+
+        assertThatThrownBy(() -> inspectionService.assignInspection(request, 10L))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Inspection template must belong to the asset category");
+    }
+
+    @Test
+    void completeInspection_withTemplateAnswers_shouldPersistSnapshots() {
+        CompleteInspectionRequest request = validCompleteRequest();
+        InspectionAnswerRequest answerRequest = new InspectionAnswerRequest();
+        answerRequest.setQuestionId(1L);
+        answerRequest.setBooleanValue(true);
+        request.setAnswers(List.of(answerRequest));
+
+        Inspection inspection = templatedAssignedInspection(100L, 20L, 50L);
+        InspectionTemplateQuestion question = templateQuestion(1L, inspection.getInspectionTemplate());
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionTemplateQuestionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
+                .thenReturn(List.of(question));
+        when(inspectionAnswerRepository.existsByInspectionIdAndQuestionId(100L, 1L)).thenReturn(false);
+        when(inspectionAnswerRepository.save(any(InspectionAnswer.class))).thenAnswer(invocation -> {
+            InspectionAnswer answer = invocation.getArgument(0);
+            answer.setId(500L);
+            return answer;
+        });
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenReturn(List.of());
+
+        inspectionService.completeInspection(100L, request, 20L);
+
+        ArgumentCaptor<InspectionAnswer> answerCaptor = ArgumentCaptor.forClass(InspectionAnswer.class);
+        verify(inspectionAnswerRepository).save(answerCaptor.capture());
+        assertThat(answerCaptor.getValue().getQuestionCodeSnapshot()).isEqualTo("LEAK");
+        assertThat(answerCaptor.getValue().getBooleanValue()).isTrue();
+
+        ArgumentCaptor<AssetHistoryEvent> historyCaptor = ArgumentCaptor.forClass(AssetHistoryEvent.class);
+        verify(assetHistoryEventRepository).save(historyCaptor.capture());
+        assertThat(historyCaptor.getValue().getDetails()).isEqualTo("Structured answers recorded: 1");
+    }
+
+    @Test
+    void completeInspection_shouldRejectAnswersWithoutTemplate() {
+        CompleteInspectionRequest request = validCompleteRequest();
+        InspectionAnswerRequest answerRequest = new InspectionAnswerRequest();
+        answerRequest.setQuestionId(1L);
+        answerRequest.setBooleanValue(true);
+        request.setAnswers(List.of(answerRequest));
+
+        Inspection inspection = assignedInspection(100L, 20L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        assertThatThrownBy(() -> inspectionService.completeInspection(100L, request, 20L))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Structured answers are only supported for templated inspections");
+    }
+
+    @Test
+    void completeInspection_shouldRejectMissingRequiredAnswer() {
+        CompleteInspectionRequest request = validCompleteRequest();
+        request.setAnswers(List.of());
+
+        Inspection inspection = templatedAssignedInspection(100L, 20L, 50L);
+        InspectionTemplateQuestion requiredQuestion = templateQuestion(1L, inspection.getInspectionTemplate());
+        requiredQuestion.setRequired(true);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionTemplateQuestionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
+                .thenReturn(List.of(requiredQuestion));
+
+        assertThatThrownBy(() -> inspectionService.completeInspection(100L, request, 20L))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Required checklist question 'LEAK' must be answered");
+    }
+
+    @Test
+    void completeInspection_shouldRejectUnsupportedPhotoAnswer() {
+        CompleteInspectionRequest request = validCompleteRequest();
+        InspectionAnswerRequest answerRequest = new InspectionAnswerRequest();
+        answerRequest.setQuestionId(2L);
+        answerRequest.setTextValue("photo");
+        request.setAnswers(List.of(answerRequest));
+
+        Inspection inspection = templatedAssignedInspection(100L, 20L, 50L);
+        InspectionTemplateQuestion photoQuestion = templateQuestion(2L, inspection.getInspectionTemplate());
+        photoQuestion.setQuestionType(InspectionTemplateQuestionType.PHOTO);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionTemplateQuestionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
+                .thenReturn(List.of(photoQuestion));
+
+        assertThatThrownBy(() -> inspectionService.completeInspection(100L, request, 20L))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Answers for question type PHOTO are not supported yet");
+    }
+
     private CompleteInspectionRequest validCompleteRequest() {
         CompleteInspectionRequest request = new CompleteInspectionRequest();
         request.setObservedCondition(PhysicalCondition.GOOD);
@@ -679,6 +872,54 @@ class InspectionServiceTest {
         );
         inspection.setId(id);
         return inspection;
+    }
+
+    private Inspection templatedAssignedInspection(Long id, Long assignedToUserId, Long templateId) {
+        Inspection inspection = assignedInspection(id, assignedToUserId);
+        inspection.setInspectionTemplate(publishedTemplate(templateId, 2L));
+        return inspection;
+    }
+
+    private InspectionTemplate publishedTemplate(Long id, Long categoryId) {
+        AssetCategory category = new AssetCategory("Playground");
+        category.setId(categoryId);
+        InspectionTemplate template = new InspectionTemplate(
+                "Pump Inspection",
+                null,
+                category,
+                1,
+                InspectionTemplateStatus.PUBLISHED
+        );
+        template.setId(id);
+        return template;
+    }
+
+    private InspectionTemplate draftTemplate(Long id, Long categoryId) {
+        AssetCategory category = new AssetCategory("Playground");
+        category.setId(categoryId);
+        InspectionTemplate template = new InspectionTemplate(
+                "Pump Inspection Draft",
+                null,
+                category,
+                1,
+                InspectionTemplateStatus.DRAFT
+        );
+        template.setId(id);
+        return template;
+    }
+
+    private InspectionTemplateQuestion templateQuestion(Long id, InspectionTemplate template) {
+        InspectionTemplateQuestion question = new InspectionTemplateQuestion(
+                template,
+                "Is there a visible leak?",
+                "LEAK",
+                null,
+                InspectionTemplateQuestionType.BOOLEAN,
+                true,
+                1
+        );
+        question.setId(id);
+        return question;
     }
 
     private Inspection completedInspectionWithIssue(Long id, Long completedByUserId) {

@@ -14,6 +14,9 @@ public class InspectionSummaryResponse {
 
     private Long id;
     private String assetName;
+    private Long assetCategoryId;
+    private Long inspectionTemplateId;
+    private String inspectionTemplateName;
     private Long businessTriggerId;
     private BusinessTriggerType businessTriggerType;
     private String businessTriggerReason;
@@ -33,6 +36,11 @@ public class InspectionSummaryResponse {
         InspectionSummaryResponse response = new InspectionSummaryResponse();
         response.id = inspection.getId();
         response.assetName = inspection.getAsset().getName();
+        response.assetCategoryId = inspection.getAsset().getAssetCategory().getId();
+        if (inspection.getInspectionTemplate() != null) {
+            response.inspectionTemplateId = inspection.getInspectionTemplate().getId();
+            response.inspectionTemplateName = inspection.getInspectionTemplate().getName();
+        }
         response.businessTriggerId = inspection.getBusinessTrigger().getId();
         response.businessTriggerType = inspection.getBusinessTrigger().getType();
         response.businessTriggerReason = inspection.getBusinessTrigger().getReason();
@@ -56,6 +64,18 @@ public class InspectionSummaryResponse {
 
     public String getAssetName() {
         return assetName;
+    }
+
+    public Long getAssetCategoryId() {
+        return assetCategoryId;
+    }
+
+    public Long getInspectionTemplateId() {
+        return inspectionTemplateId;
+    }
+
+    public String getInspectionTemplateName() {
+        return inspectionTemplateName;
     }
 
     public Long getBusinessTriggerId() {

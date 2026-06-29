@@ -9,8 +9,12 @@ import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.exception.NotFoundException;
 import com.infratrack.inspection.dto.AssignInspectionRequest;
 import com.infratrack.inspection.dto.CompleteInspectionRequest;
+import com.infratrack.inspection.dto.InspectionAnswerResponse;
 import com.infratrack.inspection.dto.InspectionResponse;
 import com.infratrack.inspection.dto.InspectionSummaryResponse;
+import com.infratrack.inspectiontemplate.InspectionTemplate;
+import com.infratrack.inspectiontemplate.InspectionTemplateRepository;
+import com.infratrack.inspectiontemplate.InspectionTemplateStatus;
 import com.infratrack.user.UserNameLookup;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,8 +38,10 @@ public class InspectionService {
 
     private final InspectionRepository inspectionRepository;
     private final BusinessTriggerRepository businessTriggerRepository;
+    private final InspectionTemplateRepository inspectionTemplateRepository;
     private final InspectionAuthorizationService authorizationService;
     private final InspectionHistoryRecorder historyRecorder;
+    private final InspectionAnswerService inspectionAnswerService;
     private final UserService userService;
     private final UserNameLookup userNameLookup;
     private final OperationalEventNotificationService operationalEventNotificationService;
@@ -43,15 +49,19 @@ public class InspectionService {
     public InspectionService(
             InspectionRepository inspectionRepository,
             BusinessTriggerRepository businessTriggerRepository,
+            InspectionTemplateRepository inspectionTemplateRepository,
             InspectionAuthorizationService authorizationService,
             InspectionHistoryRecorder historyRecorder,
+            InspectionAnswerService inspectionAnswerService,
             UserService userService,
             UserNameLookup userNameLookup,
             OperationalEventNotificationService operationalEventNotificationService) {
         this.inspectionRepository = inspectionRepository;
         this.businessTriggerRepository = businessTriggerRepository;
+        this.inspectionTemplateRepository = inspectionTemplateRepository;
         this.authorizationService = authorizationService;
         this.historyRecorder = historyRecorder;
+        this.inspectionAnswerService = inspectionAnswerService;
         this.userService = userService;
         this.userNameLookup = userNameLookup;
         this.operationalEventNotificationService = operationalEventNotificationService;
@@ -109,15 +119,20 @@ public class InspectionService {
         validateExpectedCompletionDate(request.getExpectedCompletionDate());
 
         InspectionPriority priority = resolvePriority(businessTrigger, request.getPriority());
+        InspectionTemplate inspectionTemplate = resolveOptionalTemplate(request.getInspectionTemplateId(), asset);
 
-        Inspection inspection = inspectionRepository.save(new Inspection(
+        Inspection inspection = new Inspection(
                 asset,
                 businessTrigger,
                 assignedToUser.getId(),
                 userId,
                 priority,
                 request.getExpectedCompletionDate()
-        ));
+        );
+        if (inspectionTemplate != null) {
+            inspection.setInspectionTemplate(inspectionTemplate);
+        }
+        inspection = inspectionRepository.save(inspection);
 
         historyRecorder.recordInspectionAssigned(asset, userId, LocalDate.now());
 
@@ -150,10 +165,15 @@ public class InspectionService {
         inspection.complete(observedCondition, observations, issueIdentified, completedAt, performer.getId());
         inspectionRepository.save(inspection);
 
-        historyRecorder.recordInspectionCompleted(
-                inspection.getAsset(), performer.getId(), completedAt.toLocalDate());
+        int answerCount = inspectionAnswerService.saveAnswers(inspection, request.getAnswers());
 
-        return InspectionResponse.from(inspection, performer, null);
+        String historyDetails = answerCount > 0
+                ? "Structured answers recorded: " + answerCount
+                : null;
+        historyRecorder.recordInspectionCompleted(
+                inspection.getAsset(), performer.getId(), completedAt.toLocalDate(), historyDetails);
+
+        return toResponse(inspection, performer);
     }
 
     public void requireCanAssignInspections(Long userId) {
@@ -162,7 +182,31 @@ public class InspectionService {
 
     private InspectionResponse toResponse(Inspection inspection) {
         User assignedToUser = userService.getById(inspection.getAssignedToUserId());
-        return InspectionResponse.from(inspection, assignedToUser, null);
+        return toResponse(inspection, assignedToUser);
+    }
+
+    private InspectionResponse toResponse(Inspection inspection, User assignedToUser) {
+        List<InspectionAnswerResponse> answers = inspection.getStatus() == InspectionStatus.COMPLETED
+                ? inspectionAnswerService.listByInspectionId(inspection.getId())
+                : List.of();
+        return InspectionResponse.from(inspection, assignedToUser, null, answers);
+    }
+
+    private InspectionTemplate resolveOptionalTemplate(Long inspectionTemplateId, Asset asset) {
+        if (inspectionTemplateId == null) {
+            return null;
+        }
+        InspectionTemplate template = inspectionTemplateRepository.findDetailedById(inspectionTemplateId)
+                .orElseThrow(() -> new NotFoundException("Inspection template not found"));
+        if (template.getStatus() != InspectionTemplateStatus.PUBLISHED) {
+            throw new BusinessValidationException(
+                    "Only published inspection templates can be used for inspections");
+        }
+        if (!template.getAssetCategory().getId().equals(asset.getAssetCategory().getId())) {
+            throw new BusinessValidationException(
+                    "Inspection template must belong to the asset category");
+        }
+        return template;
     }
 
     private Inspection findInspectionOrThrow(Long id) {

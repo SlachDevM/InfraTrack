@@ -4,9 +4,12 @@ import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.ConflictException;
 import com.infratrack.exception.NotFoundException;
 import com.infratrack.inspectiontemplate.dto.CreateInspectionTemplateQuestionRequest;
+import com.infratrack.inspectiontemplate.dto.InspectionTemplateQuestionChoiceResponse;
 import com.infratrack.inspectiontemplate.dto.InspectionTemplateQuestionResponse;
 import com.infratrack.inspectiontemplate.dto.ReorderInspectionTemplateQuestionsRequest;
 import com.infratrack.inspectiontemplate.dto.UpdateInspectionTemplateQuestionRequest;
+import com.infratrack.unitofmeasure.UnitOfMeasure;
+import com.infratrack.unitofmeasure.UnitOfMeasureRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,19 +28,31 @@ public class InspectionTemplateQuestionService {
 
     private final InspectionTemplateRepository inspectionTemplateRepository;
     private final InspectionTemplateQuestionRepository questionRepository;
+    private final InspectionTemplateQuestionChoiceRepository choiceRepository;
+    private final UnitOfMeasureRepository unitOfMeasureRepository;
 
     public InspectionTemplateQuestionService(
             InspectionTemplateRepository inspectionTemplateRepository,
-            InspectionTemplateQuestionRepository questionRepository) {
+            InspectionTemplateQuestionRepository questionRepository,
+            InspectionTemplateQuestionChoiceRepository choiceRepository,
+            UnitOfMeasureRepository unitOfMeasureRepository) {
         this.inspectionTemplateRepository = inspectionTemplateRepository;
         this.questionRepository = questionRepository;
+        this.choiceRepository = choiceRepository;
+        this.unitOfMeasureRepository = unitOfMeasureRepository;
     }
 
     @Transactional(readOnly = true)
     public List<InspectionTemplateQuestionResponse> listByTemplateId(Long templateId) {
         findTemplateOrThrow(templateId);
-        return questionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(templateId).stream()
-                .map(InspectionTemplateQuestionResponse::from)
+        List<InspectionTemplateQuestion> questions =
+                questionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(templateId);
+        Map<Long, List<InspectionTemplateQuestionChoiceResponse>> choicesByQuestionId =
+                loadChoicesByQuestionId(questions);
+        return questions.stream()
+                .map(question -> InspectionTemplateQuestionResponse.from(
+                        question,
+                        choicesByQuestionId.getOrDefault(question.getId(), List.of())))
                 .toList();
     }
 
@@ -53,8 +68,14 @@ public class InspectionTemplateQuestionService {
         InspectionTemplateQuestionType questionType = requireQuestionType(request.getQuestionType());
         boolean required = Boolean.TRUE.equals(request.getRequired());
         int displayOrder = resolveDisplayOrder(templateId, request.getDisplayOrder());
+        InspectionTemplateQuestionNumberConstraints.validateForQuestionType(
+                questionType,
+                request.getUnitOfMeasureId(),
+                request.getMinValue(),
+                request.getMaxValue(),
+                request.getDecimalPlaces());
 
-        InspectionTemplateQuestion question = questionRepository.save(new InspectionTemplateQuestion(
+        InspectionTemplateQuestion question = new InspectionTemplateQuestion(
                 template,
                 questionText,
                 code,
@@ -62,7 +83,10 @@ public class InspectionTemplateQuestionService {
                 questionType,
                 required,
                 displayOrder
-        ));
+        );
+        applyNumberConstraints(question, questionType, request.getUnitOfMeasureId(),
+                request.getMinValue(), request.getMaxValue(), request.getDecimalPlaces());
+        question = questionRepository.save(question);
         template.touchUpdatedAt();
         return InspectionTemplateQuestionResponse.from(question);
     }
@@ -79,8 +103,17 @@ public class InspectionTemplateQuestionService {
 
         question.setQuestionText(normalizeQuestionText(request.getQuestionText()));
         question.setHelpText(normalizeOptionalHelpText(request.getHelpText()));
-        question.setQuestionType(requireQuestionType(request.getQuestionType()));
+        InspectionTemplateQuestionType questionType = requireQuestionType(request.getQuestionType());
+        InspectionTemplateQuestionNumberConstraints.validateForQuestionType(
+                questionType,
+                request.getUnitOfMeasureId(),
+                request.getMinValue(),
+                request.getMaxValue(),
+                request.getDecimalPlaces());
+        question.setQuestionType(questionType);
         question.setRequired(Boolean.TRUE.equals(request.getRequired()));
+        applyNumberConstraints(question, questionType, request.getUnitOfMeasureId(),
+                request.getMinValue(), request.getMaxValue(), request.getDecimalPlaces());
         question.touchUpdatedAt();
         template.touchUpdatedAt();
         return InspectionTemplateQuestionResponse.from(questionRepository.save(question));
@@ -222,5 +255,54 @@ public class InspectionTemplateQuestionService {
         if (questionRepository.existsByInspectionTemplateIdAndCode(templateId, code)) {
             throw new ConflictException("Question code already exists for this template");
         }
+    }
+
+    private void applyNumberConstraints(
+            InspectionTemplateQuestion question,
+            InspectionTemplateQuestionType questionType,
+            Long unitOfMeasureId,
+            java.math.BigDecimal minValue,
+            java.math.BigDecimal maxValue,
+            Integer decimalPlaces) {
+        if (questionType == InspectionTemplateQuestionType.NUMBER) {
+            UnitOfMeasure unitOfMeasure = resolveActiveUnitOfMeasure(unitOfMeasureId);
+            question.setUnitOfMeasure(unitOfMeasure);
+            question.setUnit(unitOfMeasure != null ? unitOfMeasure.getSymbol() : null);
+            question.setMinValue(minValue);
+            question.setMaxValue(maxValue);
+            question.setDecimalPlaces(decimalPlaces);
+        } else {
+            if (unitOfMeasureId != null) {
+                throw new BusinessValidationException(
+                        "Unit of measure applies only to NUMBER checklist questions");
+            }
+            question.setUnitOfMeasure(null);
+            question.setUnit(null);
+            question.setMinValue(null);
+            question.setMaxValue(null);
+            question.setDecimalPlaces(null);
+        }
+    }
+
+    private UnitOfMeasure resolveActiveUnitOfMeasure(Long unitOfMeasureId) {
+        if (unitOfMeasureId == null) {
+            return null;
+        }
+        return unitOfMeasureRepository.findByIdAndActiveTrue(unitOfMeasureId)
+                .orElseThrow(() -> new BusinessValidationException("Active unit of measure not found"));
+    }
+
+    private Map<Long, List<InspectionTemplateQuestionChoiceResponse>> loadChoicesByQuestionId(
+            List<InspectionTemplateQuestion> questions) {
+        List<Long> choiceQuestionIds = questions.stream()
+                .filter(question -> question.getQuestionType() == InspectionTemplateQuestionType.CHOICE)
+                .map(InspectionTemplateQuestion::getId)
+                .toList();
+        if (choiceQuestionIds.isEmpty()) {
+            return Map.of();
+        }
+        return choiceRepository.findByQuestionIdInOrderByQuestionIdAscDisplayOrderAsc(choiceQuestionIds).stream()
+                .map(InspectionTemplateQuestionChoiceResponse::from)
+                .collect(Collectors.groupingBy(InspectionTemplateQuestionChoiceResponse::getQuestionId));
     }
 }

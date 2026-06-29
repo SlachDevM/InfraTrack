@@ -2,6 +2,7 @@ package com.infratrack.inspection;
 
 import com.infratrack.asset.Asset;
 import com.infratrack.businesstrigger.BusinessTrigger;
+import com.infratrack.inspectiontemplate.InspectionTemplate;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
@@ -22,6 +23,10 @@ public class Inspection {
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "business_trigger_id", nullable = false)
     private BusinessTrigger businessTrigger;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "inspection_template_id")
+    private InspectionTemplate inspectionTemplate;
 
     @Column(name = "assigned_to_user_id", nullable = false)
     private Long assignedToUserId;
@@ -114,6 +119,14 @@ public class Inspection {
 
     public BusinessTrigger getBusinessTrigger() {
         return businessTrigger;
+    }
+
+    public InspectionTemplate getInspectionTemplate() {
+        return inspectionTemplate;
+    }
+
+    public void setInspectionTemplate(InspectionTemplate inspectionTemplate) {
+        this.inspectionTemplate = inspectionTemplate;
     }
 
     public Long getAssignedToUserId() {

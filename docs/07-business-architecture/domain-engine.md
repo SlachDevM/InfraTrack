@@ -149,6 +149,130 @@ Stable business codes prepare future integrations without changing current check
 - AI-assisted knowledge retrieval
 - Knowledge Base linking
 
+## Sprint A2.3.1 — Inspection Answers Foundation
+
+Inspections can now store structured **Inspection Answers** for basic checklist question types while preserving the existing UC-003/UC-004 completion fields.
+
+### InspectionAnswer concept
+
+Each answer belongs to one Inspection and one Inspection Template Question. Snapshots preserve the question code, text, and type at completion time so later template edits do not alter historical inspections.
+
+### Snapshot strategy
+
+When answers are recorded at completion, the system copies:
+
+- `questionCodeSnapshot`
+- `questionTextSnapshot`
+- `questionTypeSnapshot`
+
+These snapshots remain immutable even if the template question is later edited or deactivated.
+
+### Transition mode: templates optional
+
+- Existing inspections may have no template.
+- New inspections may still be assigned without a template.
+- When a **PUBLISHED** template matching the asset category is selected at assignment, structured answers become available at completion.
+- Legacy free-text completion (`observedCondition`, `observations`, `issueIdentified`) remains unchanged.
+
+### Supported answer types in A2.3.1
+
+| Question type | Stored field |
+|---------------|--------------|
+| `BOOLEAN` | `booleanValue` |
+| `TEXT` | `textValue` |
+| `NUMBER` | `numberValue` |
+
+### Not implemented in A2.3.1
+
+- `PHOTO` capture and storage
+- Automatic Issue creation from answers
+- Decision Matrix rules
+- Mandatory templates for all inspections
+
+## Sprint A2.3.2 — Inspection Value Model
+
+Template questions now define what constitutes a valid answer, not only what is asked.
+
+### Value Model concept
+
+A checklist question specifies both the prompt and the valid answer format. This supports consistent validation across web, Android, reporting, and future Decision Matrix rules.
+
+### CHOICE values
+
+`CHOICE` questions define allowed options through `InspectionTemplateQuestionChoice`:
+
+- stable `code` (uppercase snake_case, unique per question);
+- human-readable `label`;
+- `displayOrder` and `active` flag.
+
+Choices are editable only while the parent template is **DRAFT**. Inactive choices remain in the database for historical answers.
+
+At completion, answers store:
+
+- `choiceCodeValue`
+- `choiceLabelSnapshot`
+
+### NUMBER constraints
+
+`NUMBER` questions may define:
+
+| Field | Purpose |
+|-------|---------|
+| `unit` | Display unit (e.g. °C, bar) |
+| `minValue` / `maxValue` | Allowed numeric range |
+| `decimalPlaces` | Maximum decimal precision (0–6) |
+
+Constraints apply only to `NUMBER` questions. At answer time the system validates range and precision, and snapshots `numberUnitSnapshot`, `numberMinSnapshot`, `numberMaxSnapshot`, and `decimalPlacesSnapshot`.
+
+### Historical snapshot strategy
+
+Answer snapshots preserve question text, type, choice labels, and number constraints as they existed at completion. Later template edits do not alter completed inspections.
+
+### Future Decision Matrix relationship
+
+The Value Model prepares structured, validated answers that future sprints will evaluate with Decision Matrix rules. A2.3.2 does **not** implement decision rules or automatic Issue creation.
+
+### Supported answer types after A2.3.2
+
+| Question type | Stored field(s) |
+|---------------|-----------------|
+| `BOOLEAN` | `booleanValue` |
+| `TEXT` | `textValue` |
+| `NUMBER` | `numberValue` + constraint snapshots |
+| `CHOICE` | `choiceCodeValue` + `choiceLabelSnapshot` |
+
+`PHOTO` remains deferred.
+
+## Sprint A2.3.3 — Inspection Value Model Finalization
+
+The Value Model is finalized with normalized units of measure and stronger answer snapshots before Decision Matrix work begins.
+
+### Unit of Measure concept
+
+`UnitOfMeasure` is reference data for NUMBER checklist questions. Each unit has a stable `code`, display `symbol`, human-readable `name`, and `quantityType` (TEMPERATURE, PRESSURE, ROTATION, etc.).
+
+Free-text units are avoided because they break analytics consistency, cross-template reporting, and future Decision Matrix comparisons.
+
+### Answer snapshot strategy (finalized)
+
+When a NUMBER answer is recorded, the system snapshots:
+
+- `unitCodeSnapshot`, `unitSymbolSnapshot`, `unitNameSnapshot`
+- `numberMinSnapshot`, `numberMaxSnapshot`, `decimalPlacesSnapshot`
+- `questionVersionSnapshot` (inspection template version at completion time)
+
+Legacy `numberUnitSnapshot` is retained for backward compatibility. API responses prefer structured unit snapshots when present.
+
+Historical answers remain readable even if a unit is renamed or deactivated later.
+
+### Question version snapshot
+
+`questionVersionSnapshot` stores the parent Inspection Template version at answer time. This prepares future per-question versioning and Decision Matrix evaluation without changing the current completion workflow.
+
+### Why this matters for analytics and Decision Matrix
+
+Normalized units and versioned snapshots ensure comparable numeric readings, auditable historical answers after template changes, and reliable inputs for future Decision Matrix rules. Decision Matrix rules are **not** implemented in A2.3.3.
+
 ## Future sprints
 
 Planned extensions to the Domain Engine include:
