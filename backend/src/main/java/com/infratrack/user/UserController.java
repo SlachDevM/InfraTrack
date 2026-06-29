@@ -194,6 +194,10 @@ public class UserController {
     public ResponseEntity<Void> updateFcmToken(
             @Valid @RequestBody FcmTokenRequest request,
             Authentication authentication) {
+        if (request.getToken() == null || request.getToken().isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         userService.updateFcmToken(userId, request.getToken());
         return ResponseEntity.noContent().build();

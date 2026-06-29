@@ -97,7 +97,7 @@ class AuthControllerTest {
 
         var response = controller.register(request);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody()).isEqualTo(expectedResponse);
         verify(authService).register(request);
     }
