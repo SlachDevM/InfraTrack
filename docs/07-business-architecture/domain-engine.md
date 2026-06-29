@@ -385,13 +385,64 @@ Inactive rules, rules for other questions, mismatched condition types, and missi
 
 Results are returned in memory. They are **not persisted**, and no Issues, Operational Decisions, notifications, or review flags are created. Inspection completion behaviour is unchanged.
 
+### Sprint A3.2.1 — Rule Evaluation Technical Finalization
+
+Sprint A3.2.1 finalizes the evaluation engine before persisted reports in A3.3.
+
+- `RuleEvaluationContext` carries inspection, asset, department, template, question, and answer for future context-aware rules; current logic remains answer-based.
+- `DecisionRuleEvaluationResult` includes `evaluatedAt` and `evaluationDurationMs` metadata per answer evaluation batch.
+- Rules for an inspection are loaded in a single batch query; evaluation runs in memory with no per-rule database access.
+
 ### Future execution roadmap
 
 Later sprints will:
 
-- persist or surface evaluation results as suggestions;
+- surface persisted evaluation results as **Suggested Actions**;
 - generate Issues, severities, or Operational Decisions from matching rules;
 - integrate rule outcomes with operational workflows and analytics.
+
+### Sprint A3.3 — Persisted Rule Evaluation Reports
+
+Sprint A3.3 persists decision rule evaluation results when a templated Inspection is completed with structured answers.
+
+#### Rule Evaluation Report
+
+A **Rule Evaluation Report** records one evaluation run for an Inspection:
+
+- which rules existed at evaluation time;
+- which rules matched;
+- compared values (actual vs comparison);
+- configured future action types and payloads;
+- when evaluation happened;
+- which Rule Engine version was used (`A3.3-1.0`).
+
+An Inspection may have **multiple reports** over time (for example, if re-evaluation is added later). The latest report is retrieved via `GET /api/inspections/{inspectionId}/rule-evaluation/reports/latest`.
+
+#### Snapshot rationale
+
+Each **Rule Evaluation Result** stores snapshots of the rule definition (`ruleCodeSnapshot`, `ruleNameSnapshot`, `actionTypeSnapshot`, `prioritySnapshot`, etc.). Historical reports must not depend on live rule records, which may change or be deactivated after evaluation.
+
+#### A3.3 scope limitation
+
+**A3.3 persists evaluation only.**
+
+Reports are created as part of the Inspection completion transaction. No Issues, Operational Decisions, Suggested Actions, notifications, or workflow side effects are triggered. Inspection completion behaviour (including existing `issueIdentified` handling) is unchanged.
+
+When a templated Inspection is completed with structured answers but no active rules exist, a report is still created with `resultCount = 0` for audit clarity. Legacy inspections without a template do not receive a report.
+
+#### Retrieval API
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/inspections/{inspectionId}/rule-evaluation/reports` | List report summaries |
+| `GET /api/inspections/{inspectionId}/rule-evaluation/reports/latest` | Latest report with results |
+| `GET /api/inspections/{inspectionId}/rule-evaluation/reports/{reportId}` | Report detail |
+
+Access requires permission to view the Inspection; cross-department access is rejected.
+
+#### Relationship to future Suggested Actions
+
+Persisted reports in A3.3 form the audit trail that future sprints will use to present **Suggested Actions** to users. Action execution remains out of scope until those sprints.
 
 ## Future sprints
 

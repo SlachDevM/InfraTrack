@@ -1,5 +1,7 @@
 package com.infratrack.inspection;
 
+import com.infratrack.asset.Asset;
+import com.infratrack.department.Department;
 import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
@@ -39,5 +41,22 @@ public class InspectionAuthorizationService {
                     "Only the assigned user can perform this inspection");
         }
         return user;
+    }
+
+    public void requireCanViewInspection(User user, Inspection inspection) {
+        if (user.getRole() != null && user.getRole().isAdministrator()) {
+            return;
+        }
+        requireSameDepartment(user, inspection.getAsset());
+    }
+
+    private void requireSameDepartment(User user, Asset asset) {
+        Department userDepartment = user.getDepartment();
+        Department assetDepartment = asset.getDepartment();
+        if (userDepartment == null || assetDepartment == null
+                || !userDepartment.getId().equals(assetDepartment.getId())) {
+            throw new ForbiddenOperationException(
+                    "You may only view inspections for assets in your own department.");
+        }
     }
 }

@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface InspectionRepository extends JpaRepository<Inspection, Long> {
 
@@ -36,4 +37,7 @@ public interface InspectionRepository extends JpaRepository<Inspection, Long> {
 
     @EntityGraph(attributePaths = {"asset", "businessTrigger"})
     List<Inspection> findAllByAsset_IdOrderByCompletedAtDesc(Long assetId);
+
+    @EntityGraph(attributePaths = {"asset", "asset.department", "inspectionTemplate"})
+    Optional<Inspection> findWithEvaluationContextById(Long id);
 }

@@ -15,11 +15,14 @@ import com.infratrack.inspection.dto.InspectionSummaryResponse;
 import com.infratrack.inspectiontemplate.InspectionTemplate;
 import com.infratrack.inspectiontemplate.InspectionTemplateRepository;
 import com.infratrack.inspectiontemplate.InspectionTemplateStatus;
-import com.infratrack.user.UserNameLookup;
+import com.infratrack.ruleevaluation.RuleEvaluationReport;
+import com.infratrack.ruleevaluation.RuleEvaluationReportService;
+import com.infratrack.ruleevaluation.dto.RuleEvaluationReportSummaryResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.user.User;
+import com.infratrack.user.UserNameLookup;
 import com.infratrack.user.UserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,6 +48,7 @@ public class InspectionService {
     private final UserService userService;
     private final UserNameLookup userNameLookup;
     private final OperationalEventNotificationService operationalEventNotificationService;
+    private final RuleEvaluationReportService ruleEvaluationReportService;
 
     public InspectionService(
             InspectionRepository inspectionRepository,
@@ -55,7 +59,8 @@ public class InspectionService {
             InspectionAnswerService inspectionAnswerService,
             UserService userService,
             UserNameLookup userNameLookup,
-            OperationalEventNotificationService operationalEventNotificationService) {
+            OperationalEventNotificationService operationalEventNotificationService,
+            RuleEvaluationReportService ruleEvaluationReportService) {
         this.inspectionRepository = inspectionRepository;
         this.businessTriggerRepository = businessTriggerRepository;
         this.inspectionTemplateRepository = inspectionTemplateRepository;
@@ -65,6 +70,7 @@ public class InspectionService {
         this.userService = userService;
         this.userNameLookup = userNameLookup;
         this.operationalEventNotificationService = operationalEventNotificationService;
+        this.ruleEvaluationReportService = ruleEvaluationReportService;
     }
 
     @Transactional(readOnly = true)
@@ -167,13 +173,29 @@ public class InspectionService {
 
         int answerCount = inspectionAnswerService.saveAnswers(inspection, request.getAnswers());
 
-        String historyDetails = answerCount > 0
-                ? "Structured answers recorded: " + answerCount
-                : null;
+        RuleEvaluationReport evaluationReport = ruleEvaluationReportService.createReportIfApplicable(inspectionId);
+
+        String historyDetails = buildCompletionHistoryDetails(answerCount, evaluationReport);
         historyRecorder.recordInspectionCompleted(
                 inspection.getAsset(), performer.getId(), completedAt.toLocalDate(), historyDetails);
 
-        return toResponse(inspection, performer);
+        RuleEvaluationReportSummaryResponse reportSummary =
+                RuleEvaluationReportService.toSummary(evaluationReport);
+        return toResponse(inspection, performer, reportSummary);
+    }
+
+    private static String buildCompletionHistoryDetails(int answerCount, RuleEvaluationReport evaluationReport) {
+        StringBuilder details = new StringBuilder();
+        if (answerCount > 0) {
+            details.append("Structured answers recorded: ").append(answerCount);
+        }
+        if (evaluationReport != null) {
+            if (details.length() > 0) {
+                details.append(". ");
+            }
+            details.append(RuleEvaluationReportService.formatHistoryDetail(evaluationReport));
+        }
+        return details.length() > 0 ? details.toString() : null;
     }
 
     public void requireCanAssignInspections(Long userId) {
@@ -186,10 +208,18 @@ public class InspectionService {
     }
 
     private InspectionResponse toResponse(Inspection inspection, User assignedToUser) {
+        return toResponse(inspection, assignedToUser, null);
+    }
+
+    private InspectionResponse toResponse(
+            Inspection inspection,
+            User assignedToUser,
+            RuleEvaluationReportSummaryResponse ruleEvaluationReportSummary) {
         List<InspectionAnswerResponse> answers = inspection.getStatus() == InspectionStatus.COMPLETED
                 ? inspectionAnswerService.listByInspectionId(inspection.getId())
                 : List.of();
-        return InspectionResponse.from(inspection, assignedToUser, null, answers);
+        return InspectionResponse.from(
+                inspection, assignedToUser, null, answers, ruleEvaluationReportSummary);
     }
 
     private InspectionTemplate resolveOptionalTemplate(Long inspectionTemplateId, Asset asset) {

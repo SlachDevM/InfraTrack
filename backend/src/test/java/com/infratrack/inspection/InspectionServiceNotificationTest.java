@@ -66,6 +66,9 @@ class InspectionServiceNotificationTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private com.infratrack.ruleevaluation.RuleEvaluationReportService ruleEvaluationReportService;
+
     private InspectionService inspectionService;
 
     @BeforeEach
@@ -87,7 +90,8 @@ class InspectionServiceNotificationTest {
                 inspectionAnswerService,
                 userService,
                 userNameLookup,
-                operationalEventNotificationService);
+                operationalEventNotificationService,
+                ruleEvaluationReportService);
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.infratrack.inspectiontemplate;
 
+import com.infratrack.inspection.Inspection;
 import com.infratrack.inspection.InspectionAnswer;
 import com.infratrack.inspection.InspectionAnswerQuestionTypeSnapshot;
 import com.infratrack.inspection.InspectionAnswerRepository;
@@ -12,9 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Evaluates decision rules against inspection answers (V2 Domain Engine A3.2).
@@ -38,42 +42,91 @@ public class DecisionRuleEvaluationService {
 
     @Transactional(readOnly = true)
     public List<DecisionRuleEvaluationResult> evaluateInspection(Long inspectionId) {
-        if (!inspectionRepository.existsById(inspectionId)) {
-            throw new NotFoundException("Inspection not found");
-        }
+        Inspection inspection = inspectionRepository.findWithEvaluationContextById(inspectionId)
+                .orElseThrow(() -> new NotFoundException("Inspection not found"));
 
         List<InspectionAnswer> answers =
                 answerRepository.findByInspectionIdOrderByQuestionDisplayOrder(inspectionId);
+        return evaluateLoadedInspection(inspection, answers);
+    }
+
+    public List<DecisionRuleEvaluationResult> evaluateLoadedInspection(
+            Inspection inspection,
+            List<InspectionAnswer> answers) {
+        if (answers == null || answers.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> questionIds = answers.stream()
+                .map(answer -> answer.getQuestion().getId())
+                .distinct()
+                .toList();
+        Map<Long, List<InspectionTemplateQuestionRule>> rulesByQuestionId =
+                loadActiveRulesByQuestionId(questionIds);
+
         List<DecisionRuleEvaluationResult> results = new ArrayList<>();
         for (InspectionAnswer answer : answers) {
-            List<InspectionTemplateQuestionRule> rules = ruleRepository
-                    .findByQuestionIdAndActiveTrueOrderByPriorityAscRuleCodeAsc(answer.getQuestion().getId());
-            results.addAll(evaluateAnswer(answer, rules));
+            RuleEvaluationContext context = RuleEvaluationContext.from(inspection, answer);
+            List<InspectionTemplateQuestionRule> rules = rulesByQuestionId.getOrDefault(
+                    answer.getQuestion().getId(),
+                    List.of());
+            results.addAll(evaluateAnswer(context, rules));
         }
         return results;
     }
 
     public List<DecisionRuleEvaluationResult> evaluateAnswer(
-            InspectionAnswer answer,
+            RuleEvaluationContext context,
             List<InspectionTemplateQuestionRule> rules) {
-        if (answer == null || rules == null) {
+        if (context == null || context.getAnswer() == null || rules == null) {
             return List.of();
         }
 
+        InspectionAnswer answer = context.getAnswer();
         Long questionId = answer.getQuestion().getId();
-        return rules.stream()
+        List<InspectionTemplateQuestionRule> applicableRules = rules.stream()
                 .filter(InspectionTemplateQuestionRule::isActive)
                 .filter(rule -> Objects.equals(rule.getQuestion().getId(), questionId))
                 .sorted(Comparator
                         .comparingInt(InspectionTemplateQuestionRule::getPriority)
                         .thenComparing(InspectionTemplateQuestionRule::getRuleCode))
-                .map(rule -> evaluateRule(answer, rule))
                 .toList();
+
+        if (applicableRules.isEmpty()) {
+            return List.of();
+        }
+
+        long evaluatedAt = System.currentTimeMillis();
+        long startNanos = System.nanoTime();
+        List<DecisionRuleEvaluationResult> results = applicableRules.stream()
+                .map(rule -> evaluateRule(context, rule))
+                .toList();
+        long evaluationDurationMs = (System.nanoTime() - startNanos) / 1_000_000L;
+
+        for (DecisionRuleEvaluationResult result : results) {
+            result.setEvaluatedAt(evaluatedAt);
+            result.setEvaluationDurationMs(evaluationDurationMs);
+        }
+        return results;
+    }
+
+    private Map<Long, List<InspectionTemplateQuestionRule>> loadActiveRulesByQuestionId(
+            List<Long> questionIds) {
+        if (questionIds.isEmpty()) {
+            return Map.of();
+        }
+        return ruleRepository.findByQuestionIdInAndActiveTrueOrderByPriorityAscRuleCodeAsc(questionIds)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        rule -> rule.getQuestion().getId(),
+                        LinkedHashMap::new,
+                        Collectors.toList()));
     }
 
     private DecisionRuleEvaluationResult evaluateRule(
-            InspectionAnswer answer,
+            RuleEvaluationContext context,
             InspectionTemplateQuestionRule rule) {
+        InspectionAnswer answer = context.getAnswer();
         DecisionRuleEvaluationResult result = new DecisionRuleEvaluationResult();
         result.setRuleId(rule.getId());
         result.setRuleCode(rule.getRuleCode());

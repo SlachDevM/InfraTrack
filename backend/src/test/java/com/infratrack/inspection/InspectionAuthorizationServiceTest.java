@@ -17,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
@@ -63,6 +64,41 @@ class InspectionAuthorizationServiceTest {
                 .hasMessage("Only the assigned user can perform this inspection");
     }
 
+    @Test
+    void requireCanViewInspection_shouldAllowSameDepartmentUser() {
+        Asset asset = asset(5L);
+        Inspection inspection = new Inspection(asset, null, 20L, 10L, InspectionPriority.NORMAL, null);
+        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        coordinator.setDepartment(asset.getDepartment());
+
+        assertThatCode(() -> authorizationService.requireCanViewInspection(coordinator, inspection))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void requireCanViewInspection_shouldRejectCrossDepartmentUser() {
+        Asset asset = asset(5L);
+        Inspection inspection = new Inspection(asset, null, 20L, 10L, InspectionPriority.NORMAL, null);
+        User otherDepartmentUser = user(30L, UserRole.OPERATIONAL_COORDINATOR);
+        Department otherDepartment = new Department("Water");
+        otherDepartment.setId(99L);
+        otherDepartmentUser.setDepartment(otherDepartment);
+
+        assertThatThrownBy(() -> authorizationService.requireCanViewInspection(otherDepartmentUser, inspection))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You may only view inspections for assets in your own department.");
+    }
+
+    @Test
+    void requireCanViewInspection_shouldAllowAdministrator() {
+        Asset asset = asset(5L);
+        Inspection inspection = new Inspection(asset, null, 20L, 10L, InspectionPriority.NORMAL, null);
+        User administrator = user(1L, UserRole.ADMINISTRATOR);
+
+        assertThatCode(() -> authorizationService.requireCanViewInspection(administrator, inspection))
+                .doesNotThrowAnyException();
+    }
+
     private Asset asset(Long id) {
         Department department = new Department("Parks");
         department.setId(1L);
@@ -84,6 +120,11 @@ class InspectionAuthorizationServiceTest {
         User user = new User("user@test.com", "password", "User", role);
         user.setId(id);
         user.setEnabled(true);
+        if (role != UserRole.ADMINISTRATOR) {
+            Department department = new Department("Parks");
+            department.setId(1L);
+            user.setDepartment(department);
+        }
         return user;
     }
 }

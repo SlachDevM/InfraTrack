@@ -1,8 +1,14 @@
 import { getBusinessTriggerTypeLabel } from '../../constants/businessTriggerTypes';
 import { getInspectionPriorityLabel } from '../../constants/inspectionPriorities';
 import { getPhysicalConditionLabel } from '../../constants/physicalConditions';
+import RuleEvaluationReportPanel from './RuleEvaluationReportPanel';
 
 export default function InspectionList({ inspections }) {
+  const completedTemplatedInspections = inspections.filter(
+    (inspection) =>
+      inspection.status === 'COMPLETED' && inspection.inspectionTemplateId != null
+  );
+
   return (
     <section className="inspection-list-section">
       <h2>Inspections</h2>
@@ -55,6 +61,19 @@ export default function InspectionList({ inspections }) {
             ))}
           </tbody>
         </table>
+      )}
+
+      {completedTemplatedInspections.length > 0 && (
+        <div className="rule-evaluation-reports-section">
+          <h2>Rule Evaluation Reports</h2>
+          {completedTemplatedInspections.map((inspection) => (
+            <RuleEvaluationReportPanel
+              key={inspection.id}
+              inspectionId={inspection.id}
+              assetName={inspection.assetName}
+            />
+          ))}
+        </div>
       )}
     </section>
   );

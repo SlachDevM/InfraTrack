@@ -47,3 +47,49 @@
   align-items: center;
   gap: 0.5rem;
 }
+
+.rule-evaluation-reports-section {
+  margin-top: 2rem;
+}
+
+.rule-evaluation-panel {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #fff;
+  border: 1px solid #e0e6e2;
+  border-radius: 6px;
+}
+
+.rule-evaluation-panel h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+  color: #1a472a;
+}
+
+.rule-evaluation-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem 1rem;
+  margin: 0 0 1rem;
+}
+
+.rule-evaluation-summary div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.rule-evaluation-summary dt {
+  font-size: 0.8rem;
+  color: #666;
+  font-weight: 600;
+}
+
+.rule-evaluation-summary dd {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.rule-evaluation-results-table {
+  margin-top: 0.5rem;
+}

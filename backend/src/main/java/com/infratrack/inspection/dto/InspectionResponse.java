@@ -5,6 +5,7 @@ import com.infratrack.inspection.Inspection;
 import com.infratrack.inspection.InspectionPriority;
 import com.infratrack.inspection.InspectionStatus;
 import com.infratrack.inspection.PhysicalCondition;
+import com.infratrack.ruleevaluation.dto.RuleEvaluationReportSummaryResponse;
 import com.infratrack.user.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -40,13 +41,14 @@ public class InspectionResponse {
     private Long createdAt;
     private Long updatedAt;
     private List<InspectionAnswerResponse> answers = Collections.emptyList();
+    private RuleEvaluationReportSummaryResponse ruleEvaluationReportSummary;
 
     public static InspectionResponse from(Inspection inspection) {
-        return from(inspection, null, null, Collections.emptyList());
+        return from(inspection, null, null, Collections.emptyList(), null);
     }
 
     public static InspectionResponse from(Inspection inspection, User assignedToUser, User assignedByUser) {
-        return from(inspection, assignedToUser, assignedByUser, Collections.emptyList());
+        return from(inspection, assignedToUser, assignedByUser, Collections.emptyList(), null);
     }
 
     public static InspectionResponse from(
@@ -54,6 +56,15 @@ public class InspectionResponse {
             User assignedToUser,
             User assignedByUser,
             List<InspectionAnswerResponse> answers) {
+        return from(inspection, assignedToUser, assignedByUser, answers, null);
+    }
+
+    public static InspectionResponse from(
+            Inspection inspection,
+            User assignedToUser,
+            User assignedByUser,
+            List<InspectionAnswerResponse> answers,
+            RuleEvaluationReportSummaryResponse ruleEvaluationReportSummary) {
         InspectionResponse response = new InspectionResponse();
         response.id = inspection.getId();
         response.assetId = inspection.getAsset().getId();
@@ -80,6 +91,7 @@ public class InspectionResponse {
         response.createdAt = inspection.getCreatedAt();
         response.updatedAt = inspection.getUpdatedAt();
         response.answers = answers == null ? Collections.emptyList() : answers;
+        response.ruleEvaluationReportSummary = ruleEvaluationReportSummary;
         return response;
     }
 
@@ -173,5 +185,9 @@ public class InspectionResponse {
 
     public List<InspectionAnswerResponse> getAnswers() {
         return answers;
+    }
+
+    public RuleEvaluationReportSummaryResponse getRuleEvaluationReportSummary() {
+        return ruleEvaluationReportSummary;
     }
 }

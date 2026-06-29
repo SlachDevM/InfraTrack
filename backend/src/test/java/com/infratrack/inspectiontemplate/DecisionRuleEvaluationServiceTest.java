@@ -51,7 +51,7 @@ class DecisionRuleEvaluationServiceTest {
                 question, "LEAK_TRUE", DecisionRuleConditionType.BOOLEAN,
                 DecisionRuleOperator.IS_TRUE, null, 100);
 
-        List<DecisionRuleEvaluationResult> results = evaluationService.evaluateAnswer(answer, List.of(rule));
+        List<DecisionRuleEvaluationResult> results = evaluationService.evaluateAnswer(contextFor(answer), List.of(rule));
 
         assertThat(results).hasSize(1);
         assertThat(results.get(0).isMatched()).isTrue();
@@ -66,7 +66,7 @@ class DecisionRuleEvaluationServiceTest {
                 question, "LEAK_TRUE", DecisionRuleConditionType.BOOLEAN,
                 DecisionRuleOperator.IS_TRUE, null, 100);
 
-        assertThat(evaluationService.evaluateAnswer(answer, List.of(rule)).get(0).isMatched()).isFalse();
+        assertThat(evaluationService.evaluateAnswer(contextFor(answer), List.of(rule)).get(0).isMatched()).isFalse();
     }
 
     @Test
@@ -77,7 +77,7 @@ class DecisionRuleEvaluationServiceTest {
                 question, "LEAK_FALSE", DecisionRuleConditionType.BOOLEAN,
                 DecisionRuleOperator.IS_FALSE, null, 100);
 
-        assertThat(evaluationService.evaluateAnswer(answer, List.of(rule)).get(0).isMatched()).isTrue();
+        assertThat(evaluationService.evaluateAnswer(contextFor(answer), List.of(rule)).get(0).isMatched()).isTrue();
     }
 
     @Test
@@ -88,7 +88,7 @@ class DecisionRuleEvaluationServiceTest {
                 question, "HIGH_TEMP", DecisionRuleConditionType.NUMBER,
                 DecisionRuleOperator.GREATER_THAN, "90", 10);
 
-        assertThat(evaluationService.evaluateAnswer(answer, List.of(rule)).get(0).isMatched()).isTrue();
+        assertThat(evaluationService.evaluateAnswer(contextFor(answer), List.of(rule)).get(0).isMatched()).isTrue();
     }
 
     @Test
@@ -99,7 +99,7 @@ class DecisionRuleEvaluationServiceTest {
                 question, "HIGH_TEMP", DecisionRuleConditionType.NUMBER,
                 DecisionRuleOperator.GREATER_THAN_OR_EQUAL, "90", 10);
 
-        assertThat(evaluationService.evaluateAnswer(answer, List.of(rule)).get(0).isMatched()).isTrue();
+        assertThat(evaluationService.evaluateAnswer(contextFor(answer), List.of(rule)).get(0).isMatched()).isTrue();
     }
 
     @Test
@@ -110,7 +110,7 @@ class DecisionRuleEvaluationServiceTest {
                 question, "LOW_TEMP", DecisionRuleConditionType.NUMBER,
                 DecisionRuleOperator.LESS_THAN, "10", 10);
 
-        assertThat(evaluationService.evaluateAnswer(answer, List.of(rule)).get(0).isMatched()).isTrue();
+        assertThat(evaluationService.evaluateAnswer(contextFor(answer), List.of(rule)).get(0).isMatched()).isTrue();
     }
 
     @Test
@@ -121,7 +121,7 @@ class DecisionRuleEvaluationServiceTest {
                 question, "LOW_TEMP", DecisionRuleConditionType.NUMBER,
                 DecisionRuleOperator.LESS_THAN_OR_EQUAL, "10", 10);
 
-        assertThat(evaluationService.evaluateAnswer(answer, List.of(rule)).get(0).isMatched()).isTrue();
+        assertThat(evaluationService.evaluateAnswer(contextFor(answer), List.of(rule)).get(0).isMatched()).isTrue();
     }
 
     @Test
@@ -132,7 +132,7 @@ class DecisionRuleEvaluationServiceTest {
                 question, "EXACT_TEMP", DecisionRuleConditionType.NUMBER,
                 DecisionRuleOperator.EQUALS, "90", 10);
 
-        assertThat(evaluationService.evaluateAnswer(answer, List.of(rule)).get(0).isMatched()).isTrue();
+        assertThat(evaluationService.evaluateAnswer(contextFor(answer), List.of(rule)).get(0).isMatched()).isTrue();
     }
 
     @Test
@@ -143,7 +143,7 @@ class DecisionRuleEvaluationServiceTest {
                 question, "NOT_NINETY", DecisionRuleConditionType.NUMBER,
                 DecisionRuleOperator.NOT_EQUALS, "90", 10);
 
-        assertThat(evaluationService.evaluateAnswer(answer, List.of(rule)).get(0).isMatched()).isTrue();
+        assertThat(evaluationService.evaluateAnswer(contextFor(answer), List.of(rule)).get(0).isMatched()).isTrue();
     }
 
     @Test
@@ -154,7 +154,7 @@ class DecisionRuleEvaluationServiceTest {
                 question, "HIGH_TEMP", DecisionRuleConditionType.NUMBER,
                 DecisionRuleOperator.GREATER_THAN, "90", 10);
 
-        assertThat(evaluationService.evaluateAnswer(answer, List.of(rule)).get(0).isMatched()).isTrue();
+        assertThat(evaluationService.evaluateAnswer(contextFor(answer), List.of(rule)).get(0).isMatched()).isTrue();
     }
 
     @Test
@@ -165,7 +165,7 @@ class DecisionRuleEvaluationServiceTest {
                 question, "FAILED_CONDITION", DecisionRuleConditionType.CHOICE,
                 DecisionRuleOperator.EQUALS, "FAILED", 20);
 
-        assertThat(evaluationService.evaluateAnswer(answer, List.of(rule)).get(0).isMatched()).isTrue();
+        assertThat(evaluationService.evaluateAnswer(contextFor(answer), List.of(rule)).get(0).isMatched()).isTrue();
     }
 
     @Test
@@ -176,7 +176,7 @@ class DecisionRuleEvaluationServiceTest {
                 question, "FAILED_CONDITION", DecisionRuleConditionType.CHOICE,
                 DecisionRuleOperator.EQUALS, "FAILED", 20);
 
-        assertThat(evaluationService.evaluateAnswer(answer, List.of(rule)).get(0).isMatched()).isTrue();
+        assertThat(evaluationService.evaluateAnswer(contextFor(answer), List.of(rule)).get(0).isMatched()).isTrue();
     }
 
     @Test
@@ -187,7 +187,7 @@ class DecisionRuleEvaluationServiceTest {
                 question, "NOT_FAILED", DecisionRuleConditionType.CHOICE,
                 DecisionRuleOperator.NOT_EQUALS, "FAILED", 20);
 
-        assertThat(evaluationService.evaluateAnswer(answer, List.of(rule)).get(0).isMatched()).isTrue();
+        assertThat(evaluationService.evaluateAnswer(contextFor(answer), List.of(rule)).get(0).isMatched()).isTrue();
     }
 
     @Test
@@ -198,7 +198,7 @@ class DecisionRuleEvaluationServiceTest {
                 question, "LEAK_TEXT", DecisionRuleConditionType.TEXT,
                 DecisionRuleOperator.EQUALS, "leak", 100);
 
-        assertThat(evaluationService.evaluateAnswer(answer, List.of(rule)).get(0).isMatched()).isTrue();
+        assertThat(evaluationService.evaluateAnswer(contextFor(answer), List.of(rule)).get(0).isMatched()).isTrue();
     }
 
     @Test
@@ -209,7 +209,7 @@ class DecisionRuleEvaluationServiceTest {
                 question, "NOT_LEAK", DecisionRuleConditionType.TEXT,
                 DecisionRuleOperator.NOT_EQUALS, "LEAK", 100);
 
-        assertThat(evaluationService.evaluateAnswer(answer, List.of(rule)).get(0).isMatched()).isTrue();
+        assertThat(evaluationService.evaluateAnswer(contextFor(answer), List.of(rule)).get(0).isMatched()).isTrue();
     }
 
     @Test
@@ -220,7 +220,7 @@ class DecisionRuleEvaluationServiceTest {
                 question, "CONTAINS_LEAK", DecisionRuleConditionType.TEXT,
                 DecisionRuleOperator.CONTAINS, "leak", 100);
 
-        assertThat(evaluationService.evaluateAnswer(answer, List.of(rule)).get(0).isMatched()).isTrue();
+        assertThat(evaluationService.evaluateAnswer(contextFor(answer), List.of(rule)).get(0).isMatched()).isTrue();
     }
 
     @Test
@@ -231,7 +231,7 @@ class DecisionRuleEvaluationServiceTest {
                 question, "STARTS_LEAK", DecisionRuleConditionType.TEXT,
                 DecisionRuleOperator.STARTS_WITH, "leak", 100);
 
-        assertThat(evaluationService.evaluateAnswer(answer, List.of(rule)).get(0).isMatched()).isTrue();
+        assertThat(evaluationService.evaluateAnswer(contextFor(answer), List.of(rule)).get(0).isMatched()).isTrue();
     }
 
     @Test
@@ -242,7 +242,7 @@ class DecisionRuleEvaluationServiceTest {
                 question, "ENDS_LEAK", DecisionRuleConditionType.TEXT,
                 DecisionRuleOperator.ENDS_WITH, "leak", 100);
 
-        assertThat(evaluationService.evaluateAnswer(answer, List.of(rule)).get(0).isMatched()).isTrue();
+        assertThat(evaluationService.evaluateAnswer(contextFor(answer), List.of(rule)).get(0).isMatched()).isTrue();
     }
 
     @Test
@@ -254,7 +254,7 @@ class DecisionRuleEvaluationServiceTest {
                 DecisionRuleOperator.GREATER_THAN, "90", 10);
         rule.setActive(false);
 
-        assertThat(evaluationService.evaluateAnswer(answer, List.of(rule))).isEmpty();
+        assertThat(evaluationService.evaluateAnswer(contextFor(answer), List.of(rule))).isEmpty();
     }
 
     @Test
@@ -266,7 +266,7 @@ class DecisionRuleEvaluationServiceTest {
                 otherQuestion, "HIGH_TEMP", DecisionRuleConditionType.NUMBER,
                 DecisionRuleOperator.GREATER_THAN, "90", 10);
 
-        assertThat(evaluationService.evaluateAnswer(answer, List.of(rule))).isEmpty();
+        assertThat(evaluationService.evaluateAnswer(contextFor(answer), List.of(rule))).isEmpty();
     }
 
     @Test
@@ -277,7 +277,7 @@ class DecisionRuleEvaluationServiceTest {
                 question, "TEXT_RULE", DecisionRuleConditionType.TEXT,
                 DecisionRuleOperator.EQUALS, "95", 10);
 
-        assertThat(evaluationService.evaluateAnswer(answer, List.of(rule)).get(0).isMatched()).isFalse();
+        assertThat(evaluationService.evaluateAnswer(contextFor(answer), List.of(rule)).get(0).isMatched()).isFalse();
     }
 
     @Test
@@ -288,7 +288,7 @@ class DecisionRuleEvaluationServiceTest {
                 question, "HIGH_TEMP", DecisionRuleConditionType.NUMBER,
                 DecisionRuleOperator.GREATER_THAN, "90", 10);
 
-        assertThat(evaluationService.evaluateAnswer(answer, List.of(rule)).get(0).isMatched()).isFalse();
+        assertThat(evaluationService.evaluateAnswer(contextFor(answer), List.of(rule)).get(0).isMatched()).isFalse();
     }
 
     @Test
@@ -306,7 +306,7 @@ class DecisionRuleEvaluationServiceTest {
                 DecisionRuleOperator.GREATER_THAN, "90", 10);
 
         List<DecisionRuleEvaluationResult> results = evaluationService.evaluateAnswer(
-                answer,
+                contextFor(answer),
                 List.of(lowPriority, samePriorityLaterCode, highPriority));
 
         assertThat(results).extracting(DecisionRuleEvaluationResult::getRuleCode)
@@ -324,7 +324,7 @@ class DecisionRuleEvaluationServiceTest {
         rule.setRuleName("High temperature");
         rule.setActionPayload("{\"severity\":\"HIGH\"}");
 
-        DecisionRuleEvaluationResult result = evaluationService.evaluateAnswer(answer, List.of(rule)).get(0);
+        DecisionRuleEvaluationResult result = evaluationService.evaluateAnswer(contextFor(answer), List.of(rule)).get(0);
 
         assertThat(result.getRuleId()).isEqualTo(42L);
         assertThat(result.getRuleName()).isEqualTo("High temperature");
@@ -334,28 +334,66 @@ class DecisionRuleEvaluationServiceTest {
     }
 
     @Test
+    void evaluateAnswer_populatesEvaluationMetadata() {
+        InspectionTemplateQuestion question = numberQuestion(1L);
+        InspectionAnswer answer = numberAnswer(question, new BigDecimal("95"));
+        InspectionTemplateQuestionRule rule = rule(
+                question, "HIGH_TEMP", DecisionRuleConditionType.NUMBER,
+                DecisionRuleOperator.GREATER_THAN, "90", 10);
+
+        DecisionRuleEvaluationResult result = evaluationService.evaluateAnswer(contextFor(answer), List.of(rule)).get(0);
+
+        assertThat(result.getEvaluatedAt()).isNotNull().isPositive();
+        assertThat(result.getEvaluationDurationMs()).isGreaterThanOrEqualTo(0);
+    }
+
+    @Test
+    void evaluateAnswer_usesRuleEvaluationContext() {
+        InspectionTemplateQuestion question = numberQuestion(1L);
+        InspectionAnswer answer = numberAnswer(question, new BigDecimal("95"));
+        RuleEvaluationContext context = RuleEvaluationContext.from(inspection, answer);
+
+        assertThat(context.getInspection()).isSameAs(inspection);
+        assertThat(context.getAnswer()).isSameAs(answer);
+        assertThat(context.getQuestion()).isSameAs(question);
+        assertThat(context.getTemplate()).isNull();
+
+        InspectionTemplateQuestionRule rule = rule(
+                question, "HIGH_TEMP", DecisionRuleConditionType.NUMBER,
+                DecisionRuleOperator.GREATER_THAN, "90", 10);
+
+        assertThat(evaluationService.evaluateAnswer(context, List.of(rule)).get(0).isMatched()).isTrue();
+    }
+
+    @Test
     void evaluateInspection_evaluatesAllAnswersWithoutSideEffects() {
         InspectionTemplateQuestion temperatureQuestion = numberQuestion(1L);
         InspectionTemplateQuestion notesQuestion = textQuestion(3L);
         InspectionAnswer temperatureAnswer = numberAnswer(temperatureQuestion, new BigDecimal("95"));
         InspectionAnswer notesAnswer = textAnswer(notesQuestion, "Small leak detected");
 
-        when(inspectionRepository.existsById(10L)).thenReturn(true);
+        when(inspectionRepository.findWithEvaluationContextById(10L)).thenReturn(java.util.Optional.of(inspection));
         when(answerRepository.findByInspectionIdOrderByQuestionDisplayOrder(10L))
                 .thenReturn(List.of(temperatureAnswer, notesAnswer));
-        when(ruleRepository.findByQuestionIdAndActiveTrueOrderByPriorityAscRuleCodeAsc(1L))
-                .thenReturn(List.of(rule(
-                        temperatureQuestion, "HIGH_TEMP", DecisionRuleConditionType.NUMBER,
-                        DecisionRuleOperator.GREATER_THAN, "90", 10)));
-        when(ruleRepository.findByQuestionIdAndActiveTrueOrderByPriorityAscRuleCodeAsc(3L))
-                .thenReturn(List.of(rule(
-                        notesQuestion, "CONTAINS_LEAK", DecisionRuleConditionType.TEXT,
-                        DecisionRuleOperator.CONTAINS, "leak", 100)));
+        when(ruleRepository.findByQuestionIdInAndActiveTrueOrderByPriorityAscRuleCodeAsc(List.of(1L, 3L)))
+                .thenReturn(List.of(
+                        rule(temperatureQuestion, "HIGH_TEMP", DecisionRuleConditionType.NUMBER,
+                                DecisionRuleOperator.GREATER_THAN, "90", 10),
+                        rule(notesQuestion, "CONTAINS_LEAK", DecisionRuleConditionType.TEXT,
+                                DecisionRuleOperator.CONTAINS, "leak", 100)));
 
         List<DecisionRuleEvaluationResult> results = evaluationService.evaluateInspection(10L);
 
         assertThat(results).hasSize(2);
         assertThat(results).allMatch(DecisionRuleEvaluationResult::isMatched);
+        assertThat(results).allMatch(result -> result.getEvaluatedAt() != null);
+        assertThat(results).allMatch(result -> result.getEvaluationDurationMs() >= 0);
+        verify(ruleRepository).findByQuestionIdInAndActiveTrueOrderByPriorityAscRuleCodeAsc(List.of(1L, 3L));
+        verify(ruleRepository, never()).findByQuestionIdAndActiveTrueOrderByPriorityAscRuleCodeAsc(anyLong());
+    }
+
+    private RuleEvaluationContext contextFor(InspectionAnswer answer) {
+        return RuleEvaluationContext.from(inspection, answer);
     }
 
     private InspectionTemplate template() {

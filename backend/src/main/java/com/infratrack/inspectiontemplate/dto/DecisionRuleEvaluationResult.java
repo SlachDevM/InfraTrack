@@ -17,6 +17,8 @@ public class DecisionRuleEvaluationResult {
     private DecisionRuleActionType actionType;
     private String actionPayload;
     private int priority;
+    private Long evaluatedAt;
+    private long evaluationDurationMs;
 
     public Long getRuleId() {
         return ruleId;
@@ -104,5 +106,21 @@ public class DecisionRuleEvaluationResult {
 
     public void setPriority(int priority) {
         this.priority = priority;
+    }
+
+    public Long getEvaluatedAt() {
+        return evaluatedAt;
+    }
+
+    public void setEvaluatedAt(Long evaluatedAt) {
+        this.evaluatedAt = evaluatedAt;
+    }
+
+    public long getEvaluationDurationMs() {
+        return evaluationDurationMs;
+    }
+
+    public void setEvaluationDurationMs(long evaluationDurationMs) {
+        this.evaluationDurationMs = evaluationDurationMs;
     }
 }
