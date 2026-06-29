@@ -92,7 +92,9 @@ jobs:
           if-no-files-found: warn
 
       - name: OWASP dependency check
-        run: mvn org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=9
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run: mvn org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=9 -DnvdApiKey="${NVD_API_KEY}"
 
       - name: Upload dependency check report
         if: always()
