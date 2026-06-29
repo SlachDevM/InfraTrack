@@ -15,9 +15,11 @@ import {
 } from '../constants/inspectionTemplateQuestionTypes';
 import { getInspectionTemplateStatusLabel } from '../constants/inspectionTemplateStatuses';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
+import { isValidQuestionCode, suggestQuestionCode } from '../utils/suggestQuestionCode';
 import '../styles/ReferenceDataPage.css';
 
 const EMPTY_FORM = {
+  code: '',
   questionText: '',
   helpText: '',
   questionType: 'BOOLEAN',
@@ -41,6 +43,7 @@ export default function InspectionTemplateQuestionsPage() {
   const [success, setSuccess] = useState(null);
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
+  const [codeManuallyEdited, setCodeManuallyEdited] = useState(false);
 
   const canView = canViewInspectionTemplates(auth?.user?.role);
   const canManage = canManageInspectionTemplates(auth?.user?.role);
@@ -78,20 +81,38 @@ export default function InspectionTemplateQuestionsPage() {
 
   const handleFormChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+    const nextValue = type === 'checkbox' ? checked : value;
+
+    setFormData((prev) => {
+      const next = { ...prev, [name]: nextValue };
+      if (name === 'questionText' && !editingId && !codeManuallyEdited) {
+        next.code = suggestQuestionCode(nextValue);
+      }
+      return next;
+    });
+
+    if (name === 'code') {
+      setCodeManuallyEdited(true);
+    }
   };
 
   const resetForm = () => {
     setFormData(EMPTY_FORM);
     setEditingId(null);
+    setCodeManuallyEdited(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!canMutate) return;
+
+    const normalizedCode = formData.code.trim().toUpperCase();
+    if (!editingId && !isValidQuestionCode(normalizedCode)) {
+      setError(
+        'Question code must be uppercase, start with a letter, and contain only letters, digits, and underscores.'
+      );
+      return;
+    }
 
     try {
       setSubmitting(true);
@@ -107,7 +128,10 @@ export default function InspectionTemplateQuestionsPage() {
         await inspectionTemplateQuestionApi.update(templateId, editingId, payload);
         setSuccess('Question updated successfully.');
       } else {
-        await inspectionTemplateQuestionApi.create(templateId, payload);
+        await inspectionTemplateQuestionApi.create(templateId, {
+          ...payload,
+          code: normalizedCode,
+        });
         setSuccess('Question created successfully.');
       }
       resetForm();
@@ -126,7 +150,9 @@ export default function InspectionTemplateQuestionsPage() {
   const handleEdit = (question) => {
     if (!canMutate || !question.active) return;
     setEditingId(question.id);
+    setCodeManuallyEdited(true);
     setFormData({
+      code: question.code,
       questionText: question.questionText,
       helpText: question.helpText || '',
       questionType: question.questionType,
@@ -252,6 +278,29 @@ export default function InspectionTemplateQuestionsPage() {
             <h2>{editingId ? 'Edit Question' : 'Create Question'}</h2>
             <form className="reference-form" onSubmit={handleSubmit}>
               <div className="form-row">
+                <label htmlFor="code">Question Code</label>
+                <input
+                  id="code"
+                  name="code"
+                  type="text"
+                  value={formData.code}
+                  onChange={handleFormChange}
+                  required={!editingId}
+                  disabled={submitting || Boolean(editingId)}
+                  readOnly={Boolean(editingId)}
+                />
+                {!editingId && (
+                  <p className="field-hint">
+                    Suggested automatically from question text. You can edit it before saving.
+                  </p>
+                )}
+                {editingId && (
+                  <p className="field-hint">
+                    Business codes are read-only after creation to protect downstream integrations.
+                  </p>
+                )}
+              </div>
+              <div className="form-row">
                 <label htmlFor="questionText">Question Text</label>
                 <input
                   id="questionText"
@@ -333,6 +382,7 @@ export default function InspectionTemplateQuestionsPage() {
               <thead>
                 <tr>
                   <th>Order</th>
+                  <th>Code</th>
                   <th>Question</th>
                   <th>Type</th>
                   <th>Required</th>
@@ -344,6 +394,7 @@ export default function InspectionTemplateQuestionsPage() {
                 {questions.map((question) => (
                   <tr key={question.id}>
                     <td>{question.displayOrder}</td>
+                    <td>{question.code}</td>
                     <td>
                       {question.questionText}
                       {question.helpText && (

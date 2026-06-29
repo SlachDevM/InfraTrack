@@ -7,6 +7,7 @@ public class InspectionTemplateQuestionResponse {
 
     private Long id;
     private Long inspectionTemplateId;
+    private String code;
     private String questionText;
     private String helpText;
     private InspectionTemplateQuestionType questionType;
@@ -20,6 +21,7 @@ public class InspectionTemplateQuestionResponse {
         InspectionTemplateQuestionResponse response = new InspectionTemplateQuestionResponse();
         response.id = question.getId();
         response.inspectionTemplateId = question.getInspectionTemplate().getId();
+        response.code = question.getCode();
         response.questionText = question.getQuestionText();
         response.helpText = question.getHelpText();
         response.questionType = question.getQuestionType();
@@ -37,6 +39,10 @@ public class InspectionTemplateQuestionResponse {
 
     public Long getInspectionTemplateId() {
         return inspectionTemplateId;
+    }
+
+    public String getCode() {
+        return code;
     }
 
     public String getQuestionText() {

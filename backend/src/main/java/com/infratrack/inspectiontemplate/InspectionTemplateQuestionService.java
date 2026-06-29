@@ -47,6 +47,8 @@ public class InspectionTemplateQuestionService {
         requireDraftTemplate(template);
 
         String questionText = normalizeQuestionText(request.getQuestionText());
+        String code = normalizeAndValidateCode(request.getCode());
+        requireUniqueCode(templateId, code);
         String helpText = normalizeOptionalHelpText(request.getHelpText());
         InspectionTemplateQuestionType questionType = requireQuestionType(request.getQuestionType());
         boolean required = Boolean.TRUE.equals(request.getRequired());
@@ -55,6 +57,7 @@ public class InspectionTemplateQuestionService {
         InspectionTemplateQuestion question = questionRepository.save(new InspectionTemplateQuestion(
                 template,
                 questionText,
+                code,
                 helpText,
                 questionType,
                 required,
@@ -207,5 +210,17 @@ public class InspectionTemplateQuestionService {
             throw new BusinessValidationException("Question type is required");
         }
         return questionType;
+    }
+
+    private String normalizeAndValidateCode(String code) {
+        String normalized = InspectionTemplateQuestionCode.normalize(code);
+        InspectionTemplateQuestionCode.validateFormat(normalized);
+        return normalized;
+    }
+
+    private void requireUniqueCode(Long templateId, String code) {
+        if (questionRepository.existsByInspectionTemplateIdAndCode(templateId, code)) {
+            throw new ConflictException("Question code already exists for this template");
+        }
     }
 }
