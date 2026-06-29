@@ -93,3 +93,180 @@
 .rule-evaluation-results-table {
   margin-top: 0.5rem;
 }
+
+.inspection-evaluation-block {
+  margin-bottom: 1.5rem;
+}
+
+.suggested-actions-panel {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #f8faf9;
+  border: 1px solid #dce5df;
+  border-radius: 6px;
+}
+
+.suggested-actions-panel h4 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: #1a472a;
+}
+
+.suggested-actions-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.suggested-actions-list li {
+  padding: 0.75rem;
+  background: #fff;
+  border: 1px solid #e0e6e2;
+  border-radius: 4px;
+}
+
+.suggested-action-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: baseline;
+  margin-bottom: 0.5rem;
+}
+
+.suggested-action-status {
+  font-size: 0.8rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.suggested-action-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.5rem 1rem;
+  margin: 0 0 0.5rem;
+}
+
+.suggested-action-details div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.suggested-action-details dt {
+  font-size: 0.75rem;
+  color: #666;
+  font-weight: 600;
+}
+
+.suggested-action-details dd {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.suggested-action-message {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.suggestion-confidence-badge {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: #e8f2ec;
+  color: #1a472a;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.decision-assistant-expand-btn {
+  margin-top: 0.5rem;
+}
+
+.decision-assistant-review {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e0e6e2;
+}
+
+.suggestion-why-panel {
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  background: #fff;
+  border: 1px dashed #c5d4cb;
+  border-radius: 4px;
+}
+
+.suggestion-why-panel h5 {
+  margin: 0 0 0.5rem;
+}
+
+.suggestion-why-panel dl {
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.suggestion-why-panel dt {
+  font-size: 0.75rem;
+  color: #666;
+  font-weight: 600;
+}
+
+.suggestion-why-panel dd {
+  margin: 0;
+}
+
+.decision-assistant-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.decision-assistant-inline-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.decision-assistant-inline-form input {
+  flex: 1;
+}
+
+.decision-assistant-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.decision-assistant-dialog {
+  width: min(520px, 92vw);
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.decision-assistant-dialog label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.decision-assistant-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}

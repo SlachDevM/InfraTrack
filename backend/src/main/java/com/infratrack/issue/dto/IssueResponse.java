@@ -13,6 +13,8 @@ public class IssueResponse {
     private Long assetId;
     private String assetName;
     private Long sourceCompletionReviewId;
+    private Long suggestedActionId;
+    private Long ruleEvaluationReportId;
     private IssueType issueType;
     private String description;
     private IssueSeverity severity;
@@ -33,6 +35,12 @@ public class IssueResponse {
         response.assetName = issue.getAsset().getName();
         response.sourceCompletionReviewId = issue.getSourceCompletionReview() != null
                 ? issue.getSourceCompletionReview().getId()
+                : null;
+        response.suggestedActionId = issue.getSuggestedAction() != null
+                ? issue.getSuggestedAction().getId()
+                : null;
+        response.ruleEvaluationReportId = issue.getRuleEvaluationReport() != null
+                ? issue.getRuleEvaluationReport().getId()
                 : null;
         response.issueType = issue.getIssueType();
         response.description = issue.getDescription();
@@ -66,6 +74,14 @@ public class IssueResponse {
 
     public Long getSourceCompletionReviewId() {
         return sourceCompletionReviewId;
+    }
+
+    public Long getSuggestedActionId() {
+        return suggestedActionId;
+    }
+
+    public Long getRuleEvaluationReportId() {
+        return ruleEvaluationReportId;
     }
 
     public IssueType getIssueType() {

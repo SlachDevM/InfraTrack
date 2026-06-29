@@ -442,7 +442,91 @@ Access requires permission to view the Inspection; cross-department access is re
 
 #### Relationship to future Suggested Actions
 
-Persisted reports in A3.3 form the audit trail that future sprints will use to present **Suggested Actions** to users. Action execution remains out of scope until those sprints.
+Persisted reports in A3.3 form the audit trail that A3.4 uses to generate **Suggested Actions**.
+
+### Sprint A3.4 — Suggested Actions
+
+Sprint A3.4 generates read-only **Suggested Actions** from matched Rule Evaluation Results.
+
+#### Suggested Action concept
+
+A **Suggested Action** is a recommendation produced when a Decision Rule matches during inspection completion. It surfaces what the Rule Engine would suggest — for example, a suggested Issue with severity and message — without creating business records.
+
+Rule evaluation records **what happened**. Suggested actions record **what the system recommends**.
+
+#### Report enhancements
+
+`RuleEvaluationReport` now includes:
+
+- `templateVersionSnapshot` — Inspection Template version at evaluation time;
+- `evaluationStatus` — `SUCCESS`, `PARTIAL`, or `FAILED` (normal completion uses `SUCCESS`).
+
+#### A3.4 scope limitation
+
+**A3.4 generates suggestions only.**
+
+Suggested Actions are created in the same transaction as the evaluation report when matched results exist. Status is `PENDING`. No Issues, Operational Decisions, notifications, Asset History events, or workflow side effects occur. No accept/reject/dismiss endpoints yet.
+
+One matched rule result produces one Suggested Action. Action payload JSON is interpreted tolerantly (`title`, `message`, `severity`); unknown fields are ignored and missing fields use readable fallbacks.
+
+#### Retrieval API
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/inspections/{inspectionId}/suggested-actions` | List suggestions (optional `status`, `actionType` filters) |
+| `GET /api/inspections/{inspectionId}/suggested-actions/{suggestedActionId}` | Suggestion detail |
+
+#### Future sprints
+
+- **A3.5** — Decision Assistant (manager review, explainability, manual Issue creation);
+- **A3.6** — automation (optional execution of accepted suggestions into Operational Decisions).
+
+### Sprint A3.5 — Decision Assistant
+
+Sprint A3.5 transforms **Suggested Actions** into a **Decision Assistant** for Managers.
+
+#### Decision Assistant concept
+
+The Rule Engine **proposes**; the Manager **decides**. Managers can review suggestions, read explainability (why panel), see confidence, and choose to approve, reject, or dismiss. Approval may create an Issue manually — never automatically.
+
+Flow: Suggested Action → Decision Assistant → Manager Decision → (optional) Issue creation.
+
+#### Explainability
+
+Each suggestion exposes a **Why panel** built entirely from persisted Rule Evaluation Result snapshots (matched rule, condition, actual value, configured action). No re-evaluation occurs.
+
+#### Confidence
+
+`SuggestionConfidence` (`LOW`, `MEDIUM`, `HIGH`, `VERY_HIGH`) is calculated deterministically from `matchedRuleCount` at generation time. No AI.
+
+#### Human validation
+
+Managers may:
+
+- **Approve** — edit Issue fields and create an Issue via existing `IssueService` (links to `SuggestedAction` and `RuleEvaluationReport`);
+- **Reject** — business-oriented refusal with optional reason;
+- **Dismiss** — informational dismissal with optional comment.
+
+Only `PENDING` suggestions can be reviewed. Asset History records `SUGGESTED_ACTION_APPROVED` when an Issue is created from approval.
+
+#### A3.5 scope limitation
+
+**A3.5 adds human validation only.**
+
+No automatic Issues, Operational Decisions, notifications, or workflow execution. Existing field-employee `issueIdentified` flow is unchanged.
+
+#### API
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/suggested-actions/{id}` | Detail with explanation and report context |
+| `POST /api/suggested-actions/{id}/approve` | Approve and create Issue |
+| `POST /api/suggested-actions/{id}/reject` | Reject suggestion |
+| `POST /api/suggested-actions/{id}/dismiss` | Dismiss suggestion |
+
+#### Difference between suggestion and automation
+
+Suggestions in A3.4–A3.5 are **decision support**. Automation (A3.6) would execute accepted outcomes — out of scope until then.
 
 ## Future sprints
 
@@ -451,7 +535,7 @@ Planned extensions to the Domain Engine include:
 - structured answers captured during Inspection completion;
 - publish and archive workflow rules;
 - template version cloning;
-- **persisted rule outcomes and suggested actions** after evaluation;
+- **human validation and automation of suggested actions**;
 - analytics and KPI dashboards powered by template-aligned inspection data.
 
 ## Authorization summary

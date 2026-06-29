@@ -85,6 +85,18 @@ export default function RuleEvaluationReportPanel({ inspectionId, assetName }) {
           <dt>Engine version</dt>
           <dd>{report.engineVersion}</dd>
         </div>
+        {report.templateVersionSnapshot != null && (
+          <div>
+            <dt>Template version</dt>
+            <dd>{report.templateVersionSnapshot}</dd>
+          </div>
+        )}
+        {report.evaluationStatus && (
+          <div>
+            <dt>Evaluation status</dt>
+            <dd>{report.evaluationStatus}</dd>
+          </div>
+        )}
         <div>
           <dt>Rules evaluated</dt>
           <dd>{report.resultCount}</dd>

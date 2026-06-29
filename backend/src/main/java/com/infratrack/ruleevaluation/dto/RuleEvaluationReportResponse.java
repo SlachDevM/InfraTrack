@@ -1,6 +1,7 @@
 package com.infratrack.ruleevaluation.dto;
 
 import com.infratrack.ruleevaluation.RuleEvaluationReport;
+import com.infratrack.ruleevaluation.RuleEvaluationStatus;
 
 import java.util.Collections;
 import java.util.List;
@@ -14,6 +15,8 @@ public class RuleEvaluationReportResponse {
     private long evaluationDurationMs;
     private int resultCount;
     private int matchedCount;
+    private Integer templateVersionSnapshot;
+    private RuleEvaluationStatus evaluationStatus;
     private Long createdAt;
     private List<RuleEvaluationResultResponse> results = Collections.emptyList();
 
@@ -30,6 +33,8 @@ public class RuleEvaluationReportResponse {
         response.evaluationDurationMs = report.getEvaluationDurationMs();
         response.resultCount = report.getResultCount();
         response.matchedCount = report.getMatchedCount();
+        response.templateVersionSnapshot = report.getTemplateVersionSnapshot();
+        response.evaluationStatus = report.getEvaluationStatus();
         response.createdAt = report.getCreatedAt();
         if (includeResults) {
             response.results = report.getResults().stream()
@@ -65,6 +70,14 @@ public class RuleEvaluationReportResponse {
 
     public int getMatchedCount() {
         return matchedCount;
+    }
+
+    public Integer getTemplateVersionSnapshot() {
+        return templateVersionSnapshot;
+    }
+
+    public RuleEvaluationStatus getEvaluationStatus() {
+        return evaluationStatus;
     }
 
     public Long getCreatedAt() {

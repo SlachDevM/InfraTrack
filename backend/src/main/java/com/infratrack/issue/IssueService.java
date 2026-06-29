@@ -12,6 +12,8 @@ import com.infratrack.inspection.Inspection;
 import com.infratrack.inspection.InspectionRepository;
 import com.infratrack.inspection.InspectionStatus;
 import com.infratrack.issue.dto.CreateIssueRequest;
+import com.infratrack.suggestedaction.SuggestedAction;
+import com.infratrack.suggestedaction.dto.ApproveSuggestedActionRequest;
 import com.infratrack.issue.dto.IssueResponse;
 import com.infratrack.issue.dto.UpdateIssueCapaRequest;
 import com.infratrack.user.User;
@@ -106,6 +108,88 @@ public class IssueService {
         ));
 
         return IssueResponse.from(issue);
+    }
+
+    @Transactional
+    public IssueResponse recordIssueFromApprovedSuggestion(
+            SuggestedAction suggestedAction,
+            ApproveSuggestedActionRequest request,
+            Long managerUserId) {
+        User manager = requireManager(managerUserId);
+        Inspection inspection = suggestedAction.getInspection();
+        requireManagerAuthorizedForAsset(manager, inspection.getAsset());
+        requireCompletedInspection(inspection);
+        requireNoExistingIssue(inspection.getId());
+
+        String description = buildIssueDescription(request.getTitle(), request.getDescription());
+        IssueSeverity severity = validateSeverity(request.getSeverity());
+        LocalDateTime recordedAt = validateRecordedAt(request.getRecordedAt(), inspection);
+
+        Asset asset = inspection.getAsset();
+        Issue issue = new Issue(
+                inspection,
+                asset,
+                description,
+                severity,
+                manager.getId(),
+                recordedAt
+        );
+        issue.applyCapaMetadata(
+                normalizeOptionalText(request.getRootCause()),
+                normalizeOptionalText(request.getCorrectiveAction()),
+                normalizeOptionalText(request.getPreventiveAction()),
+                null);
+        issue.linkToDecisionAssistant(suggestedAction, suggestedAction.getReport());
+        issue = issueRepository.save(issue);
+
+        assetHistoryEventRepository.save(new AssetHistoryEvent(
+                asset,
+                AssetHistoryEventType.ISSUE_RECORDED,
+                manager.getId(),
+                recordedAt.toLocalDate()
+        ));
+        assetHistoryEventRepository.save(new AssetHistoryEvent(
+                asset,
+                AssetHistoryEventType.SUGGESTED_ACTION_APPROVED,
+                manager.getId(),
+                recordedAt.toLocalDate(),
+                "Suggested action " + suggestedAction.getId() + " approved; issue " + issue.getId() + " created."
+        ));
+
+        return IssueResponse.from(issue);
+    }
+
+    private void requireManagerAuthorizedForAsset(User manager, Asset asset) {
+        Long managerDepartmentId = manager.getDepartment() != null
+                ? manager.getDepartment().getId()
+                : null;
+        Long assetDepartmentId = asset.getDepartment().getId();
+        if (managerDepartmentId == null || !managerDepartmentId.equals(assetDepartmentId)) {
+            throw new ForbiddenOperationException(
+                    "You may only review suggested actions for assets in your own department.");
+        }
+    }
+
+    private void requireCompletedInspection(Inspection inspection) {
+        if (inspection.getStatus() != InspectionStatus.COMPLETED) {
+            throw new BusinessValidationException(
+                    "Issues can only be created from completed inspections");
+        }
+    }
+
+    private static String buildIssueDescription(String title, String description) {
+        String normalizedTitle = title == null ? "" : title.trim();
+        String normalizedDescription = description == null ? "" : description.trim();
+        if (normalizedTitle.isEmpty()) {
+            return normalizedDescription;
+        }
+        if (normalizedDescription.isEmpty()) {
+            return normalizedTitle;
+        }
+        if (normalizedDescription.startsWith(normalizedTitle)) {
+            return normalizedDescription;
+        }
+        return normalizedTitle + "\n\n" + normalizedDescription;
     }
 
     @Transactional

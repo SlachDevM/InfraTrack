@@ -23,6 +23,7 @@ import com.infratrack.inspectiontemplate.InspectionTemplateQuestionType;
 import com.infratrack.inspectiontemplate.InspectionTemplateStatus;
 import com.infratrack.inspectiontemplate.dto.DecisionRuleEvaluationResult;
 import com.infratrack.ruleevaluation.dto.RuleEvaluationReportResponse;
+import com.infratrack.suggestedaction.SuggestedActionGenerationService;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
@@ -65,6 +66,9 @@ class RuleEvaluationReportServiceTest {
     @Mock
     private UserService userService;
 
+    @Mock
+    private SuggestedActionGenerationService suggestedActionGenerationService;
+
     private RuleEvaluationReportService reportService;
 
     @BeforeEach
@@ -75,7 +79,8 @@ class RuleEvaluationReportServiceTest {
                 reportRepository,
                 decisionRuleEvaluationService,
                 authorizationService,
-                userService);
+                userService,
+                suggestedActionGenerationService);
     }
 
     @Test
@@ -120,7 +125,31 @@ class RuleEvaluationReportServiceTest {
         assertThat(report.getResultCount()).isZero();
         assertThat(report.getMatchedCount()).isZero();
         assertThat(report.getEngineVersion()).isEqualTo(RuleEngineVersion.CURRENT);
+        assertThat(report.getTemplateVersionSnapshot()).isEqualTo(1);
+        assertThat(report.getEvaluationStatus()).isEqualTo(RuleEvaluationStatus.SUCCESS);
         assertThat(report.getResults()).isEmpty();
+        verify(suggestedActionGenerationService).generateFromReport(report);
+    }
+
+    @Test
+    void createReportIfApplicable_shouldGenerateSuggestedActionsAfterReportSaved() {
+        Inspection inspection = templatedInspection();
+        InspectionAnswer answer = numberAnswer(inspection);
+        DecisionRuleEvaluationResult evaluationResult = evaluationResult(true);
+        when(inspectionRepository.findWithEvaluationContextById(100L)).thenReturn(Optional.of(inspection));
+        when(answerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenReturn(List.of(answer));
+        when(decisionRuleEvaluationService.evaluateLoadedInspection(inspection, List.of(answer)))
+                .thenReturn(List.of(evaluationResult));
+        when(reportRepository.save(any(RuleEvaluationReport.class))).thenAnswer(invocation -> {
+            RuleEvaluationReport saved = invocation.getArgument(0);
+            saved.setId(10L);
+            return saved;
+        });
+
+        RuleEvaluationReport report = reportService.createReportIfApplicable(100L);
+
+        verify(suggestedActionGenerationService).generateFromReport(report);
     }
 
     @Test

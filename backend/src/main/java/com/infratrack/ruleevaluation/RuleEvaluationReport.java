@@ -33,6 +33,13 @@ public class RuleEvaluationReport {
     @Column(name = "matched_count", nullable = false)
     private int matchedCount;
 
+    @Column(name = "template_version_snapshot")
+    private Integer templateVersionSnapshot;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "evaluation_status", nullable = false, length = 50)
+    private RuleEvaluationStatus evaluationStatus = RuleEvaluationStatus.SUCCESS;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Long createdAt;
 
@@ -55,6 +62,7 @@ public class RuleEvaluationReport {
         this.evaluationDurationMs = evaluationDurationMs;
         this.resultCount = resultCount;
         this.matchedCount = matchedCount;
+        this.evaluationStatus = RuleEvaluationStatus.SUCCESS;
         this.createdAt = System.currentTimeMillis();
     }
 
@@ -88,6 +96,22 @@ public class RuleEvaluationReport {
 
     public int getMatchedCount() {
         return matchedCount;
+    }
+
+    public Integer getTemplateVersionSnapshot() {
+        return templateVersionSnapshot;
+    }
+
+    public void setTemplateVersionSnapshot(Integer templateVersionSnapshot) {
+        this.templateVersionSnapshot = templateVersionSnapshot;
+    }
+
+    public RuleEvaluationStatus getEvaluationStatus() {
+        return evaluationStatus;
+    }
+
+    public void setEvaluationStatus(RuleEvaluationStatus evaluationStatus) {
+        this.evaluationStatus = evaluationStatus;
     }
 
     public Long getCreatedAt() {

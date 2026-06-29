@@ -69,6 +69,10 @@ export function canMakeOperationalDecisions(role) {
   return role === USER_ROLES.MANAGER;
 }
 
+export function canReviewSuggestedActions(role) {
+  return role === USER_ROLES.MANAGER;
+}
+
 export function canManageDelegatedAuthority(role) {
   return role === USER_ROLES.MANAGER;
 }

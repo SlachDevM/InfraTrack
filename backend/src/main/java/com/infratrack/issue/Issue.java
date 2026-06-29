@@ -3,6 +3,8 @@ package com.infratrack.issue;
 import com.infratrack.asset.Asset;
 import com.infratrack.completionreview.CompletionReview;
 import com.infratrack.inspection.Inspection;
+import com.infratrack.ruleevaluation.RuleEvaluationReport;
+import com.infratrack.suggestedaction.SuggestedAction;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -30,6 +32,14 @@ public class Issue {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "source_completion_review_id", unique = true)
     private CompletionReview sourceCompletionReview;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "suggested_action_id")
+    private SuggestedAction suggestedAction;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "rule_evaluation_report_id")
+    private RuleEvaluationReport ruleEvaluationReport;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "issue_type", nullable = false)
@@ -132,6 +142,12 @@ public class Issue {
         this.updatedAt = System.currentTimeMillis();
     }
 
+    public void linkToDecisionAssistant(SuggestedAction suggestedAction, RuleEvaluationReport report) {
+        this.suggestedAction = suggestedAction;
+        this.ruleEvaluationReport = report;
+        this.updatedAt = System.currentTimeMillis();
+    }
+
     public Long getId() {
         return id;
     }
@@ -150,6 +166,14 @@ public class Issue {
 
     public CompletionReview getSourceCompletionReview() {
         return sourceCompletionReview;
+    }
+
+    public SuggestedAction getSuggestedAction() {
+        return suggestedAction;
+    }
+
+    public RuleEvaluationReport getRuleEvaluationReport() {
+        return ruleEvaluationReport;
     }
 
     public IssueType getIssueType() {

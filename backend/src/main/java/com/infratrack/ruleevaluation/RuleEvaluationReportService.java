@@ -10,6 +10,7 @@ import com.infratrack.inspectiontemplate.DecisionRuleEvaluationService;
 import com.infratrack.inspectiontemplate.dto.DecisionRuleEvaluationResult;
 import com.infratrack.ruleevaluation.dto.RuleEvaluationReportResponse;
 import com.infratrack.ruleevaluation.dto.RuleEvaluationReportSummaryResponse;
+import com.infratrack.suggestedaction.SuggestedActionGenerationService;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ public class RuleEvaluationReportService {
     private final DecisionRuleEvaluationService decisionRuleEvaluationService;
     private final InspectionAuthorizationService authorizationService;
     private final UserService userService;
+    private final SuggestedActionGenerationService suggestedActionGenerationService;
 
     public RuleEvaluationReportService(
             InspectionRepository inspectionRepository,
@@ -36,13 +38,15 @@ public class RuleEvaluationReportService {
             RuleEvaluationReportRepository reportRepository,
             DecisionRuleEvaluationService decisionRuleEvaluationService,
             InspectionAuthorizationService authorizationService,
-            UserService userService) {
+            UserService userService,
+            SuggestedActionGenerationService suggestedActionGenerationService) {
         this.inspectionRepository = inspectionRepository;
         this.answerRepository = answerRepository;
         this.reportRepository = reportRepository;
         this.decisionRuleEvaluationService = decisionRuleEvaluationService;
         this.authorizationService = authorizationService;
         this.userService = userService;
+        this.suggestedActionGenerationService = suggestedActionGenerationService;
     }
 
     /**
@@ -82,12 +86,16 @@ public class RuleEvaluationReportService {
                 evaluationResults.size(),
                 matchedCount
         );
+        report.setTemplateVersionSnapshot(inspection.getInspectionTemplate().getVersion());
+        report.setEvaluationStatus(RuleEvaluationStatus.SUCCESS);
 
         for (DecisionRuleEvaluationResult evaluationResult : evaluationResults) {
             report.addResult(toPersistedResult(evaluationResult));
         }
 
-        return reportRepository.save(report);
+        report = reportRepository.save(report);
+        suggestedActionGenerationService.generateFromReport(report);
+        return report;
     }
 
     @Transactional(readOnly = true)

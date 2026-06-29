@@ -2,6 +2,7 @@ import { getBusinessTriggerTypeLabel } from '../../constants/businessTriggerType
 import { getInspectionPriorityLabel } from '../../constants/inspectionPriorities';
 import { getPhysicalConditionLabel } from '../../constants/physicalConditions';
 import RuleEvaluationReportPanel from './RuleEvaluationReportPanel';
+import DecisionAssistantPanel from './DecisionAssistantPanel';
 
 export default function InspectionList({ inspections }) {
   const completedTemplatedInspections = inspections.filter(
@@ -67,11 +68,13 @@ export default function InspectionList({ inspections }) {
         <div className="rule-evaluation-reports-section">
           <h2>Rule Evaluation Reports</h2>
           {completedTemplatedInspections.map((inspection) => (
-            <RuleEvaluationReportPanel
-              key={inspection.id}
-              inspectionId={inspection.id}
-              assetName={inspection.assetName}
-            />
+            <div key={inspection.id} className="inspection-evaluation-block">
+              <RuleEvaluationReportPanel
+                inspectionId={inspection.id}
+                assetName={inspection.assetName}
+              />
+              <DecisionAssistantPanel inspectionId={inspection.id} />
+            </div>
           ))}
         </div>
       )}
