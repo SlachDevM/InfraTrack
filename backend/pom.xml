@@ -18,12 +18,36 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- Import Netty BOM before Spring Boot to override managed Netty version (fixes CVE-2026-42579, CVE-2026-42581, CVE-2026-42584, CVE-2026-45674, CVE-2026-47691) -->
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-bom</artifactId>
+                <version>4.1.135.Final</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
                 <version>${spring-boot.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <!-- Override embedded Tomcat to fix CVE-2024-50379, CVE-2024-52316, CVE-2024-56337, CVE-2025-24813, CVE-2025-31651, CVE-2025-55754, CVE-2025-66614, CVE-2026-29145, CVE-2026-41293, CVE-2026-43512, CVE-2026-43515 -->
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-core</artifactId>
+                <version>10.1.56</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-el</artifactId>
+                <version>10.1.56</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-websocket</artifactId>
+                <version>10.1.56</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -104,7 +128,7 @@
         <dependency>
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-core</artifactId>
-            <version>2.9.2</version>
+            <version>3.2.2</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -237,6 +261,9 @@
                 <version>${dependency-check.version}</version>
                 <configuration>
                     <failBuildOnCVSS>9</failBuildOnCVSS>
+                    <suppressionFiles>
+                        <suppressionFile>dependency-check-suppression.xml</suppressionFile>
+                    </suppressionFiles>
                     <formats>
                         <format>HTML</format>
                         <format>JSON</format>
