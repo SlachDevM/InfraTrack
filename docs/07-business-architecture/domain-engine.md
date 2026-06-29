@@ -118,6 +118,37 @@ The existing Inspection workflow is unchanged.
 
 When Inspection execution integrates with templates, each assigned Inspection will capture **Inspection Answers** aligned to the template's active questions at assignment time. Answers will reference the question definition for reporting and audit.
 
+## Sprint A2.2.1 — Question Business Codes
+
+Each checklist question owns a stable **business code** that survives display text changes.
+
+### Business Code vs Display Text
+
+| Property | Purpose |
+|----------|---------|
+| **Business Code** | Stable identifier for integrations (`VIBRATION`, `LEAK`, `SAFETY_GUARD_PRESENT`) |
+| **Display Text** | Human-readable wording shown to inspectors; may evolve over time |
+
+Display text must never become the business identifier.
+
+### Code rules
+
+- Required on creation
+- Uppercase snake_case: `^[A-Z][A-Z0-9_]*$`
+- Unique within an inspection template (duplicate returns HTTP 409)
+- Immutable after creation
+- Existing questions backfilled automatically from question text during migration
+
+### Future consumers
+
+Stable business codes prepare future integrations without changing current checklist behaviour:
+
+- Android field inspection clients
+- Decision Matrix rules
+- Analytics and reporting
+- AI-assisted knowledge retrieval
+- Knowledge Base linking
+
 ## Future sprints
 
 Planned extensions to the Domain Engine include:

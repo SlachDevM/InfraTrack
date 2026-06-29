@@ -4,6 +4,7 @@ import com.infratrack.inspectiontemplate.InspectionTemplateQuestionType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
@@ -12,6 +13,12 @@ public class CreateInspectionTemplateQuestionRequest {
     @NotBlank
     @Size(max = 2000)
     private String questionText;
+
+    @NotBlank
+    @Size(max = 100)
+    @Pattern(regexp = "^[A-Z][A-Z0-9_]*$")
+    @Schema(description = "Stable business code, unique within the template")
+    private String code;
 
     @Size(max = 4000)
     private String helpText;
@@ -32,6 +39,14 @@ public class CreateInspectionTemplateQuestionRequest {
 
     public void setQuestionText(String questionText) {
         this.questionText = questionText;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
     }
 
     public String getHelpText() {

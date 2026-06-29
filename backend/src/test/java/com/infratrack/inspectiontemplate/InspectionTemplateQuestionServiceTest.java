@@ -37,6 +37,7 @@ class InspectionTemplateQuestionServiceTest {
         InspectionTemplate template = template(100L, InspectionTemplateStatus.DRAFT);
         when(inspectionTemplateRepository.findDetailedById(100L)).thenReturn(Optional.of(template));
         when(questionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(100L)).thenReturn(List.of());
+        when(questionRepository.existsByInspectionTemplateIdAndCode(100L, "VISIBLE_LEAK")).thenReturn(false);
         when(questionRepository.save(any(InspectionTemplateQuestion.class))).thenAnswer(invocation -> {
             InspectionTemplateQuestion question = invocation.getArgument(0);
             question.setId(1L);
@@ -48,6 +49,7 @@ class InspectionTemplateQuestionServiceTest {
 
         assertThat(response.getId()).isEqualTo(1L);
         assertThat(response.getQuestionText()).isEqualTo("Is there any visible leak?");
+        assertThat(response.getCode()).isEqualTo("VISIBLE_LEAK");
         assertThat(response.getQuestionType()).isEqualTo(InspectionTemplateQuestionType.BOOLEAN);
         assertThat(response.isRequired()).isFalse();
         assertThat(response.getDisplayOrder()).isEqualTo(1);
@@ -229,6 +231,33 @@ class InspectionTemplateQuestionServiceTest {
     }
 
     @Test
+    void create_shouldRejectInvalidCode() {
+        when(inspectionTemplateRepository.findDetailedById(100L))
+                .thenReturn(Optional.of(template(100L, InspectionTemplateStatus.DRAFT)));
+
+        CreateInspectionTemplateQuestionRequest request = createRequest();
+        request.setCode("invalid-code");
+
+        assertThatThrownBy(() -> questionService.create(100L, request))
+                .isInstanceOf(BusinessValidationException.class);
+
+        verify(questionRepository, never()).save(any());
+    }
+
+    @Test
+    void create_shouldRejectDuplicateCodeWithinTemplate() {
+        when(inspectionTemplateRepository.findDetailedById(100L))
+                .thenReturn(Optional.of(template(100L, InspectionTemplateStatus.DRAFT)));
+        when(questionRepository.existsByInspectionTemplateIdAndCode(100L, "VISIBLE_LEAK")).thenReturn(true);
+
+        assertThatThrownBy(() -> questionService.create(100L, createRequest()))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Question code already exists for this template");
+
+        verify(questionRepository, never()).save(any());
+    }
+
+    @Test
     void getByTemplate_shouldRejectMissingTemplate() {
         when(inspectionTemplateRepository.findDetailedById(999L)).thenReturn(Optional.empty());
 
@@ -240,6 +269,7 @@ class InspectionTemplateQuestionServiceTest {
     private CreateInspectionTemplateQuestionRequest createRequest() {
         CreateInspectionTemplateQuestionRequest request = new CreateInspectionTemplateQuestionRequest();
         request.setQuestionText("Is there any visible leak?");
+        request.setCode("VISIBLE_LEAK");
         request.setQuestionType(InspectionTemplateQuestionType.BOOLEAN);
         return request;
     }
@@ -260,6 +290,7 @@ class InspectionTemplateQuestionServiceTest {
         InspectionTemplateQuestion question = new InspectionTemplateQuestion(
                 template(100L, InspectionTemplateStatus.DRAFT),
                 "Sample question",
+                "SAMPLE_QUESTION",
                 null,
                 InspectionTemplateQuestionType.BOOLEAN,
                 false,

@@ -3,7 +3,13 @@ package com.infratrack.inspectiontemplate;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "inspection_template_questions")
+@Table(
+        name = "inspection_template_questions",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_inspection_template_questions_template_code",
+                columnNames = {"inspection_template_id", "code"}
+        )
+)
 public class InspectionTemplateQuestion {
 
     @Id
@@ -16,6 +22,9 @@ public class InspectionTemplateQuestion {
 
     @Column(name = "question_text", nullable = false, length = 2000)
     private String questionText;
+
+    @Column(nullable = false, length = 100)
+    private String code;
 
     @Column(name = "help_text", length = 4000)
     private String helpText;
@@ -45,12 +54,14 @@ public class InspectionTemplateQuestion {
     public InspectionTemplateQuestion(
             InspectionTemplate inspectionTemplate,
             String questionText,
+            String code,
             String helpText,
             InspectionTemplateQuestionType questionType,
             boolean required,
             Integer displayOrder) {
         this.inspectionTemplate = inspectionTemplate;
         this.questionText = questionText;
+        this.code = code;
         this.helpText = helpText;
         this.questionType = questionType;
         this.required = required;
@@ -79,6 +90,10 @@ public class InspectionTemplateQuestion {
 
     public void setQuestionText(String questionText) {
         this.questionText = questionText;
+    }
+
+    public String getCode() {
+        return code;
     }
 
     public String getHelpText() {

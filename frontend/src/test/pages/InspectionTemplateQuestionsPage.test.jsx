@@ -72,6 +72,7 @@ const questions = [
   {
     id: 1,
     inspectionTemplateId: 100,
+    code: 'VISIBLE_LEAK',
     questionText: 'Is there any visible leak?',
     helpText: null,
     questionType: 'BOOLEAN',
@@ -82,6 +83,7 @@ const questions = [
   {
     id: 2,
     inspectionTemplateId: 100,
+    code: 'DESCRIBE_VIBRATION',
     questionText: 'Describe vibration',
     helpText: 'Optional detail',
     questionType: 'TEXT',
@@ -119,14 +121,59 @@ describe('InspectionTemplateQuestionsPage', () => {
     renderPage();
 
     expect(await screen.findByText('Is there any visible leak?')).toBeInTheDocument();
+    expect(screen.getByText('VISIBLE_LEAK')).toBeInTheDocument();
     expect(screen.getByText('Describe vibration')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Create Question' })).toBeInTheDocument();
+  });
+
+  it('suggests code automatically when creating a question', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText('Is there any visible leak?');
+    await user.type(screen.getByLabelText('Question Text'), 'Is abnormal vibration present?');
+
+    expect(screen.getByLabelText('Question Code')).toHaveValue('IS_ABNORMAL_VIBRATION_PRESENT');
+  });
+
+  it('allows administrator to edit suggested code before save', async () => {
+    const user = userEvent.setup();
+    inspectionTemplateQuestionApi.create.mockResolvedValue({
+      id: 3,
+      code: 'VIBRATION',
+      questionText: 'Is abnormal vibration present?',
+      questionType: 'BOOLEAN',
+      required: false,
+      displayOrder: 3,
+      active: true,
+    });
+    inspectionTemplateQuestionApi.list.mockResolvedValueOnce(questions).mockResolvedValueOnce(questions);
+
+    renderPage();
+    await screen.findByText('Is there any visible leak?');
+    await user.type(screen.getByLabelText('Question Text'), 'Is abnormal vibration present?');
+
+    const codeInput = screen.getByLabelText('Question Code');
+    await user.clear(codeInput);
+    await user.type(codeInput, 'VIBRATION');
+    await user.click(screen.getByRole('button', { name: 'Create Question' }));
+
+    await waitFor(() => {
+      expect(inspectionTemplateQuestionApi.create).toHaveBeenCalledWith('100', {
+        code: 'VIBRATION',
+        questionText: 'Is abnormal vibration present?',
+        helpText: undefined,
+        questionType: 'BOOLEAN',
+        required: false,
+      });
+    });
   });
 
   it('admin can create question', async () => {
     const user = userEvent.setup();
     inspectionTemplateQuestionApi.create.mockResolvedValue({
       id: 3,
+      code: 'IS_CORROSION_VISIBLE',
       questionText: 'Is corrosion visible?',
       questionType: 'BOOLEAN',
       required: false,
@@ -137,6 +184,7 @@ describe('InspectionTemplateQuestionsPage', () => {
       ...questions,
       {
         id: 3,
+        code: 'IS_CORROSION_VISIBLE',
         questionText: 'Is corrosion visible?',
         questionType: 'BOOLEAN',
         required: false,
@@ -153,12 +201,38 @@ describe('InspectionTemplateQuestionsPage', () => {
 
     await waitFor(() => {
       expect(inspectionTemplateQuestionApi.create).toHaveBeenCalledWith('100', {
+        code: 'IS_CORROSION_VISIBLE',
         questionText: 'Is corrosion visible?',
         helpText: undefined,
         questionType: 'BOOLEAN',
         required: false,
       });
     });
+  });
+
+  it('shows code as read-only when editing', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Is there any visible leak?');
+    await user.click(screen.getAllByRole('button', { name: 'Edit' })[0]);
+
+    const codeInput = screen.getByLabelText('Question Code');
+    expect(codeInput).toHaveValue('VISIBLE_LEAK');
+    expect(codeInput).toBeDisabled();
+  });
+
+  it('rejects invalid code before submit', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Is there any visible leak?');
+    await user.type(screen.getByLabelText('Question Text'), 'Bad code example');
+    const codeInput = screen.getByLabelText('Question Code');
+    await user.clear(codeInput);
+    await user.type(codeInput, 'bad-code');
+    await user.click(screen.getByRole('button', { name: 'Create Question' }));
+
+    expect(await screen.findByText(/Question code must be uppercase/i)).toBeInTheDocument();
+    expect(inspectionTemplateQuestionApi.create).not.toHaveBeenCalled();
   });
 
   it('admin can edit question', async () => {
