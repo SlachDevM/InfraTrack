@@ -5,6 +5,7 @@ import apiClient from '../services/apiClient';
 import inspectionTemplateApi from '../services/inspectionTemplateApi';
 import inspectionTemplateQuestionApi from '../services/inspectionTemplateQuestionApi';
 import inspectionTemplateQuestionChoiceApi from '../services/inspectionTemplateQuestionChoiceApi';
+import inspectionTemplateQuestionRuleApi from '../services/inspectionTemplateQuestionRuleApi';
 import unitOfMeasureApi from '../services/unitOfMeasureApi';
 import NotificationButton from '../components/NotificationButton';
 import {
@@ -18,6 +19,17 @@ import {
 import { getInspectionTemplateStatusLabel } from '../constants/inspectionTemplateStatuses';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
 import { isValidQuestionCode, suggestQuestionCode } from '../utils/suggestQuestionCode';
+import {
+  DECISION_RULE_ACTION_TYPES,
+  RULE_SUPPORTED_QUESTION_TYPES,
+  comparisonValueRequired,
+  conditionTypeForQuestionType,
+  getActionTypeLabel,
+  getOperatorLabel,
+  getOperatorsForConditionType,
+  validateActionPayloadJson,
+} from '../constants/decisionRules';
+import { getActiveChoices } from '../utils/inspectionAnswers';
 import '../styles/ReferenceDataPage.css';
 
 const EMPTY_FORM = {
@@ -35,6 +47,17 @@ const EMPTY_FORM = {
 const EMPTY_CHOICE_FORM = {
   code: '',
   label: '',
+};
+
+const EMPTY_RULE_FORM = {
+  ruleCode: '',
+  ruleName: '',
+  description: '',
+  conditionType: 'NUMBER',
+  operator: 'GREATER_THAN',
+  comparisonValue: '',
+  actionType: 'SUGGEST_ISSUE',
+  actionPayload: '',
 };
 
 function isDraftTemplate(template) {
@@ -60,6 +83,12 @@ export default function InspectionTemplateQuestionsPage() {
   const [editingChoiceId, setEditingChoiceId] = useState(null);
   const [choiceSubmitting, setChoiceSubmitting] = useState(false);
   const [unitsOfMeasure, setUnitsOfMeasure] = useState([]);
+  const [managingRulesQuestionId, setManagingRulesQuestionId] = useState(null);
+  const [rules, setRules] = useState([]);
+  const [ruleForm, setRuleForm] = useState(EMPTY_RULE_FORM);
+  const [editingRuleId, setEditingRuleId] = useState(null);
+  const [ruleSubmitting, setRuleSubmitting] = useState(false);
+  const [rulePayloadError, setRulePayloadError] = useState(null);
 
   const canView = canViewInspectionTemplates(auth?.user?.role);
   const canManage = canManageInspectionTemplates(auth?.user?.role);
@@ -348,6 +377,180 @@ export default function InspectionTemplateQuestionsPage() {
     }
   };
 
+  const defaultRuleFormForQuestion = (question) => {
+    const conditionType = conditionTypeForQuestionType(question.questionType);
+    const operators = getOperatorsForConditionType(conditionType);
+    return {
+      ...EMPTY_RULE_FORM,
+      conditionType,
+      operator: operators[0]?.value || 'EQUALS',
+      comparisonValue: '',
+    };
+  };
+
+  const loadRulesForQuestion = async (questionId) => {
+    const ruleList = await inspectionTemplateQuestionRuleApi.list(templateId, questionId);
+    setRules(Array.isArray(ruleList) ? ruleList : []);
+  };
+
+  const handleManageRules = async (question) => {
+    if (!canView || !RULE_SUPPORTED_QUESTION_TYPES.has(question.questionType)) return;
+    setManagingRulesQuestionId(question.id);
+    setManagingChoicesQuestionId(null);
+    setRuleForm(defaultRuleFormForQuestion(question));
+    setEditingRuleId(null);
+    setRulePayloadError(null);
+    try {
+      setError(null);
+      await loadRulesForQuestion(question.id);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Failed to load decision rules.'));
+      setRules([]);
+    }
+  };
+
+  const handleCloseRules = () => {
+    setManagingRulesQuestionId(null);
+    setRules([]);
+    setRuleForm(EMPTY_RULE_FORM);
+    setEditingRuleId(null);
+    setRulePayloadError(null);
+  };
+
+  const handleRuleFormChange = (event) => {
+    const { name, value } = event.target;
+    setRuleForm((prev) => {
+      const next = { ...prev, [name]: value };
+      if (name === 'conditionType') {
+        const operators = getOperatorsForConditionType(value);
+        if (!operators.some((option) => option.value === next.operator)) {
+          next.operator = operators[0]?.value || '';
+        }
+        if (!comparisonValueRequired(value)) {
+          next.comparisonValue = '';
+        }
+      }
+      if (name === 'actionPayload') {
+        setRulePayloadError(validateActionPayloadJson(value));
+      }
+      return next;
+    });
+  };
+
+  const handleRuleSubmit = async (event) => {
+    event.preventDefault();
+    if (!canMutate || managingRulesQuestionId == null) return;
+
+    const normalizedCode = ruleForm.ruleCode.trim().toUpperCase();
+    if (!editingRuleId && !isValidQuestionCode(normalizedCode)) {
+      setError(
+        'Rule code must be uppercase, start with a letter, and contain only letters, digits, and underscores.'
+      );
+      return;
+    }
+
+    const payloadError = validateActionPayloadJson(ruleForm.actionPayload);
+    if (payloadError) {
+      setRulePayloadError(payloadError);
+      setError(payloadError);
+      return;
+    }
+
+    const payload = {
+      ruleName: ruleForm.ruleName.trim(),
+      description: ruleForm.description.trim() || undefined,
+      conditionType: ruleForm.conditionType,
+      operator: ruleForm.operator,
+      actionType: ruleForm.actionType,
+      actionPayload: ruleForm.actionPayload.trim() || undefined,
+    };
+    if (comparisonValueRequired(ruleForm.conditionType)) {
+      payload.comparisonValue = ruleForm.comparisonValue.trim();
+    }
+
+    try {
+      setRuleSubmitting(true);
+      setError(null);
+      setSuccess(null);
+      if (editingRuleId) {
+        await inspectionTemplateQuestionRuleApi.update(
+          templateId,
+          managingRulesQuestionId,
+          editingRuleId,
+          payload
+        );
+        setSuccess('Decision rule updated successfully.');
+      } else {
+        await inspectionTemplateQuestionRuleApi.create(templateId, managingRulesQuestionId, {
+          ...payload,
+          ruleCode: normalizedCode,
+        });
+        setSuccess('Decision rule created successfully.');
+      }
+      const managingQuestion = questions.find((item) => item.id === managingRulesQuestionId);
+      setRuleForm(managingQuestion ? defaultRuleFormForQuestion(managingQuestion) : EMPTY_RULE_FORM);
+      setEditingRuleId(null);
+      setRulePayloadError(null);
+      await loadRulesForQuestion(managingRulesQuestionId);
+    } catch (err) {
+      if (isForbidden(err)) {
+        setError('You do not have permission to manage decision rules.');
+      } else {
+        setError(getApiErrorMessage(err, 'Failed to save decision rule.'));
+      }
+    } finally {
+      setRuleSubmitting(false);
+    }
+  };
+
+  const handleEditRule = (rule) => {
+    if (!canMutate) return;
+    setEditingRuleId(rule.id);
+    setRuleForm({
+      ruleCode: rule.ruleCode,
+      ruleName: rule.ruleName,
+      description: rule.description || '',
+      conditionType: rule.conditionType,
+      operator: rule.operator,
+      comparisonValue: rule.comparisonValue || '',
+      actionType: rule.actionType,
+      actionPayload: rule.actionPayload || '',
+    });
+    setRulePayloadError(validateActionPayloadJson(rule.actionPayload || ''));
+  };
+
+  const handleDeactivateRule = async (ruleId) => {
+    if (!canMutate || managingRulesQuestionId == null) return;
+    if (!window.confirm('Deactivate this decision rule?')) return;
+
+    try {
+      setError(null);
+      setSuccess(null);
+      await inspectionTemplateQuestionRuleApi.deactivate(
+        templateId,
+        managingRulesQuestionId,
+        ruleId
+      );
+      setSuccess('Decision rule deactivated successfully.');
+      if (editingRuleId === ruleId) {
+        setEditingRuleId(null);
+        const managingQuestion = questions.find((item) => item.id === managingRulesQuestionId);
+        setRuleForm(managingQuestion ? defaultRuleFormForQuestion(managingQuestion) : EMPTY_RULE_FORM);
+        setRulePayloadError(null);
+      }
+      await loadRulesForQuestion(managingRulesQuestionId);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Failed to deactivate decision rule.'));
+    }
+  };
+
+  const managingRulesQuestion = questions.find((item) => item.id === managingRulesQuestionId);
+  const ruleOperatorOptions = getOperatorsForConditionType(ruleForm.conditionType);
+  const showComparisonValue = comparisonValueRequired(ruleForm.conditionType);
+  const ruleChoiceOptions = managingRulesQuestion
+    ? getActiveChoices(managingRulesQuestion)
+    : [];
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -582,7 +785,7 @@ export default function InspectionTemplateQuestionsPage() {
                   <th>Type</th>
                   <th>Required</th>
                   <th>Status</th>
-                  {canMutate && <th>Actions</th>}
+                  {(canMutate || canView) && <th>Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -612,9 +815,9 @@ export default function InspectionTemplateQuestionsPage() {
                     <td>{getInspectionTemplateQuestionTypeLabel(question.questionType)}</td>
                     <td>{question.required ? 'Yes' : 'No'}</td>
                     <td>{question.active ? 'Active' : 'Inactive'}</td>
-                    {canMutate && (
+                    {(canMutate || canView) && (
                       <td>
-                        {question.active ? (
+                        {canMutate && question.active ? (
                           <>
                             <button
                               type="button"
@@ -664,9 +867,33 @@ export default function InspectionTemplateQuestionsPage() {
                                 </button>
                               </>
                             )}
+                            {RULE_SUPPORTED_QUESTION_TYPES.has(question.questionType) && (
+                              <>
+                                {' '}
+                                <button
+                                  type="button"
+                                  className="btn-link"
+                                  onClick={() => handleManageRules(question)}
+                                >
+                                  Manage Rules
+                                </button>
+                              </>
+                            )}
                           </>
                         ) : (
-                          '-'
+                          <>
+                            {RULE_SUPPORTED_QUESTION_TYPES.has(question.questionType) ? (
+                              <button
+                                type="button"
+                                className="btn-link"
+                                onClick={() => handleManageRules(question)}
+                              >
+                                Manage Rules
+                              </button>
+                            ) : (
+                              '-'
+                            )}
+                          </>
                         )}
                       </td>
                     )}
@@ -801,6 +1028,256 @@ export default function InspectionTemplateQuestionsPage() {
                       </td>
                     </tr>
                   ))}
+              </tbody>
+            </table>
+          </section>
+        )}
+
+        {managingRulesQuestionId != null && (
+          <section className="reference-form-section">
+            <h2>
+              Manage Decision Rules —
+              {' '}
+              {managingRulesQuestion?.code}
+            </h2>
+            {!canMutate && (
+              <p className="read-only-note">
+                Decision rules are read-only. Administrators can create, edit, and deactivate rules on draft templates.
+              </p>
+            )}
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={handleCloseRules}
+            >
+              Close
+            </button>
+            {canMutate && (
+              <form className="reference-form" onSubmit={handleRuleSubmit}>
+                <div className="form-row">
+                  <label htmlFor="ruleCode">Rule Code</label>
+                  <input
+                    id="ruleCode"
+                    name="ruleCode"
+                    type="text"
+                    value={ruleForm.ruleCode}
+                    onChange={handleRuleFormChange}
+                    required={!editingRuleId}
+                    disabled={ruleSubmitting || Boolean(editingRuleId)}
+                    readOnly={Boolean(editingRuleId)}
+                  />
+                  {editingRuleId && (
+                    <p className="field-hint">
+                      Rule codes are read-only after creation.
+                    </p>
+                  )}
+                </div>
+                <div className="form-row">
+                  <label htmlFor="ruleName">Rule Name</label>
+                  <input
+                    id="ruleName"
+                    name="ruleName"
+                    type="text"
+                    value={ruleForm.ruleName}
+                    onChange={handleRuleFormChange}
+                    required
+                    disabled={ruleSubmitting}
+                  />
+                </div>
+                <div className="form-row">
+                  <label htmlFor="ruleDescription">Description</label>
+                  <textarea
+                    id="ruleDescription"
+                    name="description"
+                    value={ruleForm.description}
+                    onChange={handleRuleFormChange}
+                    disabled={ruleSubmitting}
+                    rows={2}
+                  />
+                </div>
+                <div className="form-row">
+                  <label htmlFor="conditionType">Condition Type</label>
+                  <input
+                    id="conditionType"
+                    type="text"
+                    value={ruleForm.conditionType}
+                    readOnly
+                    disabled
+                  />
+                  <p className="field-hint">
+                    Condition type matches the question type and cannot be changed separately.
+                  </p>
+                </div>
+                <div className="form-row">
+                  <label htmlFor="operator">Operator</label>
+                  <select
+                    id="operator"
+                    name="operator"
+                    value={ruleForm.operator}
+                    onChange={handleRuleFormChange}
+                    required
+                    disabled={ruleSubmitting}
+                  >
+                    {ruleOperatorOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {showComparisonValue && (
+                  <div className="form-row">
+                    <label htmlFor="comparisonValue">Comparison Value</label>
+                    {ruleForm.conditionType === 'CHOICE' ? (
+                      <select
+                        id="comparisonValue"
+                        name="comparisonValue"
+                        value={ruleForm.comparisonValue}
+                        onChange={handleRuleFormChange}
+                        required
+                        disabled={ruleSubmitting}
+                      >
+                        <option value="">Select choice code</option>
+                        {ruleChoiceOptions.map((choice) => (
+                          <option key={choice.id} value={choice.code}>
+                            {choice.code}
+                            {' — '}
+                            {choice.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        id="comparisonValue"
+                        name="comparisonValue"
+                        type={ruleForm.conditionType === 'NUMBER' ? 'number' : 'text'}
+                        step={ruleForm.conditionType === 'NUMBER' ? 'any' : undefined}
+                        value={ruleForm.comparisonValue}
+                        onChange={handleRuleFormChange}
+                        required
+                        disabled={ruleSubmitting}
+                      />
+                    )}
+                  </div>
+                )}
+                <div className="form-row">
+                  <label htmlFor="actionType">Action Type</label>
+                  <select
+                    id="actionType"
+                    name="actionType"
+                    value={ruleForm.actionType}
+                    onChange={handleRuleFormChange}
+                    required
+                    disabled={ruleSubmitting}
+                  >
+                    {DECISION_RULE_ACTION_TYPES.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-row">
+                  <label htmlFor="actionPayload">Action Payload (JSON)</label>
+                  <textarea
+                    id="actionPayload"
+                    name="actionPayload"
+                    value={ruleForm.actionPayload}
+                    onChange={handleRuleFormChange}
+                    disabled={ruleSubmitting}
+                    rows={4}
+                    placeholder='{"severity":"HIGH","message":"Temperature exceeds safe operating range."}'
+                  />
+                  {rulePayloadError && (
+                    <p className="field-error">{rulePayloadError}</p>
+                  )}
+                </div>
+                <div className="form-actions">
+                  <button type="submit" className="btn-primary" disabled={ruleSubmitting}>
+                    {ruleSubmitting ? 'Saving...' : editingRuleId ? 'Update Rule' : 'Add Rule'}
+                  </button>
+                  {editingRuleId && (
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => {
+                        setEditingRuleId(null);
+                        setRuleForm(
+                          managingRulesQuestion
+                            ? defaultRuleFormForQuestion(managingRulesQuestion)
+                            : EMPTY_RULE_FORM
+                        );
+                        setRulePayloadError(null);
+                      }}
+                      disabled={ruleSubmitting}
+                    >
+                      Cancel Edit
+                    </button>
+                  )}
+                </div>
+              </form>
+            )}
+            <table className="reference-table">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Name</th>
+                  <th>Condition</th>
+                  <th>Operator</th>
+                  <th>Comparison</th>
+                  <th>Action</th>
+                  <th>Status</th>
+                  {canMutate && <th>Actions</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {rules.length === 0 ? (
+                  <tr>
+                    <td colSpan={canMutate ? 8 : 7}>No decision rules defined yet.</td>
+                  </tr>
+                ) : (
+                  rules.map((rule) => (
+                    <tr key={rule.id}>
+                      <td>{rule.ruleCode}</td>
+                      <td>
+                        {rule.ruleName}
+                        {rule.description && (
+                          <div className="help-text">{rule.description}</div>
+                        )}
+                      </td>
+                      <td>{rule.conditionType}</td>
+                      <td>{getOperatorLabel(rule.conditionType, rule.operator)}</td>
+                      <td>{rule.comparisonValue ?? '—'}</td>
+                      <td>{getActionTypeLabel(rule.actionType)}</td>
+                      <td>{rule.active ? 'Active' : 'Inactive'}</td>
+                      {canMutate && (
+                        <td>
+                          {rule.active ? (
+                            <>
+                              <button
+                                type="button"
+                                className="btn-link"
+                                onClick={() => handleEditRule(rule)}
+                              >
+                                Edit
+                              </button>
+                              {' '}
+                              <button
+                                type="button"
+                                className="btn-link"
+                                onClick={() => handleDeactivateRule(rule.id)}
+                              >
+                                Deactivate
+                              </button>
+                            </>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </section>

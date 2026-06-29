@@ -6,6 +6,8 @@ import com.infratrack.inspection.dto.AssignInspectionRequest;
 import com.infratrack.inspection.dto.CompleteInspectionRequest;
 import com.infratrack.inspection.dto.InspectionResponse;
 import com.infratrack.inspection.dto.InspectionSummaryResponse;
+import com.infratrack.inspectiontemplate.DecisionRuleEvaluationService;
+import com.infratrack.inspectiontemplate.dto.DecisionRuleEvaluationResult;
 import com.infratrack.security.JwtAuthenticationToken;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -27,6 +29,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/inspections")
 @Tag(name = "Inspections", description = "Inspection assignment and completion (UC-003, UC-004)")
@@ -35,9 +39,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class InspectionController {
 
     private final InspectionService inspectionService;
+    private final DecisionRuleEvaluationService decisionRuleEvaluationService;
 
-    public InspectionController(InspectionService inspectionService) {
+    public InspectionController(
+            InspectionService inspectionService,
+            DecisionRuleEvaluationService decisionRuleEvaluationService) {
         this.inspectionService = inspectionService;
+        this.decisionRuleEvaluationService = decisionRuleEvaluationService;
     }
 
     @GetMapping
@@ -69,6 +77,15 @@ public class InspectionController {
     @ApiResponse(responseCode = "200", description = "Inspection details")
     public ResponseEntity<InspectionResponse> getInspection(@PathVariable Long id) {
         return ResponseEntity.ok(inspectionService.getById(id));
+    }
+
+    @GetMapping("/{id}/rule-evaluation")
+    @Operation(
+            summary = "Evaluate decision rules for an inspection",
+            description = "Returns in-memory rule evaluation results. No persistence or workflow side effects (A3.2).")
+    @ApiResponse(responseCode = "200", description = "Rule evaluation results")
+    public ResponseEntity<List<DecisionRuleEvaluationResult>> evaluateRules(@PathVariable Long id) {
+        return ResponseEntity.ok(decisionRuleEvaluationService.evaluateInspection(id));
     }
 
     @PostMapping
