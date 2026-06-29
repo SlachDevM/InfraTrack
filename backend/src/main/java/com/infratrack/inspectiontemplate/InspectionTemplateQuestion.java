@@ -1,6 +1,9 @@
 package com.infratrack.inspectiontemplate;
 
+import com.infratrack.unitofmeasure.UnitOfMeasure;
 import jakarta.persistence.*;
+
+import java.math.BigDecimal;
 
 @Entity
 @Table(
@@ -41,6 +44,22 @@ public class InspectionTemplateQuestion {
 
     @Column(nullable = false)
     private boolean active;
+
+    @Column(length = 50)
+    private String unit;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "unit_of_measure_id")
+    private UnitOfMeasure unitOfMeasure;
+
+    @Column(name = "min_value", precision = 19, scale = 4)
+    private BigDecimal minValue;
+
+    @Column(name = "max_value", precision = 19, scale = 4)
+    private BigDecimal maxValue;
+
+    @Column(name = "decimal_places")
+    private Integer decimalPlaces;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Long createdAt;
@@ -134,6 +153,46 @@ public class InspectionTemplateQuestion {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    public String getUnit() {
+        return unit;
+    }
+
+    public void setUnit(String unit) {
+        this.unit = unit;
+    }
+
+    public UnitOfMeasure getUnitOfMeasure() {
+        return unitOfMeasure;
+    }
+
+    public void setUnitOfMeasure(UnitOfMeasure unitOfMeasure) {
+        this.unitOfMeasure = unitOfMeasure;
+    }
+
+    public BigDecimal getMinValue() {
+        return minValue;
+    }
+
+    public void setMinValue(BigDecimal minValue) {
+        this.minValue = minValue;
+    }
+
+    public BigDecimal getMaxValue() {
+        return maxValue;
+    }
+
+    public void setMaxValue(BigDecimal maxValue) {
+        this.maxValue = maxValue;
+    }
+
+    public Integer getDecimalPlaces() {
+        return decimalPlaces;
+    }
+
+    public void setDecimalPlaces(Integer decimalPlaces) {
+        this.decimalPlaces = decimalPlaces;
     }
 
     public Long getCreatedAt() {

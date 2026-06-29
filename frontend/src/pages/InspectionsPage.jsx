@@ -6,6 +6,8 @@ import inspectionApi from '../services/inspectionApi';
 import businessTriggerApi from '../services/businessTriggerApi';
 import assetApi from '../services/assetApi';
 import userApi from '../services/userApi';
+import inspectionTemplateApi from '../services/inspectionTemplateApi';
+import inspectionTemplateQuestionApi from '../services/inspectionTemplateQuestionApi';
 import NotificationButton from '../components/NotificationButton';
 import PaginationControls from '../components/PaginationControls';
 import AssignInspectionForm from '../components/inspections/AssignInspectionForm';
@@ -20,6 +22,12 @@ import {
 } from '../constants/physicalConditions';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
 import { filterInspectionAssignees } from '../utils/inspectionAssignees';
+import {
+  buildInspectionAnswerPayload,
+  isSupportedInspectionAnswerType,
+  validateRequiredTemplateAnswers,
+  validateTemplateAnswerValues,
+} from '../utils/inspectionAnswers';
 import {
   DEFAULT_PAGE,
   MAX_PAGE_SIZE,
@@ -43,7 +51,10 @@ export default function InspectionsPage() {
   const [inspectionsTotalPages, setInspectionsTotalPages] = useState(0);
   const [listLoading, setListLoading] = useState(false);
   const [triggers, setTriggers] = useState([]);
+  const [assets, setAssets] = useState([]);
   const [workers, setWorkers] = useState([]);
+  const [publishedTemplates, setPublishedTemplates] = useState([]);
+  const [templateQuestionsByTemplateId, setTemplateQuestionsByTemplateId] = useState({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [completingId, setCompletingId] = useState(null);
@@ -52,6 +63,7 @@ export default function InspectionsPage() {
   const [formData, setFormData] = useState({
     businessTriggerId: '',
     assignedToUserId: '',
+    inspectionTemplateId: '',
     priority: INSPECTION_PRIORITIES.NORMAL,
     expectedCompletionDate: '',
   });
@@ -61,6 +73,7 @@ export default function InspectionsPage() {
     issueIdentified: false,
     completedAt: toDateTimeLocalValue(),
   });
+  const [answersByInspectionId, setAnswersByInspectionId] = useState({});
 
   const canAssign = canAssignInspections(auth?.user?.role);
   const canPerform = canPerformInspections(auth?.user?.role);
@@ -80,6 +93,23 @@ export default function InspectionsPage() {
     [triggers, formData.businessTriggerId]
   );
 
+  const selectedAssetCategoryId = useMemo(() => {
+    if (!selectedTrigger) {
+      return null;
+    }
+    const asset = assets.find((item) => item.id === selectedTrigger.assetId);
+    return asset?.assetCategoryId ?? null;
+  }, [assets, selectedTrigger]);
+
+  const eligiblePublishedTemplates = useMemo(
+    () => publishedTemplates.filter(
+      (template) => template.status === 'PUBLISHED'
+        && selectedAssetCategoryId != null
+        && template.assetCategoryId === selectedAssetCategoryId
+    ),
+    [publishedTemplates, selectedAssetCategoryId]
+  );
+
   useEffect(() => {
     if (!auth) {
       navigate('/login');
@@ -88,6 +118,38 @@ export default function InspectionsPage() {
     apiClient.setToken(auth.token);
     loadPageData();
   }, [auth, navigate]);
+
+  useEffect(() => {
+    if (!canAssign || selectedAssetCategoryId == null) {
+      setPublishedTemplates([]);
+      return;
+    }
+    inspectionTemplateApi
+      .list(0, MAX_PAGE_SIZE, { assetCategoryId: selectedAssetCategoryId, status: 'PUBLISHED' })
+      .then((page) => setPublishedTemplates(unwrapPageContent(page)))
+      .catch(() => setPublishedTemplates([]));
+  }, [canAssign, selectedAssetCategoryId]);
+
+  useEffect(() => {
+    myAssignedInspections
+      .filter((inspection) => inspection.inspectionTemplateId)
+      .forEach((inspection) => {
+        const templateId = inspection.inspectionTemplateId;
+        if (templateQuestionsByTemplateId[templateId]) {
+          return;
+        }
+        inspectionTemplateQuestionApi.list(templateId)
+          .then((questions) => {
+            setTemplateQuestionsByTemplateId((prev) => ({
+              ...prev,
+              [templateId]: questions.filter((question) => question.active),
+            }));
+          })
+          .catch(() => {
+            setTemplateQuestionsByTemplateId((prev) => ({ ...prev, [templateId]: [] }));
+          });
+      });
+  }, [myAssignedInspections, templateQuestionsByTemplateId]);
 
   const loadInspections = async (page = inspectionsPage) => {
     try {
@@ -119,11 +181,13 @@ export default function InspectionsPage() {
 
       let loadedTriggers = unwrapPageContent(triggerPage);
       let profile = null;
-      if (canAssignRole) {
+      if (canAssignRole && assetPage) {
+        const loadedAssets = unwrapPageContent(assetPage);
+        setAssets(loadedAssets);
         profile = await userApi.getCurrentUser();
-        if (profile?.departmentId != null && assetPage) {
+        if (profile?.departmentId != null) {
           const departmentAssetIds = new Set(
-            unwrapPageContent(assetPage)
+            loadedAssets
               .filter((asset) => asset.departmentId === profile.departmentId)
               .map((asset) => asset.id)
           );
@@ -131,6 +195,8 @@ export default function InspectionsPage() {
             (trigger) => departmentAssetIds.has(trigger.assetId)
           );
         }
+      } else {
+        setAssets([]);
       }
       setTriggers(loadedTriggers);
 
@@ -154,6 +220,7 @@ export default function InspectionsPage() {
         if (trigger?.urgent) {
           next.priority = INSPECTION_PRIORITIES.URGENT;
         }
+        next.inspectionTemplateId = '';
       }
       return next;
     });
@@ -167,26 +234,67 @@ export default function InspectionsPage() {
     }));
   };
 
-  const handleCompleteSubmit = async (e, inspectionId) => {
+  const handleAnswerChange = (inspectionId, questionId, value) => {
+    setAnswersByInspectionId((prev) => ({
+      ...prev,
+      [inspectionId]: {
+        ...(prev[inspectionId] || {}),
+        [questionId]: value,
+      },
+    }));
+  };
+
+  const handleCompleteSubmit = async (e, inspection) => {
     e.preventDefault();
     if (!canPerform) return;
 
+    const templateQuestions = inspection.inspectionTemplateId
+      ? templateQuestionsByTemplateId[inspection.inspectionTemplateId] || []
+      : [];
+    const answerValues = answersByInspectionId[inspection.id] || {};
+    const missingRequired = validateRequiredTemplateAnswers(templateQuestions, answerValues);
+    if (missingRequired.length > 0) {
+      setError('Please answer all required checklist questions before completing the inspection.');
+      return;
+    }
+
+    const invalidValue = validateTemplateAnswerValues(templateQuestions, answerValues);
+    if (invalidValue) {
+      setError(`${invalidValue.question.code}: ${invalidValue.error}`);
+      return;
+    }
+
     try {
-      setCompletingId(inspectionId);
+      setCompletingId(inspection.id);
       setError(null);
       setSuccess(null);
-      await inspectionApi.complete(inspectionId, {
+      const payload = {
         observedCondition: completeFormData.observedCondition,
         observations: completeFormData.observations,
         issueIdentified: completeFormData.issueIdentified,
         completedAt: `${completeFormData.completedAt}:00`,
-      });
+      };
+      if (inspection.inspectionTemplateId) {
+        payload.answers = templateQuestions
+          .filter((question) => isSupportedInspectionAnswerType(question.questionType))
+          .filter((question) => {
+            const value = answerValues[question.id];
+            return value !== undefined && value !== null && value !== '';
+          })
+          .map((question) => buildInspectionAnswerPayload(question, answerValues[question.id]));
+      }
+      await inspectionApi.complete(inspection.id, payload);
       setSuccess('Inspection completed successfully.');
       setCompleteFormData({
         observedCondition: PHYSICAL_CONDITIONS.GOOD,
         observations: '',
         issueIdentified: false,
         completedAt: toDateTimeLocalValue(),
+      });
+      setAnswersByInspectionId((prev) => {
+        const next = { ...prev };
+        delete next[inspection.id];
+        return next;
       });
       await loadPageData(inspectionsPage);
     } catch (err) {
@@ -216,11 +324,15 @@ export default function InspectionsPage() {
       if (formData.expectedCompletionDate) {
         request.expectedCompletionDate = formData.expectedCompletionDate;
       }
+      if (formData.inspectionTemplateId) {
+        request.inspectionTemplateId = Number(formData.inspectionTemplateId);
+      }
       await inspectionApi.assign(request);
       setSuccess('Inspection assigned successfully.');
       setFormData({
         businessTriggerId: '',
         assignedToUserId: '',
+        inspectionTemplateId: '',
         priority: INSPECTION_PRIORITIES.NORMAL,
         expectedCompletionDate: '',
       });
@@ -276,6 +388,7 @@ export default function InspectionsPage() {
             triggers={triggers}
             workers={workers}
             selectedTrigger={selectedTrigger}
+            publishedTemplates={eligiblePublishedTemplates}
             submitting={submitting}
             onChange={handleChange}
             onSubmit={handleSubmit}
@@ -297,9 +410,18 @@ export default function InspectionsPage() {
                   key={inspection.id}
                   inspection={inspection}
                   completeFormData={completeFormData}
+                  templateQuestions={
+                    inspection.inspectionTemplateId
+                      ? templateQuestionsByTemplateId[inspection.inspectionTemplateId] || []
+                      : []
+                  }
+                  answerValues={answersByInspectionId[inspection.id] || {}}
                   completingId={completingId}
                   onChange={handleCompleteChange}
-                  onSubmit={(e) => handleCompleteSubmit(e, inspection.id)}
+                  onAnswerChange={(questionId, value) =>
+                    handleAnswerChange(inspection.id, questionId, value)
+                  }
+                  onSubmit={(e) => handleCompleteSubmit(e, inspection)}
                 />
               ))
             )}

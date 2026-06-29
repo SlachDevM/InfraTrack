@@ -29,6 +29,7 @@ describe('AssignInspectionForm', () => {
           reason: 'Damaged equipment',
           urgent: false,
         }}
+        publishedTemplates={[]}
         submitting={false}
         onChange={vi.fn()}
         onSubmit={vi.fn((event) => event.preventDefault())}

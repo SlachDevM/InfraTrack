@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import apiClient from '../services/apiClient';
 import inspectionTemplateApi from '../services/inspectionTemplateApi';
 import inspectionTemplateQuestionApi from '../services/inspectionTemplateQuestionApi';
+import inspectionTemplateQuestionChoiceApi from '../services/inspectionTemplateQuestionChoiceApi';
+import unitOfMeasureApi from '../services/unitOfMeasureApi';
 import NotificationButton from '../components/NotificationButton';
 import {
   canManageInspectionTemplates,
@@ -24,6 +26,15 @@ const EMPTY_FORM = {
   helpText: '',
   questionType: 'BOOLEAN',
   required: false,
+  unitOfMeasureId: '',
+  minValue: '',
+  maxValue: '',
+  decimalPlaces: '',
+};
+
+const EMPTY_CHOICE_FORM = {
+  code: '',
+  label: '',
 };
 
 function isDraftTemplate(template) {
@@ -44,6 +55,11 @@ export default function InspectionTemplateQuestionsPage() {
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
   const [codeManuallyEdited, setCodeManuallyEdited] = useState(false);
+  const [managingChoicesQuestionId, setManagingChoicesQuestionId] = useState(null);
+  const [choiceForm, setChoiceForm] = useState(EMPTY_CHOICE_FORM);
+  const [editingChoiceId, setEditingChoiceId] = useState(null);
+  const [choiceSubmitting, setChoiceSubmitting] = useState(false);
+  const [unitsOfMeasure, setUnitsOfMeasure] = useState([]);
 
   const canView = canViewInspectionTemplates(auth?.user?.role);
   const canManage = canManageInspectionTemplates(auth?.user?.role);
@@ -66,12 +82,14 @@ export default function InspectionTemplateQuestionsPage() {
     try {
       setLoading(true);
       setError(null);
-      const [templateData, questionList] = await Promise.all([
+      const [templateData, questionList, unitList] = await Promise.all([
         inspectionTemplateApi.get(templateId),
         inspectionTemplateQuestionApi.list(templateId),
+        unitOfMeasureApi.list({ active: true }),
       ]);
       setTemplate(templateData);
       setQuestions(questionList);
+      setUnitsOfMeasure(unitList);
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to load checklist questions.'));
     } finally {
@@ -124,6 +142,14 @@ export default function InspectionTemplateQuestionsPage() {
         questionType: formData.questionType,
         required: formData.required,
       };
+      if (formData.questionType === 'NUMBER') {
+        payload.unitOfMeasureId = formData.unitOfMeasureId
+          ? Number(formData.unitOfMeasureId)
+          : undefined;
+        payload.minValue = formData.minValue === '' ? undefined : Number(formData.minValue);
+        payload.maxValue = formData.maxValue === '' ? undefined : Number(formData.maxValue);
+        payload.decimalPlaces = formData.decimalPlaces === '' ? undefined : Number(formData.decimalPlaces);
+      }
       if (editingId) {
         await inspectionTemplateQuestionApi.update(templateId, editingId, payload);
         setSuccess('Question updated successfully.');
@@ -157,7 +183,118 @@ export default function InspectionTemplateQuestionsPage() {
       helpText: question.helpText || '',
       questionType: question.questionType,
       required: question.required,
+      unitOfMeasureId: question.unitOfMeasureId ? String(question.unitOfMeasureId) : '',
+      minValue: question.minValue ?? '',
+      maxValue: question.maxValue ?? '',
+      decimalPlaces: question.decimalPlaces ?? '',
     });
+  };
+
+  const handleManageChoices = (question) => {
+    if (!canMutate || question.questionType !== 'CHOICE') return;
+    setManagingChoicesQuestionId(question.id);
+    setChoiceForm(EMPTY_CHOICE_FORM);
+    setEditingChoiceId(null);
+  };
+
+  const handleChoiceFormChange = (event) => {
+    const { name, value } = event.target;
+    setChoiceForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleChoiceSubmit = async (event) => {
+    event.preventDefault();
+    if (!canMutate || managingChoicesQuestionId == null) return;
+
+    const normalizedCode = choiceForm.code.trim().toUpperCase();
+    if (!editingChoiceId && !isValidQuestionCode(normalizedCode)) {
+      setError('Choice code must be uppercase, start with a letter, and contain only letters, digits, and underscores.');
+      return;
+    }
+
+    try {
+      setChoiceSubmitting(true);
+      setError(null);
+      setSuccess(null);
+      if (editingChoiceId) {
+        await inspectionTemplateQuestionChoiceApi.update(
+          templateId,
+          managingChoicesQuestionId,
+          editingChoiceId,
+          { label: choiceForm.label.trim() }
+        );
+        setSuccess('Choice updated successfully.');
+      } else {
+        await inspectionTemplateQuestionChoiceApi.create(templateId, managingChoicesQuestionId, {
+          code: normalizedCode,
+          label: choiceForm.label.trim(),
+        });
+        setSuccess('Choice created successfully.');
+      }
+      setChoiceForm(EMPTY_CHOICE_FORM);
+      setEditingChoiceId(null);
+      await loadPageData();
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Failed to save choice.'));
+    } finally {
+      setChoiceSubmitting(false);
+    }
+  };
+
+  const handleEditChoice = (choice) => {
+    setEditingChoiceId(choice.id);
+    setChoiceForm({ code: choice.code, label: choice.label });
+  };
+
+  const handleDeactivateChoice = async (choiceId) => {
+    if (!window.confirm('Deactivate this choice?')) return;
+    try {
+      setError(null);
+      setSuccess(null);
+      await inspectionTemplateQuestionChoiceApi.deactivate(
+        templateId,
+        managingChoicesQuestionId,
+        choiceId
+      );
+      setSuccess('Choice deactivated successfully.');
+      if (editingChoiceId === choiceId) {
+        setEditingChoiceId(null);
+        setChoiceForm(EMPTY_CHOICE_FORM);
+      }
+      await loadPageData();
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Failed to deactivate choice.'));
+    }
+  };
+
+  const handleMoveChoice = async (choiceId, direction) => {
+    const question = questions.find((item) => item.id === managingChoicesQuestionId);
+    if (!question) return;
+    const activeChoices = (question.choices || []).filter((choice) => choice.active);
+    const index = activeChoices.findIndex((choice) => choice.id === choiceId);
+    if (index < 0) return;
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= activeChoices.length) return;
+
+    const reordered = [...activeChoices];
+    const [moved] = reordered.splice(index, 1);
+    reordered.splice(targetIndex, 0, moved);
+
+    try {
+      setChoiceSubmitting(true);
+      setError(null);
+      await inspectionTemplateQuestionChoiceApi.reorder(
+        templateId,
+        managingChoicesQuestionId,
+        reordered.map((choice) => choice.id)
+      );
+      await loadPageData();
+      setSuccess('Choices reordered successfully.');
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Failed to reorder choices.'));
+    } finally {
+      setChoiceSubmitting(false);
+    }
   };
 
   const handleDeactivate = async (questionId) => {
@@ -354,6 +491,64 @@ export default function InspectionTemplateQuestionsPage() {
                   Required
                 </label>
               </div>
+              {formData.questionType === 'NUMBER' && (
+                <>
+                  <div className="form-row">
+                    <label htmlFor="unitOfMeasureId">Unit of Measure</label>
+                    <select
+                      id="unitOfMeasureId"
+                      name="unitOfMeasureId"
+                      value={formData.unitOfMeasureId}
+                      onChange={handleFormChange}
+                      disabled={submitting}
+                    >
+                      <option value="">No unit</option>
+                      {unitsOfMeasure.map((unit) => (
+                        <option key={unit.id} value={unit.id}>
+                          {unit.symbol} — {unit.name} ({unit.quantityType})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-row">
+                    <label htmlFor="minValue">Minimum Value</label>
+                    <input
+                      id="minValue"
+                      name="minValue"
+                      type="number"
+                      step="any"
+                      value={formData.minValue}
+                      onChange={handleFormChange}
+                      disabled={submitting}
+                    />
+                  </div>
+                  <div className="form-row">
+                    <label htmlFor="maxValue">Maximum Value</label>
+                    <input
+                      id="maxValue"
+                      name="maxValue"
+                      type="number"
+                      step="any"
+                      value={formData.maxValue}
+                      onChange={handleFormChange}
+                      disabled={submitting}
+                    />
+                  </div>
+                  <div className="form-row">
+                    <label htmlFor="decimalPlaces">Decimal Places</label>
+                    <input
+                      id="decimalPlaces"
+                      name="decimalPlaces"
+                      type="number"
+                      min="0"
+                      max="6"
+                      value={formData.decimalPlaces}
+                      onChange={handleFormChange}
+                      disabled={submitting}
+                    />
+                  </div>
+                </>
+              )}
               <div className="form-actions">
                 <button type="submit" className="btn-primary" disabled={submitting}>
                   {submitting ? 'Saving...' : editingId ? 'Update Question' : 'Create Question'}
@@ -400,6 +595,19 @@ export default function InspectionTemplateQuestionsPage() {
                       {question.helpText && (
                         <div className="help-text">{question.helpText}</div>
                       )}
+                      {question.questionType === 'NUMBER' && (
+                        <div className="help-text">
+                          {question.unitSymbol || question.unit
+                            ? `Unit: ${question.unitSymbol || question.unit}`
+                            : 'No unit'}
+                          {question.minValue != null || question.maxValue != null
+                            ? ` · Range: ${question.minValue ?? '—'} to ${question.maxValue ?? '—'}`
+                            : ''}
+                          {question.decimalPlaces != null
+                            ? ` · Decimals: ${question.decimalPlaces}`
+                            : ''}
+                        </div>
+                      )}
                     </td>
                     <td>{getInspectionTemplateQuestionTypeLabel(question.questionType)}</td>
                     <td>{question.required ? 'Yes' : 'No'}</td>
@@ -444,6 +652,18 @@ export default function InspectionTemplateQuestionsPage() {
                             >
                               Move Down
                             </button>
+                            {question.questionType === 'CHOICE' && (
+                              <>
+                                {' '}
+                                <button
+                                  type="button"
+                                  className="btn-link"
+                                  onClick={() => handleManageChoices(question)}
+                                >
+                                  Manage Choices
+                                </button>
+                              </>
+                            )}
                           </>
                         ) : (
                           '-'
@@ -456,6 +676,135 @@ export default function InspectionTemplateQuestionsPage() {
             </table>
           )}
         </section>
+
+        {canMutate && managingChoicesQuestionId != null && (
+          <section className="reference-form-section">
+            <h2>
+              Manage Choices —
+              {' '}
+              {questions.find((question) => question.id === managingChoicesQuestionId)?.code}
+            </h2>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => {
+                setManagingChoicesQuestionId(null);
+                setChoiceForm(EMPTY_CHOICE_FORM);
+                setEditingChoiceId(null);
+              }}
+            >
+              Close
+            </button>
+            <form className="reference-form" onSubmit={handleChoiceSubmit}>
+              <div className="form-row">
+                <label htmlFor="choiceCode">Choice Code</label>
+                <input
+                  id="choiceCode"
+                  name="code"
+                  type="text"
+                  value={choiceForm.code}
+                  onChange={handleChoiceFormChange}
+                  required={!editingChoiceId}
+                  disabled={choiceSubmitting || Boolean(editingChoiceId)}
+                  readOnly={Boolean(editingChoiceId)}
+                />
+              </div>
+              <div className="form-row">
+                <label htmlFor="choiceLabel">Label</label>
+                <input
+                  id="choiceLabel"
+                  name="label"
+                  type="text"
+                  value={choiceForm.label}
+                  onChange={handleChoiceFormChange}
+                  required
+                  disabled={choiceSubmitting}
+                />
+              </div>
+              <div className="form-actions">
+                <button type="submit" className="btn-primary" disabled={choiceSubmitting}>
+                  {choiceSubmitting ? 'Saving...' : editingChoiceId ? 'Update Choice' : 'Add Choice'}
+                </button>
+                {editingChoiceId && (
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => {
+                      setEditingChoiceId(null);
+                      setChoiceForm(EMPTY_CHOICE_FORM);
+                    }}
+                    disabled={choiceSubmitting}
+                  >
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
+            </form>
+            <table className="reference-table">
+              <thead>
+                <tr>
+                  <th>Order</th>
+                  <th>Code</th>
+                  <th>Label</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(questions.find((question) => question.id === managingChoicesQuestionId)?.choices || [])
+                  .map((choice) => (
+                    <tr key={choice.id}>
+                      <td>{choice.displayOrder}</td>
+                      <td>{choice.code}</td>
+                      <td>{choice.label}</td>
+                      <td>{choice.active ? 'Active' : 'Inactive'}</td>
+                      <td>
+                        {choice.active ? (
+                          <>
+                            <button
+                              type="button"
+                              className="btn-link"
+                              onClick={() => handleEditChoice(choice)}
+                            >
+                              Edit
+                            </button>
+                            {' '}
+                            <button
+                              type="button"
+                              className="btn-link"
+                              onClick={() => handleDeactivateChoice(choice.id)}
+                            >
+                              Deactivate
+                            </button>
+                            {' '}
+                            <button
+                              type="button"
+                              className="btn-link"
+                              disabled={choiceSubmitting}
+                              onClick={() => handleMoveChoice(choice.id, 'up')}
+                            >
+                              Move Up
+                            </button>
+                            {' '}
+                            <button
+                              type="button"
+                              className="btn-link"
+                              disabled={choiceSubmitting}
+                              onClick={() => handleMoveChoice(choice.id, 'down')}
+                            >
+                              Move Down
+                            </button>
+                          </>
+                        ) : (
+                          '-'
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </section>
+        )}
       </main>
     </div>
   );

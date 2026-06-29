@@ -2,11 +2,15 @@ package com.infratrack.inspectiontemplate.dto;
 
 import com.infratrack.inspectiontemplate.InspectionTemplateQuestionType;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+
+import java.math.BigDecimal;
 
 public class CreateInspectionTemplateQuestionRequest {
 
@@ -32,6 +36,18 @@ public class CreateInspectionTemplateQuestionRequest {
     @Positive
     @Schema(description = "Display order within the template; auto-assigned when omitted")
     private Integer displayOrder;
+
+    @Positive
+    @Schema(description = "Reference unit for NUMBER questions")
+    private Long unitOfMeasureId;
+
+    private BigDecimal minValue;
+
+    private BigDecimal maxValue;
+
+    @Min(0)
+    @Max(6)
+    private Integer decimalPlaces;
 
     public String getQuestionText() {
         return questionText;
@@ -79,5 +95,37 @@ public class CreateInspectionTemplateQuestionRequest {
 
     public void setDisplayOrder(Integer displayOrder) {
         this.displayOrder = displayOrder;
+    }
+
+    public Long getUnitOfMeasureId() {
+        return unitOfMeasureId;
+    }
+
+    public void setUnitOfMeasureId(Long unitOfMeasureId) {
+        this.unitOfMeasureId = unitOfMeasureId;
+    }
+
+    public BigDecimal getMinValue() {
+        return minValue;
+    }
+
+    public void setMinValue(BigDecimal minValue) {
+        this.minValue = minValue;
+    }
+
+    public BigDecimal getMaxValue() {
+        return maxValue;
+    }
+
+    public void setMaxValue(BigDecimal maxValue) {
+        this.maxValue = maxValue;
+    }
+
+    public Integer getDecimalPlaces() {
+        return decimalPlaces;
+    }
+
+    public void setDecimalPlaces(Integer decimalPlaces) {
+        this.decimalPlaces = decimalPlaces;
     }
 }

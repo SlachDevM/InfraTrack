@@ -23,6 +23,10 @@ public class AssignInspectionRequest {
 
     private LocalDate expectedCompletionDate;
 
+    @Positive
+    @Schema(description = "Optional published inspection template matching the asset category")
+    private Long inspectionTemplateId;
+
     public Long getBusinessTriggerId() {
         return businessTriggerId;
     }
@@ -53,5 +57,13 @@ public class AssignInspectionRequest {
 
     public void setExpectedCompletionDate(LocalDate expectedCompletionDate) {
         this.expectedCompletionDate = expectedCompletionDate;
+    }
+
+    public Long getInspectionTemplateId() {
+        return inspectionTemplateId;
+    }
+
+    public void setInspectionTemplateId(Long inspectionTemplateId) {
+        this.inspectionTemplateId = inspectionTemplateId;
     }
 }

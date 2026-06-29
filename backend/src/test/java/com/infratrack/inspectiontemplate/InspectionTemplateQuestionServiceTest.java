@@ -7,6 +7,9 @@ import com.infratrack.inspectiontemplate.dto.CreateInspectionTemplateQuestionReq
 import com.infratrack.inspectiontemplate.dto.InspectionTemplateQuestionResponse;
 import com.infratrack.inspectiontemplate.dto.ReorderInspectionTemplateQuestionsRequest;
 import com.infratrack.inspectiontemplate.dto.UpdateInspectionTemplateQuestionRequest;
+import com.infratrack.unitofmeasure.QuantityType;
+import com.infratrack.unitofmeasure.UnitOfMeasure;
+import com.infratrack.unitofmeasure.UnitOfMeasureRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -28,6 +31,12 @@ class InspectionTemplateQuestionServiceTest {
 
     @Mock
     private InspectionTemplateQuestionRepository questionRepository;
+
+    @Mock
+    private InspectionTemplateQuestionChoiceRepository choiceRepository;
+
+    @Mock
+    private UnitOfMeasureRepository unitOfMeasureRepository;
 
     @InjectMocks
     private InspectionTemplateQuestionService questionService;
@@ -91,6 +100,82 @@ class InspectionTemplateQuestionServiceTest {
         assertThat(responses).hasSize(2);
         assertThat(responses.get(0).getDisplayOrder()).isEqualTo(2);
         assertThat(responses.get(1).getDisplayOrder()).isEqualTo(1);
+    }
+
+    @Test
+    void create_shouldAcceptNumberConstraintsOnNumberQuestion() {
+        InspectionTemplate template = template(100L, InspectionTemplateStatus.DRAFT);
+        UnitOfMeasure celsius = celsiusUnit();
+        when(inspectionTemplateRepository.findDetailedById(100L)).thenReturn(Optional.of(template));
+        when(questionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(100L)).thenReturn(List.of());
+        when(questionRepository.existsByInspectionTemplateIdAndCode(100L, "TEMPERATURE")).thenReturn(false);
+        when(unitOfMeasureRepository.findByIdAndActiveTrue(1L)).thenReturn(Optional.of(celsius));
+        when(questionRepository.save(any(InspectionTemplateQuestion.class))).thenAnswer(invocation -> {
+            InspectionTemplateQuestion question = invocation.getArgument(0);
+            question.setId(2L);
+            return question;
+        });
+
+        CreateInspectionTemplateQuestionRequest request = createRequest();
+        request.setCode("TEMPERATURE");
+        request.setQuestionText("Temperature");
+        request.setQuestionType(InspectionTemplateQuestionType.NUMBER);
+        request.setUnitOfMeasureId(1L);
+        request.setMinValue(new java.math.BigDecimal("0"));
+        request.setMaxValue(new java.math.BigDecimal("120"));
+        request.setDecimalPlaces(1);
+
+        InspectionTemplateQuestionResponse response = questionService.create(100L, request);
+
+        assertThat(response.getUnitOfMeasureId()).isEqualTo(1L);
+        assertThat(response.getUnitSymbol()).isEqualTo("°C");
+        assertThat(response.getUnitName()).isEqualTo("Celsius");
+        assertThat(response.getMinValue()).isEqualByComparingTo("0");
+        assertThat(response.getMaxValue()).isEqualByComparingTo("120");
+        assertThat(response.getDecimalPlaces()).isEqualTo(1);
+    }
+
+    @Test
+    void create_shouldRejectNumberConstraintsOnNonNumberQuestion() {
+        when(inspectionTemplateRepository.findDetailedById(100L))
+                .thenReturn(Optional.of(template(100L, InspectionTemplateStatus.DRAFT)));
+
+        CreateInspectionTemplateQuestionRequest request = createRequest();
+        request.setUnitOfMeasureId(1L);
+
+        assertThatThrownBy(() -> questionService.create(100L, request))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Number constraints apply only to NUMBER checklist questions");
+    }
+
+    @Test
+    void create_shouldRejectInactiveUnitOfMeasure() {
+        when(inspectionTemplateRepository.findDetailedById(100L))
+                .thenReturn(Optional.of(template(100L, InspectionTemplateStatus.DRAFT)));
+        when(unitOfMeasureRepository.findByIdAndActiveTrue(1L)).thenReturn(Optional.empty());
+
+        CreateInspectionTemplateQuestionRequest request = createRequest();
+        request.setQuestionType(InspectionTemplateQuestionType.NUMBER);
+        request.setUnitOfMeasureId(1L);
+
+        assertThatThrownBy(() -> questionService.create(100L, request))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Active unit of measure not found");
+    }
+
+    @Test
+    void create_shouldRejectInvalidNumberConstraintRange() {
+        when(inspectionTemplateRepository.findDetailedById(100L))
+                .thenReturn(Optional.of(template(100L, InspectionTemplateStatus.DRAFT)));
+
+        CreateInspectionTemplateQuestionRequest request = createRequest();
+        request.setQuestionType(InspectionTemplateQuestionType.NUMBER);
+        request.setMinValue(new java.math.BigDecimal("120"));
+        request.setMaxValue(new java.math.BigDecimal("0"));
+
+        assertThatThrownBy(() -> questionService.create(100L, request))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Minimum value cannot exceed maximum value");
     }
 
     @Test
@@ -306,5 +391,11 @@ class InspectionTemplateQuestionServiceTest {
     private InspectionTemplateQuestion reordered(InspectionTemplateQuestion question, int displayOrder) {
         question.setDisplayOrder(displayOrder);
         return question;
+    }
+
+    private UnitOfMeasure celsiusUnit() {
+        UnitOfMeasure unit = new UnitOfMeasure("CELSIUS", "°C", "Celsius", QuantityType.TEMPERATURE);
+        unit.setId(1L);
+        return unit;
     }
 }

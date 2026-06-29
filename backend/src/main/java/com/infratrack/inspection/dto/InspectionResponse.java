@@ -10,12 +10,17 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 
 public class InspectionResponse {
 
     private Long id;
     private Long assetId;
     private String assetName;
+    private Long assetCategoryId;
+    private Long inspectionTemplateId;
+    private String inspectionTemplateName;
     private Long businessTriggerId;
     private BusinessTriggerType businessTriggerType;
     private String businessTriggerReason;
@@ -34,16 +39,30 @@ public class InspectionResponse {
     private Long completedByUserId;
     private Long createdAt;
     private Long updatedAt;
+    private List<InspectionAnswerResponse> answers = Collections.emptyList();
 
     public static InspectionResponse from(Inspection inspection) {
-        return from(inspection, null, null);
+        return from(inspection, null, null, Collections.emptyList());
     }
 
     public static InspectionResponse from(Inspection inspection, User assignedToUser, User assignedByUser) {
+        return from(inspection, assignedToUser, assignedByUser, Collections.emptyList());
+    }
+
+    public static InspectionResponse from(
+            Inspection inspection,
+            User assignedToUser,
+            User assignedByUser,
+            List<InspectionAnswerResponse> answers) {
         InspectionResponse response = new InspectionResponse();
         response.id = inspection.getId();
         response.assetId = inspection.getAsset().getId();
         response.assetName = inspection.getAsset().getName();
+        response.assetCategoryId = inspection.getAsset().getAssetCategory().getId();
+        if (inspection.getInspectionTemplate() != null) {
+            response.inspectionTemplateId = inspection.getInspectionTemplate().getId();
+            response.inspectionTemplateName = inspection.getInspectionTemplate().getName();
+        }
         response.businessTriggerId = inspection.getBusinessTrigger().getId();
         response.businessTriggerType = inspection.getBusinessTrigger().getType();
         response.businessTriggerReason = inspection.getBusinessTrigger().getReason();
@@ -60,6 +79,7 @@ public class InspectionResponse {
         response.completedByUserId = inspection.getCompletedByUserId();
         response.createdAt = inspection.getCreatedAt();
         response.updatedAt = inspection.getUpdatedAt();
+        response.answers = answers == null ? Collections.emptyList() : answers;
         return response;
     }
 
@@ -73,6 +93,18 @@ public class InspectionResponse {
 
     public String getAssetName() {
         return assetName;
+    }
+
+    public Long getAssetCategoryId() {
+        return assetCategoryId;
+    }
+
+    public Long getInspectionTemplateId() {
+        return inspectionTemplateId;
+    }
+
+    public String getInspectionTemplateName() {
+        return inspectionTemplateName;
     }
 
     public Long getBusinessTriggerId() {
@@ -137,5 +169,9 @@ public class InspectionResponse {
 
     public Long getUpdatedAt() {
         return updatedAt;
+    }
+
+    public List<InspectionAnswerResponse> getAnswers() {
+        return answers;
     }
 }
