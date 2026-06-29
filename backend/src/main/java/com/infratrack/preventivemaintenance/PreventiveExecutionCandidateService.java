@@ -23,14 +23,17 @@ public class PreventiveExecutionCandidateService {
     private final PreventiveMaintenancePlanRepository planRepository;
     private final PreventiveExecutionCandidateRepository candidateRepository;
     private final TriggerEvaluationService triggerEvaluationService;
+    private final PreventiveExecutionReportService reportService;
 
     public PreventiveExecutionCandidateService(
             PreventiveMaintenancePlanRepository planRepository,
             PreventiveExecutionCandidateRepository candidateRepository,
-            TriggerEvaluationService triggerEvaluationService) {
+            TriggerEvaluationService triggerEvaluationService,
+            PreventiveExecutionReportService reportService) {
         this.planRepository = planRepository;
         this.candidateRepository = candidateRepository;
         this.triggerEvaluationService = triggerEvaluationService;
+        this.reportService = reportService;
     }
 
     @Transactional(readOnly = true)
@@ -49,24 +52,39 @@ public class PreventiveExecutionCandidateService {
     }
 
     @Transactional
-    public List<ExecutionCandidateGenerationResultResponse> generateCandidates() {
-        List<PreventiveMaintenancePlan> activePlans =
-                planRepository.findAllByStatus(PreventiveMaintenancePlanStatus.ACTIVE);
+    public List<ExecutionCandidateGenerationResultResponse> generateCandidates(Long userId) {
+        return generateCandidatesForActivePlans(userId, null);
+    }
+
+    @Transactional
+    public List<ExecutionCandidateGenerationResultResponse> generateCandidatesForActivePlans(
+            Long userId,
+            Long departmentId) {
+        List<PreventiveMaintenancePlan> activePlans = findActivePlans(departmentId);
         List<ExecutionCandidateGenerationResultResponse> results = new ArrayList<>();
         for (PreventiveMaintenancePlan plan : activePlans) {
-            results.add(generateForPlan(plan));
+            try {
+                results.add(generateForPlan(plan, userId));
+            } catch (Exception ex) {
+                results.add(ExecutionCandidateGenerationResultResponse.failed(
+                        plan.getId(),
+                        plan.getPlanCode(),
+                        ex.getMessage()));
+            }
         }
         return results;
     }
 
     @Transactional
-    public ExecutionCandidateGenerationResultResponse generateCandidateForPlan(Long planId) {
+    public ExecutionCandidateGenerationResultResponse generateCandidateForPlan(Long planId, Long userId) {
         PreventiveMaintenancePlan plan = planRepository.findDetailedById(planId)
                 .orElseThrow(() -> new NotFoundException("Preventive maintenance plan not found"));
-        return generateForPlan(plan);
+        return generateForPlan(plan, userId);
     }
 
-    private ExecutionCandidateGenerationResultResponse generateForPlan(PreventiveMaintenancePlan plan) {
+    private ExecutionCandidateGenerationResultResponse generateForPlan(
+            PreventiveMaintenancePlan plan,
+            Long userId) {
         if (plan.getStatus() != PreventiveMaintenancePlanStatus.ACTIVE) {
             return ExecutionCandidateGenerationResultResponse.notEligible(plan.getId(), plan.getPlanCode());
         }
@@ -89,10 +107,20 @@ public class PreventiveExecutionCandidateService {
 
         PreventiveExecutionCandidate candidate = createCandidate(plan, evaluation);
         PreventiveExecutionCandidate saved = candidateRepository.save(candidate);
+        reportService.createReportForCandidate(saved, userId);
         return ExecutionCandidateGenerationResultResponse.created(
                 plan.getId(),
                 plan.getPlanCode(),
                 PreventiveExecutionCandidateResponse.from(saved));
+    }
+
+    private List<PreventiveMaintenancePlan> findActivePlans(Long departmentId) {
+        if (departmentId == null) {
+            return planRepository.findAllByStatus(PreventiveMaintenancePlanStatus.ACTIVE);
+        }
+        return planRepository.findAllByStatusAndAsset_Department_Id(
+                PreventiveMaintenancePlanStatus.ACTIVE,
+                departmentId);
     }
 
     private PreventiveExecutionCandidate createCandidate(

@@ -14,6 +14,8 @@ import {
   canViewPreventiveExecutionCandidates,
   canGeneratePreventiveExecutionCandidates,
   canReviewPreventiveExecutionCandidates,
+  canViewPreventiveScheduler,
+  canRunPreventiveScheduler,
 } from '../../constants/userRoles';
 
 describe('canRegisterAssets', () => {
@@ -117,5 +119,19 @@ describe('other role helpers', () => {
     expect(canReviewPreventiveExecutionCandidates(USER_ROLES.MANAGER)).toBe(true);
     expect(canReviewPreventiveExecutionCandidates(USER_ROLES.OPERATIONAL_COORDINATOR)).toBe(false);
     expect(canReviewPreventiveExecutionCandidates(USER_ROLES.FIELD_EMPLOYEE)).toBe(false);
+  });
+
+  it('allows preventive scheduler viewing for admin manager and coordinator', () => {
+    expect(canViewPreventiveScheduler(USER_ROLES.ADMINISTRATOR)).toBe(true);
+    expect(canViewPreventiveScheduler(USER_ROLES.MANAGER)).toBe(true);
+    expect(canViewPreventiveScheduler(USER_ROLES.OPERATIONAL_COORDINATOR)).toBe(true);
+    expect(canViewPreventiveScheduler(USER_ROLES.FIELD_EMPLOYEE)).toBe(false);
+  });
+
+  it('allows preventive scheduler run for admin and manager only', () => {
+    expect(canRunPreventiveScheduler(USER_ROLES.ADMINISTRATOR)).toBe(true);
+    expect(canRunPreventiveScheduler(USER_ROLES.MANAGER)).toBe(true);
+    expect(canRunPreventiveScheduler(USER_ROLES.OPERATIONAL_COORDINATOR)).toBe(false);
+    expect(canRunPreventiveScheduler(USER_ROLES.FIELD_EMPLOYEE)).toBe(false);
   });
 });

@@ -11,6 +11,7 @@ export const FIELD_EMPLOYEE_ROUTES = new Set([
 export const INSPECTION_TEMPLATES_ROUTE = '/inspection-templates';
 export const PREVENTIVE_MAINTENANCE_PLANS_ROUTE = '/preventive-maintenance-plans';
 export const PREVENTIVE_EXECUTION_CANDIDATES_ROUTE = '/preventive-execution-candidates';
+export const PREVENTIVE_SCHEDULER_ROUTE = '/preventive-scheduler';
 
 const INSPECTION_TEMPLATE_ROUTE_PREFIX = '/inspection-templates/';
 
@@ -22,6 +23,7 @@ const INSPECTION_TEMPLATE_VIEWER_ROLES = new Set([
 
 const PREVENTIVE_MAINTENANCE_PLAN_VIEWER_ROLES = INSPECTION_TEMPLATE_VIEWER_ROLES;
 const PREVENTIVE_EXECUTION_CANDIDATE_VIEWER_ROLES = INSPECTION_TEMPLATE_VIEWER_ROLES;
+const PREVENTIVE_SCHEDULER_VIEWER_ROLES = INSPECTION_TEMPLATE_VIEWER_ROLES;
 
 export const APP_NAVIGATION_ITEMS = [
   { path: '/assets', label: 'Assets', fieldEmployeeLabel: 'Documents' },
@@ -30,6 +32,7 @@ export const APP_NAVIGATION_ITEMS = [
   { path: '/inspection-templates', label: 'Inspection Templates' },
   { path: '/preventive-maintenance-plans', label: 'Preventive Maintenance Plans' },
   { path: '/preventive-execution-candidates', label: 'Preventive Execution Candidates' },
+  { path: '/preventive-scheduler', label: 'Preventive Scheduler' },
   { path: '/issues', label: 'Issues' },
   { path: '/operational-decisions', label: 'Decisions' },
   { path: '/delegated-authorities', label: 'Delegations' },
@@ -70,6 +73,10 @@ export function canAccessRoute(role, path) {
 
   if (normalizedPath === PREVENTIVE_EXECUTION_CANDIDATES_ROUTE) {
     return PREVENTIVE_EXECUTION_CANDIDATE_VIEWER_ROLES.has(normalizedRole);
+  }
+
+  if (normalizedPath === PREVENTIVE_SCHEDULER_ROUTE) {
+    return PREVENTIVE_SCHEDULER_VIEWER_ROLES.has(normalizedRole);
   }
 
   if (!isFieldEmployeeRole(role)) {

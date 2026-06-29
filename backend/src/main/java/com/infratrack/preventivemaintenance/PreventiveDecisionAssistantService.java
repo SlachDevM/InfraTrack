@@ -21,14 +21,17 @@ public class PreventiveDecisionAssistantService {
     private final PreventiveExecutionCandidateRepository candidateRepository;
     private final PreventiveExecutionCandidateAuthorizationService authorizationService;
     private final InspectionService inspectionService;
+    private final PreventiveExecutionReportService reportService;
 
     public PreventiveDecisionAssistantService(
             PreventiveExecutionCandidateRepository candidateRepository,
             PreventiveExecutionCandidateAuthorizationService authorizationService,
-            InspectionService inspectionService) {
+            InspectionService inspectionService,
+            PreventiveExecutionReportService reportService) {
         this.candidateRepository = candidateRepository;
         this.authorizationService = authorizationService;
         this.inspectionService = inspectionService;
+        this.reportService = reportService;
     }
 
     @Transactional
@@ -44,8 +47,10 @@ public class PreventiveDecisionAssistantService {
                 candidate,
                 request,
                 userId);
+        reportService.markApproved(candidate, userId);
         candidate.markApproved(userId, inspection.getId(), normalizeOptionalText(request.getNotes()));
         PreventiveExecutionCandidate saved = candidateRepository.save(candidate);
+        reportService.markInspectionCreated(candidate, inspection.getId(), userId);
 
         return new ApprovePreventiveCandidateResponse(
                 PreventiveExecutionCandidateResponse.from(saved),
@@ -59,7 +64,9 @@ public class PreventiveDecisionAssistantService {
             Long userId) {
         PreventiveExecutionCandidate candidate = findAuthorizedCandidate(candidateId, userId);
         candidate.markRejected(userId, normalizeOptionalText(request.getReason()));
-        return PreventiveExecutionCandidateResponse.from(candidateRepository.save(candidate));
+        PreventiveExecutionCandidate saved = candidateRepository.save(candidate);
+        reportService.markRejected(saved, userId, saved.getRejectionReason());
+        return PreventiveExecutionCandidateResponse.from(saved);
     }
 
     @Transactional
@@ -69,7 +76,9 @@ public class PreventiveDecisionAssistantService {
             Long userId) {
         PreventiveExecutionCandidate candidate = findAuthorizedCandidate(candidateId, userId);
         candidate.markDismissed(userId, normalizeOptionalText(request.getComment()));
-        return PreventiveExecutionCandidateResponse.from(candidateRepository.save(candidate));
+        PreventiveExecutionCandidate saved = candidateRepository.save(candidate);
+        reportService.markDismissed(saved, userId, saved.getDismissComment());
+        return PreventiveExecutionCandidateResponse.from(saved);
     }
 
     private PreventiveExecutionCandidate findAuthorizedCandidate(Long candidateId, Long userId) {

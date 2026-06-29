@@ -80,6 +80,9 @@ public class PreventiveExecutionCandidate {
     @Column(name = "decision_notes", columnDefinition = "TEXT")
     private String decisionNotes;
 
+    @OneToOne(mappedBy = "candidate", fetch = FetchType.LAZY)
+    private PreventiveExecutionReport executionReport;
+
     protected PreventiveExecutionCandidate() {
     }
 
@@ -239,5 +242,9 @@ public class PreventiveExecutionCandidate {
 
     public String getDecisionNotes() {
         return decisionNotes;
+    }
+
+    public PreventiveExecutionReport getExecutionReport() {
+        return executionReport;
     }
 }

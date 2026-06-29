@@ -20,6 +20,7 @@ import InspectionTemplatesPage from './pages/InspectionTemplatesPage';
 import InspectionTemplateQuestionsPage from './pages/InspectionTemplateQuestionsPage';
 import PreventiveMaintenancePlansPage from './pages/PreventiveMaintenancePlansPage';
 import PreventiveExecutionCandidatesPage from './pages/PreventiveExecutionCandidatesPage';
+import PreventiveSchedulerPage from './pages/PreventiveSchedulerPage';
 import './App.css';
 
 function App() {
@@ -123,6 +124,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <PreventiveExecutionCandidatesPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/preventive-scheduler"
+              element={
+                <PrivateRoute>
+                  <PreventiveSchedulerPage />
                 </PrivateRoute>
               }
             />

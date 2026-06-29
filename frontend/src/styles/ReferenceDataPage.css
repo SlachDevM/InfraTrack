@@ -208,3 +208,11 @@
   gap: 0.5rem;
   flex-wrap: wrap;
 }
+
+.detail-tabs {
+  margin-bottom: 1rem;
+}
+
+.execution-report-detail {
+  margin-top: 0.5rem;
+}

@@ -48,6 +48,9 @@ class PreventiveDecisionAssistantServiceTest {
     @Mock
     private InspectionService inspectionService;
 
+    @Mock
+    private PreventiveExecutionReportService reportService;
+
     private PreventiveExecutionCandidateAuthorizationService authorizationService;
     private PreventiveDecisionAssistantService decisionAssistantService;
 
@@ -57,7 +60,8 @@ class PreventiveDecisionAssistantServiceTest {
         decisionAssistantService = new PreventiveDecisionAssistantService(
                 candidateRepository,
                 authorizationService,
-                inspectionService);
+                inspectionService,
+                reportService);
     }
 
     @Test
@@ -79,6 +83,8 @@ class PreventiveDecisionAssistantServiceTest {
         assertThat(candidate.getDecidedByUserId()).isEqualTo(30L);
         assertThat(response.getInspection().getId()).isEqualTo(900L);
         verify(inspectionService).createInspectionFromApprovedPreventiveCandidate(candidate, request, 30L);
+        verify(reportService).markApproved(candidate, 30L);
+        verify(reportService).markInspectionCreated(candidate, 900L, 30L);
     }
 
     @Test
@@ -95,6 +101,7 @@ class PreventiveDecisionAssistantServiceTest {
         assertThat(response.getCandidateStatus()).isEqualTo(ExecutionCandidateStatus.REJECTED);
         assertThat(response.getRejectionReason()).isEqualTo("Already inspected");
         verify(inspectionService, never()).createInspectionFromApprovedPreventiveCandidate(any(), any(), eq(30L));
+        verify(reportService).markRejected(candidate, 30L, "Already inspected");
     }
 
     @Test
@@ -111,6 +118,7 @@ class PreventiveDecisionAssistantServiceTest {
         assertThat(response.getCandidateStatus()).isEqualTo(ExecutionCandidateStatus.DISMISSED);
         assertThat(response.getDismissComment()).isEqualTo("Not relevant");
         verify(inspectionService, never()).createInspectionFromApprovedPreventiveCandidate(any(), any(), eq(30L));
+        verify(reportService).markDismissed(candidate, 30L, "Not relevant");
     }
 
     @Test

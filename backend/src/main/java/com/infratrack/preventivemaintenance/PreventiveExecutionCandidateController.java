@@ -2,11 +2,13 @@ package com.infratrack.preventivemaintenance;
 
 import com.infratrack.config.PaginationSupport;
 import com.infratrack.config.openapi.StandardApiResponses;
+import com.infratrack.exception.NotFoundException;
 import com.infratrack.preventivemaintenance.dto.ApprovePreventiveCandidateRequest;
 import com.infratrack.preventivemaintenance.dto.ApprovePreventiveCandidateResponse;
 import com.infratrack.preventivemaintenance.dto.DismissPreventiveCandidateRequest;
 import com.infratrack.preventivemaintenance.dto.ExecutionCandidateGenerationResultResponse;
 import com.infratrack.preventivemaintenance.dto.PreventiveExecutionCandidateResponse;
+import com.infratrack.preventivemaintenance.dto.PreventiveExecutionReportResponse;
 import com.infratrack.preventivemaintenance.dto.RejectPreventiveCandidateRequest;
 import com.infratrack.security.JwtAuthenticationToken;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,14 +42,20 @@ public class PreventiveExecutionCandidateController {
     private final PreventiveExecutionCandidateService candidateService;
     private final PreventiveExecutionCandidateAuthorizationService authorizationService;
     private final PreventiveDecisionAssistantService decisionAssistantService;
+    private final PreventiveExecutionReportService reportService;
+    private final PreventiveExecutionCandidateRepository candidateRepository;
 
     public PreventiveExecutionCandidateController(
             PreventiveExecutionCandidateService candidateService,
             PreventiveExecutionCandidateAuthorizationService authorizationService,
-            PreventiveDecisionAssistantService decisionAssistantService) {
+            PreventiveDecisionAssistantService decisionAssistantService,
+            PreventiveExecutionReportService reportService,
+            PreventiveExecutionCandidateRepository candidateRepository) {
         this.candidateService = candidateService;
         this.authorizationService = authorizationService;
         this.decisionAssistantService = decisionAssistantService;
+        this.reportService = reportService;
+        this.candidateRepository = candidateRepository;
     }
 
     @PostMapping("/generate")
@@ -57,7 +65,7 @@ public class PreventiveExecutionCandidateController {
             Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         authorizationService.requireCanGenerateCandidates(userId);
-        return ResponseEntity.ok(candidateService.generateCandidates());
+        return ResponseEntity.ok(candidateService.generateCandidates(userId));
     }
 
     @GetMapping
@@ -88,6 +96,20 @@ public class PreventiveExecutionCandidateController {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         authorizationService.requireCanViewCandidates(userId);
         return ResponseEntity.ok(candidateService.getCandidate(id));
+    }
+
+    @GetMapping("/{id}/report")
+    @Operation(summary = "Get preventive execution audit report for a candidate")
+    @ApiResponse(responseCode = "200", description = "Read-only audit report for the candidate")
+    public ResponseEntity<PreventiveExecutionReportResponse> getCandidateReport(
+            @PathVariable Long id,
+            Authentication authentication) {
+        Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+        authorizationService.requireCanViewCandidates(userId);
+        PreventiveExecutionCandidate candidate = candidateRepository.findDetailedById(id)
+                .orElseThrow(() -> new NotFoundException("Preventive execution candidate not found"));
+        authorizationService.requireAuthorizedToViewReportAsset(userId, candidate.getAsset());
+        return ResponseEntity.ok(reportService.getReportByCandidateId(id));
     }
 
     @PostMapping("/{id}/approve")

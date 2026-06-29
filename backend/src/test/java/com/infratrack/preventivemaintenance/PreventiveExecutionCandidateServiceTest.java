@@ -38,6 +38,9 @@ class PreventiveExecutionCandidateServiceTest {
     @Mock
     private TriggerEvaluationService triggerEvaluationService;
 
+    @Mock
+    private PreventiveExecutionReportService reportService;
+
     @InjectMocks
     private PreventiveExecutionCandidateService candidateService;
 
@@ -59,7 +62,7 @@ class PreventiveExecutionCandidateServiceTest {
         });
 
         ExecutionCandidateGenerationResultResponse result =
-                candidateService.generateCandidateForPlan(100L);
+                candidateService.generateCandidateForPlan(100L, 30L);
 
         assertThat(result.getOutcome()).isEqualTo(ExecutionCandidateGenerationOutcome.CREATED);
         assertThat(result.getCandidate().getCandidateStatus()).isEqualTo(ExecutionCandidateStatus.PENDING);
@@ -73,6 +76,7 @@ class PreventiveExecutionCandidateServiceTest {
                 ArgumentCaptor.forClass(PreventiveExecutionCandidate.class);
         verify(candidateRepository).save(captor.capture());
         assertThat(captor.getValue().getCandidateStatus()).isEqualTo(ExecutionCandidateStatus.PENDING);
+        verify(reportService).createReportForCandidate(captor.getValue(), 30L);
     }
 
     @Test
@@ -86,7 +90,7 @@ class PreventiveExecutionCandidateServiceTest {
         when(triggerEvaluationService.evaluatePlan(101L)).thenReturn(notEligibleEvaluation(101L, "PUMP_WEEKLY"));
 
         ExecutionCandidateGenerationResultResponse result =
-                candidateService.generateCandidateForPlan(101L);
+                candidateService.generateCandidateForPlan(101L, 30L);
 
         assertThat(result.getOutcome()).isEqualTo(ExecutionCandidateGenerationOutcome.NOT_ELIGIBLE);
         assertThat(result.getCandidate()).isNull();
@@ -103,7 +107,7 @@ class PreventiveExecutionCandidateServiceTest {
         when(planRepository.findDetailedById(102L)).thenReturn(Optional.of(plan));
 
         ExecutionCandidateGenerationResultResponse result =
-                candidateService.generateCandidateForPlan(102L);
+                candidateService.generateCandidateForPlan(102L, 30L);
 
         assertThat(result.getOutcome()).isEqualTo(ExecutionCandidateGenerationOutcome.NOT_ELIGIBLE);
         verify(triggerEvaluationService, never()).evaluatePlan(any());
@@ -124,7 +128,7 @@ class PreventiveExecutionCandidateServiceTest {
                 100L, ExecutionCandidateStatus.PENDING)).thenReturn(Optional.of(existing));
 
         ExecutionCandidateGenerationResultResponse result =
-                candidateService.generateCandidateForPlan(100L);
+                candidateService.generateCandidateForPlan(100L, 30L);
 
         assertThat(result.getOutcome()).isEqualTo(ExecutionCandidateGenerationOutcome.SKIPPED_DUPLICATE);
         assertThat(result.getCandidate().getId()).isEqualTo(500L);
@@ -149,7 +153,7 @@ class PreventiveExecutionCandidateServiceTest {
             return candidate;
         });
 
-        List<ExecutionCandidateGenerationResultResponse> results = candidateService.generateCandidates();
+        List<ExecutionCandidateGenerationResultResponse> results = candidateService.generateCandidates(30L);
 
         assertThat(results).hasSize(1);
         assertThat(results.get(0).getOutcome()).isEqualTo(ExecutionCandidateGenerationOutcome.CREATED);
@@ -167,7 +171,7 @@ class PreventiveExecutionCandidateServiceTest {
     void generateCandidateForPlan_shouldRejectMissingPlan() {
         when(planRepository.findDetailedById(999L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> candidateService.generateCandidateForPlan(999L))
+        assertThatThrownBy(() -> candidateService.generateCandidateForPlan(999L, 30L))
                 .isInstanceOf(NotFoundException.class);
     }
 

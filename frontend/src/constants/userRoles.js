@@ -65,6 +65,18 @@ export function canReviewPreventiveExecutionCandidates(role) {
   return role === USER_ROLES.ADMINISTRATOR || role === USER_ROLES.MANAGER;
 }
 
+export function canViewPreventiveScheduler(role) {
+  return (
+    role === USER_ROLES.ADMINISTRATOR
+    || role === USER_ROLES.MANAGER
+    || role === USER_ROLES.OPERATIONAL_COORDINATOR
+  );
+}
+
+export function canRunPreventiveScheduler(role) {
+  return role === USER_ROLES.ADMINISTRATOR || role === USER_ROLES.MANAGER;
+}
+
 export function canRegisterAssets(role) {
   if (!role) {
     return false;

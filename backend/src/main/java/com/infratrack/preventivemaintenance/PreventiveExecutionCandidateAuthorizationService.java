@@ -58,11 +58,28 @@ public class PreventiveExecutionCandidateAuthorizationService {
             throw new ForbiddenOperationException(
                     "You do not have permission to review preventive execution candidates");
         }
+        requireManagerOwnDepartment(user, asset);
+    }
+
+    public void requireAuthorizedToViewReportAsset(Long userId, com.infratrack.asset.Asset asset) {
+        com.infratrack.user.User user = userService.getById(userId);
+        if (user.getRole().isAdministrator() || user.getRole().isOperationalCoordinator()) {
+            return;
+        }
+        if (user.getRole().isManager()) {
+            requireManagerOwnDepartment(user, asset);
+            return;
+        }
+        throw new ForbiddenOperationException(
+                "You do not have permission to view preventive execution reports");
+    }
+
+    private static void requireManagerOwnDepartment(com.infratrack.user.User user, com.infratrack.asset.Asset asset) {
         Long managerDepartmentId = user.getDepartment() != null ? user.getDepartment().getId() : null;
         Long assetDepartmentId = asset.getDepartment().getId();
         if (managerDepartmentId == null || !managerDepartmentId.equals(assetDepartmentId)) {
             throw new ForbiddenOperationException(
-                    "You may only review preventive execution candidates for assets in your own department.");
+                    "You may only access preventive execution candidates for assets in your own department.");
         }
     }
 }

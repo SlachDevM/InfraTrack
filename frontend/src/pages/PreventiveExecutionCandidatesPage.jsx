@@ -18,6 +18,10 @@ import {
   EXECUTION_CANDIDATE_STATUS_OPTIONS,
   getExecutionCandidateStatusLabel,
 } from '../constants/executionCandidateStatuses';
+import {
+  getDecisionSourceLabel,
+  getExecutionReportStatusLabel,
+} from '../constants/executionReportStatuses';
 import { getPlanTargetActionLabel } from '../constants/planTargetActions';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
 import { filterInspectionAssignees } from '../utils/inspectionAssignees';
@@ -67,6 +71,8 @@ export default function PreventiveExecutionCandidatesPage() {
   const [filterAssetId, setFilterAssetId] = useState('');
   const [filterPlanId, setFilterPlanId] = useState('');
   const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [detailTab, setDetailTab] = useState('candidate');
   const [detailLoading, setDetailLoading] = useState(false);
   const [workers, setWorkers] = useState([]);
   const [reviewing, setReviewing] = useState(false);
@@ -205,13 +211,27 @@ export default function PreventiveExecutionCandidatesPage() {
     try {
       setDetailLoading(true);
       setError(null);
-      const detail = await preventiveExecutionCandidateApi.get(candidateId);
+      setDetailTab('candidate');
+      const [detail, report] = await Promise.all([
+        preventiveExecutionCandidateApi.get(candidateId),
+        preventiveExecutionCandidateApi.getReport(candidateId),
+      ]);
       setSelectedCandidate(detail);
+      setSelectedReport(report);
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to load candidate details.'));
     } finally {
       setDetailLoading(false);
     }
+  };
+
+  const reloadSelectedDetail = async (candidateId) => {
+    const [detail, report] = await Promise.all([
+      preventiveExecutionCandidateApi.get(candidateId),
+      preventiveExecutionCandidateApi.getReport(candidateId),
+    ]);
+    setSelectedCandidate(detail);
+    setSelectedReport(report);
   };
 
   const openApproveDialog = async (candidate) => {
@@ -247,6 +267,7 @@ export default function PreventiveExecutionCandidatesPage() {
       setSuccess('Candidate approved and inspection created.');
       setApproveCandidate(null);
       setSelectedCandidate(response.candidate);
+      await reloadSelectedDetail(response.candidate.id);
       await loadCandidatesWithFilters(candidatesPage, filterStatus, filterAssetId, filterPlanId);
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to approve preventive execution candidate.'));
@@ -270,6 +291,7 @@ export default function PreventiveExecutionCandidatesPage() {
       setRejectCandidate(null);
       setRejectReason('');
       setSelectedCandidate(response);
+      await reloadSelectedDetail(response.id);
       await loadCandidatesWithFilters(candidatesPage, filterStatus, filterAssetId, filterPlanId);
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to reject preventive execution candidate.'));
@@ -293,6 +315,7 @@ export default function PreventiveExecutionCandidatesPage() {
       setDismissCandidate(null);
       setDismissComment('');
       setSelectedCandidate(response);
+      await reloadSelectedDetail(response.id);
       await loadCandidatesWithFilters(candidatesPage, filterStatus, filterAssetId, filterPlanId);
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to dismiss preventive execution candidate.'));
@@ -503,14 +526,34 @@ export default function PreventiveExecutionCandidatesPage() {
             <button
               type="button"
               className="btn-secondary"
-              onClick={() => setSelectedCandidate(null)}
+              onClick={() => {
+                setSelectedCandidate(null);
+                setSelectedReport(null);
+              }}
             >
               Close
             </button>
           </div>
+          <div className="detail-tabs">
+            <button
+              type="button"
+              className={detailTab === 'candidate' ? 'btn-primary' : 'btn-secondary'}
+              onClick={() => setDetailTab('candidate')}
+            >
+              Candidate
+            </button>
+            {' '}
+            <button
+              type="button"
+              className={detailTab === 'report' ? 'btn-primary' : 'btn-secondary'}
+              onClick={() => setDetailTab('report')}
+            >
+              Execution Report
+            </button>
+          </div>
           {detailLoading ? (
             <p>Loading detail...</p>
-          ) : (
+          ) : detailTab === 'candidate' ? (
             <dl className="detail-list">
               <dt>Plan Code</dt>
               <dd>{selectedCandidate.planCodeSnapshot}</dd>
@@ -569,6 +612,46 @@ export default function PreventiveExecutionCandidatesPage() {
               <dt>Created At</dt>
               <dd>{formatTimestamp(selectedCandidate.createdAt)}</dd>
             </dl>
+          ) : selectedReport ? (
+            <dl className="detail-list execution-report-detail">
+              <dt>Report Status</dt>
+              <dd>{getExecutionReportStatusLabel(selectedReport.reportStatus)}</dd>
+              <dt>Decision Source</dt>
+              <dd>{getDecisionSourceLabel(selectedReport.decisionSource)}</dd>
+              <dt>Generated At</dt>
+              <dd>{formatTimestamp(selectedReport.generatedAt)}</dd>
+              <dt>Approved At</dt>
+              <dd>{formatTimestamp(selectedReport.approvedAt)}</dd>
+              <dt>Rejected At</dt>
+              <dd>{formatTimestamp(selectedReport.rejectedAt)}</dd>
+              <dt>Dismissed At</dt>
+              <dd>{formatTimestamp(selectedReport.dismissedAt)}</dd>
+              <dt>Inspection Created At</dt>
+              <dd>{formatTimestamp(selectedReport.inspectionCreatedAt)}</dd>
+              {selectedReport.createdInspectionId && (
+                <>
+                  <dt>Created Inspection</dt>
+                  <dd>
+                    <Link to="/inspections">
+                      Inspection #
+                      {selectedReport.createdInspectionId}
+                    </Link>
+                  </dd>
+                </>
+              )}
+              {selectedReport.decisionReason && (
+                <>
+                  <dt>Decision Reason</dt>
+                  <dd>{selectedReport.decisionReason}</dd>
+                </>
+              )}
+              <dt>Plan Code</dt>
+              <dd>{selectedReport.planCodeSnapshot}</dd>
+              <dt>Asset</dt>
+              <dd>{selectedReport.assetNameSnapshot}</dd>
+            </dl>
+          ) : (
+            <p>No execution report available.</p>
           )}
           {!detailLoading && canReview && selectedCandidate.candidateStatus === 'PENDING' && (
             <div className="review-actions">

@@ -32,6 +32,7 @@ describe('canAccessRoute', () => {
     expect(canAccessRoute(USER_ROLES.FIELD_EMPLOYEE, '/inspection-templates')).toBe(false);
     expect(canAccessRoute(USER_ROLES.FIELD_EMPLOYEE, '/preventive-maintenance-plans')).toBe(false);
     expect(canAccessRoute(USER_ROLES.FIELD_EMPLOYEE, '/preventive-execution-candidates')).toBe(false);
+    expect(canAccessRoute(USER_ROLES.FIELD_EMPLOYEE, '/preventive-scheduler')).toBe(false);
   });
 
   it('blocks contractor from inspection templates', () => {

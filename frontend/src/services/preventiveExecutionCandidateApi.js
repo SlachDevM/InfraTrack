@@ -8,6 +8,7 @@ const ENDPOINTS = {
   APPROVE: (id) => `/api/preventive-execution-candidates/${id}/approve`,
   REJECT: (id) => `/api/preventive-execution-candidates/${id}/reject`,
   DISMISS: (id) => `/api/preventive-execution-candidates/${id}/dismiss`,
+  REPORT: (id) => `/api/preventive-execution-candidates/${id}/report`,
 };
 
 function buildListQuery(page, size, filters = {}) {
@@ -32,6 +33,7 @@ export const preventiveExecutionCandidateApi = {
   approve: (id, request) => apiClient.post(ENDPOINTS.APPROVE(id), request),
   reject: (id, request) => apiClient.post(ENDPOINTS.REJECT(id), request),
   dismiss: (id, request) => apiClient.post(ENDPOINTS.DISMISS(id), request),
+  getReport: (id) => apiClient.get(ENDPOINTS.REPORT(id)),
 };
 
 export default preventiveExecutionCandidateApi;

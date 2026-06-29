@@ -105,7 +105,7 @@ public class PreventiveMaintenancePlanController {
             Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         executionCandidateAuthorizationService.requireCanGenerateCandidates(userId);
-        return ResponseEntity.ok(executionCandidateService.generateCandidateForPlan(id));
+        return ResponseEntity.ok(executionCandidateService.generateCandidateForPlan(id, userId));
     }
 
     @GetMapping("/{id}")

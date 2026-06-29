@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -71,6 +72,32 @@ class PreventiveExecutionCandidateAuthorizationServiceTest {
         assertThatThrownBy(() -> authorizationService.requireCanViewCandidates(4L))
                 .isInstanceOf(ForbiddenOperationException.class)
                 .hasMessage("You do not have permission to view preventive execution candidates");
+    }
+
+    @Test
+    void requireAuthorizedToViewReportAsset_shouldRejectFieldEmployee() {
+        com.infratrack.asset.Asset asset = mock(com.infratrack.asset.Asset.class);
+        when(userService.getById(4L)).thenReturn(user(4L, UserRole.FIELD_EMPLOYEE));
+
+        assertThatThrownBy(() -> authorizationService.requireAuthorizedToViewReportAsset(4L, asset))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You do not have permission to view preventive execution reports");
+    }
+
+    @Test
+    void requireAuthorizedToViewReportAsset_shouldRejectCrossDepartmentManager() {
+        com.infratrack.department.Department managerDept = new com.infratrack.department.Department("Water");
+        managerDept.setId(10L);
+        com.infratrack.department.Department assetDept = new com.infratrack.department.Department("Roads");
+        assetDept.setId(20L);
+        com.infratrack.user.User manager = user(2L, UserRole.MANAGER);
+        manager.setDepartment(managerDept);
+        com.infratrack.asset.Asset asset = mock(com.infratrack.asset.Asset.class);
+        when(asset.getDepartment()).thenReturn(assetDept);
+        when(userService.getById(2L)).thenReturn(manager);
+
+        assertThatThrownBy(() -> authorizationService.requireAuthorizedToViewReportAsset(2L, asset))
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test

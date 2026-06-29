@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, cleanup } from '@testing-library/react';
+import { render, screen, waitFor, cleanup, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import PreventiveExecutionCandidatesPage from '../../pages/PreventiveExecutionCandidatesPage';
@@ -21,6 +21,7 @@ vi.mock('../../services/preventiveExecutionCandidateApi', () => ({
   default: {
     list: vi.fn(),
     get: vi.fn(),
+    getReport: vi.fn(),
     generate: vi.fn(),
     approve: vi.fn(),
     reject: vi.fn(),
@@ -81,6 +82,44 @@ function pageResponse(content, number = 0, totalPages = 1) {
   return { content, number, totalPages };
 }
 
+const report = {
+  id: 900,
+  candidateId: 500,
+  planCodeSnapshot: 'PUMP_MONTHLY',
+  assetNameSnapshot: 'Pump A',
+  decisionSource: 'PREVENTIVE_ENGINE',
+  reportStatus: 'GENERATED',
+  generatedAt: 1710000000000,
+  approvedAt: null,
+  rejectedAt: null,
+  dismissedAt: null,
+  inspectionCreatedAt: null,
+  createdInspectionId: null,
+  decisionReason: null,
+};
+
+const approvedReport = {
+  ...report,
+  reportStatus: 'INSPECTION_CREATED',
+  approvedAt: 1710001000000,
+  inspectionCreatedAt: 1710001000000,
+  createdInspectionId: 900,
+};
+
+const rejectedReport = {
+  ...report,
+  reportStatus: 'REJECTED',
+  rejectedAt: 1710001000000,
+  decisionReason: 'Already inspected',
+};
+
+const dismissedReport = {
+  ...report,
+  reportStatus: 'DISMISSED',
+  dismissedAt: 1710001000000,
+  decisionReason: 'Not relevant',
+};
+
 const candidate = {
   id: 500,
   planId: 100,
@@ -113,6 +152,7 @@ describe('PreventiveExecutionCandidatesPage', () => {
     mockAuth.user.role = USER_ROLES.ADMINISTRATOR;
     preventiveExecutionCandidateApi.list.mockResolvedValue(pageResponse([candidate]));
     preventiveExecutionCandidateApi.get.mockResolvedValue(candidate);
+    preventiveExecutionCandidateApi.getReport.mockResolvedValue(report);
     assetApi.list.mockResolvedValue(pageResponse(assets));
     preventiveMaintenancePlanApi.list.mockResolvedValue(pageResponse(plans));
     inspectionApi.listWorkers.mockResolvedValue(workers);
@@ -208,11 +248,94 @@ describe('PreventiveExecutionCandidatesPage', () => {
 
     await waitFor(() => {
       expect(preventiveExecutionCandidateApi.get).toHaveBeenCalledWith(500);
+      expect(preventiveExecutionCandidateApi.getReport).toHaveBeenCalledWith(500);
     });
     expect(await screen.findByText('Candidate Detail')).toBeInTheDocument();
     expect(screen.getByText('One full month has elapsed.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Execute' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Create Inspection' })).not.toBeInTheDocument();
+  });
+
+  it('shows execution report summary with generated status', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <PreventiveExecutionCandidatesPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('PUMP_MONTHLY');
+    await user.click(screen.getByRole('button', { name: 'View' }));
+    await screen.findByText('Candidate Detail');
+    await user.click(screen.getByRole('button', { name: 'Execution Report' }));
+
+    const reportDetail = screen.getByText('Report Status').closest('dl');
+    expect(within(reportDetail).getByText('Generated')).toBeInTheDocument();
+    expect(within(reportDetail).getByText('Preventive engine')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save Report' })).not.toBeInTheDocument();
+  });
+
+  it('shows approved report with created inspection link', async () => {
+    const user = userEvent.setup();
+    preventiveExecutionCandidateApi.getReport.mockResolvedValue(approvedReport);
+    preventiveExecutionCandidateApi.get.mockResolvedValue({
+      ...candidate,
+      candidateStatus: 'APPROVED',
+      createdInspectionId: 900,
+    });
+
+    render(
+      <MemoryRouter>
+        <PreventiveExecutionCandidatesPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('PUMP_MONTHLY');
+    await user.click(screen.getByRole('button', { name: 'View' }));
+    await user.click(screen.getByRole('button', { name: 'Execution Report' }));
+
+    const reportDetail = screen.getByText('Report Status').closest('dl');
+    expect(within(reportDetail).getByText('Inspection created')).toBeInTheDocument();
+    expect(within(reportDetail).getByRole('link', { name: /Inspection #900/i })).toBeInTheDocument();
+  });
+
+  it('shows rejected report with decision reason', async () => {
+    const user = userEvent.setup();
+    preventiveExecutionCandidateApi.getReport.mockResolvedValue(rejectedReport);
+
+    render(
+      <MemoryRouter>
+        <PreventiveExecutionCandidatesPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('PUMP_MONTHLY');
+    await user.click(screen.getByRole('button', { name: 'View' }));
+    await user.click(screen.getByRole('button', { name: 'Execution Report' }));
+
+    const reportDetail = screen.getByText('Report Status').closest('dl');
+    expect(within(reportDetail).getByText('Rejected')).toBeInTheDocument();
+    expect(within(reportDetail).getByText('Already inspected')).toBeInTheDocument();
+  });
+
+  it('shows dismissed report with decision comment', async () => {
+    const user = userEvent.setup();
+    preventiveExecutionCandidateApi.getReport.mockResolvedValue(dismissedReport);
+
+    render(
+      <MemoryRouter>
+        <PreventiveExecutionCandidatesPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('PUMP_MONTHLY');
+    await user.click(screen.getByRole('button', { name: 'View' }));
+    await user.click(screen.getByRole('button', { name: 'Execution Report' }));
+
+    const reportDetail = screen.getByText('Report Status').closest('dl');
+    expect(within(reportDetail).getByText('Dismissed')).toBeInTheDocument();
+    expect(within(reportDetail).getByText('Not relevant')).toBeInTheDocument();
   });
 
   it('displays nextEligibleAt when present', async () => {

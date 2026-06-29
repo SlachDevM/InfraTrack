@@ -6,6 +6,7 @@ public class ExecutionCandidateGenerationResultResponse {
     private String planCode;
     private ExecutionCandidateGenerationOutcome outcome;
     private PreventiveExecutionCandidateResponse candidate;
+    private String failureMessage;
 
     public static ExecutionCandidateGenerationResultResponse notEligible(Long planId, String planCode) {
         ExecutionCandidateGenerationResultResponse response = new ExecutionCandidateGenerationResultResponse();
@@ -39,6 +40,18 @@ public class ExecutionCandidateGenerationResultResponse {
         return response;
     }
 
+    public static ExecutionCandidateGenerationResultResponse failed(
+            Long planId,
+            String planCode,
+            String failureMessage) {
+        ExecutionCandidateGenerationResultResponse response = new ExecutionCandidateGenerationResultResponse();
+        response.planId = planId;
+        response.planCode = planCode;
+        response.outcome = ExecutionCandidateGenerationOutcome.FAILED;
+        response.failureMessage = failureMessage;
+        return response;
+    }
+
     public Long getPlanId() {
         return planId;
     }
@@ -53,5 +66,9 @@ public class ExecutionCandidateGenerationResultResponse {
 
     public PreventiveExecutionCandidateResponse getCandidate() {
         return candidate;
+    }
+
+    public String getFailureMessage() {
+        return failureMessage;
     }
 }

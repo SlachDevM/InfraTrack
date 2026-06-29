@@ -824,6 +824,136 @@ Reject and dismiss update candidate status and decision metadata only. No Inspec
 
 No scheduler, background jobs, automatic candidate generation, Work Orders, Maintenance Activities, or automation beyond optional Inspection creation on approval.
 
+### Sprint B4 — Preventive Execution Audit & Reports
+
+Sprint B4 adds a persistent audit layer for the preventive candidate lifecycle.
+
+#### Preventive Execution Report concept
+
+Each `PreventiveExecutionCandidate` has exactly one `PreventiveExecutionReport`. The report captures snapshot fields and lifecycle timestamps for traceability, reporting, and future KPIs.
+
+Lifecycle:
+
+```text
+Generated → Reviewed → Approved / Rejected / Dismissed → Inspection Created (if approved)
+```
+
+#### Report status
+
+| Status | Meaning |
+|--------|---------|
+| `GENERATED` | Report created when candidate is generated |
+| `UNDER_REVIEW` | Reserved (optional in B4) |
+| `APPROVED` | Manager approved candidate (transitional) |
+| `REJECTED` | Manager rejected candidate |
+| `DISMISSED` | Manager dismissed candidate |
+| `INSPECTION_CREATED` | Inspection created after approval |
+
+#### Decision source
+
+Reports created from preventive candidates use `PREVENTIVE_ENGINE`. Manual manager decisions are recorded via `decidedByUserId`. Other sources (`MANUAL`, `RULE_ENGINE`, `SYSTEM`, `EXTERNAL_API`) are reserved for future use.
+
+#### Audit purpose
+
+B4 makes the preventive decision process fully auditable without introducing automation. Reports are read-only through the API. One report per candidate; no event-sourcing table or KPI dashboards in B4.
+
+#### Asset History (B4)
+
+Concise lifecycle events:
+
+| Event | When |
+|-------|------|
+| `PREVENTIVE_CANDIDATE_GENERATED` | Candidate created |
+| `PREVENTIVE_CANDIDATE_APPROVED` | Candidate approved |
+| `PREVENTIVE_CANDIDATE_REJECTED` | Candidate rejected |
+| `PREVENTIVE_CANDIDATE_DISMISSED` | Candidate dismissed |
+| `PREVENTIVE_INSPECTION_CREATED` | Inspection created on approval (existing) |
+
+#### B4 API
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/preventive-execution-candidates/{candidateId}/report` | Report for one candidate |
+| `GET /api/preventive-execution-reports` | List reports (filters: status, asset, plan, decision source) |
+| `GET /api/preventive-execution-reports/{reportId}` | Report detail |
+
+#### B4 authorization
+
+Same as candidate view: Administrator, Manager (own department), Operational Coordinator can view; Field Employee and Contractor forbidden.
+
+#### Future KPI use cases
+
+Execution reports provide the foundation for future preventive maintenance KPIs (approval rates, time-to-decision, inspection creation latency) without implementing analytics in B4.
+
+#### B4 scope limitation
+
+**B4 adds audit and reporting only.**
+
+No automatic Inspection creation, new notifications, or KPI dashboards in B4.
+
+### Sprint B5 — Controlled Preventive Scheduler
+
+Sprint B5 introduces a controlled scheduler for preventive candidate discovery.
+
+#### Controlled Preventive Scheduler concept
+
+```text
+Scheduler → Evaluate ACTIVE plans → Generate PENDING candidates
+```
+
+The scheduler **proposes**; the Manager **decides**. The scheduler never approves candidates or creates Inspections, Work Orders, Maintenance Activities, or notifications.
+
+#### Disabled-by-default policy
+
+```properties
+app.preventive.scheduler.enabled=false
+app.preventive.scheduler.cron=0 0 6 * * *
+```
+
+Scheduled execution is disabled by default. Manual run remains available to Administrators and Managers when policy allows.
+
+#### Manual vs scheduled runs
+
+| Trigger | `triggeredBy` | User ID | Scope |
+|---------|---------------|---------|-------|
+| Manual (Admin) | `MANUAL` | Yes | All departments |
+| Manual (Manager) | `MANUAL` | Yes | Own department assets |
+| Scheduled | `SCHEDULED` | No | All departments (when enabled) |
+
+Each run creates a `PreventiveSchedulerRun` report with counts and status (`SUCCESS`, `PARTIAL`, `FAILED`).
+
+#### Candidate-only rule
+
+The scheduler reuses `PreventiveExecutionCandidateService` and existing duplicate prevention. Outcomes: created, skipped duplicate, not eligible, failed (per plan).
+
+#### Multi-instance note
+
+B5 does not implement distributed locking. Multi-instance deployments may require a database lock or ShedLock in a future sprint to prevent concurrent scheduled runs.
+
+#### B5 API
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/preventive-scheduler/status` | Scheduler enabled flag |
+| `POST /api/preventive-scheduler/run` | Manual scheduler run |
+| `GET /api/preventive-scheduler/runs` | Run history |
+| `GET /api/preventive-scheduler/runs/{id}` | Run detail |
+
+#### B5 authorization
+
+| Role | Access |
+|------|--------|
+| Administrator | Manual run (global), view runs |
+| Manager | Manual run (own department), view runs |
+| Operational Coordinator | View runs only |
+| Field Employee / Contractor | No access |
+
+#### B5 scope limitation
+
+**B5 automates candidate discovery only.**
+
+No automatic approval, Inspection creation, Work Orders, Maintenance Activities, scheduler notifications, or cron editing from the UI.
+
 ### B1.1 API
 
 | Endpoint | Purpose |
@@ -859,7 +989,7 @@ Planned extensions to the Domain Engine include:
 | Role | Access |
 |------|--------|
 | Administrator | Create, update, archive templates and preventive maintenance plans; manage checklist questions and decision rules on draft templates; view all |
-| Manager | View templates, checklist questions, decision rules, preventive maintenance plans, and execution candidates; generate and review execution candidates |
-| Operational Coordinator | View templates, checklist questions, decision rules, preventive maintenance plans, and execution candidates |
+| Manager | View templates, checklist questions, decision rules, preventive maintenance plans, execution candidates, and scheduler runs; generate and review execution candidates; run preventive scheduler (own department) |
+| Operational Coordinator | View templates, checklist questions, decision rules, preventive maintenance plans, execution candidates, and scheduler runs |
 | Field Employee | No access |
 | Contractor | No access |
