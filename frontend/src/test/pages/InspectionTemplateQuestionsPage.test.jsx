@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, cleanup } from '@testing-library/react';
+import { render, screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import InspectionTemplateQuestionsPage from '../../pages/InspectionTemplateQuestionsPage';
 import inspectionTemplateApi from '../../services/inspectionTemplateApi';
 import inspectionTemplateQuestionApi from '../../services/inspectionTemplateQuestionApi';
+import inspectionTemplateQuestionRuleApi from '../../services/inspectionTemplateQuestionRuleApi';
 import unitOfMeasureApi from '../../services/unitOfMeasureApi';
 import { USER_ROLES } from '../../constants/userRoles';
 
@@ -47,6 +48,15 @@ vi.mock('../../services/inspectionTemplateQuestionChoiceApi', () => ({
   },
 }));
 
+vi.mock('../../services/inspectionTemplateQuestionRuleApi', () => ({
+  default: {
+    list: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    deactivate: vi.fn(),
+  },
+}));
+
 vi.mock('../../services/apiClient', () => ({
   default: {
     setToken: vi.fn(),
@@ -85,6 +95,18 @@ const publishedTemplate = {
   status: 'PUBLISHED',
 };
 
+const numberQuestion = {
+  id: 3,
+  inspectionTemplateId: 100,
+  code: 'TEMPERATURE',
+  questionText: 'Temperature reading',
+  helpText: null,
+  questionType: 'NUMBER',
+  required: true,
+  displayOrder: 3,
+  active: true,
+};
+
 const questions = [
   {
     id: 1,
@@ -107,6 +129,34 @@ const questions = [
     required: true,
     displayOrder: 2,
     active: true,
+  },
+  numberQuestion,
+];
+
+const rules = [
+  {
+    id: 10,
+    ruleCode: 'HIGH_TEMPERATURE',
+    ruleName: 'High temperature',
+    description: 'Temperature exceeds safe range',
+    conditionType: 'NUMBER',
+    operator: 'GREATER_THAN',
+    comparisonValue: '90',
+    actionType: 'SUGGEST_ISSUE',
+    actionPayload: '{"severity":"HIGH"}',
+    active: true,
+  },
+  {
+    id: 11,
+    ruleCode: 'RETIRED_RULE',
+    ruleName: 'Retired rule',
+    description: null,
+    conditionType: 'NUMBER',
+    operator: 'LESS_THAN',
+    comparisonValue: '0',
+    actionType: 'FLAG_FOR_REVIEW',
+    actionPayload: null,
+    active: false,
   },
 ];
 
@@ -134,6 +184,7 @@ describe('InspectionTemplateQuestionsPage', () => {
     unitOfMeasureApi.list.mockResolvedValue([
       { id: 1, code: 'CELSIUS', symbol: '°C', name: 'Celsius', quantityType: 'TEMPERATURE', active: true },
     ]);
+    inspectionTemplateQuestionRuleApi.list.mockResolvedValue([]);
     window.confirm = vi.fn(() => true);
   });
 
@@ -192,7 +243,7 @@ describe('InspectionTemplateQuestionsPage', () => {
   it('admin can create question', async () => {
     const user = userEvent.setup();
     inspectionTemplateQuestionApi.create.mockResolvedValue({
-      id: 3,
+      id: 4,
       code: 'IS_CORROSION_VISIBLE',
       questionText: 'Is corrosion visible?',
       questionType: 'BOOLEAN',
@@ -203,7 +254,7 @@ describe('InspectionTemplateQuestionsPage', () => {
     inspectionTemplateQuestionApi.list.mockResolvedValueOnce(questions).mockResolvedValueOnce([
       ...questions,
       {
-        id: 3,
+        id: 4,
         code: 'IS_CORROSION_VISIBLE',
         questionText: 'Is corrosion visible?',
         questionType: 'BOOLEAN',
@@ -309,7 +360,7 @@ describe('InspectionTemplateQuestionsPage', () => {
     await user.click(screen.getAllByRole('button', { name: 'Move Down' })[0]);
 
     await waitFor(() => {
-      expect(inspectionTemplateQuestionApi.reorder).toHaveBeenCalledWith('100', [2, 1]);
+      expect(inspectionTemplateQuestionApi.reorder).toHaveBeenCalledWith('100', [2, 1, 3]);
     });
   });
 
@@ -372,5 +423,117 @@ describe('InspectionTemplateQuestionsPage', () => {
     await user.selectOptions(screen.getByLabelText('Question Type'), 'NUMBER');
     expect(screen.getByLabelText('Unit of Measure')).toBeInTheDocument();
     expect(screen.getByText('°C — Celsius (TEMPERATURE)')).toBeInTheDocument();
+  });
+
+  it('shows Manage Rules action for supported question types', async () => {
+    renderPage();
+
+    await screen.findByText('Temperature reading');
+    expect(screen.getAllByRole('button', { name: 'Manage Rules' }).length).toBeGreaterThan(0);
+  });
+
+  it('admin can create decision rule', async () => {
+    const user = userEvent.setup();
+    inspectionTemplateQuestionRuleApi.list.mockResolvedValue([]);
+    inspectionTemplateQuestionRuleApi.create.mockResolvedValue(rules[0]);
+
+    renderPage();
+    await screen.findByText('Temperature reading');
+    await user.click(screen.getAllByRole('button', { name: 'Manage Rules' })[2]);
+
+    expect(await screen.findByRole('heading', { name: /Manage Decision Rules/i })).toBeInTheDocument();
+    await user.type(screen.getByLabelText('Rule Code'), 'HIGH_TEMPERATURE');
+    await user.type(screen.getByLabelText('Rule Name'), 'High temperature');
+    await user.type(screen.getByLabelText('Comparison Value'), '90');
+    fireEvent.change(
+      screen.getByLabelText('Action Payload (JSON)'),
+      { target: { value: '{"severity":"HIGH","message":"Too hot"}' } }
+    );
+    await user.click(screen.getByRole('button', { name: 'Add Rule' }));
+
+    await waitFor(() => {
+      expect(inspectionTemplateQuestionRuleApi.create).toHaveBeenCalledWith('100', 3, {
+        ruleCode: 'HIGH_TEMPERATURE',
+        ruleName: 'High temperature',
+        description: undefined,
+        conditionType: 'NUMBER',
+        operator: 'GREATER_THAN',
+        comparisonValue: '90',
+        actionType: 'SUGGEST_ISSUE',
+        actionPayload: '{"severity":"HIGH","message":"Too hot"}',
+      });
+    });
+  });
+
+  it('filters operator options by condition type', async () => {
+    const user = userEvent.setup();
+    inspectionTemplateQuestionRuleApi.list.mockResolvedValue([]);
+
+    renderPage();
+    await screen.findByText('Is there any visible leak?');
+    await user.click(screen.getAllByRole('button', { name: 'Manage Rules' })[0]);
+
+    expect(await screen.findByRole('heading', { name: /Manage Decision Rules/i })).toBeInTheDocument();
+    const operatorSelect = screen.getByLabelText('Operator');
+    expect(Array.from(operatorSelect.options).map((option) => option.value)).toEqual([
+      'IS_TRUE',
+      'IS_FALSE',
+    ]);
+    expect(screen.queryByLabelText('Comparison Value')).not.toBeInTheDocument();
+  });
+
+  it('shows JSON payload validation feedback', async () => {
+    const user = userEvent.setup();
+    inspectionTemplateQuestionRuleApi.list.mockResolvedValue([]);
+
+    renderPage();
+    await screen.findByText('Temperature reading');
+    await user.click(screen.getAllByRole('button', { name: 'Manage Rules' })[2]);
+
+    expect(await screen.findByRole('heading', { name: /Manage Decision Rules/i })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Action Payload (JSON)'), { target: { value: '{invalid' } });
+    expect(await screen.findByText(/valid JSON/i)).toBeInTheDocument();
+    expect(inspectionTemplateQuestionRuleApi.create).not.toHaveBeenCalled();
+  });
+
+  it('manager can view rules but not mutate', async () => {
+    const user = userEvent.setup();
+    mockAuth.user.role = USER_ROLES.MANAGER;
+    inspectionTemplateQuestionRuleApi.list.mockResolvedValue(rules);
+
+    renderPage();
+    await screen.findByText('Temperature reading');
+    await user.click(screen.getAllByRole('button', { name: 'Manage Rules' })[2]);
+
+    expect(await screen.findByText('HIGH_TEMPERATURE')).toBeInTheDocument();
+    expect(screen.getByText('Retired rule')).toBeInTheDocument();
+    expect(screen.getByText(/Decision rules are read-only/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add Rule' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
+  });
+
+  it('disables rule mutation controls for published template', async () => {
+    const user = userEvent.setup();
+    inspectionTemplateApi.get.mockResolvedValue(publishedTemplate);
+    inspectionTemplateQuestionRuleApi.list.mockResolvedValue(rules);
+
+    renderPage();
+    await screen.findByText('Temperature reading');
+    await user.click(screen.getAllByRole('button', { name: 'Manage Rules' })[2]);
+
+    expect(await screen.findByText('HIGH_TEMPERATURE')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add Rule' })).not.toBeInTheDocument();
+  });
+
+  it('displays inactive rules in rule list', async () => {
+    const user = userEvent.setup();
+    inspectionTemplateQuestionRuleApi.list.mockResolvedValue(rules);
+
+    renderPage();
+    await screen.findByText('Temperature reading');
+    await user.click(screen.getAllByRole('button', { name: 'Manage Rules' })[2]);
+
+    expect(await screen.findByText('RETIRED_RULE')).toBeInTheDocument();
+    expect(screen.getByText('Inactive')).toBeInTheDocument();
   });
 });

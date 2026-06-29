@@ -273,6 +273,126 @@ Historical answers remain readable even if a unit is renamed or deactivated late
 
 Normalized units and versioned snapshots ensure comparable numeric readings, auditable historical answers after template changes, and reliable inputs for future Decision Matrix rules. Decision Matrix rules are **not** implemented in A2.3.3.
 
+## Sprint A3.1 — Decision Rule Engine Foundation
+
+Sprint A3.1 introduces **Decision Rules** attached to Inspection Template Questions. A Decision Rule describes a condition on a question answer and the intended future action when that condition is met.
+
+Example:
+
+```text
+Question: TEMPERATURE
+Condition: greater than 90
+Future action: suggest HIGH severity Issue
+```
+
+### Decision Rule concept
+
+Each `InspectionTemplateQuestionRule` belongs to one checklist question and stores:
+
+- a stable business `ruleCode` (uppercase snake_case, unique per question, immutable after creation);
+- human-readable `ruleName` and optional `description`;
+- a `conditionType` matching the parent question type;
+- an `operator` compatible with that condition type;
+- an optional `comparisonValue` stored as text;
+- an `actionType` describing the intended future outcome;
+- an optional `actionPayload` stored as JSON text;
+- an `active` flag for soft deactivation.
+
+Rules follow the same template audit protection as checklist questions and choices: rules are editable only when the parent Inspection Template is `DRAFT`. Published and archived templates expose rules as read-only.
+
+### Condition types
+
+| Condition type | Meaning |
+|----------------|---------|
+| `BOOLEAN` | Yes/no question condition |
+| `NUMBER` | Numeric measurement condition |
+| `CHOICE` | Selected choice code condition |
+| `TEXT` | Free-text answer condition |
+
+The condition type must match the parent question type.
+
+### Operators
+
+| Operator | Supported condition types |
+|----------|---------------------------|
+| `IS_TRUE`, `IS_FALSE` | `BOOLEAN` |
+| `GREATER_THAN`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN`, `LESS_THAN_OR_EQUAL`, `EQUALS`, `NOT_EQUALS` | `NUMBER` |
+| `EQUALS`, `NOT_EQUALS` | `CHOICE` |
+| `EQUALS`, `NOT_EQUALS`, `CONTAINS`, `STARTS_WITH`, `ENDS_WITH` | `TEXT` |
+
+### Comparison value rules
+
+- `BOOLEAN`: no comparison value required.
+- `NUMBER`: comparison value must be numeric text (for example `"90"`).
+- `CHOICE`: comparison value must reference an active choice code on the same question.
+- `TEXT`: comparison value must be non-blank.
+
+### Action types
+
+| Action type | Purpose (future execution) |
+|-------------|----------------------------|
+| `SUGGEST_ISSUE` | Propose creating an Issue |
+| `SUGGEST_SEVERITY` | Propose an Issue severity |
+| `SUGGEST_OPERATIONAL_DECISION` | Propose an Operational Decision |
+| `FLAG_FOR_REVIEW` | Flag the inspection outcome for review |
+
+`actionPayload` holds structured JSON metadata for the future action (for example severity or message text). A3.1 validates JSON syntax only; it does not interpret payload contents.
+
+### A3.1 scope limitation
+
+**A3.1 stores rule definitions only.**
+
+Rule definitions are persisted without evaluation at inspection completion time.
+
+## Sprint A3.2 — Decision Rule Evaluation Engine
+
+Sprint A3.2 evaluates stored Decision Rules against captured Inspection Answers.
+
+### Rule priority
+
+Each rule has a required positive integer `priority` (default `100`). Lower numbers indicate higher priority. Rules are evaluated in ascending priority order, then by `ruleCode` ascending, so output is deterministic.
+
+Examples:
+
+- `10` — critical rule
+- `50` — warning rule
+- `100` — default rule
+
+### Disabled reason
+
+When a rule is deactivated, an optional `disabledReason` may be recorded (for example `Replaced by HIGH_TEMPERATURE_V2.`). This is informational only and does not affect evaluation because inactive rules are excluded.
+
+### Evaluation engine
+
+`DecisionRuleEvaluationService` compares one Inspection Answer against the active rules for that question and returns in-memory `DecisionRuleEvaluationResult` objects containing:
+
+- rule identity and metadata (`ruleId`, `ruleCode`, `ruleName`, `priority`);
+- condition details (`conditionType`, `operator`, `comparisonValue`, `actualValue`);
+- intended action (`actionType`, `actionPayload`);
+- `matched` — whether the answer satisfies the rule condition.
+
+Supported operators by condition type match the A3.1 definition. TEXT comparisons are case-insensitive. NUMBER comparisons use `BigDecimal`.
+
+Inactive rules, rules for other questions, mismatched condition types, and missing answer values produce no match. The evaluator does not throw for safe non-match cases.
+
+### Debug API
+
+`GET /api/inspections/{inspectionId}/rule-evaluation` returns evaluation results for all answers on an inspection. Results are not persisted and no workflow side effects occur.
+
+### A3.2 scope limitation
+
+**A3.2 evaluates rules only.**
+
+Results are returned in memory. They are **not persisted**, and no Issues, Operational Decisions, notifications, or review flags are created. Inspection completion behaviour is unchanged.
+
+### Future execution roadmap
+
+Later sprints will:
+
+- persist or surface evaluation results as suggestions;
+- generate Issues, severities, or Operational Decisions from matching rules;
+- integrate rule outcomes with operational workflows and analytics.
+
 ## Future sprints
 
 Planned extensions to the Domain Engine include:
@@ -280,15 +400,15 @@ Planned extensions to the Domain Engine include:
 - structured answers captured during Inspection completion;
 - publish and archive workflow rules;
 - template version cloning;
-- decision rules derived from template outcomes;
+- **persisted rule outcomes and suggested actions** after evaluation;
 - analytics and KPI dashboards powered by template-aligned inspection data.
 
 ## Authorization summary
 
 | Role | Access |
 |------|--------|
-| Administrator | Create, update, archive templates; manage checklist questions on draft templates; view all |
-| Manager | View templates and checklist questions |
-| Operational Coordinator | View templates and checklist questions |
+| Administrator | Create, update, archive templates; manage checklist questions and decision rules on draft templates; view all |
+| Manager | View templates, checklist questions, and decision rules |
+| Operational Coordinator | View templates, checklist questions, and decision rules |
 | Field Employee | No access |
 | Contractor | No access |

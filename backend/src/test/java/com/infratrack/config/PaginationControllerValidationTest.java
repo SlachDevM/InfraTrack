@@ -82,7 +82,7 @@ class PaginationControllerValidationTest {
                     controller.listWorkOrders(page, size, null, null);
                 }),
                 new PaginatedListEndpoint("Inspections", (page, size) -> {
-                    InspectionController controller = new InspectionController(null);
+                    InspectionController controller = new InspectionController(null, null);
                     controller.listInspections(page, size, null, null);
                 }),
                 new PaginatedListEndpoint("Issues", (page, size) -> {
