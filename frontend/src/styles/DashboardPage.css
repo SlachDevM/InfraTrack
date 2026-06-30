@@ -266,6 +266,155 @@
   color: #444;
 }
 
+.dashboard-greeting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.dashboard-settings-button {
+  border: 1px solid #2d6a4f;
+  background: white;
+  color: #1a472a;
+  border-radius: 8px;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.dashboard-settings-button:hover {
+  background: #eef3ef;
+}
+
+.dashboard-settings-panel {
+  background: white;
+  border-radius: 10px;
+  width: min(100%, 34rem);
+  max-height: 90vh;
+  overflow: auto;
+  padding: 1.25rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.dashboard-settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.dashboard-settings-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #1a472a;
+}
+
+.dashboard-settings-close {
+  border: none;
+  background: transparent;
+  color: #555;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.dashboard-settings-section {
+  margin-bottom: 1.25rem;
+}
+
+.dashboard-settings-section h3 {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  color: #333;
+}
+
+.dashboard-settings-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+  font-size: 0.9rem;
+  color: #444;
+}
+
+.dashboard-settings-select {
+  width: 100%;
+  border: 1px solid #dde3df;
+  border-radius: 8px;
+  padding: 0.55rem 0.65rem;
+  font-size: 0.9rem;
+}
+
+.dashboard-settings-order-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dashboard-settings-order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid #eef1ee;
+  font-size: 0.9rem;
+}
+
+.dashboard-settings-order-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.dashboard-settings-order-actions button {
+  border: 1px solid #dde3df;
+  background: white;
+  border-radius: 6px;
+  width: 2rem;
+  height: 2rem;
+  cursor: pointer;
+}
+
+.dashboard-settings-order-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.dashboard-settings-error {
+  color: #a94442;
+  background: #fdecea;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.dashboard-settings-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.dashboard-settings-reset {
+  border: 1px solid #c0392b;
+  background: white;
+  color: #c0392b;
+  border-radius: 8px;
+  padding: 0.55rem 0.9rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.dashboard-settings-footer-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
 @media (max-width: 640px) {
   .dashboard-content {
     padding: 1rem;

@@ -1170,7 +1170,19 @@ Query parameter: `limit` (default 20; min 1; max 100). Items are sorted by `occu
 
 Activity types: `INSPECTION_COMPLETED`, `ISSUE_CREATED`, `WORK_ORDER_COMPLETED`, `PREVENTIVE_CANDIDATE_GENERATED`, `PREVENTIVE_CANDIDATE_APPROVED`, `SUGGESTED_ACTION_ACCEPTED`.
 
-This is **not** event sourcing — it queries existing operational records with compact projections. Authorization matches Sprint C1. Dashboard personalization remains future work.
+This is **not** event sourcing — it queries existing operational records with compact projections. Authorization matches Sprint C1.
+
+### Sprint C5 — Dashboard Personalization
+
+Version 2.1.0 Sprint C5 adds **user-scoped dashboard presentation preferences**. Personalization affects layout only — never permissions, data scope, or workflow behaviour.
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/dashboard/preferences` | Load preferences for the authenticated user |
+| `PUT /api/dashboard/preferences` | Save widget visibility, order, and default trend range |
+| `POST /api/dashboard/preferences/reset` | Restore default dashboard presentation |
+
+Supported trend ranges: `LAST_7_DAYS`, `LAST_30_DAYS`, `LAST_90_DAYS`. At least one widget must remain visible. Preferences are stored per user in `dashboard_preferences`.
 
 ### KPI groups
 

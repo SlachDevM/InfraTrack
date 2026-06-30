@@ -5,7 +5,9 @@ import { MemoryRouter } from 'react-router-dom';
 import PlatformShell from '../../pages/PlatformShell';
 import DashboardPage from '../../pages/DashboardPage';
 import operationsIntelligenceApi from '../../services/operationsIntelligenceApi';
+import dashboardPreferencesApi from '../../services/dashboardPreferencesApi';
 import { USER_ROLES } from '../../constants/userRoles';
+import { DEFAULT_DASHBOARD_PREFERENCES } from '../../constants/dashboardPreferences';
 
 const mockNavigate = vi.fn();
 const mockLogout = vi.fn();
@@ -22,6 +24,14 @@ vi.mock('../../services/operationsIntelligenceApi', () => ({
     getKpis: vi.fn(),
     getTrends: vi.fn(),
     getRecentActivity: vi.fn(),
+  },
+}));
+
+vi.mock('../../services/dashboardPreferencesApi', () => ({
+  default: {
+    getPreferences: vi.fn(),
+    savePreferences: vi.fn(),
+    resetPreferences: vi.fn(),
   },
 }));
 
@@ -138,6 +148,7 @@ describe('Dashboard navigation', () => {
     });
     operationsIntelligenceApi.getTrends.mockResolvedValue({ series: {} });
     operationsIntelligenceApi.getRecentActivity.mockResolvedValue({ items: [] });
+    dashboardPreferencesApi.getPreferences.mockResolvedValue(DEFAULT_DASHBOARD_PREFERENCES);
   });
 
   it('shows Dashboard link for manager and keeps More menu working', async () => {

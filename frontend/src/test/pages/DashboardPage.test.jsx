@@ -4,7 +4,9 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import DashboardPage from '../../pages/DashboardPage';
 import operationsIntelligenceApi from '../../services/operationsIntelligenceApi';
+import dashboardPreferencesApi from '../../services/dashboardPreferencesApi';
 import { USER_ROLES } from '../../constants/userRoles';
+import { DEFAULT_DASHBOARD_PREFERENCES } from '../../constants/dashboardPreferences';
 
 const mockNavigate = vi.fn();
 const mockLogout = vi.fn();
@@ -21,6 +23,14 @@ vi.mock('../../services/operationsIntelligenceApi', () => ({
     getKpis: vi.fn(),
     getTrends: vi.fn(),
     getRecentActivity: vi.fn(),
+  },
+}));
+
+vi.mock('../../services/dashboardPreferencesApi', () => ({
+  default: {
+    getPreferences: vi.fn(),
+    savePreferences: vi.fn(),
+    resetPreferences: vi.fn(),
   },
 }));
 
@@ -164,6 +174,7 @@ describe('DashboardPage', () => {
     operationsIntelligenceApi.getKpis.mockResolvedValue(sampleKpis);
     operationsIntelligenceApi.getTrends.mockResolvedValue(sampleTrends);
     operationsIntelligenceApi.getRecentActivity.mockResolvedValue(sampleRecentActivity);
+    dashboardPreferencesApi.getPreferences.mockResolvedValue(DEFAULT_DASHBOARD_PREFERENCES);
   });
 
   it('loads KPIs from API and displays cards', async () => {
@@ -174,8 +185,11 @@ describe('DashboardPage', () => {
     );
 
     await waitFor(() => {
+      expect(dashboardPreferencesApi.getPreferences).toHaveBeenCalled();
       expect(operationsIntelligenceApi.getKpis).toHaveBeenCalled();
-      expect(operationsIntelligenceApi.getTrends).toHaveBeenCalledWith({ bucket: 'DAY' });
+      expect(operationsIntelligenceApi.getTrends).toHaveBeenCalledWith(
+        expect.objectContaining({ bucket: 'DAY', from: expect.any(Number), to: expect.any(Number) }),
+      );
       expect(operationsIntelligenceApi.getRecentActivity).toHaveBeenCalledWith({ limit: 20 });
     });
 
@@ -244,7 +258,7 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Issue created')).toBeInTheDocument();
   });
 
-  it('shows recent activity loading state', () => {
+  it('shows recent activity loading state', async () => {
     operationsIntelligenceApi.getRecentActivity.mockImplementation(() => new Promise(() => {}));
 
     render(
@@ -253,7 +267,7 @@ describe('DashboardPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('Loading recent activity...')).toBeInTheDocument();
+    expect(await screen.findByText('Loading recent activity...')).toBeInTheDocument();
   });
 
   it('shows recent activity error state', async () => {
@@ -298,7 +312,7 @@ describe('DashboardPage', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/inspections');
   });
 
-  it('shows trends loading state', () => {
+  it('shows trends loading state', async () => {
     operationsIntelligenceApi.getTrends.mockImplementation(() => new Promise(() => {}));
 
     render(
@@ -307,7 +321,7 @@ describe('DashboardPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('Loading operational trends...')).toBeInTheDocument();
+    expect(await screen.findByText('Loading operational trends...')).toBeInTheDocument();
   });
 
   it('shows trends error state', async () => {
@@ -400,6 +414,52 @@ describe('DashboardPage', () => {
     expect(screen.queryByRole('button', { name: /Reject/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Generate Candidates/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Run Scheduler/i })).not.toBeInTheDocument();
+  });
+
+  it('opens dashboard settings and saves preferences', async () => {
+    const user = userEvent.setup();
+    dashboardPreferencesApi.savePreferences.mockResolvedValue({
+      ...DEFAULT_DASHBOARD_PREFERENCES,
+      showRecentActivityWidget: false,
+    });
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('Operational KPIs');
+    await user.click(screen.getByRole('button', { name: 'Dashboard Settings' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    await user.click(screen.getByLabelText('Recent Activity'));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(dashboardPreferencesApi.savePreferences).toHaveBeenCalled();
+    });
+    expect(screen.queryByText('Recent activity')).not.toBeInTheDocument();
+  });
+
+  it('resets dashboard preferences from settings dialog', async () => {
+    const user = userEvent.setup();
+    dashboardPreferencesApi.resetPreferences.mockResolvedValue(DEFAULT_DASHBOARD_PREFERENCES);
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('Operational KPIs');
+    await user.click(screen.getByRole('button', { name: 'Dashboard Settings' }));
+    await user.click(screen.getByRole('button', { name: 'Reset Dashboard' }));
+    await user.click(screen.getAllByRole('button', { name: 'Reset Dashboard' })[1]);
+
+    await waitFor(() => {
+      expect(dashboardPreferencesApi.resetPreferences).toHaveBeenCalled();
+    });
   });
 
   it('redirects field employees away from dashboard', async () => {
