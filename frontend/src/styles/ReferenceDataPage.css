@@ -119,6 +119,83 @@
   margin-bottom: 1rem;
 }
 
+.success-message {
+  background: #e6f4ea;
+  color: #1e6b3a;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.reference-form-section {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e0e6e2;
+}
+
+.section-header,
+.detail-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.section-header h2,
+.detail-panel-header h2 {
+  margin: 0;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 0.55rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.btn-primary {
+  background: #1a472a;
+  color: white;
+  border-color: #1a472a;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #0f2e1e;
+}
+
+.btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: #f0f4f1;
+  color: #333;
+  border-color: #c5d0c8;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #e4ebe6;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #1a472a;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+  text-decoration: underline;
+}
+
+.btn-link:hover {
+  color: #0f2e1e;
+}
+
 .no-items {
   color: #666;
   padding: 1rem 0;
@@ -245,6 +322,44 @@
 
 .detail-tabs {
   margin-bottom: 1rem;
+}
+
+.detail-tab-bar {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid #dde3df;
+}
+
+.detail-tab {
+  padding: 0.55rem 1.1rem;
+  border: 1px solid #c5d0c8;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  background: #f0f4f1;
+  color: #333;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: -1px;
+}
+
+.detail-tab:hover {
+  background: #e4ebe6;
+}
+
+.detail-tab-active {
+  background: #1a472a;
+  color: white;
+  border-color: #1a472a;
+}
+
+.detail-tab-active:hover {
+  background: #0f2e1e;
+}
+
+.candidate-detail-section .detail-panel-header {
+  margin-bottom: 0.75rem;
 }
 
 .execution-report-detail {

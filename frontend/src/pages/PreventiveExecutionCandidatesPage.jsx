@@ -47,6 +47,17 @@ function dateInputToPlannedAt(value) {
   return new Date(`${value}T00:00:00`).getTime();
 }
 
+function parseAssigneeId(value) {
+  if (value === '' || value == null) {
+    return null;
+  }
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+  return parsed;
+}
+
 const EMPTY_APPROVE_FORM = {
   assigneeId: '',
   plannedAt: '',
@@ -249,16 +260,18 @@ export default function PreventiveExecutionCandidatesPage() {
     }
   };
 
+  const selectedAssigneeId = parseAssigneeId(approveForm.assigneeId);
+
   const handleApproveSubmit = async (e) => {
     e.preventDefault();
-    if (!approveCandidate || !canReview) return;
+    if (!approveCandidate || !canReview || selectedAssigneeId == null) return;
 
     try {
       setReviewing(true);
       setError(null);
       setSuccess(null);
       const response = await preventiveExecutionCandidateApi.approve(approveCandidate.id, {
-        assigneeId: Number(approveForm.assigneeId),
+        assigneeId: selectedAssigneeId,
         plannedAt: dateInputToPlannedAt(approveForm.plannedAt),
         notes: approveForm.notes.trim() || undefined,
       });
@@ -515,8 +528,8 @@ export default function PreventiveExecutionCandidatesPage() {
       />
 
       {selectedCandidate && (
-        <section className="reference-form-section">
-          <div className="section-header">
+        <section className="reference-form-section candidate-detail-section">
+          <div className="detail-panel-header">
             <h2>Candidate Detail</h2>
             <button
               type="button"
@@ -529,18 +542,21 @@ export default function PreventiveExecutionCandidatesPage() {
               Close
             </button>
           </div>
-          <div className="detail-tabs">
+          <div className="detail-tab-bar" role="tablist" aria-label="Candidate detail views">
             <button
               type="button"
-              className={detailTab === 'candidate' ? 'btn-primary' : 'btn-secondary'}
+              role="tab"
+              aria-selected={detailTab === 'candidate'}
+              className={`detail-tab${detailTab === 'candidate' ? ' detail-tab-active' : ''}`}
               onClick={() => setDetailTab('candidate')}
             >
               Candidate
             </button>
-            {' '}
             <button
               type="button"
-              className={detailTab === 'report' ? 'btn-primary' : 'btn-secondary'}
+              role="tab"
+              aria-selected={detailTab === 'report'}
+              className={`detail-tab${detailTab === 'report' ? ' detail-tab-active' : ''}`}
               onClick={() => setDetailTab('report')}
             >
               Execution Report
@@ -706,7 +722,7 @@ export default function PreventiveExecutionCandidatesPage() {
               >
                 <option value="">Select field employee</option>
                 {workers.map((worker) => (
-                  <option key={worker.userId} value={worker.userId}>
+                  <option key={worker.id} value={worker.id}>
                     {worker.name}
                   </option>
                 ))}
@@ -737,7 +753,11 @@ export default function PreventiveExecutionCandidatesPage() {
               />
             </label>
             <div className="form-actions">
-              <button type="submit" className="btn-primary" disabled={reviewing}>
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={reviewing || selectedAssigneeId == null}
+              >
                 {reviewing ? 'Approving...' : 'Approve and Create Inspection'}
               </button>
               {' '}

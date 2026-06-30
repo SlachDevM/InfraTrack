@@ -142,7 +142,7 @@ const candidate = {
 
 const assets = [{ id: 5, name: 'Pump A', departmentId: 10 }];
 const plans = [{ id: 100, planCode: 'PUMP_MONTHLY', name: 'Monthly Pump Inspection' }];
-const workers = [{ userId: 60, name: 'Field Worker', role: 'FIELD_EMPLOYEE', status: 'ACTIVE', departmentId: 10 }];
+const workers = [{ id: 60, name: 'Field Worker', role: 'FIELD_EMPLOYEE', status: 'ACTIVE', departmentId: 10 }];
 
 describe('PreventiveExecutionCandidatesPage', () => {
   afterEach(cleanup);
@@ -274,6 +274,62 @@ describe('PreventiveExecutionCandidatesPage', () => {
     expect(screen.queryByRole('button', { name: 'Create Inspection' })).not.toBeInTheDocument();
   });
 
+  it('renders candidate detail header with aligned close button and styled tabs', async () => {
+    const user = userEvent.setup();
+
+    const { container } = render(
+      <MemoryRouter>
+        <PreventiveExecutionCandidatesPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('PUMP_MONTHLY');
+    await user.click(screen.getByRole('button', { name: 'View' }));
+    await screen.findByText('Candidate Detail');
+
+    const header = container.querySelector('.detail-panel-header');
+    expect(header).toBeInTheDocument();
+    expect(within(header).getByRole('heading', { name: 'Candidate Detail' })).toBeInTheDocument();
+    expect(within(header).getByRole('button', { name: 'Close' })).toBeInTheDocument();
+
+    const candidateTab = screen.getByRole('tab', { name: 'Candidate' });
+    const reportTab = screen.getByRole('tab', { name: 'Execution Report' });
+    expect(candidateTab).toHaveClass('detail-tab-active');
+    expect(reportTab).not.toHaveClass('detail-tab-active');
+    expect(candidateTab).toHaveAttribute('aria-selected', 'true');
+    expect(reportTab).toHaveAttribute('aria-selected', 'false');
+  });
+
+  it('switches candidate detail tabs and updates active styling', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <PreventiveExecutionCandidatesPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('PUMP_MONTHLY');
+    await user.click(screen.getByRole('button', { name: 'View' }));
+    await screen.findByText('Candidate Detail');
+
+    const candidateTab = screen.getByRole('tab', { name: 'Candidate' });
+    const reportTab = screen.getByRole('tab', { name: 'Execution Report' });
+
+    await user.click(reportTab);
+    expect(reportTab).toHaveClass('detail-tab-active');
+    expect(candidateTab).not.toHaveClass('detail-tab-active');
+    expect(reportTab).toHaveAttribute('aria-selected', 'true');
+    expect(candidateTab).toHaveAttribute('aria-selected', 'false');
+
+    const reportDetail = screen.getByText('Report Status').closest('dl');
+    expect(within(reportDetail).getByText('Generated')).toBeInTheDocument();
+
+    await user.click(candidateTab);
+    expect(candidateTab).toHaveClass('detail-tab-active');
+    expect(screen.getByText('One full month has elapsed.')).toBeInTheDocument();
+  });
+
   it('shows execution report summary with generated status', async () => {
     const user = userEvent.setup();
 
@@ -286,7 +342,7 @@ describe('PreventiveExecutionCandidatesPage', () => {
     await screen.findByText('PUMP_MONTHLY');
     await user.click(screen.getByRole('button', { name: 'View' }));
     await screen.findByText('Candidate Detail');
-    await user.click(screen.getByRole('button', { name: 'Execution Report' }));
+    await user.click(screen.getByRole('tab', { name: 'Execution Report' }));
 
     const reportDetail = screen.getByText('Report Status').closest('dl');
     expect(within(reportDetail).getByText('Generated')).toBeInTheDocument();
@@ -311,7 +367,7 @@ describe('PreventiveExecutionCandidatesPage', () => {
 
     await screen.findByText('PUMP_MONTHLY');
     await user.click(screen.getByRole('button', { name: 'View' }));
-    await user.click(screen.getByRole('button', { name: 'Execution Report' }));
+    await user.click(screen.getByRole('tab', { name: 'Execution Report' }));
 
     const reportDetail = screen.getByText('Report Status').closest('dl');
     expect(within(reportDetail).getByText('Inspection created')).toBeInTheDocument();
@@ -330,7 +386,7 @@ describe('PreventiveExecutionCandidatesPage', () => {
 
     await screen.findByText('PUMP_MONTHLY');
     await user.click(screen.getByRole('button', { name: 'View' }));
-    await user.click(screen.getByRole('button', { name: 'Execution Report' }));
+    await user.click(screen.getByRole('tab', { name: 'Execution Report' }));
 
     const reportDetail = screen.getByText('Report Status').closest('dl');
     expect(within(reportDetail).getByText('Rejected')).toBeInTheDocument();
@@ -349,7 +405,7 @@ describe('PreventiveExecutionCandidatesPage', () => {
 
     await screen.findByText('PUMP_MONTHLY');
     await user.click(screen.getByRole('button', { name: 'View' }));
-    await user.click(screen.getByRole('button', { name: 'Execution Report' }));
+    await user.click(screen.getByRole('tab', { name: 'Execution Report' }));
 
     const reportDetail = screen.getByText('Report Status').closest('dl');
     expect(within(reportDetail).getByText('Dismissed')).toBeInTheDocument();
@@ -393,16 +449,76 @@ describe('PreventiveExecutionCandidatesPage', () => {
     await user.click(screen.getAllByRole('button', { name: 'Approve' })[0]);
     expect(await screen.findByRole('heading', { name: 'Approve Candidate' })).toBeInTheDocument();
 
+    const submitButton = screen.getByRole('button', { name: 'Approve and Create Inspection' });
+    expect(submitButton).toBeDisabled();
+
+    await user.selectOptions(screen.getByLabelText('Assignee'), '60');
+    await user.type(screen.getByLabelText('Planned Date'), '2026-06-27');
+    await user.type(screen.getByLabelText('Notes'), 'Monthly preventive check');
+    expect(submitButton).not.toBeDisabled();
+
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(preventiveExecutionCandidateApi.approve).toHaveBeenCalledWith(500, {
+        assigneeId: 60,
+        plannedAt: new Date('2026-06-27T00:00:00').getTime(),
+        notes: 'Monthly preventive check',
+      });
+    });
+    expect(await screen.findByText(/Candidate approved and inspection created/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Execute' })).not.toBeInTheDocument();
+  });
+
+  it('does not submit approval without assignee', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <PreventiveExecutionCandidatesPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('PUMP_MONTHLY');
+    await user.click(screen.getAllByRole('button', { name: 'Approve' })[0]);
+    await screen.findByRole('heading', { name: 'Approve Candidate' });
+
+    const submitButton = screen.getByRole('button', { name: 'Approve and Create Inspection' });
+    expect(submitButton).toBeDisabled();
+    expect(preventiveExecutionCandidateApi.approve).not.toHaveBeenCalled();
+  });
+
+  it('sends numeric assigneeId from worker id field', async () => {
+    const user = userEvent.setup();
+    preventiveExecutionCandidateApi.approve.mockResolvedValue({
+      candidate: { ...candidate, candidateStatus: 'APPROVED', createdInspectionId: 900 },
+      inspection: { id: 900 },
+    });
+
+    render(
+      <MemoryRouter>
+        <PreventiveExecutionCandidatesPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('PUMP_MONTHLY');
+    await user.click(screen.getAllByRole('button', { name: 'Approve' })[0]);
     await user.selectOptions(screen.getByLabelText('Assignee'), '60');
     await user.click(screen.getByRole('button', { name: 'Approve and Create Inspection' }));
 
     await waitFor(() => {
-      expect(preventiveExecutionCandidateApi.approve).toHaveBeenCalledWith(500, expect.objectContaining({
-        assigneeId: 60,
-      }));
+      expect(preventiveExecutionCandidateApi.approve).toHaveBeenCalledWith(
+        500,
+        expect.objectContaining({
+          assigneeId: 60,
+        }),
+      );
     });
-    expect(await screen.findByText(/Candidate approved and inspection created/i)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Execute' })).not.toBeInTheDocument();
+
+    const payload = preventiveExecutionCandidateApi.approve.mock.calls[0][1];
+    expect(payload.assigneeId).not.toBeNull();
+    expect(Number.isNaN(payload.assigneeId)).toBe(false);
+    expect(typeof payload.assigneeId).toBe('number');
   });
 
   it('rejects candidate', async () => {
