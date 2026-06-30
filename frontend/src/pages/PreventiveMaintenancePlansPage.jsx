@@ -5,7 +5,7 @@ import apiClient from '../services/apiClient';
 import preventiveMaintenancePlanApi from '../services/preventiveMaintenancePlanApi';
 import assetApi from '../services/assetApi';
 import inspectionTemplateApi from '../services/inspectionTemplateApi';
-import ReferenceDataLayout, { REFERENCE_HEADER_STYLE_BLUE } from '../components/layout/ReferenceDataLayout';
+import ReferenceDataLayout from '../components/layout/ReferenceDataLayout';
 import PaginationControls from '../components/PaginationControls';
 import {
   canManagePreventiveMaintenancePlans,
@@ -318,10 +318,7 @@ export default function PreventiveMaintenancePlansPage() {
   }
 
   return (
-    <ReferenceDataLayout
-      title="Preventive Maintenance Plans"
-      headerStyle={REFERENCE_HEADER_STYLE_BLUE}
-    >
+    <ReferenceDataLayout title="Preventive Maintenance Plans">
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
 
@@ -333,7 +330,7 @@ export default function PreventiveMaintenancePlansPage() {
 
         <section className="reference-form-section">
           <h2>Filters</h2>
-          <div className="reference-form">
+          <div className="filter-row">
             <div className="form-row">
               <label htmlFor="filterAssetId">Asset</label>
               <select
@@ -391,46 +388,49 @@ export default function PreventiveMaintenancePlansPage() {
         {canManage && (
           <section className="reference-form-section">
             <h2>{editingId ? 'Edit Preventive Maintenance Plan' : 'Create Preventive Maintenance Plan'}</h2>
-            <form className="reference-form" onSubmit={handleSubmit}>
-              <div className="form-row">
-                <label htmlFor="planCode">Plan Code</label>
-                <input
-                  id="planCode"
-                  name="planCode"
-                  type="text"
-                  value={formData.planCode}
-                  onChange={handleFormChange}
-                  required={!editingId}
-                  disabled={submitting || Boolean(editingId)}
-                  placeholder="PUMP_MONTHLY"
-                />
+            <form className="reference-form reference-form-stacked" onSubmit={handleSubmit}>
+              <div className="reference-form-grid">
+                <div className="form-row">
+                  <label htmlFor="planCode">Plan Code</label>
+                  <input
+                    id="planCode"
+                    name="planCode"
+                    type="text"
+                    value={formData.planCode}
+                    onChange={handleFormChange}
+                    required={!editingId}
+                    disabled={submitting || Boolean(editingId)}
+                    placeholder="PUMP_MONTHLY"
+                  />
+                </div>
+                <div className="form-row">
+                  <label htmlFor="version">Version</label>
+                  <input
+                    id="version"
+                    name="version"
+                    type="number"
+                    min="1"
+                    value={formData.version}
+                    onChange={handleFormChange}
+                    required
+                    disabled={submitting}
+                  />
+                </div>
+                <div className="form-row">
+                  <label htmlFor="name">Name</label>
+                  <input
+                    id="name"
+                    name="name"
+                    type="text"
+                    value={formData.name}
+                    onChange={handleFormChange}
+                    required
+                    disabled={submitting}
+                  />
+                </div>
               </div>
-              <div className="form-row">
-                <label htmlFor="version">Version</label>
-                <input
-                  id="version"
-                  name="version"
-                  type="number"
-                  min="1"
-                  value={formData.version}
-                  onChange={handleFormChange}
-                  required
-                  disabled={submitting}
-                />
-              </div>
-              <div className="form-row">
-                <label htmlFor="name">Name</label>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={handleFormChange}
-                  required
-                  disabled={submitting}
-                />
-              </div>
-              <div className="form-row">
+
+              <div className="form-row form-row-full">
                 <label htmlFor="description">Description</label>
                 <textarea
                   id="description"
@@ -441,109 +441,97 @@ export default function PreventiveMaintenancePlansPage() {
                   rows={3}
                 />
               </div>
-              <div className="form-row">
-                <label htmlFor="assetId">Asset</label>
-                <select
-                  id="assetId"
-                  name="assetId"
-                  value={formData.assetId}
-                  onChange={handleFormChange}
-                  required={!editingId}
-                  disabled={submitting || Boolean(editingId)}
-                >
-                  <option value="">Select asset</option>
-                  {assets.map((asset) => (
-                    <option key={asset.id} value={asset.id}>
-                      {asset.name}
-                    </option>
-                  ))}
-                </select>
+
+              <div className="reference-form-grid">
+                <div className="form-row">
+                  <label htmlFor="assetId">Asset</label>
+                  <select
+                    id="assetId"
+                    name="assetId"
+                    value={formData.assetId}
+                    onChange={handleFormChange}
+                    required={!editingId}
+                    disabled={submitting || Boolean(editingId)}
+                  >
+                    <option value="">Select asset</option>
+                    {assets.map((asset) => (
+                      <option key={asset.id} value={asset.id}>
+                        {asset.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-row">
+                  <label htmlFor="status">Status</label>
+                  <select
+                    id="status"
+                    name="status"
+                    value={formData.status}
+                    onChange={handleFormChange}
+                    required
+                    disabled={submitting}
+                  >
+                    {PREVENTIVE_MAINTENANCE_PLAN_STATUS_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-row">
+                  <label htmlFor="priority">Priority</label>
+                  <select
+                    id="priority"
+                    name="priority"
+                    value={formData.priority}
+                    onChange={handleFormChange}
+                    required
+                    disabled={submitting}
+                  >
+                    {PREVENTIVE_MAINTENANCE_PLAN_PRIORITY_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-row">
+                  <label htmlFor="targetAction">Target Action</label>
+                  <select
+                    id="targetAction"
+                    name="targetAction"
+                    value={formData.targetAction}
+                    onChange={handleFormChange}
+                    required
+                    disabled={submitting}
+                  >
+                    {PLAN_TARGET_ACTION_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <div className="form-row">
-                <label htmlFor="status">Status</label>
-                <select
-                  id="status"
-                  name="status"
-                  value={formData.status}
-                  onChange={handleFormChange}
-                  required
-                  disabled={submitting}
-                >
-                  {PREVENTIVE_MAINTENANCE_PLAN_STATUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-row">
-                <label htmlFor="priority">Priority</label>
-                <select
-                  id="priority"
-                  name="priority"
-                  value={formData.priority}
-                  onChange={handleFormChange}
-                  required
-                  disabled={submitting}
-                >
-                  {PREVENTIVE_MAINTENANCE_PLAN_PRIORITY_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-row">
-                <label htmlFor="targetAction">Target Action</label>
-                <select
-                  id="targetAction"
-                  name="targetAction"
-                  value={formData.targetAction}
-                  onChange={handleFormChange}
-                  required
-                  disabled={submitting}
-                >
-                  {PLAN_TARGET_ACTION_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-row">
-                <label htmlFor="inspectionTemplateId">Inspection Template (optional)</label>
-                <select
-                  id="inspectionTemplateId"
-                  name="inspectionTemplateId"
-                  value={formData.inspectionTemplateId}
-                  onChange={handleFormChange}
-                  disabled={submitting}
-                >
-                  <option value="">None</option>
-                  {templates.map((template) => (
-                    <option key={template.id} value={template.id}>
-                      {template.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-row">
-                <label htmlFor="triggerType">Trigger Type</label>
-                <select
-                  id="triggerType"
-                  name="triggerType"
-                  value={formData.triggerType}
-                  onChange={handleFormChange}
-                  required
-                  disabled={submitting}
-                >
-                  {PLAN_TRIGGER_TYPE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+
+              <div className="reference-form-grid">
+                <div className="form-row">
+                  <label htmlFor="triggerType">Trigger Type</label>
+                  <select
+                    id="triggerType"
+                    name="triggerType"
+                    value={formData.triggerType}
+                    onChange={handleFormChange}
+                    required
+                    disabled={submitting}
+                  >
+                    {PLAN_TRIGGER_TYPE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               {formData.triggerType === 'TIME' && (
                 <>
                   <div className="form-row">
@@ -631,6 +619,28 @@ export default function PreventiveMaintenancePlansPage() {
                   </select>
                 </div>
               )}
+              </div>
+
+              {formData.targetAction === 'CREATE_INSPECTION' && (
+                <div className="form-row form-row-full">
+                  <label htmlFor="inspectionTemplateId">Inspection Template (optional)</label>
+                  <select
+                    id="inspectionTemplateId"
+                    name="inspectionTemplateId"
+                    value={formData.inspectionTemplateId}
+                    onChange={handleFormChange}
+                    disabled={submitting}
+                  >
+                    <option value="">None</option>
+                    {templates.map((template) => (
+                      <option key={template.id} value={template.id}>
+                        {template.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {triggerSummaryPreview && (
                 <p className="read-only-note">
                   Trigger summary:

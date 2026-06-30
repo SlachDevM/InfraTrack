@@ -3,6 +3,8 @@ import {
   APP_NAVIGATION_ITEMS,
   canAccessRoute,
   getNavigationItems,
+  getOverflowNavigationItems,
+  getPrimaryNavigationItems,
   isFieldEmployeeRole,
 } from '../../constants/navigation';
 import { USER_ROLES } from '../../constants/userRoles';
@@ -91,5 +93,15 @@ describe('getNavigationItems', () => {
     expect(getNavigationItems(USER_ROLES.OPERATIONAL_COORDINATOR)).toHaveLength(
       APP_NAVIGATION_ITEMS.length
     );
+  });
+
+  it('splits manager navigation into primary and overflow groups', () => {
+    const primary = getPrimaryNavigationItems(USER_ROLES.MANAGER).map((item) => item.label);
+    const overflow = getOverflowNavigationItems(USER_ROLES.MANAGER).map((item) => item.label);
+
+    expect(primary).toEqual(['Assets', 'Inspections', 'Issues', 'Work Orders']);
+    expect(overflow).toContain('Departments');
+    expect(overflow).toContain('Inspection Templates');
+    expect(overflow).not.toContain('Assets');
   });
 });

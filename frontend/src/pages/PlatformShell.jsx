@@ -1,10 +1,13 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import NotificationButton from '../components/NotificationButton';
+import NavigationMoreMenu from '../components/navigation/NavigationMoreMenu';
 import { canManageUsers, getRoleLabel } from '../constants/userRoles';
 import {
   FIELD_EMPLOYEE_SHORTCUTS,
-  getNavigationItems,
+  getOverflowNavigationItems,
+  getPrimaryNavigationItems,
   isFieldEmployeeRole,
 } from '../constants/navigation';
 import { APP_VERSION } from '../config/appVersion';
@@ -13,8 +16,16 @@ import '../styles/PlatformShell.css';
 export default function PlatformShell() {
   const navigate = useNavigate();
   const { auth, logout } = useAuth();
-  const navigationItems = getNavigationItems(auth?.user?.role);
   const fieldEmployee = isFieldEmployeeRole(auth?.user?.role);
+
+  const primaryNavigationItems = getPrimaryNavigationItems(auth?.user?.role);
+  const overflowNavigationItems = useMemo(() => {
+    const items = getOverflowNavigationItems(auth?.user?.role);
+    if (canManageUsers(auth?.user?.role)) {
+      return [...items, { path: '/users', label: 'Users' }];
+    }
+    return items;
+  }, [auth?.user?.role]);
 
   const handleLogout = () => {
     logout();
@@ -26,24 +37,24 @@ export default function PlatformShell() {
       <nav className="platform-navbar">
         <div className="navbar-brand">InfraTrack</div>
         <div className="navbar-items">
-          {navigationItems.map((item) => (
-            <div
+          {primaryNavigationItems.map((item) => (
+            <button
               key={item.path}
+              type="button"
               className="navbar-link"
               onClick={() => navigate(item.path)}
             >
               {item.label}
-            </div>
+            </button>
           ))}
-          {canManageUsers(auth?.user?.role) && (
-            <div className="navbar-link" onClick={() => navigate('/users')}>
-              Users
-            </div>
-          )}
+          <NavigationMoreMenu
+            items={overflowNavigationItems}
+            onNavigate={navigate}
+          />
           <NotificationButton />
-          <div className="navbar-link logout" onClick={handleLogout}>
+          <button type="button" className="navbar-link logout" onClick={handleLogout}>
             Logout
-          </div>
+          </button>
         </div>
       </nav>
 

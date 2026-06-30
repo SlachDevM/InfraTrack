@@ -25,6 +25,13 @@ const PREVENTIVE_MAINTENANCE_PLAN_VIEWER_ROLES = INSPECTION_TEMPLATE_VIEWER_ROLE
 const PREVENTIVE_EXECUTION_CANDIDATE_VIEWER_ROLES = INSPECTION_TEMPLATE_VIEWER_ROLES;
 const PREVENTIVE_SCHEDULER_VIEWER_ROLES = INSPECTION_TEMPLATE_VIEWER_ROLES;
 
+export const PRIMARY_NAVIGATION_PATHS = new Set([
+  '/assets',
+  '/inspections',
+  '/work-orders',
+  '/issues',
+]);
+
 export const APP_NAVIGATION_ITEMS = [
   { path: '/assets', label: 'Assets', fieldEmployeeLabel: 'Documents' },
   { path: '/business-triggers', label: 'Business Triggers' },
@@ -95,6 +102,14 @@ export function getNavigationItems(role) {
         ? item.fieldEmployeeLabel
         : item.label,
     }));
+}
+
+export function getPrimaryNavigationItems(role) {
+  return getNavigationItems(role).filter((item) => PRIMARY_NAVIGATION_PATHS.has(item.path));
+}
+
+export function getOverflowNavigationItems(role) {
+  return getNavigationItems(role).filter((item) => !PRIMARY_NAVIGATION_PATHS.has(item.path));
 }
 
 export const FIELD_EMPLOYEE_SHORTCUTS = [

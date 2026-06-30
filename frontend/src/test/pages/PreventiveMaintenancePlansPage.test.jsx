@@ -114,7 +114,7 @@ describe('PreventiveMaintenancePlansPage', () => {
   });
 
   it('renders plan list with trigger summary for administrator', async () => {
-    render(
+    const { container } = render(
       <MemoryRouter>
         <PreventiveMaintenancePlansPage />
       </MemoryRouter>
@@ -123,6 +123,27 @@ describe('PreventiveMaintenancePlansPage', () => {
     expect(await screen.findByText('PUMP_MONTHLY')).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Every month' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    expect(container.querySelector('.reference-header')).toBeInTheDocument();
+    expect(container.querySelector('.reference-header')).toHaveStyle({
+      background: 'linear-gradient(135deg, #1a472a 0%, #2d6b4d 100%)',
+    });
+  });
+
+  it('renders create form in stacked rows instead of one horizontal row', async () => {
+    const { container } = render(
+      <MemoryRouter>
+        <PreventiveMaintenancePlansPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('PUMP_MONTHLY');
+    const form = container.querySelector('form.reference-form-stacked');
+    expect(form).toBeInTheDocument();
+    expect(container.querySelectorAll('.reference-form-grid').length).toBeGreaterThanOrEqual(3);
+    expect(screen.getByLabelText('Plan Code')).toBeInTheDocument();
+    expect(screen.getByLabelText('Target Action')).toBeInTheDocument();
+    expect(form.querySelector('#triggerType')).toBeInTheDocument();
+    expect(form.querySelector('#inspectionTemplateId')).toBeInTheDocument();
   });
 
   it('shows read-only view for manager', async () => {

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import PlatformShell from '../../pages/PlatformShell';
 import { USER_ROLES } from '../../constants/userRoles';
@@ -49,17 +50,18 @@ describe('PlatformShell navigation', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('Documents')).toBeInTheDocument();
-    expect(screen.getByText('Inspections')).toBeInTheDocument();
-    expect(screen.getByText('Work Orders')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Documents' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Inspections' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Work Orders' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'More' })).not.toBeInTheDocument();
     expect(screen.queryByText('Departments')).not.toBeInTheDocument();
-    expect(screen.queryByText('Issues')).not.toBeInTheDocument();
     expect(screen.queryByText('Business Triggers')).not.toBeInTheDocument();
     expect(screen.getByText('Assigned Inspections')).toBeInTheDocument();
     expect(screen.getByText('Operational Documents')).toBeInTheDocument();
   });
 
-  it('keeps full navigation for managers', () => {
+  it('keeps primary navigation visible for managers and moves configuration links to More', async () => {
+    const user = userEvent.setup();
     mockAuth.user.role = USER_ROLES.MANAGER;
 
     render(
@@ -68,14 +70,36 @@ describe('PlatformShell navigation', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('Assets')).toBeInTheDocument();
-    expect(screen.getByText('Departments')).toBeInTheDocument();
-    expect(screen.getByText('Issues')).toBeInTheDocument();
-    expect(screen.getByText('Decisions')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Assets' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Issues' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Departments' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'More' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'More' }));
+
+    expect(screen.getByRole('menuitem', { name: 'Departments' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Inspection Templates' })).toBeInTheDocument();
     expect(screen.queryByText('Assigned Inspections')).not.toBeInTheDocument();
   });
 
-  it('keeps full navigation for operational coordinators', () => {
+  it('navigates when a More menu item is clicked', async () => {
+    const user = userEvent.setup();
+    mockAuth.user.role = USER_ROLES.MANAGER;
+
+    render(
+      <MemoryRouter>
+        <PlatformShell />
+      </MemoryRouter>
+    );
+
+    await user.click(screen.getByRole('button', { name: 'More' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Departments' }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/departments');
+  });
+
+  it('keeps overflow navigation for operational coordinators in More', async () => {
+    const user = userEvent.setup();
     mockAuth.user.role = USER_ROLES.OPERATIONAL_COORDINATOR;
 
     render(
@@ -84,12 +108,18 @@ describe('PlatformShell navigation', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('Business Triggers')).toBeInTheDocument();
-    expect(screen.getByText('Delegations')).toBeInTheDocument();
-    expect(screen.getByText('Categories')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'More' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Business Triggers' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'More' }));
+
+    expect(screen.getByRole('menuitem', { name: 'Business Triggers' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Delegations' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Categories' })).toBeInTheDocument();
   });
 
-  it('keeps user management link for administrators only', () => {
+  it('keeps user management in More for administrators only', async () => {
+    const user = userEvent.setup();
     mockAuth.user.role = USER_ROLES.ADMINISTRATOR;
 
     render(
@@ -98,7 +128,12 @@ describe('PlatformShell navigation', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('Users')).toBeInTheDocument();
-    expect(screen.getByText('Departments')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'More' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Users' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'More' }));
+
+    expect(screen.getByRole('menuitem', { name: 'Users' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Departments' })).toBeInTheDocument();
   });
 });
