@@ -156,7 +156,7 @@ Future capabilities:
 
 # Domain Engine
 
-The Domain Engine introduces reusable business knowledge for inspections and preventive maintenance. **Phase A+B is implemented** — see [domain-engine.md](../07-business-architecture/domain-engine.md).
+The Domain Engine introduces reusable business knowledge for inspections and preventive maintenance. **Version 2.0.0 is implemented** — see [domain-engine.md](../07-business-architecture/domain-engine.md) and [Platform Version History](../06-release-notes/platform-version-history.md).
 
 Implemented capabilities include Inspection Templates, structured answers, Decision Rules, Suggested Actions, Decision Assistant, Preventive Maintenance Plans, Execution Candidates, and the Controlled Preventive Scheduler. Authoritative detail: [Domain Engine](../07-business-architecture/domain-engine.md).
 
@@ -188,7 +188,7 @@ Business knowledge should be attached to Asset Categories rather than individual
 
 # Preventive Maintenance
 
-Preventive Maintenance Plans define when attention may be needed. **Phase B** evaluates triggers, generates **Execution Candidates**, and requires Manager approval before an Inspection is created. The **Controlled Scheduler** discovers candidates only.
+Preventive Maintenance Plans define when attention may be needed. **Version 2.0.0** evaluates triggers, generates **Execution Candidates**, and requires Manager approval before an Inspection is created. The **Controlled Scheduler** discovers candidates only.
 
 Approved preventive work joins the existing operational workflow (Inspection → Issue → …). No parallel workflow is introduced.
 
@@ -241,7 +241,7 @@ Operational Management
 
 Business Knowledge
 
-(Phase A+B — Decision Engine and Preventive Maintenance Engine)
+(Version 2.0.0 — Decision Engine and Preventive Maintenance Engine)
 
 ---
 
@@ -249,7 +249,7 @@ Business Knowledge
 
 Operational Intelligence
 
-(Phase C onward — dashboards, mobile, analytics, optional decision automation)
+(Version 2.1.0 onward — dashboards, mobile, analytics, optional decision automation)
 
 ---
 

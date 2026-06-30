@@ -19,10 +19,19 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    private static final List<String> ALLOWED_CORS_HEADERS = List.of(
+            "Authorization",
+            "Content-Type",
+            "X-Requested-With",
+            "Accept",
+            "Origin"
+    );
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
@@ -34,6 +43,9 @@ public class SecurityConfig {
 
     @Value("${springdoc.api-docs.enabled:true}")
     private boolean apiDocsEnabled;
+
+    @Value("${spring.profiles.active:dev}")
+    private String activeProfile;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
@@ -51,18 +63,24 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
-                .headers(headers -> headers
-                        .contentTypeOptions(Customizer.withDefaults())
-                        .frameOptions(frame -> frame.deny())
-                        .referrerPolicy(referrer -> referrer.policy(
-                                ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
-                        // CSP deferred: React SPA is served separately by nginx; a strict policy on the API
-                        // would not protect the UI, and an API-only CSP provides little value without
-                        // coordinated frontend nonce/hashing for Vite-built assets.
-                        .addHeaderWriter(new PermissionsPolicyHeaderWriter(
-                                "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), "
-                                        + "microphone=(), payment=(), usb=()"))
-                )
+                .headers(headers -> {
+                    headers
+                            .contentTypeOptions(Customizer.withDefaults())
+                            .frameOptions(frame -> frame.deny())
+                            .referrerPolicy(referrer -> referrer.policy(
+                                    ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                            // CSP deferred: React SPA is served separately by nginx; a strict policy on the API
+                            // would not protect the UI, and an API-only CSP provides little value without
+                            // coordinated frontend nonce/hashing for Vite-built assets.
+                            .addHeaderWriter(new PermissionsPolicyHeaderWriter(
+                                    "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), "
+                                            + "microphone=(), payment=(), usb=()"));
+                    if (isProductionProfile()) {
+                        headers.httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31_536_000));
+                    }
+                })
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> {
                     authz.requestMatchers(
@@ -95,17 +113,22 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Parse comma-separated allowed origins from environment variable
         String[] origins = allowedOrigins.split(",");
         configuration.setAllowedOrigins(Arrays.asList(origins));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setExposedHeaders(Arrays.asList("*"));
+        configuration.setAllowedHeaders(ALLOWED_CORS_HEADERS);
+        configuration.setExposedHeaders(List.of());
         configuration.setAllowCredentials(false);
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    boolean isProductionProfile() {
+        return Arrays.stream(activeProfile.split(","))
+                .map(String::trim)
+                .anyMatch(profile -> "prod".equalsIgnoreCase(profile) || "production".equalsIgnoreCase(profile));
     }
 }

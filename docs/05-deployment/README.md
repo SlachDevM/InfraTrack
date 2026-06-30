@@ -93,6 +93,7 @@ docker compose -f docker-compose.prod.yml up -d --build
 | Variable | Required | Notes |
 |----------|----------|-------|
 | `JWT_SECRET` | Yes | Strong random signing secret |
+| `JWT_EXPIRATION` | No | Access token lifetime in ms (default `86400000`) |
 | `SPRING_DATASOURCE_URL` | Yes | JDBC URL to PostgreSQL |
 | `SPRING_DATASOURCE_USERNAME` | Yes | Database user |
 | `SPRING_DATASOURCE_PASSWORD` | Yes | Database password |
@@ -111,7 +112,7 @@ Full list: [`.env.example`](../../.env.example)
 
 ### Preventive Scheduler
 
-The **Controlled Preventive Scheduler** (V2 Phase B) generates execution candidates only. It does **not** create Inspections, approve candidates, or send notifications.
+The **Controlled Preventive Scheduler** (Version 2.0.0) generates execution candidates only. It does **not** create Inspections, approve candidates, or send notifications.
 
 | Property / variable | Default | Purpose |
 |---------------------|---------|---------|
@@ -132,6 +133,9 @@ See [Domain Engine — B5](../07-business-architecture/domain-engine.md) and [BD
 - `SPRING_PROFILES_ACTIVE=prod`
 - Swagger UI and OpenAPI docs **disabled**
 - Login rate limiting **active** on `POST /api/auth/login`
+- Activation rate limiting **active** on `POST /api/auth/activate-account`
+- HSTS **enabled** in `prod` profile only
+- Password minimum length **12 characters** on activation
 - Firebase credentials **optional** — FCM disabled when unset
 - JWT secret **required** (no dev fallback)
 

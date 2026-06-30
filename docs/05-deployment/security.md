@@ -1,6 +1,6 @@
 # Security Hardening
 
-Production security controls applied in InfraTrack V2 Sprint 0.
+Production security controls applied in InfraTrack V2 Sprint 0 and extended in V2.0.1.
 
 ---
 
@@ -29,6 +29,27 @@ For local development, use:
 
 ---
 
+## JWT
+
+| Property | Environment variable | Default | Purpose |
+|----------|---------------------|---------|---------|
+| `jwt.secret` | `JWT_SECRET` | Dev fallback only | HMAC signing key |
+| `jwt.expiration` | `JWT_EXPIRATION` | `86400000` (24 hours) | Access token lifetime in milliseconds |
+
+Production requires a strong `JWT_SECRET`. Token lifetime can be tuned per deployment without code changes.
+
+Bearer token storage in clients is an intentional architecture decision — see [BDR-003](../03-architecture/bdr-003-bearer-token-architecture.md).
+
+---
+
+## Password policy
+
+Registration (`POST /api/auth/register`, development only) and account activation (`POST /api/auth/activate-account`) require passwords between **12 and 128 characters**.
+
+No complexity rules (uppercase, symbols, etc.) — length only. The React activation page enforces the same minimum client-side.
+
+---
+
 ## Login rate limiting
 
 `POST /api/auth/login` is protected against brute-force attempts.
@@ -53,8 +74,6 @@ When exceeded:
 
 No indication whether the email exists.
 
-Other auth endpoints (`/api/auth/activate-account`, `/api/auth/register`) are **not** rate limited by this control.
-
 Configuration:
 
 ```properties
@@ -63,11 +82,72 @@ app.auth.login-rate-limit.max-attempts-per-minute=10
 
 ---
 
-## JWT signing key
+## Activation rate limiting
 
-The JWT HMAC signing key is derived once at application startup and cached for the lifetime of the process. Token generation and validation use the same cached key, preserving compatibility with existing tokens.
+`POST /api/auth/activate-account` is rate limited by **client IP only** (not by token) to avoid leaking token validity.
 
-Production requires a strong `JWT_SECRET` environment variable (see `.env.example`).
+| Limit | Policy |
+|-------|--------|
+| Per IP address | 10 attempts per minute |
+
+When exceeded, the same response shape as login rate limiting:
+
+- HTTP `429`
+- Header: `Retry-After`
+- JSON: `{ "message": "Too many activation attempts. Please try again later.", "retryAfterSeconds": <seconds> }`
+
+Configuration:
+
+```properties
+app.auth.activate-account-rate-limit.max-attempts-per-minute=10
+```
+
+---
+
+## HTTP Strict Transport Security (HSTS)
+
+HSTS is enabled **only** when the active Spring profile includes `prod`:
+
+- `max-age=31536000` (one year)
+- `includeSubDomains=true`
+
+Development profiles do **not** send the `Strict-Transport-Security` header.
+
+HSTS assumes the API is served over HTTPS behind a reverse proxy in production.
+
+---
+
+## CORS
+
+Allowed origins are configured via `FRONTEND_ORIGIN` / `app.cors.allowed-origins`.
+
+Allowed request headers (explicit list — no wildcard):
+
+- `Authorization` — JWT Bearer authentication
+- `Content-Type` — JSON and multipart boundaries (browser sets boundary for `FormData`)
+- `X-Requested-With`
+- `Accept`
+- `Origin`
+
+No custom response headers are exposed to JavaScript; the frontend reads JWT from the login/activation response body.
+
+Swagger UI in development is served from the API origin (`localhost:4000`) and is not affected by SPA CORS rules.
+
+---
+
+## Reverse proxy and client IP
+
+Rate limiting uses the client IP from `X-Forwarded-For` when present (first address in the list), otherwise `request.getRemoteAddr()`.
+
+**Important:** The backend treats `X-Forwarded-For` as trustworthy. Deployments must place the API **behind a trusted reverse proxy** that:
+
+- Terminates TLS (HTTPS)
+- Strips or overwrites untrusted `X-Forwarded-For` values from clients
+- Sets the header from the actual client connection
+
+Common proxies: **Nginx**, **Traefik**, **Cloudflare** (when configured to pass the connecting client IP).
+
+Direct exposure of the Spring Boot port to the public internet without a proxy allows clients to spoof `X-Forwarded-For` and bypass IP-based rate limits.
 
 ---
 
@@ -93,6 +173,7 @@ The backend starts normally when Firebase is disabled.
 |--------|------------------------|
 | Database password | `SPRING_DATASOURCE_PASSWORD` |
 | JWT signing secret | `JWT_SECRET` |
+| JWT expiration (optional) | `JWT_EXPIRATION` |
 | SMTP password | `SPRING_MAIL_PASSWORD` |
 | Firebase credentials (optional) | `FIREBASE_SERVICE_ACCOUNT_PATH` + mounted file |
 

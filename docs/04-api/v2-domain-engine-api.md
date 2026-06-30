@@ -1,6 +1,6 @@
 # V2 Domain Engine API — Endpoint Groups
 
-This document summarises major V2 REST endpoint groups introduced in Phase A and Phase B. It is **not** a substitute for Swagger.
+This document summarises major REST endpoint groups introduced in **Version 2.0.0** (Decision Engine and Preventive Maintenance Engine). It is **not** a substitute for Swagger.
 
 **Authoritative interactive reference (development):**
 

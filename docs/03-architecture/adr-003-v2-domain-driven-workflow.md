@@ -168,7 +168,9 @@ Both engines converge on the **Inspection** domain when approved preventive work
 | [BDR-002](bdr-002-preventive-candidates-before-automation.md) | Scheduler generates candidates only |
 | [Domain Engine](../07-business-architecture/domain-engine.md) | Detailed sprint documentation |
 | [Glossary](../01-business-architecture/glossary.md) | Business terminology |
-| [V2 Roadmap](../06-release-notes/v2-roadmap.md) | Phase evolution |
+| [Platform Version History](../06-release-notes/platform-version-history.md) | Product versions |
+| [ADR-004](adr-004-platform-versioning-strategy.md) | Platform versioning strategy |
+| [V2 Roadmap](../06-release-notes/v2-roadmap.md) | Planned product versions |
 
 ---
 

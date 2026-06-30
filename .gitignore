@@ -23,6 +23,12 @@ yarn-debug.log*
 yarn-error.log*
 *.log
 
+# Accidental backend test output artifacts
+backend/test_output.txt
+backend/test_results.txt
+backend/test_um.txt
+backend/test_*.txt
+
 # OS files
 .DS_Store
 Thumbs.db

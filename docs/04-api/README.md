@@ -11,7 +11,7 @@ All public endpoints are grouped by business capability (Assets, Inspections, Wo
 
 ## V2 Domain Engine
 
-Phase A and Phase B introduced additional endpoint groups for the Decision Engine and Preventive Maintenance Engine. See [v2-domain-engine-api.md](v2-domain-engine-api.md) for a concise summary of major paths.
+**Version 2.0.0** introduced additional endpoint groups for the Decision Engine and Preventive Maintenance Engine. See [v2-domain-engine-api.md](v2-domain-engine-api.md) for a concise summary of major paths.
 
 ## V1 API
 

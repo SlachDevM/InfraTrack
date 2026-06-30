@@ -15,14 +15,19 @@ import java.time.Duration;
 public class LoginRateLimiter {
 
     public static final String RATE_LIMIT_MESSAGE = "Too many login attempts. Please try again later.";
+    public static final String ACTIVATION_RATE_LIMIT_MESSAGE =
+            "Too many activation attempts. Please try again later.";
 
     private final int maxAttemptsPerMinute;
+    private final int activationMaxAttemptsPerMinute;
     private final Cache<String, Bucket> buckets;
 
     public LoginRateLimiter(
-            @Value("${app.auth.login-rate-limit.max-attempts-per-minute:10}") int maxAttemptsPerMinute
+            @Value("${app.auth.login-rate-limit.max-attempts-per-minute:10}") int maxAttemptsPerMinute,
+            @Value("${app.auth.activate-account-rate-limit.max-attempts-per-minute:10}") int activationMaxAttemptsPerMinute
     ) {
         this.maxAttemptsPerMinute = maxAttemptsPerMinute;
+        this.activationMaxAttemptsPerMinute = activationMaxAttemptsPerMinute;
         this.buckets = Caffeine.newBuilder()
                 .expireAfterAccess(Duration.ofMinutes(2))
                 .maximumSize(10_000)
@@ -31,23 +36,27 @@ public class LoginRateLimiter {
 
     public void checkAllowed(String clientIp, String email) {
         String normalizedEmail = email != null ? EmailNormalizer.normalize(email) : "";
-        consumeOrThrow("ip:" + clientIp);
-        consumeOrThrow("email:" + normalizedEmail);
+        consumeOrThrow("login:ip:" + clientIp, maxAttemptsPerMinute, RATE_LIMIT_MESSAGE);
+        consumeOrThrow("login:email:" + normalizedEmail, maxAttemptsPerMinute, RATE_LIMIT_MESSAGE);
     }
 
-    private void consumeOrThrow(String key) {
-        Bucket bucket = buckets.get(key, ignored -> createBucket());
+    public void checkActivationAllowed(String clientIp) {
+        consumeOrThrow("activate:ip:" + clientIp, activationMaxAttemptsPerMinute, ACTIVATION_RATE_LIMIT_MESSAGE);
+    }
+
+    private void consumeOrThrow(String key, int maxAttemptsPerMinute, String message) {
+        Bucket bucket = buckets.get(key, ignored -> createBucket(maxAttemptsPerMinute));
         ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
         if (!probe.isConsumed()) {
             long retryAfterSeconds = Math.max(
                     1L,
                     Duration.ofNanos(probe.getNanosToWaitForRefill()).toSeconds()
             );
-            throw new LoginRateLimitExceededException(RATE_LIMIT_MESSAGE, retryAfterSeconds);
+            throw new LoginRateLimitExceededException(message, retryAfterSeconds);
         }
     }
 
-    private Bucket createBucket() {
+    private Bucket createBucket(int maxAttemptsPerMinute) {
         Bandwidth limit = Bandwidth.builder()
                 .capacity(maxAttemptsPerMinute)
                 .refillGreedy(maxAttemptsPerMinute, Duration.ofMinutes(1))

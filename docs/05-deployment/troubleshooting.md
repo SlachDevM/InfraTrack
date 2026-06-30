@@ -87,6 +87,32 @@ Wait for the indicated time or reduce test traffic.
 
 ---
 
+## Activation rate limiting
+
+### HTTP 429 on activate-account
+
+**Expected** after 10 activation attempts per minute from the same IP.
+
+Same response format as login rate limiting. The message does not indicate whether an activation token is valid.
+
+---
+
+## Password rejected on activation
+
+**Symptoms:** HTTP 400 with `password: must be between 12 and 128 characters`.
+
+**Fix:** Use a password of at least 12 characters. The activation page validates the same rule client-side.
+
+---
+
+## HSTS in development
+
+**Symptoms:** No `Strict-Transport-Security` header when testing locally.
+
+**Expected:** HSTS is enabled only when `SPRING_PROFILES_ACTIVE` includes `prod`. Development profiles intentionally omit this header.
+
+---
+
 ## Frontend cannot reach API
 
 **Symptoms:** Login fails with network error; browser console shows CORS or connection errors.

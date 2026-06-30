@@ -2,7 +2,7 @@
 
 Operational asset and field operations management platform for Australian Local Governments.
 
-**Version 1.0.1**
+**Version 2.0.1**
 
 ![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)
 ![React](https://img.shields.io/badge/React-Frontend-61DAFB?logo=react)
@@ -14,9 +14,16 @@ Operational asset and field operations management platform for Australian Local 
 
 ## Overview
 
-InfraTrack is an enterprise software product for managing public infrastructure operations for Australian Local Governments. Version 1.0.1 delivers the complete V1 operational workflow from asset registration through inspections, issues, operational decisions, work orders, maintenance, completion reviews, operational documents, notifications and delegated authority.
+InfraTrack is an enterprise software product for managing public infrastructure operations for Australian Local Governments.
 
-**V2 Phase A+B** adds the **Domain Engine**: structured inspection intelligence (Decision Engine) and preventive maintenance orchestration (Preventive Maintenance Engine), both following a **human-in-the-loop** principle — the system proposes; the Manager decides.
+| Version | Capability |
+|---------|------------|
+| **1.0.0** | Core CMMS — complete V1 operational workflow |
+| **1.0.1** | Platform hardening |
+| **2.0.0** | Inspection Intelligence & Preventive Maintenance (Domain Engine) |
+| **2.0.1** | Security & quality hardening (current) |
+
+**Version 2.0.0** adds the **Domain Engine**: structured inspection intelligence (Decision Engine) and preventive maintenance orchestration (Preventive Maintenance Engine), both following a **human-in-the-loop** principle — the system proposes; the Manager decides.
 
 The backend is the single source of truth for all business rules. Clients consume one REST API:
 
@@ -49,29 +56,33 @@ The backend is the single source of truth for all business rules. Clients consum
 
 ---
 
-## V2 Domain Engine (Phase A+B)
+## V2 Domain Engine (Version 2.0.0)
 
 | Engine | Capabilities |
 |--------|----------------|
-| **Decision Engine** (Phase A) | Inspection Templates, Questions, Answers, Decision Rules, Rule Evaluation Reports, Suggested Actions, Decision Assistant |
-| **Preventive Maintenance Engine** (Phase B) | Plans, Trigger Evaluation, Execution Candidates, Preventive Decision Assistant, Execution Reports, Controlled Scheduler |
+| **Decision Engine** v1.0 | Inspection Templates, Questions, Answers, Decision Rules, Rule Evaluation Reports, Suggested Actions, Decision Assistant |
+| **Preventive Maintenance Engine** v1.0 | Plans, Trigger Evaluation, Execution Candidates, Preventive Decision Assistant, Execution Reports, Controlled Scheduler v1.0 |
 
 **Human-in-the-loop:** Rules produce suggestions, not automatic Issues. The scheduler generates candidates, not automatic Inspections.
 
 | Document | Description |
 |----------|-------------|
+| [Platform Version History](docs/06-release-notes/platform-version-history.md) | Product versions (authoritative) |
 | [Domain Engine](docs/07-business-architecture/domain-engine.md) | Authoritative V2 business architecture |
-| [V2 Phase A+B Release Notes](docs/06-release-notes/v2-phase-a-b.md) | Milestone summary and validation checklist |
+| [Version 2.0.0 sprint report](docs/06-release-notes/v2-phase-a-b.md) | Historical delivery record |
+| [Version 2.0.1 hardening](docs/06-release-notes/v2-0-1-security-hardening.md) | Security & quality release |
 | [V2 API endpoint groups](docs/04-api/v2-domain-engine-api.md) | Major V2 REST paths |
+| [ADR-004 Versioning strategy](docs/03-architecture/adr-004-platform-versioning-strategy.md) | Product semver rules |
 | [BDR-001 Human-in-the-loop](docs/03-architecture/bdr-001-human-in-the-loop-decision-engine.md) | Why rules suggest, not execute |
 | [BDR-002 Preventive candidates](docs/03-architecture/bdr-002-preventive-candidates-before-automation.md) | Why scheduler generates candidates only |
 | [ADR-003 V2 workflow](docs/03-architecture/adr-003-v2-domain-driven-workflow.md) | How V2 business domains interact |
+| [BDR-003 Bearer tokens](docs/03-architecture/bdr-003-bearer-token-architecture.md) | Why JWT Bearer tokens are used |
 | [Business Glossary](docs/01-business-architecture/glossary.md) | Stakeholder terminology |
-| [V2 Roadmap](docs/06-release-notes/v2-roadmap.md) | Phase evolution |
+| [Product Roadmap](docs/06-release-notes/v2-roadmap.md) | Planned versions |
 
 ---
 
-## Roadmap (Post V2 Phase A+B)
+## Roadmap (post Version 2.0.1)
 
 - Native Android field application (same REST API)
 - METER and EVENT preventive trigger evaluation
@@ -79,7 +90,7 @@ The backend is the single source of truth for all business rules. Clients consum
 - Preventive and decision-engine KPI dashboards
 - Expanded pagination on remaining list endpoints
 
-See [Functional Use Cases](docs/01-business-architecture/functional-use-cases.md) for the authoritative V1 business scope, [Domain Engine](docs/07-business-architecture/domain-engine.md) for V2, and [V2 Roadmap](docs/06-release-notes/v2-roadmap.md) for planned phases.
+See [Functional Use Cases](docs/01-business-architecture/functional-use-cases.md) for the authoritative V1 business scope, [Domain Engine](docs/07-business-architecture/domain-engine.md) for Version 2.0.0, and [Product Roadmap](docs/06-release-notes/v2-roadmap.md) for planned versions.
 
 ---
 
@@ -106,10 +117,13 @@ Key entry points:
 - [Domain Overview](docs/00-business-discovery/02-domain-overview.md)
 - [Functional Use Cases](docs/01-business-architecture/functional-use-cases.md)
 - [System Blueprint](docs/02-system-blueprint/INFRATRACK_SYSTEM_BLUEPRINT_V1_SKELETON.md)
+- [Platform Version History](docs/06-release-notes/platform-version-history.md)
 - [Domain Engine (V2)](docs/07-business-architecture/domain-engine.md)
 - [Business Glossary](docs/01-business-architecture/glossary.md)
-- [V2 Phase A+B Release Notes](docs/06-release-notes/v2-phase-a-b.md)
-- [V2 Roadmap](docs/06-release-notes/v2-roadmap.md)
+- [Version 2.0.0 sprint report](docs/06-release-notes/v2-phase-a-b.md)
+- [Version 2.0.1 Security Hardening](docs/06-release-notes/v2-0-1-security-hardening.md)
+- [Product Roadmap](docs/06-release-notes/v2-roadmap.md)
+- [ADR-004 Versioning strategy](docs/03-architecture/adr-004-platform-versioning-strategy.md)
 
 ---
 
@@ -167,7 +181,7 @@ Integration tests use Testcontainers and require Docker.
 ```bash
 cd frontend
 npm ci --legacy-peer-deps              # Install dependencies
-npm run dev                            # Vite dev server
+npm start                              # Vite dev server
 npm test -- --run                      # Vitest unit tests
 npm run build                          # Production build
 npm run test:e2e                       # Playwright E2E (requires browser install)
@@ -185,6 +199,7 @@ Key variables:
 | Variable | Required (prod) | Purpose |
 |----------|-----------------|---------|
 | `JWT_SECRET` | Yes | JWT signing key |
+| `JWT_EXPIRATION` | No | Access token lifetime in ms (default `86400000` = 24 hours) |
 | `SPRING_DATASOURCE_*` | Yes | PostgreSQL connection |
 | `FRONTEND_ORIGIN` | Yes | CORS allowed origin |
 | `SPRING_MAIL_*` | Yes | SMTP for activation emails |

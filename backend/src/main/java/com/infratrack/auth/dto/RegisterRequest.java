@@ -12,6 +12,7 @@ public class RegisterRequest {
     private String email;
 
     @NotBlank
+    @Size(min = 12, max = 128, message = "must be between 12 and 128 characters")
     private String password;
 
     @NotBlank

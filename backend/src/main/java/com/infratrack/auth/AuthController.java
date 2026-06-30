@@ -84,8 +84,13 @@ public class AuthController {
     @ApiResponse(responseCode = "200", description = "Account activated; returns JWT")
     @ApiResponse(responseCode = "404", description = "Invalid activation token")
     @ApiResponse(responseCode = "410", description = "Token expired or already used")
+    @ApiResponse(responseCode = "429", description = "Too many activation attempts")
     @StandardApiResponses
-    public ResponseEntity<LoginResponse> activateAccount(@Valid @RequestBody ActivateAccountRequest request) {
+    public ResponseEntity<LoginResponse> activateAccount(
+            @Valid @RequestBody ActivateAccountRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        loginRateLimiter.checkActivationAllowed(resolveClientIp(httpRequest));
         return ResponseEntity.ok(authService.activateAccount(request.getToken(), request.getPassword()));
     }
 

@@ -13,7 +13,7 @@ class LoginRateLimiterTest {
 
     @BeforeEach
     void setUp() {
-        loginRateLimiter = new LoginRateLimiter(3);
+        loginRateLimiter = new LoginRateLimiter(3, 3);
     }
 
     @Test
@@ -70,5 +70,27 @@ class LoginRateLimiterTest {
 
         assertThatThrownBy(() -> loginRateLimiter.checkAllowed("10.0.0.6", "user@example.com"))
                 .isInstanceOf(LoginRateLimitExceededException.class);
+    }
+
+    @Test
+    void checkActivationAllowed_shouldReturn429WhenIpLimitExceeded() {
+        for (int attempt = 0; attempt < 3; attempt++) {
+            loginRateLimiter.checkActivationAllowed("10.0.0.1");
+        }
+
+        assertThatThrownBy(() -> loginRateLimiter.checkActivationAllowed("10.0.0.1"))
+                .isInstanceOf(LoginRateLimitExceededException.class)
+                .satisfies(exception -> {
+                    LoginRateLimitExceededException rateLimitException = (LoginRateLimitExceededException) exception;
+                    assertThat(rateLimitException.getMessage()).isEqualTo(LoginRateLimiter.ACTIVATION_RATE_LIMIT_MESSAGE);
+                    assertThat(rateLimitException.getRetryAfterSeconds()).isPositive();
+                });
+    }
+
+    @Test
+    void checkActivationAllowed_shouldUseGenericMessageWithoutLeakingTokenValidity() {
+        assertThat(LoginRateLimiter.ACTIVATION_RATE_LIMIT_MESSAGE)
+                .doesNotContain("token")
+                .doesNotContain("expired");
     }
 }

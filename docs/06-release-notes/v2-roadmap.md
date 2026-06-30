@@ -1,78 +1,62 @@
-# InfraTrack V2 Roadmap
+# InfraTrack Product Roadmap
 
-High-level evolution of InfraTrack beyond V1.0.1. Detailed sprint documentation lives in [Domain Engine](../07-business-architecture/domain-engine.md) and [release notes](v2-phase-a-b.md).
+Planned evolution of InfraTrack by **product version**. Delivered versions are documented in [Platform Version History](platform-version-history.md).
 
-**Legend:** ✓ Completed · ◐ In progress · ⬜ Future
+**Legend:** ✓ Released · ⬜ Planned
 
----
-
-## ✓ Sprint 0 — Platform hardening
-
-**Objective:** Strengthen security, CI, deployment documentation, and code quality before functional V2 work.
-
-**Business value:** Safer, reproducible foundation for council deployments and faster feature delivery.
-
-**Major capabilities:** Secret externalisation, Swagger production lockdown, login rate limiting, unified CI, JaCoCo coverage, deployment guides.
-
-**Reference:** [v2-sprint0.md](v2-sprint0.md)
+Versioning rules: [ADR-004](../03-architecture/adr-004-platform-versioning-strategy.md)
 
 ---
 
-## ✓ Phase A — Inspection Intelligence (Decision Engine)
+## ✓ Version 1.0.0 — Core CMMS
 
-**Objective:** Reusable inspection knowledge, rule evaluation, and manager-reviewed recommendations.
+Complete V1 operational workflow for Australian Local Governments.
 
-**Business value:** Consistent checklists, auditable rule outcomes, and decision support without removing Manager accountability.
-
-**Major capabilities:** Inspection Templates, Questions, Answers, Decision Rules, Rule Evaluation Reports, Suggested Actions, Decision Assistant; rework/CAPA cross-cutting with V1.
-
-**Reference:** [v2-phase-a-b.md](v2-phase-a-b.md), [Domain Engine — Phase A](../07-business-architecture/domain-engine.md)
+**Reference:** [Functional Use Cases](../01-business-architecture/functional-use-cases.md)
 
 ---
 
-## ✓ Phase B — Preventive Maintenance Engine
+## ✓ Version 1.0.1 — Platform Hardening
 
-**Objective:** Plan-driven preventive work discovery with human approval before execution.
+Security, stability, documentation, CI, and code quality baseline. No new business capabilities.
 
-**Business value:** Proactive maintenance planning without unattended dispatch of field work.
-
-**Major capabilities:** Preventive Maintenance Plans, Trigger Definitions, Trigger Evaluation, Execution Candidates, Preventive Decision Assistant, Execution Reports, Controlled Scheduler (disabled by default).
-
-**Reference:** [v2-phase-a-b.md](v2-phase-a-b.md), [Domain Engine — Phase B](../07-business-architecture/domain-engine.md)
+**Reference:** [v2-sprint0.md](v2-sprint0.md) (technical sprint report)
 
 ---
 
-## ⬜ Phase C — Dashboard & KPI
+## ✓ Version 2.0.0 — Inspection Intelligence & Preventive Maintenance
+
+**Objective:** Reusable inspection knowledge and plan-driven preventive maintenance with human validation.
+
+**Business value:** Consistent checklists, auditable decisions, proactive maintenance without unattended field dispatch.
+
+**Major capabilities:** Decision Engine, Preventive Maintenance Engine, Controlled Scheduler (candidates only).
+
+**Reference:** [Platform Version History](platform-version-history.md), [Domain Engine](../07-business-architecture/domain-engine.md), [v2-phase-a-b.md](v2-phase-a-b.md) (historical sprint report)
+
+---
+
+## ✓ Version 2.0.1 — Security & Quality Hardening
+
+**Objective:** Strengthen authentication, transport security, and deployment documentation.
+
+**Business value:** Safer council deployments without changing operational workflows.
+
+**Reference:** [v2-0-1-security-hardening.md](v2-0-1-security-hardening.md)
+
+---
+
+## ⬜ Version 2.1.0 — Dashboard & KPI
 
 **Objective:** Operational visibility over inspection, decision, and preventive audit data.
 
-**Business value:** Managers see trends — approval rates, overdue preventive candidates, rule match frequency — without exporting raw data.
+**Business value:** Managers see trends without exporting raw data.
 
 **Major capabilities:** Summary dashboards, preventive execution KPIs, decision-engine metrics, department-scoped views.
 
 ---
 
-## ⬜ Phase D — Android Mobile
-
-**Objective:** Native field client for Inspections and maintenance execution.
-
-**Business value:** Field Employees work offline-capable with the same business rules as the web client.
-
-**Major capabilities:** Inspection completion with template answers, work order execution, operational document access, push notifications.
-
----
-
-## ⬜ Phase E — Asset Intelligence
-
-**Objective:** Deeper asset knowledge beyond operational records.
-
-**Business value:** Link operational history, templates, and preventive plans into asset-level insight for planning.
-
-**Major capabilities:** Asset health indicators, knowledge summaries, cross-workflow timelines (scope to be defined).
-
----
-
-## ⬜ Phase F — Reporting
+## ⬜ Version 2.2.0 — Reporting & Export
 
 **Objective:** Council-ready operational and compliance reporting.
 
@@ -82,7 +66,37 @@ High-level evolution of InfraTrack beyond V1.0.1. Detailed sprint documentation 
 
 ---
 
-## ⬜ Phase G — Inventory
+## ⬜ Version 2.3.0 — Android Field Application
+
+**Objective:** Native field client for Inspections and maintenance execution.
+
+**Business value:** Field Employees use the same business rules as the web client.
+
+**Major capabilities:** Inspection completion with template answers, work order execution, operational documents, push notifications.
+
+---
+
+## ⬜ Version 2.4.0 — Offline Synchronisation
+
+**Objective:** Field operations with offline-capable sync.
+
+**Business value:** Reliable field work in low-connectivity areas.
+
+**Major capabilities:** Local cache, sync reconciliation (scope to be defined).
+
+---
+
+## ⬜ Version 2.5.0 — Asset Intelligence
+
+**Objective:** Deeper asset knowledge beyond operational records.
+
+**Business value:** Link operational history, templates, and preventive plans into asset-level insight.
+
+**Major capabilities:** Asset health indicators, knowledge summaries, cross-workflow timelines (scope to be defined).
+
+---
+
+## ⬜ Version 2.6.0 — Inventory & Spare Parts
 
 **Objective:** Parts and materials associated with maintenance work.
 
@@ -92,7 +106,7 @@ High-level evolution of InfraTrack beyond V1.0.1. Detailed sprint documentation 
 
 ---
 
-## ⬜ Phase H — Cost Management
+## ⬜ Version 2.7.0 — Cost Management
 
 **Objective:** Financial visibility on maintenance activity.
 
@@ -102,7 +116,7 @@ High-level evolution of InfraTrack beyond V1.0.1. Detailed sprint documentation 
 
 ---
 
-## ⬜ Phase I — Multi-site
+## ⬜ Version 2.8.0 — Multi-site Management
 
 **Objective:** Support councils operating multiple sites or regions under one tenant.
 
@@ -112,7 +126,7 @@ High-level evolution of InfraTrack beyond V1.0.1. Detailed sprint documentation 
 
 ---
 
-## ⬜ Phase J — Public API
+## ⬜ Version 2.9.0 — Public API & Integrations
 
 **Objective:** Documented integration surface for external systems.
 
@@ -122,17 +136,17 @@ High-level evolution of InfraTrack beyond V1.0.1. Detailed sprint documentation 
 
 ---
 
-## ⬜ Phase K — Decision Intelligence
+## ⬜ Version 3.0.0 — Decision Intelligence
 
-**Objective:** Optional automation layer on top of human-in-the-loop foundations.
+**Objective:** Optional automation layer on human-in-the-loop foundations.
 
-**Business value:** Reduce manual review for low-risk, high-confidence patterns while preserving override and audit.
+**Business value:** Reduce manual review for low-risk patterns while preserving override and audit.
 
 **Major capabilities:** Configurable auto-execution policies, enhanced confidence models, policy governance (must not replace default Manager gate without explicit council opt-in).
 
 ---
 
-## Principles across all phases
+## Principles across all versions
 
 1. **Human-in-the-loop by default** — see [BDR-001](../03-architecture/bdr-001-human-in-the-loop-decision-engine.md) and [ADR-003](../03-architecture/adr-003-v2-domain-driven-workflow.md).
 2. **Backend is authoritative** — business rules stay in the Spring Boot backend.
@@ -142,5 +156,6 @@ High-level evolution of InfraTrack beyond V1.0.1. Detailed sprint documentation 
 
 ## See also
 
+- [Platform Version History](platform-version-history.md)
+- [ADR-004 — Platform versioning strategy](../03-architecture/adr-004-platform-versioning-strategy.md)
 - [Glossary](../01-business-architecture/glossary.md)
-- [ADR-003 — V2 domain-driven workflow](../03-architecture/adr-003-v2-domain-driven-workflow.md)

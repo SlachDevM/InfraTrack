@@ -12,17 +12,22 @@ Knowledge belongs to the **Asset Category**, not to individual Assets.
 |----------|---------|
 | [Business Glossary](../01-business-architecture/glossary.md) | Terminology for stakeholders |
 | [ADR-003 — V2 domain-driven workflow](../03-architecture/adr-003-v2-domain-driven-workflow.md) | How V2 domains interact |
-| [V2 Roadmap](../06-release-notes/v2-roadmap.md) | Phase evolution |
-| [V2 Phase A+B release notes](../06-release-notes/v2-phase-a-b.md) | Milestone summary and validation |
+| [Platform Version History](../06-release-notes/platform-version-history.md) | Product versions |
+| [ADR-004 — Platform versioning](../03-architecture/adr-004-platform-versioning-strategy.md) | Version numbering rules |
+| [V2 Roadmap](../06-release-notes/v2-roadmap.md) | Planned versions |
+| [Version 2.0.0 sprint report](../06-release-notes/v2-phase-a-b.md) | Historical delivery record |
 
-## V2 Phase A+B — Current State
+## Version 2.0.0 — Current State
 
-Phase A and Phase B foundational work is **implemented**. InfraTrack now provides two complementary engines on top of the V1 operational workflow:
+Version 2.0.0 delivers two complementary engines on top of the V1 operational workflow:
 
-| Engine | Purpose |
-|--------|---------|
-| **Decision Engine** (Phase A) | Structured inspection knowledge, rule evaluation, suggested actions, and manager review |
-| **Preventive Maintenance Engine** (Phase B) | Plans, trigger evaluation, execution candidates, manager decisions, audit reports, and controlled scheduling |
+| Engine | Logical version | Purpose |
+|--------|-----------------|--------|
+| **Decision Engine** | 1.0 | Structured inspection knowledge, rule evaluation, suggested actions, and manager review |
+| **Preventive Maintenance Engine** | 1.0 | Plans, trigger evaluation, execution candidates, manager decisions, audit reports, and controlled scheduling |
+| **Controlled Scheduler** | 1.0 | Scheduled and manual execution-candidate discovery (disabled by default) |
+
+Logical engine versions are independent of the platform semver — see [Platform Version History](../06-release-notes/platform-version-history.md).
 
 ### Human-in-the-loop principle
 
@@ -108,7 +113,7 @@ Authoritative detail: sprint sections B1.x–B5 below.
 - KPI dashboards and analytics over execution reports
 - Distributed scheduler locking for multi-instance deployments
 
-See [V2 Phase A+B Release Notes](../06-release-notes/v2-phase-a-b.md) for the milestone summary and validation checklist. Terminology: [Business Glossary](../01-business-architecture/glossary.md).
+See [Version 2.0.0 sprint report](../06-release-notes/v2-phase-a-b.md) for the validation checklist. Terminology: [Business Glossary](../01-business-architecture/glossary.md).
 
 ---
 
@@ -1085,7 +1090,7 @@ No automatic approval, Inspection creation, Work Orders, Maintenance Activities,
 
 ## Future work
 
-Planned extensions beyond the current Phase A+B baseline:
+Planned extensions beyond the Version 2.0.0 baseline:
 
 - **A3.6** — optional automation of accepted suggested actions;
 - METER and EVENT trigger evaluation for preventive plans;

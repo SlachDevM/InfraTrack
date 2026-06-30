@@ -318,6 +318,8 @@ Platform user who configures reference data, templates, preventive plans, and us
 
 ## See also
 
+- [Platform Version History](../06-release-notes/platform-version-history.md) — product versions
 - [Domain Engine](../07-business-architecture/domain-engine.md) — detailed V2 architecture
 - [ADR-003 — V2 domain-driven workflow](../03-architecture/adr-003-v2-domain-driven-workflow.md) — how domains interact
+- [ADR-004 — Platform versioning](../03-architecture/adr-004-platform-versioning-strategy.md) — version numbering
 - [Ubiquitous Language](../00-business-discovery/10-ubiquitous-language.md) — discovery-era terminology

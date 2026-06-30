@@ -2,6 +2,12 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import authApi from '../services/authApi';
 import { getApiErrorMessage } from '../utils/apiError';
+import {
+  isPasswordLengthValid,
+  PASSWORD_LENGTH_MESSAGE,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+} from '../constants/passwordPolicy';
 import '../styles/Login.css';
 
 export default function ActivationPage() {
@@ -28,6 +34,11 @@ export default function ActivationPage() {
 
     if (!trimmedPassword) {
       setError('Please enter a password.');
+      return;
+    }
+
+    if (!isPasswordLengthValid(trimmedPassword)) {
+      setError(PASSWORD_LENGTH_MESSAGE);
       return;
     }
 
@@ -112,6 +123,8 @@ export default function ActivationPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              minLength={PASSWORD_MIN_LENGTH}
+              maxLength={PASSWORD_MAX_LENGTH}
               disabled={submitting}
               placeholder="••••••••"
             />
@@ -125,6 +138,8 @@ export default function ActivationPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
+              minLength={PASSWORD_MIN_LENGTH}
+              maxLength={PASSWORD_MAX_LENGTH}
               disabled={submitting}
               placeholder="••••••••"
             />

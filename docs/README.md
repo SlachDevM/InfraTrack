@@ -24,20 +24,41 @@ Read documents in phase order when starting a new capability:
 
 ---
 
-## Quick links (V2 Phase A+B)
+---
+
+## Platform Versions
+
+Navigate product releases and planning:
 
 | Topic | Document |
 |-------|----------|
+| **Platform Version History** | [platform-version-history.md](06-release-notes/platform-version-history.md) — authoritative product versions |
+| **Current release** | Version **2.0.1** — [v2-0-1-security-hardening.md](06-release-notes/v2-0-1-security-hardening.md) |
+| **Roadmap** | [v2-roadmap.md](06-release-notes/v2-roadmap.md) — planned versions |
+| **Release notes** | [06-release-notes/](06-release-notes/) — sprint and version reports |
+| **Architecture decisions** | [ADR-004 Versioning](03-architecture/adr-004-platform-versioning-strategy.md) · [ADR-003 V2 workflow](03-architecture/adr-003-v2-domain-driven-workflow.md) · [all ADRs/BDRs](03-architecture/) |
+
+Versioning rules: [ADR-004 — Platform Versioning Strategy](03-architecture/adr-004-platform-versioning-strategy.md)
+
+---
+
+## Quick links (Version 2.0.0+)
+
+| Topic | Document |
+|-------|----------|
+| Platform versions | [platform-version-history.md](06-release-notes/platform-version-history.md) |
 | Domain Engine (authoritative) | [domain-engine.md](07-business-architecture/domain-engine.md) |
 | Business Glossary | [glossary.md](01-business-architecture/glossary.md) |
 | V2 workflow architecture | [adr-003-v2-domain-driven-workflow.md](03-architecture/adr-003-v2-domain-driven-workflow.md) |
-| Phase A+B milestone | [v2-phase-a-b.md](06-release-notes/v2-phase-a-b.md) |
-| V2 Roadmap | [v2-roadmap.md](06-release-notes/v2-roadmap.md) |
+| Version 2.0.0 sprint report | [v2-phase-a-b.md](06-release-notes/v2-phase-a-b.md) |
+| Product Roadmap | [v2-roadmap.md](06-release-notes/v2-roadmap.md) |
 | V2 API endpoint groups | [v2-domain-engine-api.md](04-api/v2-domain-engine-api.md) |
 | Human-in-the-loop (BDR) | [bdr-001](03-architecture/bdr-001-human-in-the-loop-decision-engine.md) |
 | Preventive candidates (BDR) | [bdr-002](03-architecture/bdr-002-preventive-candidates-before-automation.md) |
 | Deployment & scheduler config | [05-deployment/README.md](05-deployment/README.md) |
 | Security | [05-deployment/security.md](05-deployment/security.md) |
+| V2.0.1 hardening | [v2-0-1-security-hardening.md](06-release-notes/v2-0-1-security-hardening.md) |
+| Bearer token BDR | [bdr-003](03-architecture/bdr-003-bearer-token-architecture.md) |
 | CI / testing | [Testing (project README)](../README.md#testing) |
 
 ---
@@ -62,6 +83,7 @@ docs/
 │   ├── ADR-001-asset-history-starts-with-registration.md
 │   ├── ADR-002-inspection-produces-at-most-one-issue-v1.md
 │   ├── adr-003-v2-domain-driven-workflow.md
+│   ├── adr-004-platform-versioning-strategy.md
 │   ├── bdr-001-human-in-the-loop-decision-engine.md
 │   └── bdr-002-preventive-candidates-before-automation.md
 │
@@ -78,8 +100,10 @@ docs/
 │   └── troubleshooting.md
 │
 ├── 06-release-notes/
+│   ├── platform-version-history.md
 │   ├── v2-sprint0.md
 │   ├── v2-phase-a-b.md
+│   ├── v2-0-1-security-hardening.md
 │   └── v2-roadmap.md
 │
 ├── 07-business-architecture/
@@ -113,6 +137,7 @@ Architecture Decision Records (ADRs) and Business Decision Records (BDRs):
 - [ADR-001](03-architecture/ADR-001-asset-history-starts-with-registration.md) — Asset history starts with registration
 - [ADR-002](03-architecture/ADR-002-inspection-produces-at-most-one-issue-v1.md) — Inspection produces at most one Issue (V1)
 - [ADR-003](03-architecture/adr-003-v2-domain-driven-workflow.md) — V2 domain-driven workflow
+- [ADR-004](03-architecture/adr-004-platform-versioning-strategy.md) — Platform versioning strategy
 - [BDR-001](03-architecture/bdr-001-human-in-the-loop-decision-engine.md) — Rules suggest; managers decide
 - [BDR-002](03-architecture/bdr-002-preventive-candidates-before-automation.md) — Scheduler generates candidates only
 
@@ -126,15 +151,17 @@ Deployment, secrets, security hardening, backup/restore, and troubleshooting. Se
 
 ### 06 — Release Notes
 
-Sprint and milestone release notes:
+Product versions and sprint reports:
 
-- [v2-sprint0.md](06-release-notes/v2-sprint0.md) — V2 Sprint 0 technical baseline
-- [v2-phase-a-b.md](06-release-notes/v2-phase-a-b.md) — **V2 Phase A+B milestone** (Decision Engine + Preventive Maintenance Engine)
-- [v2-roadmap.md](06-release-notes/v2-roadmap.md) — V2 phase evolution (C–K)
+- [platform-version-history.md](06-release-notes/platform-version-history.md) — **Platform version history** (authoritative)
+- [v2-roadmap.md](06-release-notes/v2-roadmap.md) — Product roadmap by version
+- [v2-0-1-security-hardening.md](06-release-notes/v2-0-1-security-hardening.md) — Version 2.0.1
+- [v2-phase-a-b.md](06-release-notes/v2-phase-a-b.md) — Version 2.0.0 (historical sprint report)
+- [v2-sprint0.md](06-release-notes/v2-sprint0.md) — V2 Sprint 0 technical baseline (Version 1.0.1)
 
 ### 07 — Business Architecture (V2)
 
-The **Domain Engine** — Inspection Intelligence (Phase A) and Preventive Maintenance (Phase B). See [domain-engine.md](07-business-architecture/domain-engine.md).
+The **Domain Engine** — Inspection Intelligence and Preventive Maintenance (Version 2.0.0). See [domain-engine.md](07-business-architecture/domain-engine.md).
 
 ### Continuous Integration
 
@@ -152,4 +179,4 @@ GitHub Actions (`.github/workflows/ci.yml`) runs backend tests, frontend tests, 
 
 Generate locally with `cd backend && mvn clean test`. Coverage is informational; an 80% instruction coverage gate may be enabled later.
 
-See also the [project README Testing section](../README.md#testing) and the [V2 Phase A+B validation checklist](06-release-notes/v2-phase-a-b.md#manual-validation-checklist).
+See also the [project README Testing section](../README.md#testing) and the [Version 2.0.0 validation checklist](06-release-notes/v2-phase-a-b.md#manual-validation-checklist).

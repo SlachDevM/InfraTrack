@@ -66,7 +66,7 @@ class AuthControllerTest {
 
         RegisterRequest request = new RegisterRequest();
         request.setEmail("test@example.com");
-        request.setPassword("password");
+        request.setPassword("password1234");
         request.setName("Test User");
 
         assertThatThrownBy(() -> controller.register(request))
@@ -84,7 +84,7 @@ class AuthControllerTest {
 
         RegisterRequest request = new RegisterRequest();
         request.setEmail("test@example.com");
-        request.setPassword("password");
+        request.setPassword("password1234");
         request.setName("Test User");
 
         LoginResponse expectedResponse = new LoginResponse();
@@ -162,7 +162,7 @@ class AuthControllerTest {
 
         ActivateAccountRequest request = new ActivateAccountRequest();
         request.setToken("activation-token-12345");
-        request.setPassword("newpassword");
+        request.setPassword("newpassword12");
 
         LoginResponse expectedResponse = new LoginResponse();
         expectedResponse.setToken("jwt-token");
@@ -170,12 +170,40 @@ class AuthControllerTest {
         expectedResponse.setEmail("test@example.com");
         expectedResponse.setRole(UserRole.FIELD_EMPLOYEE);
 
-        when(authService.activateAccount("activation-token-12345", "newpassword")).thenReturn(expectedResponse);
+        when(authService.activateAccount("activation-token-12345", "newpassword12")).thenReturn(expectedResponse);
 
-        var response = controller.activateAccount(request);
+        when(httpServletRequest.getRemoteAddr()).thenReturn("127.0.0.1");
+
+        var response = controller.activateAccount(request, httpServletRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo(expectedResponse);
-        verify(authService).activateAccount("activation-token-12345", "newpassword");
+        verify(loginRateLimiter).checkActivationAllowed("127.0.0.1");
+        verify(authService).activateAccount("activation-token-12345", "newpassword12");
+    }
+
+    @Test
+    void activateAccount_shouldReturn429WhenRateLimitExceeded() {
+        AuthController.RegisterEndpointProperty property = new AuthController.RegisterEndpointProperty("dev");
+        AuthController controller = new AuthController(authService, loginRateLimiter, property);
+
+        ActivateAccountRequest request = new ActivateAccountRequest();
+        request.setToken("activation-token-12345");
+        request.setPassword("newpassword12");
+
+        when(httpServletRequest.getRemoteAddr()).thenReturn("127.0.0.1");
+        doThrow(new LoginRateLimitExceededException(LoginRateLimiter.ACTIVATION_RATE_LIMIT_MESSAGE, 60))
+                .when(loginRateLimiter)
+                .checkActivationAllowed("127.0.0.1");
+
+        assertThatThrownBy(() -> controller.activateAccount(request, httpServletRequest))
+                .isInstanceOf(LoginRateLimitExceededException.class)
+                .satisfies(exception -> {
+                    LoginRateLimitExceededException rateLimitException = (LoginRateLimitExceededException) exception;
+                    assertThat(rateLimitException.getMessage()).isEqualTo(LoginRateLimiter.ACTIVATION_RATE_LIMIT_MESSAGE);
+                    assertThat(rateLimitException.getRetryAfterSeconds()).isEqualTo(60);
+                });
+
+        verify(authService, never()).activateAccount(anyString(), anyString());
     }
 }

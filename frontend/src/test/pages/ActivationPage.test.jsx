@@ -42,11 +42,23 @@ describe('ActivationPage', () => {
     expect(screen.queryByLabelText('Password')).not.toBeInTheDocument();
   });
 
+  it('prevents submit when password is shorter than twelve characters', async () => {
+    const user = userEvent.setup();
+    renderWithToken('valid-token');
+
+    await user.type(screen.getByLabelText('Password'), 'short');
+    await user.type(screen.getByLabelText('Confirm Password'), 'short');
+    await user.click(screen.getByRole('button', { name: 'Activate Account' }));
+
+    expect(screen.getByText(/must be between 12 and 128 characters/i)).toBeInTheDocument();
+    expect(authApi.activateAccount).not.toHaveBeenCalled();
+  });
+
   it('prevents submit when passwords do not match', async () => {
     const user = userEvent.setup();
     renderWithToken('valid-token');
 
-    await user.type(screen.getByLabelText('Password'), 'password123');
+    await user.type(screen.getByLabelText('Password'), 'password1234');
     await user.type(screen.getByLabelText('Confirm Password'), 'different');
     await user.click(screen.getByRole('button', { name: 'Activate Account' }));
 
@@ -60,12 +72,12 @@ describe('ActivationPage', () => {
 
     renderWithToken('valid-token');
 
-    await user.type(screen.getByLabelText('Password'), 'password123');
-    await user.type(screen.getByLabelText('Confirm Password'), 'password123');
+    await user.type(screen.getByLabelText('Password'), 'password1234');
+    await user.type(screen.getByLabelText('Confirm Password'), 'password1234');
     await user.click(screen.getByRole('button', { name: 'Activate Account' }));
 
     await waitFor(() => {
-      expect(authApi.activateAccount).toHaveBeenCalledWith('valid-token', 'password123');
+      expect(authApi.activateAccount).toHaveBeenCalledWith('valid-token', 'password1234');
       expect(screen.getByText(/account has been activated/i)).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'Go to Login' })).toHaveAttribute('href', '/login');
     });
@@ -80,8 +92,8 @@ describe('ActivationPage', () => {
 
     renderWithToken('used-token');
 
-    await user.type(screen.getByLabelText('Password'), 'password123');
-    await user.type(screen.getByLabelText('Confirm Password'), 'password123');
+    await user.type(screen.getByLabelText('Password'), 'password1234');
+    await user.type(screen.getByLabelText('Confirm Password'), 'password1234');
     await user.click(screen.getByRole('button', { name: 'Activate Account' }));
 
     await waitFor(() => {

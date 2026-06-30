@@ -1,5 +1,7 @@
 # InfraTrack V2 — Phase A+B Milestone
 
+> **Product version:** This historical sprint report documents **Version 2.0.0**. For the product-oriented version history, see [Platform Version History](platform-version-history.md).
+
 **Version:** V2 Phase A+B (foundational)
 **Status:** Completed
 **Baseline:** V1.0.1 operational workflow + V2 Sprint 0 technical baseline
@@ -162,7 +164,8 @@ Swagger UI (development): http://localhost:4000/swagger-ui/index.html
 | [Domain Engine](../07-business-architecture/domain-engine.md) | Authoritative V2 business architecture |
 | [Business Glossary](../01-business-architecture/glossary.md) | Terminology |
 | [ADR-003](../03-architecture/adr-003-v2-domain-driven-workflow.md) | V2 domain interaction |
-| [V2 Roadmap](../06-release-notes/v2-roadmap.md) | Phase evolution |
+| [Platform Version History](../06-release-notes/platform-version-history.md) | Product versions |
+| [V2 Roadmap](../06-release-notes/v2-roadmap.md) | Planned versions |
 | [V2 Domain Engine API](../04-api/v2-domain-engine-api.md) | Major endpoint groups |
 | [BDR-001](../03-architecture/bdr-001-human-in-the-loop-decision-engine.md) | Why rules suggest, not execute |
 | [BDR-002](../03-architecture/bdr-002-preventive-candidates-before-automation.md) | Why scheduler generates candidates only |
