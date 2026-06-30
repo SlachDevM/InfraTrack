@@ -40,6 +40,23 @@ Updated `.gitignore` to prevent recurrence.
 
 ---
 
+## Functional Validation
+
+V2.0.1 functional validation campaign completed:
+
+| Area | Result |
+|------|--------|
+| Decision Engine | PASS |
+| Preventive Engine | PASS |
+| V1 regression smoke | PASS |
+| Docker stack | PASS |
+| Backend tests | PASS |
+| Frontend tests | PASS |
+
+This version is an internally validated baseline for repository tracking — not a production release.
+
+---
+
 ## Validation checklist
 
 - [ ] Register rejects passwords shorter than 12 characters

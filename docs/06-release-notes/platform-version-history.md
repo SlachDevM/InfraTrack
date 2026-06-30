@@ -106,20 +106,20 @@ These are **logical engine versions**, independent of the platform semver. Engin
 
 ## Version 2.0.1
 
-**Security & Quality Hardening**
+**Security & Quality Hardening + V2 validation baseline**
+
+Internally validated baseline — **not** a production release. Production deployment is planned for a later major version.
 
 Main improvements:
 
-- Password policy improvements
-- Activate-account rate limiting
-- HSTS
-- CORS hardening
-- Documentation improvements
+- Authentication hardening
+- Password policy
+- Activation rate limiting
+- HSTS / CORS hardening
 - Repository cleanup
-- Security documentation
-- Bearer Token architecture decision
-
-No business functionality added.
+- V2 functional validation (Decision Engine, Preventive Engine, V1 regression smoke)
+- UI recipe fixes
+- Inspection Template lifecycle completion (publish / archive)
 
 **Reference:** [v2-0-1-security-hardening.md](v2-0-1-security-hardening.md)
 

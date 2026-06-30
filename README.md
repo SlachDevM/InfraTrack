@@ -2,7 +2,9 @@
 
 Operational asset and field operations management platform for Australian Local Governments.
 
-**Version 2.0.1**
+**Current validated version: v2.0.1**
+
+This is an **internally validated baseline** for development and regression tracking — not a production release. Production deployment is planned for a later major version (see [Product Roadmap](docs/06-release-notes/v2-roadmap.md)). No GitHub Release is required at this stage.
 
 ![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)
 ![React](https://img.shields.io/badge/React-Frontend-61DAFB?logo=react)
@@ -21,7 +23,7 @@ InfraTrack is an enterprise software product for managing public infrastructure 
 | **1.0.0** | Core CMMS — complete V1 operational workflow |
 | **1.0.1** | Platform hardening |
 | **2.0.0** | Inspection Intelligence & Preventive Maintenance (Domain Engine) |
-| **2.0.1** | Security & quality hardening (current) |
+| **2.0.1** | Security & quality hardening + V2 validation baseline (current validated) |
 
 **Version 2.0.0** adds the **Domain Engine**: structured inspection intelligence (Decision Engine) and preventive maintenance orchestration (Preventive Maintenance Engine), both following a **human-in-the-loop** principle — the system proposes; the Manager decides.
 
