@@ -26,6 +26,14 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- Import Spring Framework BOM before Spring Boot to override managed Spring version (fixes CVE-2026-41855) -->
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-framework-bom</artifactId>
+                <version>6.2.19</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
