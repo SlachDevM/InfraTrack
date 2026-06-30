@@ -18,6 +18,14 @@ describe('isFieldEmployeeRole', () => {
 });
 
 describe('canAccessRoute', () => {
+  it('blocks field employees and contractors from dashboard route', () => {
+    expect(canAccessRoute(USER_ROLES.FIELD_EMPLOYEE, '/dashboard')).toBe(false);
+    expect(canAccessRoute(USER_ROLES.CONTRACTOR, '/dashboard')).toBe(false);
+    expect(canAccessRoute(USER_ROLES.MANAGER, '/dashboard')).toBe(true);
+    expect(canAccessRoute(USER_ROLES.OPERATIONAL_COORDINATOR, '/dashboard')).toBe(true);
+    expect(canAccessRoute(USER_ROLES.ADMINISTRATOR, '/dashboard')).toBe(true);
+  });
+
   it('allows field employees only operational routes', () => {
     expect(canAccessRoute(USER_ROLES.FIELD_EMPLOYEE, '/')).toBe(true);
     expect(canAccessRoute(USER_ROLES.FIELD_EMPLOYEE, '/inspections')).toBe(true);
@@ -79,6 +87,7 @@ describe('getNavigationItems', () => {
   it('returns full navigation for managers', () => {
     const labels = getNavigationItems(USER_ROLES.MANAGER).map((item) => item.label);
 
+    expect(labels).toContain('Dashboard');
     expect(labels).toContain('Assets');
     expect(labels).toContain('Departments');
     expect(labels).toContain('Issues');
@@ -95,11 +104,17 @@ describe('getNavigationItems', () => {
     );
   });
 
+  it('does not include dashboard for field employees', () => {
+    const labels = getNavigationItems(USER_ROLES.FIELD_EMPLOYEE).map((item) => item.label);
+
+    expect(labels).not.toContain('Dashboard');
+  });
+
   it('splits manager navigation into primary and overflow groups', () => {
     const primary = getPrimaryNavigationItems(USER_ROLES.MANAGER).map((item) => item.label);
     const overflow = getOverflowNavigationItems(USER_ROLES.MANAGER).map((item) => item.label);
 
-    expect(primary).toEqual(['Assets', 'Inspections', 'Issues', 'Work Orders']);
+    expect(primary).toEqual(['Dashboard', 'Assets', 'Inspections', 'Issues', 'Work Orders']);
     expect(overflow).toContain('Departments');
     expect(overflow).toContain('Inspection Templates');
     expect(overflow).not.toContain('Assets');

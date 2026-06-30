@@ -54,11 +54,12 @@ Security, stability, documentation, CI, and code quality baseline. No new busine
 
 **Major capabilities:**
 
-- **Sprint C1 (in progress):** Read-only Operations Intelligence KPI Engine (`GET /api/operations-intelligence/kpis`) — backend aggregation only; no dashboard UI
-- **Sprint C2 (planned):** Web dashboard UI consuming the KPI API
+- **Sprint C1 (complete):** Read-only Operations Intelligence KPI Engine (`GET /api/operations-intelligence/kpis`)
+- **Sprint C2 (in progress):** Web dashboard UI at `/dashboard` consuming the KPI API — read-only, no charts or exports
+- **Sprint C3 (planned):** KPI trend charts (requires time-series endpoints)
 - Summary dashboards, preventive execution KPIs, decision-engine metrics, department-scoped views
 
-The KPI API is designed for reuse by the React web client, future Android application, and reporting exports.
+The KPI API is designed for reuse by the React web client, future Android application, and reporting exports (deferred to Version 2.2.0).
 
 ---
 

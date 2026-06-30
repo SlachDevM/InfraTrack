@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import PlatformShell from '../../pages/PlatformShell';
+import DashboardPage from '../../pages/DashboardPage';
+import operationsIntelligenceApi from '../../services/operationsIntelligenceApi';
 import { USER_ROLES } from '../../constants/userRoles';
 
 const mockNavigate = vi.fn();
@@ -12,6 +14,18 @@ const { mockAuth } = vi.hoisted(() => ({
   mockAuth: {
     token: 'test-token',
     user: { userId: 10, email: 'user@test.com', role: 'FIELD_EMPLOYEE' },
+  },
+}));
+
+vi.mock('../../services/operationsIntelligenceApi', () => ({
+  default: {
+    getKpis: vi.fn(),
+  },
+}));
+
+vi.mock('../../services/apiClient', () => ({
+  default: {
+    setToken: vi.fn(),
   },
 }));
 
@@ -39,6 +53,13 @@ describe('PlatformShell navigation', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    operationsIntelligenceApi.getKpis.mockResolvedValue({
+      assets: { totalAssets: 0 },
+      inspections: { overdueInspections: 0 },
+      issues: { openIssues: 0, issuesBySeverity: {} },
+      preventive: { pendingExecutionCandidates: 0 },
+      decisionEngine: { suggestedActionsPending: 0 },
+    });
   });
 
   it('shows only operational nav items for field employees', () => {
@@ -53,15 +74,12 @@ describe('PlatformShell navigation', () => {
     expect(screen.getByRole('button', { name: 'Documents' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Inspections' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Work Orders' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Dashboard' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'More' })).not.toBeInTheDocument();
-    expect(screen.queryByText('Departments')).not.toBeInTheDocument();
-    expect(screen.queryByText('Business Triggers')).not.toBeInTheDocument();
     expect(screen.getByText('Assigned Inspections')).toBeInTheDocument();
-    expect(screen.getByText('Operational Documents')).toBeInTheDocument();
   });
 
-  it('keeps primary navigation visible for managers and moves configuration links to More', async () => {
-    const user = userEvent.setup();
+  it('redirects managers to dashboard', async () => {
     mockAuth.user.role = USER_ROLES.MANAGER;
 
     render(
@@ -70,36 +88,12 @@ describe('PlatformShell navigation', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByRole('button', { name: 'Assets' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Issues' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Departments' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'More' })).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: 'More' }));
-
-    expect(screen.getByRole('menuitem', { name: 'Departments' })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: 'Inspection Templates' })).toBeInTheDocument();
-    expect(screen.queryByText('Assigned Inspections')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/dashboard', { replace: true });
+    });
   });
 
-  it('navigates when a More menu item is clicked', async () => {
-    const user = userEvent.setup();
-    mockAuth.user.role = USER_ROLES.MANAGER;
-
-    render(
-      <MemoryRouter>
-        <PlatformShell />
-      </MemoryRouter>
-    );
-
-    await user.click(screen.getByRole('button', { name: 'More' }));
-    await user.click(screen.getByRole('menuitem', { name: 'Departments' }));
-
-    expect(mockNavigate).toHaveBeenCalledWith('/departments');
-  });
-
-  it('keeps overflow navigation for operational coordinators in More', async () => {
-    const user = userEvent.setup();
+  it('redirects operational coordinators to dashboard', async () => {
     mockAuth.user.role = USER_ROLES.OPERATIONAL_COORDINATOR;
 
     render(
@@ -108,32 +102,78 @@ describe('PlatformShell navigation', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByRole('button', { name: 'More' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Business Triggers' })).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/dashboard', { replace: true });
+    });
+  });
+});
 
-    await user.click(screen.getByRole('button', { name: 'More' }));
+describe('Dashboard navigation', () => {
+  afterEach(cleanup);
 
-    expect(screen.getByRole('menuitem', { name: 'Business Triggers' })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: 'Delegations' })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: 'Categories' })).toBeInTheDocument();
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockAuth.user.role = USER_ROLES.MANAGER;
+    operationsIntelligenceApi.getKpis.mockResolvedValue({
+      assets: { totalAssets: 1, assetsWithoutCategory: 0, assetsWithoutDepartment: 0 },
+      inspections: { assignedInspections: 0, completedInspections: 0, overdueInspections: 0 },
+      issues: { openIssues: 0, resolvedIssues: 0, reworkIssues: 0, issuesBySeverity: {} },
+      workOrders: { openWorkOrders: 0, inProgressWorkOrders: 0, completedWorkOrders: 0, overdueWorkOrders: 0 },
+      preventive: {
+        activePreventivePlans: 0,
+        pendingExecutionCandidates: 0,
+        approvedExecutionCandidates: 0,
+        schedulerRunsToday: 0,
+        eligiblePlansNow: 0,
+      },
+      decisionEngine: {
+        ruleEvaluationReports: 0,
+        suggestedActionsPending: 0,
+        suggestedActionsAccepted: 0,
+        suggestedActionsRejected: 0,
+        suggestedActionsDismissed: 0,
+      },
+    });
   });
 
-  it('keeps user management in More for administrators only', async () => {
+  it('shows Dashboard link for manager and keeps More menu working', async () => {
     const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole('button', { name: 'Dashboard' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Assets' }).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'More' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'More' }));
+    expect(screen.getByRole('menuitem', { name: 'Departments' })).toBeInTheDocument();
+  });
+
+  it('shows Dashboard link for administrator', async () => {
     mockAuth.user.role = USER_ROLES.ADMINISTRATOR;
 
     render(
       <MemoryRouter>
-        <PlatformShell />
+        <DashboardPage />
       </MemoryRouter>
     );
 
-    expect(screen.getByRole('button', { name: 'More' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Users' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Dashboard' })).toBeInTheDocument();
+  });
 
-    await user.click(screen.getByRole('button', { name: 'More' }));
+  it('shows Dashboard link for operational coordinator', async () => {
+    mockAuth.user.role = USER_ROLES.OPERATIONAL_COORDINATOR;
 
-    expect(screen.getByRole('menuitem', { name: 'Users' })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: 'Departments' })).toBeInTheDocument();
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole('button', { name: 'Dashboard' })).toBeInTheDocument();
   });
 });

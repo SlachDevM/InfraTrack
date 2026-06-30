@@ -1,4 +1,6 @@
-import { USER_ROLES } from './userRoles';
+import { USER_ROLES, canViewOperationsDashboard } from './userRoles';
+
+export const DASHBOARD_ROUTE = '/dashboard';
 
 export const FIELD_EMPLOYEE_ROUTES = new Set([
   '/',
@@ -26,6 +28,7 @@ const PREVENTIVE_EXECUTION_CANDIDATE_VIEWER_ROLES = INSPECTION_TEMPLATE_VIEWER_R
 const PREVENTIVE_SCHEDULER_VIEWER_ROLES = INSPECTION_TEMPLATE_VIEWER_ROLES;
 
 export const PRIMARY_NAVIGATION_PATHS = new Set([
+  '/dashboard',
   '/assets',
   '/inspections',
   '/work-orders',
@@ -33,6 +36,7 @@ export const PRIMARY_NAVIGATION_PATHS = new Set([
 ]);
 
 export const APP_NAVIGATION_ITEMS = [
+  { path: '/dashboard', label: 'Dashboard', dashboardOnly: true },
   { path: '/assets', label: 'Assets', fieldEmployeeLabel: 'Documents' },
   { path: '/business-triggers', label: 'Business Triggers' },
   { path: '/inspections', label: 'Inspections' },
@@ -69,6 +73,10 @@ export function canAccessRoute(role, path) {
   const normalizedPath = normalizePath(path);
   const normalizedRole = normalizeRole(role);
 
+  if (normalizedPath === DASHBOARD_ROUTE) {
+    return canViewOperationsDashboard(normalizedRole);
+  }
+
   if (normalizedPath === INSPECTION_TEMPLATES_ROUTE
       || normalizedPath.startsWith(INSPECTION_TEMPLATE_ROUTE_PREFIX)) {
     return INSPECTION_TEMPLATE_VIEWER_ROLES.has(normalizedRole);
@@ -95,7 +103,12 @@ export function canAccessRoute(role, path) {
 
 export function getNavigationItems(role) {
   return APP_NAVIGATION_ITEMS
-    .filter((item) => canAccessRoute(role, item.path))
+    .filter((item) => {
+      if (item.dashboardOnly && !canViewOperationsDashboard(role)) {
+        return false;
+      }
+      return canAccessRoute(role, item.path);
+    })
     .map((item) => ({
       path: item.path,
       label: isFieldEmployeeRole(role) && item.fieldEmployeeLabel

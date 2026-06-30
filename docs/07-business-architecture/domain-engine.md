@@ -1124,9 +1124,21 @@ The KPI Engine aggregates counts and breakdowns from Assets, Inspections, Issues
 | Field Employee | Forbidden |
 | Contractor | Forbidden |
 
-### Deferred to Sprint C2
+### Deferred to later sprints
 
-Dashboard UI, charts, and exports are intentionally deferred. The same KPI API will be consumed by web dashboards (C2), the Android application, and future reporting.
+- **Sprint C3 (planned):** KPI trend charts requiring time-series endpoints
+- **Reporting sprint (planned):** exports and council-ready reports
+- The same KPI API is consumed by the React dashboard (C2), the future Android application, and future reporting
+
+### Sprint C2 — Dashboard UI
+
+Version 2.1.0 Sprint C2 introduces the first **Operations Intelligence Dashboard** at `/dashboard`.
+
+- Read-only cockpit for Administrator, Manager, and Operational Coordinator
+- Consumes `GET /api/operations-intelligence/kpis` from Sprint C1
+- Displays KPI cards, attention alerts, quick navigation links, and recent intelligence summaries
+- Does **not** approve workflows, run the scheduler, or mutate operational data
+- Field Employee and Contractor keep their existing landing experience
 
 ### KPI groups
 

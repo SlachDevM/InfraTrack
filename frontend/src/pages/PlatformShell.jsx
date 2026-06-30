@@ -1,13 +1,10 @@
-import { useMemo } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import NotificationButton from '../components/NotificationButton';
-import NavigationMoreMenu from '../components/navigation/NavigationMoreMenu';
-import { canManageUsers, getRoleLabel } from '../constants/userRoles';
+import AppNavbar from '../components/navigation/AppNavbar';
+import { canViewOperationsDashboard, getRoleLabel } from '../constants/userRoles';
 import {
   FIELD_EMPLOYEE_SHORTCUTS,
-  getOverflowNavigationItems,
-  getPrimaryNavigationItems,
   isFieldEmployeeRole,
 } from '../constants/navigation';
 import { APP_VERSION } from '../config/appVersion';
@@ -18,45 +15,24 @@ export default function PlatformShell() {
   const { auth, logout } = useAuth();
   const fieldEmployee = isFieldEmployeeRole(auth?.user?.role);
 
-  const primaryNavigationItems = getPrimaryNavigationItems(auth?.user?.role);
-  const overflowNavigationItems = useMemo(() => {
-    const items = getOverflowNavigationItems(auth?.user?.role);
-    if (canManageUsers(auth?.user?.role)) {
-      return [...items, { path: '/users', label: 'Users' }];
+  useEffect(() => {
+    if (canViewOperationsDashboard(auth?.user?.role)) {
+      navigate('/dashboard', { replace: true });
     }
-    return items;
-  }, [auth?.user?.role]);
+  }, [auth?.user?.role, navigate]);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
+  if (canViewOperationsDashboard(auth?.user?.role)) {
+    return <div className="loading">Loading dashboard...</div>;
+  }
+
   return (
     <div className="platform-shell">
-      <nav className="platform-navbar">
-        <div className="navbar-brand">InfraTrack</div>
-        <div className="navbar-items">
-          {primaryNavigationItems.map((item) => (
-            <button
-              key={item.path}
-              type="button"
-              className="navbar-link"
-              onClick={() => navigate(item.path)}
-            >
-              {item.label}
-            </button>
-          ))}
-          <NavigationMoreMenu
-            items={overflowNavigationItems}
-            onNavigate={navigate}
-          />
-          <NotificationButton />
-          <button type="button" className="navbar-link logout" onClick={handleLogout}>
-            Logout
-          </button>
-        </div>
-      </nav>
+      <AppNavbar onNavigate={navigate} onLogout={handleLogout} />
 
       <div className="platform-content">
         <div className="platform-welcome">
@@ -81,7 +57,15 @@ export default function PlatformShell() {
                 ))}
               </ul>
               <div className="user-info">
-                <p>Logged in as: <strong>{auth?.user?.email}</strong> ({getRoleLabel(auth?.user?.role)})</p>
+                <p>
+                  Logged in as:
+                  {' '}
+                  <strong>{auth?.user?.email}</strong>
+                  {' '}
+                  (
+                  {getRoleLabel(auth?.user?.role)}
+                  )
+                </p>
               </div>
             </div>
           ) : (
@@ -129,7 +113,15 @@ export default function PlatformShell() {
               </div>
 
               <div className="user-info">
-                <p>Logged in as: <strong>{auth?.user?.email}</strong> ({getRoleLabel(auth?.user?.role)})</p>
+                <p>
+                  Logged in as:
+                  {' '}
+                  <strong>{auth?.user?.email}</strong>
+                  {' '}
+                  (
+                  {getRoleLabel(auth?.user?.role)}
+                  )
+                </p>
               </div>
             </div>
           )}
@@ -137,7 +129,8 @@ export default function PlatformShell() {
       </div>
 
       <footer className="platform-footer">
-        InfraTrack v{APP_VERSION}
+        InfraTrack v
+        {APP_VERSION}
       </footer>
     </div>
   );

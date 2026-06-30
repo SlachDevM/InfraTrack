@@ -21,6 +21,7 @@ import InspectionTemplateQuestionsPage from './pages/InspectionTemplateQuestions
 import PreventiveMaintenancePlansPage from './pages/PreventiveMaintenancePlansPage';
 import PreventiveExecutionCandidatesPage from './pages/PreventiveExecutionCandidatesPage';
 import PreventiveSchedulerPage from './pages/PreventiveSchedulerPage';
+import DashboardPage from './pages/DashboardPage';
 import './App.css';
 
 function App() {
@@ -36,6 +37,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <PlatformShell />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <PrivateRoute>
+                  <DashboardPage />
                 </PrivateRoute>
               }
             />

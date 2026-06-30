@@ -70,6 +70,23 @@ describe('Login page', () => {
         { userId: 1, email: 'user@example.com', role: 'ADMINISTRATOR' },
         'jwt-token'
       );
+      expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
+    });
+  });
+
+  it('logs in field employees to home', async () => {
+    const user = userEvent.setup();
+    apiClient.post.mockResolvedValue({
+      token: 'jwt-token',
+      userId: 2,
+      email: 'field@example.com',
+      role: 'FIELD_EMPLOYEE',
+    });
+
+    renderLogin();
+    await submitLogin(user);
+
+    await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/');
     });
   });

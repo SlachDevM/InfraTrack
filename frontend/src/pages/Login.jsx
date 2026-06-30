@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import apiClient from '../services/apiClient';
 import { API_ENDPOINTS } from '../constants/apiEndpoints';
+import { canViewOperationsDashboard } from '../constants/userRoles';
 import { getApiErrorMessage } from '../utils/apiError';
 import '../styles/Login.css';
 
@@ -35,7 +36,7 @@ export default function Login() {
 
       const { token, ...user } = data;
       login(user, token);
-      navigate('/');
+      navigate(canViewOperationsDashboard(user.role) ? '/dashboard' : '/');
     } catch (err) {
       setError(getApiErrorMessage(err, 'Email or password is incorrect.'));
     }

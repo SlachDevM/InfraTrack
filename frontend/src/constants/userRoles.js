@@ -73,6 +73,14 @@ export function canViewPreventiveScheduler(role) {
   );
 }
 
+export function canViewOperationsDashboard(role) {
+  return (
+    role === USER_ROLES.ADMINISTRATOR
+    || role === USER_ROLES.MANAGER
+    || role === USER_ROLES.OPERATIONAL_COORDINATOR
+  );
+}
+
 export function canRunPreventiveScheduler(role) {
   return role === USER_ROLES.ADMINISTRATOR || role === USER_ROLES.MANAGER;
 }
