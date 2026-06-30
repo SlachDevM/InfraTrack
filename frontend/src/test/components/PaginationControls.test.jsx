@@ -71,4 +71,18 @@ describe('PaginationControls', () => {
     expect(screen.getByTestId('pagination-previous')).toBeDisabled();
     expect(screen.getByTestId('pagination-next')).toBeDisabled();
   });
+
+  it('shows Page 1 of 1 when totalPages is zero', () => {
+    render(
+      <PaginationControls
+        page={0}
+        totalPages={0}
+        onPrevious={vi.fn()}
+        onNext={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('Page 1 of 1')).toBeInTheDocument();
+    expect(screen.queryByText(/NaN/)).not.toBeInTheDocument();
+  });
 });

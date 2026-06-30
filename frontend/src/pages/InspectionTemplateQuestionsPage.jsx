@@ -7,7 +7,7 @@ import inspectionTemplateQuestionApi from '../services/inspectionTemplateQuestio
 import inspectionTemplateQuestionChoiceApi from '../services/inspectionTemplateQuestionChoiceApi';
 import inspectionTemplateQuestionRuleApi from '../services/inspectionTemplateQuestionRuleApi';
 import unitOfMeasureApi from '../services/unitOfMeasureApi';
-import NotificationButton from '../components/NotificationButton';
+import ReferenceDataLayout from '../components/layout/ReferenceDataLayout';
 import {
   canManageInspectionTemplates,
   canViewInspectionTemplates,
@@ -30,7 +30,6 @@ import {
   validateActionPayloadJson,
 } from '../constants/decisionRules';
 import { getActiveChoices } from '../utils/inspectionAnswers';
-import '../styles/ReferenceDataPage.css';
 
 const EMPTY_FORM = {
   code: '',
@@ -67,7 +66,7 @@ function isDraftTemplate(template) {
 export default function InspectionTemplateQuestionsPage() {
   const { templateId } = useParams();
   const navigate = useNavigate();
-  const { auth, logout } = useAuth();
+  const { auth } = useAuth();
   const [template, setTemplate] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -551,41 +550,16 @@ export default function InspectionTemplateQuestionsPage() {
     ? getActiveChoices(managingRulesQuestion)
     : [];
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
   if (loading) {
     return <div className="loading">Loading checklist questions...</div>;
   }
 
   return (
-    <div className="reference-data-page">
-      <header
-        className="reference-header"
-        style={{
-          background: 'linear-gradient(135deg, #1a472a 0%, #2d6b4d 100%)',
-          color: 'white',
-        }}
-      >
-        <button
-          type="button"
-          className="back-btn"
-          onClick={() => navigate('/inspection-templates')}
-        >
-          ← Back to Templates
-        </button>
-        <h1>Checklist Questions</h1>
-        <div className="user-header-actions">
-          <NotificationButton />
-          <button type="button" className="logout-btn" onClick={handleLogout}>
-            Logout
-          </button>
-        </div>
-      </header>
-
-      <main className="reference-content">
+    <ReferenceDataLayout
+      title="Checklist Questions"
+      backLabel="← Back to Templates"
+      onBack={() => navigate('/inspection-templates')}
+    >
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
 
@@ -1282,7 +1256,6 @@ export default function InspectionTemplateQuestionsPage() {
             </table>
           </section>
         )}
-      </main>
-    </div>
+    </ReferenceDataLayout>
   );
 }

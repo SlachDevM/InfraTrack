@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import apiClient from '../services/apiClient';
 import preventiveSchedulerApi from '../services/preventiveSchedulerApi';
-import NotificationButton from '../components/NotificationButton';
+import ReferenceDataLayout from '../components/layout/ReferenceDataLayout';
 import PaginationControls from '../components/PaginationControls';
 import {
   canRunPreventiveScheduler,
@@ -20,7 +20,6 @@ import {
   getTotalPages,
   unwrapPageContent,
 } from '../utils/pagination';
-import '../styles/ReferenceDataPage.css';
 
 function formatTimestamp(timestamp) {
   if (!timestamp) {
@@ -31,7 +30,7 @@ function formatTimestamp(timestamp) {
 
 export default function PreventiveSchedulerPage() {
   const navigate = useNavigate();
-  const { auth, logout } = useAuth();
+  const { auth } = useAuth();
   const [schedulerEnabled, setSchedulerEnabled] = useState(false);
   const [runs, setRuns] = useState([]);
   const [runsPage, setRunsPage] = useState(DEFAULT_PAGE);
@@ -128,29 +127,15 @@ export default function PreventiveSchedulerPage() {
   };
 
   if (loading) {
-    return (
-      <div className="reference-data-page">
-        <p>Loading preventive scheduler...</p>
-      </div>
-    );
+    return <div className="loading">Loading preventive scheduler...</div>;
   }
 
   return (
-    <div className="reference-data-page">
-      <header className="page-header">
-        <h1>Preventive Scheduler</h1>
-        <div className="header-actions">
-          <NotificationButton />
-          <button type="button" className="btn-secondary" onClick={logout}>
-            Logout
-          </button>
-        </div>
-      </header>
+    <ReferenceDataLayout title="Preventive Scheduler">
+        {error && <div className="error-message">{error}</div>}
+        {success && <div className="success-message">{success}</div>}
 
-      {error && <p className="error-message">{error}</p>}
-      {success && <p className="success-message">{success}</p>}
-
-      <section className="content-section">
+        <section className="reference-form-section">
         <div className="section-header">
           <h2>Scheduler Status</h2>
           {canRun && (
@@ -195,72 +180,76 @@ export default function PreventiveSchedulerPage() {
         )}
       </section>
 
-      <section className="content-section">
+      <section className="reference-form-section">
         <h2>Run History</h2>
         {listLoading ? (
           <p>Loading runs...</p>
         ) : (
-          <>
-            <table className="data-table">
-              <thead>
+          <table className="reference-table">
+            <thead>
+              <tr>
+                <th>Started</th>
+                <th>Status</th>
+                <th>Triggered By</th>
+                <th>Created</th>
+                <th>Skipped</th>
+                <th>Not Eligible</th>
+                <th>Duration</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {runs.length === 0 ? (
                 <tr>
-                  <th>Started</th>
-                  <th>Status</th>
-                  <th>Triggered By</th>
-                  <th>Created</th>
-                  <th>Skipped</th>
-                  <th>Not Eligible</th>
-                  <th>Duration</th>
-                  <th>Actions</th>
+                  <td colSpan={8}>No scheduler runs found.</td>
                 </tr>
-              </thead>
-              <tbody>
-                {runs.length === 0 ? (
-                  <tr>
-                    <td colSpan={8}>No scheduler runs found.</td>
+              ) : (
+                runs.map((run) => (
+                  <tr key={run.id}>
+                    <td>{formatTimestamp(run.startedAt)}</td>
+                    <td>{getSchedulerRunStatusLabel(run.status)}</td>
+                    <td>{getSchedulerTriggeredByLabel(run.triggeredBy)}</td>
+                    <td>{run.candidatesCreatedCount}</td>
+                    <td>{run.candidatesSkippedDuplicateCount}</td>
+                    <td>{run.plansNotEligibleCount}</td>
+                    <td>
+                      {run.durationMs}
+                      {' '}
+                      ms
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        className="btn-link"
+                        onClick={() => handleViewRun(run.id)}
+                      >
+                        View
+                      </button>
+                    </td>
                   </tr>
-                ) : (
-                  runs.map((run) => (
-                    <tr key={run.id}>
-                      <td>{formatTimestamp(run.startedAt)}</td>
-                      <td>{getSchedulerRunStatusLabel(run.status)}</td>
-                      <td>{getSchedulerTriggeredByLabel(run.triggeredBy)}</td>
-                      <td>{run.candidatesCreatedCount}</td>
-                      <td>{run.candidatesSkippedDuplicateCount}</td>
-                      <td>{run.plansNotEligibleCount}</td>
-                      <td>
-                        {run.durationMs}
-                        {' '}
-                        ms
-                      </td>
-                      <td>
-                        <button
-                          type="button"
-                          className="btn-link"
-                          onClick={() => handleViewRun(run.id)}
-                        >
-                          View
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-            <PaginationControls
-              currentPage={runsPage}
-              totalPages={runsTotalPages}
-              onPageChange={(page) => {
-                setListLoading(true);
-                loadRuns(page).finally(() => setListLoading(false));
-              }}
-            />
-          </>
+                ))
+              )}
+            </tbody>
+          </table>
         )}
       </section>
 
+      <PaginationControls
+        page={runsPage}
+        totalPages={runsTotalPages}
+        loading={listLoading}
+        onPrevious={() => {
+          setListLoading(true);
+          loadRuns(runsPage - 1).finally(() => setListLoading(false));
+        }}
+        onNext={() => {
+          setListLoading(true);
+          loadRuns(runsPage + 1).finally(() => setListLoading(false));
+        }}
+      />
+
       {selectedRun && (
-        <section className="content-section">
+        <section className="reference-form-section">
           <div className="section-header">
             <h2>Run Detail</h2>
             <button
@@ -303,6 +292,6 @@ export default function PreventiveSchedulerPage() {
           </dl>
         </section>
       )}
-    </div>
+    </ReferenceDataLayout>
   );
 }

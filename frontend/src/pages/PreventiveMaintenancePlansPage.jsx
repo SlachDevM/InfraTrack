@@ -5,7 +5,7 @@ import apiClient from '../services/apiClient';
 import preventiveMaintenancePlanApi from '../services/preventiveMaintenancePlanApi';
 import assetApi from '../services/assetApi';
 import inspectionTemplateApi from '../services/inspectionTemplateApi';
-import NotificationButton from '../components/NotificationButton';
+import ReferenceDataLayout, { REFERENCE_HEADER_STYLE_BLUE } from '../components/layout/ReferenceDataLayout';
 import PaginationControls from '../components/PaginationControls';
 import {
   canManagePreventiveMaintenancePlans,
@@ -44,7 +44,6 @@ import {
   getTotalPages,
   unwrapPageContent,
 } from '../utils/pagination';
-import '../styles/ReferenceDataPage.css';
 
 const DEFAULT_FORM = {
   planCode: '',
@@ -102,7 +101,7 @@ function buildPayload(formData, editing) {
 
 export default function PreventiveMaintenancePlansPage() {
   const navigate = useNavigate();
-  const { auth, logout } = useAuth();
+  const { auth } = useAuth();
   const [plans, setPlans] = useState([]);
   const [assets, setAssets] = useState([]);
   const [templates, setTemplates] = useState([]);
@@ -312,11 +311,6 @@ export default function PreventiveMaintenancePlansPage() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
   const triggerSummaryPreview = buildTriggerSummaryPreview(formData.triggerType, formData);
 
   if (loading) {
@@ -324,27 +318,10 @@ export default function PreventiveMaintenancePlansPage() {
   }
 
   return (
-    <div className="reference-data-page">
-      <header
-        className="reference-header"
-        style={{
-          background: 'linear-gradient(135deg, #1a3a5c 0%, #2d5a8a 100%)',
-          color: 'white',
-        }}
-      >
-        <button type="button" className="back-btn" onClick={() => navigate('/')}>
-          ← Back
-        </button>
-        <h1>Preventive Maintenance Plans</h1>
-        <div className="user-header-actions">
-          <NotificationButton />
-          <button type="button" className="logout-btn" onClick={handleLogout}>
-            Logout
-          </button>
-        </div>
-      </header>
-
-      <main className="reference-content">
+    <ReferenceDataLayout
+      title="Preventive Maintenance Plans"
+      headerStyle={REFERENCE_HEADER_STYLE_BLUE}
+    >
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
 
@@ -798,7 +775,6 @@ export default function PreventiveMaintenancePlansPage() {
           onPrevious={() => loadPlans(plansPage - 1)}
           onNext={() => loadPlans(plansPage + 1)}
         />
-      </main>
-    </div>
+    </ReferenceDataLayout>
   );
 }

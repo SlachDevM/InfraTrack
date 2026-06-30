@@ -160,15 +160,33 @@ describe('PreventiveExecutionCandidatesPage', () => {
   });
 
   it('renders candidate list for administrator', async () => {
-    render(
+    const { container } = render(
       <MemoryRouter>
         <PreventiveExecutionCandidatesPage />
       </MemoryRouter>
     );
 
     expect(await screen.findByText('PUMP_MONTHLY')).toBeInTheDocument();
-    expect(screen.getByText('Monthly Pump Inspection')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Generate Candidates' })).toBeInTheDocument();
+    expect(container.querySelector('.reference-header')).toBeInTheDocument();
+    expect(container.querySelector('.reference-content')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '← Back' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Notifications' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Logout' })).toBeInTheDocument();
+  });
+
+  it('shows Page 1 of 1 when candidate list is empty', async () => {
+    preventiveExecutionCandidateApi.list.mockResolvedValue(pageResponse([], 0, 0));
+
+    render(
+      <MemoryRouter>
+        <PreventiveExecutionCandidatesPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('No execution candidates found.')).toBeInTheDocument();
+    expect(screen.getByText('Page 1 of 1')).toBeInTheDocument();
+    expect(screen.queryByText(/NaN/)).not.toBeInTheDocument();
   });
 
   it('shows Generate Candidates for manager', async () => {

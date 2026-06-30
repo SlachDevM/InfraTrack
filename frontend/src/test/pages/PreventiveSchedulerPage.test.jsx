@@ -79,7 +79,7 @@ describe('PreventiveSchedulerPage', () => {
   });
 
   it('renders scheduler status and run history for administrator', async () => {
-    render(
+    const { container } = render(
       <MemoryRouter>
         <PreventiveSchedulerPage />
       </MemoryRouter>
@@ -89,6 +89,25 @@ describe('PreventiveSchedulerPage', () => {
     expect(screen.getByText('Disabled')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Run Scheduler' })).toBeInTheDocument();
     expect(screen.getByText('Success')).toBeInTheDocument();
+    expect(container.querySelector('.reference-header')).toBeInTheDocument();
+    expect(container.querySelector('.reference-content')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '← Back' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Notifications' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Logout' })).toBeInTheDocument();
+  });
+
+  it('shows Page 1 of 1 when run history is empty', async () => {
+    preventiveSchedulerApi.listRuns.mockResolvedValue(pageResponse([], 0, 0));
+
+    render(
+      <MemoryRouter>
+        <PreventiveSchedulerPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('No scheduler runs found.')).toBeInTheDocument();
+    expect(screen.getByText('Page 1 of 1')).toBeInTheDocument();
+    expect(screen.queryByText(/NaN/)).not.toBeInTheDocument();
   });
 
   it('shows Run Scheduler for manager', async () => {

@@ -7,7 +7,7 @@ import preventiveMaintenancePlanApi from '../services/preventiveMaintenancePlanA
 import assetApi from '../services/assetApi';
 import inspectionApi from '../services/inspectionApi';
 import userApi from '../services/userApi';
-import NotificationButton from '../components/NotificationButton';
+import ReferenceDataLayout from '../components/layout/ReferenceDataLayout';
 import PaginationControls from '../components/PaginationControls';
 import {
   canGeneratePreventiveExecutionCandidates,
@@ -32,7 +32,6 @@ import {
   getTotalPages,
   unwrapPageContent,
 } from '../utils/pagination';
-import '../styles/ReferenceDataPage.css';
 
 function formatTimestamp(timestamp) {
   if (!timestamp) {
@@ -56,7 +55,7 @@ const EMPTY_APPROVE_FORM = {
 
 export default function PreventiveExecutionCandidatesPage() {
   const navigate = useNavigate();
-  const { auth, logout } = useAuth();
+  const { auth } = useAuth();
   const [candidates, setCandidates] = useState([]);
   const [assets, setAssets] = useState([]);
   const [plans, setPlans] = useState([]);
@@ -365,25 +364,15 @@ export default function PreventiveExecutionCandidatesPage() {
   };
 
   if (loading) {
-    return <div className="reference-data-page">Loading preventive execution candidates...</div>;
+    return <div className="loading">Loading preventive execution candidates...</div>;
   }
 
   return (
-    <div className="reference-data-page">
-      <header className="page-header">
-        <h1>Preventive Execution Candidates</h1>
-        <div className="header-actions">
-          <NotificationButton />
-          <button type="button" className="btn-secondary" onClick={logout}>
-            Logout
-          </button>
-        </div>
-      </header>
+    <ReferenceDataLayout title="Preventive Execution Candidates">
+        {error && <div className="error-message">{error}</div>}
+        {success && <div className="success-message">{success}</div>}
 
-      {error && <div className="error-message">{error}</div>}
-      {success && <div className="success-message">{success}</div>}
-
-      <section className="content-section">
+        <section className="reference-form-section">
         <div className="section-header">
           <h2>Candidate Queue</h2>
           {canGenerate && (
@@ -459,68 +448,74 @@ export default function PreventiveExecutionCandidatesPage() {
         {listLoading ? (
           <p>Loading candidates...</p>
         ) : (
-          <>
-            <table className="data-table">
-              <thead>
+          <table className="reference-table">
+            <thead>
+              <tr>
+                <th>Plan Code</th>
+                <th>Plan Name</th>
+                <th>Asset</th>
+                <th>Trigger</th>
+                <th>Target Action</th>
+                <th>Status</th>
+                <th>Evaluated</th>
+                <th>Next Eligible</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {candidates.length === 0 ? (
                 <tr>
-                  <th>Plan Code</th>
-                  <th>Plan Name</th>
-                  <th>Asset</th>
-                  <th>Trigger</th>
-                  <th>Target Action</th>
-                  <th>Status</th>
-                  <th>Evaluated</th>
-                  <th>Next Eligible</th>
-                  <th>Actions</th>
+                  <td colSpan={9}>No execution candidates found.</td>
                 </tr>
-              </thead>
-              <tbody>
-                {candidates.length === 0 ? (
-                  <tr>
-                    <td colSpan={9}>No execution candidates found.</td>
+              ) : (
+                candidates.map((candidate) => (
+                  <tr key={candidate.id}>
+                    <td>{candidate.planCodeSnapshot}</td>
+                    <td>{candidate.planNameSnapshot}</td>
+                    <td>{candidate.assetName}</td>
+                    <td>{candidate.triggerType}</td>
+                    <td>{getPlanTargetActionLabel(candidate.targetActionSnapshot)}</td>
+                    <td>{getExecutionCandidateStatusLabel(candidate.candidateStatus)}</td>
+                    <td>{formatTimestamp(candidate.evaluatedAt)}</td>
+                    <td>{formatTimestamp(candidate.nextEligibleAt)}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="btn-link"
+                        onClick={() => handleViewDetail(candidate.id)}
+                      >
+                        View
+                      </button>
+                      {renderReviewActions(candidate)}
+                    </td>
                   </tr>
-                ) : (
-                  candidates.map((candidate) => (
-                    <tr key={candidate.id}>
-                      <td>{candidate.planCodeSnapshot}</td>
-                      <td>{candidate.planNameSnapshot}</td>
-                      <td>{candidate.assetName}</td>
-                      <td>{candidate.triggerType}</td>
-                      <td>{getPlanTargetActionLabel(candidate.targetActionSnapshot)}</td>
-                      <td>{getExecutionCandidateStatusLabel(candidate.candidateStatus)}</td>
-                      <td>{formatTimestamp(candidate.evaluatedAt)}</td>
-                      <td>{formatTimestamp(candidate.nextEligibleAt)}</td>
-                      <td>
-                        <button
-                          type="button"
-                          className="btn-link"
-                          onClick={() => handleViewDetail(candidate.id)}
-                        >
-                          View
-                        </button>
-                        {renderReviewActions(candidate)}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-            <PaginationControls
-              currentPage={candidatesPage}
-              totalPages={candidatesTotalPages}
-              onPageChange={(page) => loadCandidatesWithFilters(
-                page,
-                filterStatus,
-                filterAssetId,
-                filterPlanId
+                ))
               )}
-            />
-          </>
+            </tbody>
+          </table>
         )}
       </section>
 
+      <PaginationControls
+        page={candidatesPage}
+        totalPages={candidatesTotalPages}
+        loading={listLoading}
+        onPrevious={() => loadCandidatesWithFilters(
+          candidatesPage - 1,
+          filterStatus,
+          filterAssetId,
+          filterPlanId
+        )}
+        onNext={() => loadCandidatesWithFilters(
+          candidatesPage + 1,
+          filterStatus,
+          filterAssetId,
+          filterPlanId
+        )}
+      />
+
       {selectedCandidate && (
-        <section className="content-section">
+        <section className="reference-form-section">
           <div className="section-header">
             <h2>Candidate Detail</h2>
             <button
@@ -686,7 +681,7 @@ export default function PreventiveExecutionCandidatesPage() {
       )}
 
       {approveCandidate && (
-        <section className="content-section dialog-panel">
+        <section className="reference-form-section dialog-panel">
           <h2>Approve Candidate</h2>
           <p>
             Plan:
@@ -769,7 +764,7 @@ export default function PreventiveExecutionCandidatesPage() {
       )}
 
       {rejectCandidate && (
-        <section className="content-section dialog-panel">
+        <section className="reference-form-section dialog-panel">
           <h2>Reject Candidate</h2>
           <p>
             Plan:
@@ -804,7 +799,7 @@ export default function PreventiveExecutionCandidatesPage() {
       )}
 
       {dismissCandidate && (
-        <section className="content-section dialog-panel">
+        <section className="reference-form-section dialog-panel">
           <h2>Dismiss Candidate</h2>
           <p>
             Plan:
@@ -837,6 +832,6 @@ export default function PreventiveExecutionCandidatesPage() {
           </form>
         </section>
       )}
-    </div>
+    </ReferenceDataLayout>
   );
 }

@@ -83,7 +83,7 @@ describe('InspectionTemplatesPage', () => {
   });
 
   it('renders template list for administrator', async () => {
-    render(
+    const { container } = render(
       <MemoryRouter>
         <InspectionTemplatesPage />
       </MemoryRouter>
@@ -93,6 +93,11 @@ describe('InspectionTemplatesPage', () => {
     expect(screen.getByRole('button', { name: 'Create Template' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Manage Questions' })).toBeInTheDocument();
+    expect(container.querySelector('.reference-header')).toBeInTheDocument();
+    expect(container.querySelector('.reference-content')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '← Back' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Notifications' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Logout' })).toBeInTheDocument();
   });
 
   it('shows read-only view for manager', async () => {

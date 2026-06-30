@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import apiClient from '../services/apiClient';
 import inspectionTemplateApi from '../services/inspectionTemplateApi';
 import assetCategoryApi from '../services/assetCategoryApi';
-import NotificationButton from '../components/NotificationButton';
+import ReferenceDataLayout from '../components/layout/ReferenceDataLayout';
 import PaginationControls from '../components/PaginationControls';
 import {
   canManageInspectionTemplates,
@@ -21,7 +21,6 @@ import {
   getTotalPages,
   unwrapPageContent,
 } from '../utils/pagination';
-import '../styles/ReferenceDataPage.css';
 
 function formatTimestamp(timestamp) {
   if (!timestamp) {
@@ -32,7 +31,7 @@ function formatTimestamp(timestamp) {
 
 export default function InspectionTemplatesPage() {
   const navigate = useNavigate();
-  const { auth, logout } = useAuth();
+  const { auth } = useAuth();
   const [templates, setTemplates] = useState([]);
   const [categories, setCategories] = useState([]);
   const [templatesPage, setTemplatesPage] = useState(DEFAULT_PAGE);
@@ -203,37 +202,12 @@ export default function InspectionTemplatesPage() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
   if (loading) {
     return <div className="loading">Loading inspection templates...</div>;
   }
 
   return (
-    <div className="reference-data-page">
-      <header
-        className="reference-header"
-        style={{
-          background: 'linear-gradient(135deg, #1a472a 0%, #2d6b4d 100%)',
-          color: 'white',
-        }}
-      >
-        <button type="button" className="back-btn" onClick={() => navigate('/')}>
-          ← Back
-        </button>
-        <h1>Inspection Templates</h1>
-        <div className="user-header-actions">
-          <NotificationButton />
-          <button type="button" className="logout-btn" onClick={handleLogout}>
-            Logout
-          </button>
-        </div>
-      </header>
-
-      <main className="reference-content">
+    <ReferenceDataLayout title="Inspection Templates">
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
 
@@ -414,7 +388,6 @@ export default function InspectionTemplatesPage() {
           onPrevious={() => loadTemplates(templatesPage - 1)}
           onNext={() => loadTemplates(templatesPage + 1)}
         />
-      </main>
-    </div>
+    </ReferenceDataLayout>
   );
 }

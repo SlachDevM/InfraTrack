@@ -3,14 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import apiClient from '../services/apiClient';
 import assetCategoryApi from '../services/assetCategoryApi';
-import NotificationButton from '../components/NotificationButton';
+import ReferenceDataLayout from '../components/layout/ReferenceDataLayout';
 import { canManageUsers } from '../constants/userRoles';
 import { getApiErrorMessage } from '../utils/apiError';
-import '../styles/ReferenceDataPage.css';
 
 export default function AssetCategoriesPage() {
   const navigate = useNavigate();
-  const { auth, logout } = useAuth();
+  const { auth } = useAuth();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -81,37 +80,12 @@ export default function AssetCategoriesPage() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
   if (loading) {
     return <div className="loading">Loading asset categories...</div>;
   }
 
   return (
-    <div className="reference-data-page">
-      <header
-        className="reference-header"
-        style={{
-          background: 'linear-gradient(135deg, #1a472a 0%, #2d6b4d 100%)',
-          color: 'white',
-        }}
-      >
-        <button type="button" className="back-btn" onClick={() => navigate('/')}>
-          ← Back
-        </button>
-        <h1>Asset Categories</h1>
-        <div className="user-header-actions">
-          <NotificationButton />
-          <button type="button" className="logout-btn" onClick={handleLogout}>
-            Logout
-          </button>
-        </div>
-      </header>
-
-      <main className="reference-content">
+    <ReferenceDataLayout title="Asset Categories">
         {error && <div className="error-message">{error}</div>}
 
         {!isAdministrator && (
@@ -185,7 +159,6 @@ export default function AssetCategoriesPage() {
             </tbody>
           </table>
         )}
-      </main>
-    </div>
+    </ReferenceDataLayout>
   );
 }
