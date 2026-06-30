@@ -20,6 +20,7 @@ vi.mock('../../services/inspectionTemplateApi', () => ({
     create: vi.fn(),
     update: vi.fn(),
     archive: vi.fn(),
+    publish: vi.fn(),
   },
 }));
 
@@ -92,6 +93,8 @@ describe('InspectionTemplatesPage', () => {
     expect(await screen.findByText('Pump Inspection Template')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Create Template' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Publish' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Manage Questions' })).toBeInTheDocument();
     expect(container.querySelector('.reference-header')).toBeInTheDocument();
     expect(container.querySelector('.reference-content')).toBeInTheDocument();
@@ -114,6 +117,73 @@ describe('InspectionTemplatesPage', () => {
     expect(screen.queryByRole('button', { name: 'Create Template' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Manage Questions' })).toBeInTheDocument();
+  });
+
+  it('shows Publish only for draft templates', async () => {
+    render(
+      <MemoryRouter>
+        <InspectionTemplatesPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('Pump Inspection Template')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Publish' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument();
+  });
+
+  it('shows Archive and View Questions only for published templates', async () => {
+    inspectionTemplateApi.list.mockResolvedValue(pageResponse([
+      { ...template, status: 'PUBLISHED' },
+    ]));
+
+    render(
+      <MemoryRouter>
+        <InspectionTemplatesPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('Pump Inspection Template')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'View Questions' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Archive' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Publish' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
+  });
+
+  it('shows View Questions only for archived templates', async () => {
+    inspectionTemplateApi.list.mockResolvedValue(pageResponse([
+      { ...template, status: 'ARCHIVED' },
+    ]));
+
+    render(
+      <MemoryRouter>
+        <InspectionTemplatesPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('Pump Inspection Template')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'View Questions' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Publish' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
+  });
+
+  it('publishes template when publish action is confirmed', async () => {
+    const user = userEvent.setup();
+    inspectionTemplateApi.publish.mockResolvedValue({ ...template, status: 'PUBLISHED' });
+
+    render(
+      <MemoryRouter>
+        <InspectionTemplatesPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('Pump Inspection Template');
+    await user.click(screen.getByRole('button', { name: 'Publish' }));
+
+    await waitFor(() => {
+      expect(inspectionTemplateApi.publish).toHaveBeenCalledWith(100);
+      expect(screen.getByText('Inspection template published.')).toBeInTheDocument();
+    });
   });
 
   it('shows read-only view for operational coordinator', async () => {
@@ -235,8 +305,11 @@ describe('InspectionTemplatesPage', () => {
     });
   });
 
-  it('archives template when archive action is confirmed', async () => {
+  it('archives published template when archive action is confirmed', async () => {
     const user = userEvent.setup();
+    inspectionTemplateApi.list.mockResolvedValue(pageResponse([
+      { ...template, status: 'PUBLISHED' },
+    ]));
     inspectionTemplateApi.archive.mockResolvedValue({ ...template, status: 'ARCHIVED' });
 
     render(
@@ -250,6 +323,7 @@ describe('InspectionTemplatesPage', () => {
 
     await waitFor(() => {
       expect(inspectionTemplateApi.archive).toHaveBeenCalledWith(100);
+      expect(screen.getByText('Inspection template archived.')).toBeInTheDocument();
     });
   });
 });

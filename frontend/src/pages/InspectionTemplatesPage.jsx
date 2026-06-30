@@ -29,6 +29,10 @@ function formatTimestamp(timestamp) {
   return new Date(timestamp).toLocaleString();
 }
 
+function getQuestionsActionLabel(status) {
+  return status === 'DRAFT' ? 'Manage Questions' : 'View Questions';
+}
+
 export default function InspectionTemplatesPage() {
   const navigate = useNavigate();
   const { auth } = useAuth();
@@ -173,12 +177,36 @@ export default function InspectionTemplatesPage() {
   };
 
   const handleEdit = (template) => {
+    if (template.status !== 'DRAFT') {
+      return;
+    }
     setEditingId(template.id);
     setFormData({
       name: template.name,
       description: template.description || '',
       assetCategoryId: String(template.assetCategoryId),
     });
+  };
+
+  const handlePublish = async (id) => {
+    if (!window.confirm('Publish this inspection template?')) return;
+
+    try {
+      setError(null);
+      setSuccess(null);
+      await inspectionTemplateApi.publish(id);
+      setSuccess('Inspection template published.');
+      if (editingId === id) {
+        resetForm();
+      }
+      await loadTemplates(templatesPage);
+    } catch (err) {
+      if (isForbidden(err)) {
+        setError('You do not have permission to publish inspection templates.');
+      } else {
+        setError(getApiErrorMessage(err, 'Failed to publish inspection template.'));
+      }
+    }
   };
 
   const handleArchive = async (id) => {
@@ -188,7 +216,7 @@ export default function InspectionTemplatesPage() {
       setError(null);
       setSuccess(null);
       await inspectionTemplateApi.archive(id);
-      setSuccess('Inspection template archived successfully.');
+      setSuccess('Inspection template archived.');
       if (editingId === id) {
         resetForm();
       }
@@ -351,9 +379,9 @@ export default function InspectionTemplatesPage() {
                         className="btn-link"
                         onClick={() => navigate(`/inspection-templates/${template.id}/questions`)}
                       >
-                        Manage Questions
+                        {getQuestionsActionLabel(template.status)}
                       </button>
-                      {canManage && template.status !== 'ARCHIVED' && (
+                      {canManage && template.status === 'DRAFT' && (
                         <>
                           {' '}
                           <button
@@ -363,6 +391,18 @@ export default function InspectionTemplatesPage() {
                           >
                             Edit
                           </button>
+                          {' '}
+                          <button
+                            type="button"
+                            className="btn-link"
+                            onClick={() => handlePublish(template.id)}
+                          >
+                            Publish
+                          </button>
+                        </>
+                      )}
+                      {canManage && template.status === 'PUBLISHED' && (
+                        <>
                           {' '}
                           <button
                             type="button"

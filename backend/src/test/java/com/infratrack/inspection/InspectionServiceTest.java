@@ -736,6 +736,27 @@ class InspectionServiceTest {
     }
 
     @Test
+    void assignInspection_shouldRejectArchivedTemplate() {
+        AssignInspectionRequest request = validRequest();
+        request.setInspectionTemplateId(50L);
+        BusinessTrigger trigger = businessTrigger(1L, false);
+        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        InspectionTemplate template = archivedTemplate(50L, trigger.getAsset().getAssetCategory().getId());
+
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(businessTriggerRepository.findById(1L)).thenReturn(Optional.of(trigger));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.existsByBusinessTriggerIdAndStatus(1L, InspectionStatus.ASSIGNED))
+                .thenReturn(false);
+        when(inspectionTemplateRepository.findDetailedById(50L)).thenReturn(Optional.of(template));
+
+        assertThatThrownBy(() -> inspectionService.assignInspection(request, 10L))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Only published inspection templates can be used for inspections");
+    }
+
+    @Test
     void assignInspection_shouldRejectTemplateFromDifferentCategory() {
         AssignInspectionRequest request = validRequest();
         request.setInspectionTemplateId(50L);
@@ -907,6 +928,20 @@ class InspectionServiceTest {
                 category,
                 1,
                 InspectionTemplateStatus.DRAFT
+        );
+        template.setId(id);
+        return template;
+    }
+
+    private InspectionTemplate archivedTemplate(Long id, Long categoryId) {
+        AssetCategory category = new AssetCategory("Playground");
+        category.setId(categoryId);
+        InspectionTemplate template = new InspectionTemplate(
+                "Pump Inspection Archived",
+                null,
+                category,
+                1,
+                InspectionTemplateStatus.ARCHIVED
         );
         template.setId(id);
         return template;

@@ -12,4 +12,6 @@ public interface InspectionTemplateQuestionRepository extends JpaRepository<Insp
     Optional<InspectionTemplateQuestion> findByIdAndInspectionTemplateId(Long id, Long inspectionTemplateId);
 
     boolean existsByInspectionTemplateIdAndCode(Long inspectionTemplateId, String code);
+
+    long countByInspectionTemplateIdAndActiveTrue(Long inspectionTemplateId);
 }

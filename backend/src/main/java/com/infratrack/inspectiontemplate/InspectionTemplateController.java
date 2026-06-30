@@ -97,8 +97,19 @@ public class InspectionTemplateController {
         return ResponseEntity.ok(inspectionTemplateService.update(id, request));
     }
 
+    @PostMapping("/{id}/publish")
+    @Operation(summary = "Publish inspection template", description = "Administrator only. Draft templates with at least one active question become PUBLISHED.")
+    @ApiResponse(responseCode = "200", description = "Inspection template published")
+    public ResponseEntity<InspectionTemplateResponse> publishInspectionTemplate(
+            @PathVariable Long id,
+            Authentication authentication) {
+        Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+        authorizationService.requireAdministrator(userId);
+        return ResponseEntity.ok(inspectionTemplateService.publish(id));
+    }
+
     @PostMapping("/{id}/archive")
-    @Operation(summary = "Archive inspection template", description = "Administrator only. Sets status to ARCHIVED.")
+    @Operation(summary = "Archive inspection template", description = "Administrator only. Published templates become ARCHIVED.")
     @ApiResponse(responseCode = "200", description = "Inspection template archived")
     public ResponseEntity<InspectionTemplateResponse> archiveInspectionTemplate(
             @PathVariable Long id,

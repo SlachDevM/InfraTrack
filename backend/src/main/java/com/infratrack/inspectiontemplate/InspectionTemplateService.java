@@ -20,14 +20,20 @@ public class InspectionTemplateService {
 
     static final int INITIAL_VERSION = 1;
 
+    static final String PUBLISH_REQUIRES_ACTIVE_QUESTIONS_MESSAGE =
+            "Templates must contain at least one question before publication.";
+
     private final InspectionTemplateRepository inspectionTemplateRepository;
     private final AssetCategoryRepository assetCategoryRepository;
+    private final InspectionTemplateQuestionRepository inspectionTemplateQuestionRepository;
 
     public InspectionTemplateService(
             InspectionTemplateRepository inspectionTemplateRepository,
-            AssetCategoryRepository assetCategoryRepository) {
+            AssetCategoryRepository assetCategoryRepository,
+            InspectionTemplateQuestionRepository inspectionTemplateQuestionRepository) {
         this.inspectionTemplateRepository = inspectionTemplateRepository;
         this.assetCategoryRepository = assetCategoryRepository;
+        this.inspectionTemplateQuestionRepository = inspectionTemplateQuestionRepository;
     }
 
     @Transactional(readOnly = true)
@@ -63,7 +69,7 @@ public class InspectionTemplateService {
     @Transactional
     public InspectionTemplateResponse update(Long id, UpdateInspectionTemplateRequest request) {
         InspectionTemplate template = findTemplateOrThrow(id);
-        requireNotArchived(template);
+        requireDraftTemplate(template);
 
         template.setName(normalizeName(request.getName()));
         template.setDescription(normalizeOptionalDescription(request.getDescription()));
@@ -72,8 +78,21 @@ public class InspectionTemplateService {
     }
 
     @Transactional
+    public InspectionTemplateResponse publish(Long id) {
+        InspectionTemplate template = findTemplateOrThrow(id);
+        requireDraftTemplate(template);
+        requireAtLeastOneActiveQuestion(template.getId());
+
+        template.setStatus(InspectionTemplateStatus.PUBLISHED);
+        template.touchUpdatedAt();
+        return InspectionTemplateResponse.from(inspectionTemplateRepository.save(template));
+    }
+
+    @Transactional
     public InspectionTemplateResponse archive(Long id) {
         InspectionTemplate template = findTemplateOrThrow(id);
+        requirePublishedTemplate(template);
+
         template.setStatus(InspectionTemplateStatus.ARCHIVED);
         template.touchUpdatedAt();
         return InspectionTemplateResponse.from(inspectionTemplateRepository.save(template));
@@ -92,9 +111,31 @@ public class InspectionTemplateService {
                 .orElseThrow(() -> new NotFoundException("Asset category not found"));
     }
 
-    private void requireNotArchived(InspectionTemplate template) {
-        if (template.getStatus() == InspectionTemplateStatus.ARCHIVED) {
-            throw new BusinessValidationException("Archived inspection templates cannot be modified");
+    private void requireDraftTemplate(InspectionTemplate template) {
+        if (template.getStatus() == InspectionTemplateStatus.DRAFT) {
+            return;
+        }
+        if (template.getStatus() == InspectionTemplateStatus.PUBLISHED) {
+            throw new BusinessValidationException("Published inspection templates cannot be modified");
+        }
+        throw new BusinessValidationException("Archived inspection templates cannot be modified");
+    }
+
+    private void requirePublishedTemplate(InspectionTemplate template) {
+        if (template.getStatus() == InspectionTemplateStatus.PUBLISHED) {
+            return;
+        }
+        if (template.getStatus() == InspectionTemplateStatus.DRAFT) {
+            throw new BusinessValidationException("Only published inspection templates can be archived");
+        }
+        throw new BusinessValidationException("Inspection template is already archived");
+    }
+
+    private void requireAtLeastOneActiveQuestion(Long templateId) {
+        long activeQuestionCount = inspectionTemplateQuestionRepository
+                .countByInspectionTemplateIdAndActiveTrue(templateId);
+        if (activeQuestionCount < 1) {
+            throw new BusinessValidationException(PUBLISH_REQUIRES_ACTIVE_QUESTIONS_MESSAGE);
         }
     }
 

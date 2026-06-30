@@ -5,6 +5,7 @@ const ENDPOINTS = {
   LIST: '/api/inspection-templates',
   DETAIL: (id) => `/api/inspection-templates/${id}`,
   ARCHIVE: (id) => `/api/inspection-templates/${id}/archive`,
+  PUBLISH: (id) => `/api/inspection-templates/${id}/publish`,
 };
 
 function buildListQuery(page, size, filters = {}) {
@@ -25,6 +26,7 @@ export const inspectionTemplateApi = {
   create: (request) => apiClient.post(ENDPOINTS.LIST, request),
   update: (id, request) => apiClient.put(ENDPOINTS.DETAIL(id), request),
   archive: (id) => apiClient.post(ENDPOINTS.ARCHIVE(id), {}),
+  publish: (id) => apiClient.post(ENDPOINTS.PUBLISH(id), {}),
 };
 
 export default inspectionTemplateApi;

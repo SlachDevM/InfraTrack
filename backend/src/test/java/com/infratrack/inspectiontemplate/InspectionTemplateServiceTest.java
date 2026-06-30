@@ -36,6 +36,9 @@ class InspectionTemplateServiceTest {
     @Mock
     private AssetCategoryRepository assetCategoryRepository;
 
+    @Mock
+    private InspectionTemplateQuestionRepository inspectionTemplateQuestionRepository;
+
     @InjectMocks
     private InspectionTemplateService inspectionTemplateService;
 
@@ -106,6 +109,19 @@ class InspectionTemplateServiceTest {
     }
 
     @Test
+    void update_shouldRejectPublishedTemplate() {
+        UpdateInspectionTemplateRequest request = new UpdateInspectionTemplateRequest();
+        request.setName("Updated Pump Template");
+
+        when(inspectionTemplateRepository.findDetailedById(100L))
+                .thenReturn(Optional.of(template(100L, InspectionTemplateStatus.PUBLISHED)));
+
+        assertThatThrownBy(() -> inspectionTemplateService.update(100L, request))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Published inspection templates cannot be modified");
+    }
+
+    @Test
     void update_shouldRejectArchivedTemplate() {
         UpdateInspectionTemplateRequest request = new UpdateInspectionTemplateRequest();
         request.setName("Updated Pump Template");
@@ -114,6 +130,54 @@ class InspectionTemplateServiceTest {
                 .thenReturn(Optional.of(template(100L, InspectionTemplateStatus.ARCHIVED)));
 
         assertThatThrownBy(() -> inspectionTemplateService.update(100L, request))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Archived inspection templates cannot be modified");
+    }
+
+    @Test
+    void publish_shouldPublishDraftTemplateWithActiveQuestions() {
+        InspectionTemplate template = template(100L, InspectionTemplateStatus.DRAFT);
+        when(inspectionTemplateRepository.findDetailedById(100L)).thenReturn(Optional.of(template));
+        when(inspectionTemplateQuestionRepository.countByInspectionTemplateIdAndActiveTrue(100L)).thenReturn(2L);
+        when(inspectionTemplateRepository.save(any(InspectionTemplate.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        InspectionTemplateResponse response = inspectionTemplateService.publish(100L);
+
+        assertThat(response.getStatus()).isEqualTo(InspectionTemplateStatus.PUBLISHED);
+        verify(inspectionTemplateRepository).save(template);
+    }
+
+    @Test
+    void publish_shouldRejectWhenNoActiveQuestions() {
+        InspectionTemplate template = template(100L, InspectionTemplateStatus.DRAFT);
+        when(inspectionTemplateRepository.findDetailedById(100L)).thenReturn(Optional.of(template));
+        when(inspectionTemplateQuestionRepository.countByInspectionTemplateIdAndActiveTrue(100L)).thenReturn(0L);
+
+        assertThatThrownBy(() -> inspectionTemplateService.publish(100L))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage(InspectionTemplateService.PUBLISH_REQUIRES_ACTIVE_QUESTIONS_MESSAGE);
+
+        verify(inspectionTemplateRepository, never()).save(any());
+    }
+
+    @Test
+    void publish_shouldRejectAlreadyPublishedTemplate() {
+        when(inspectionTemplateRepository.findDetailedById(100L))
+                .thenReturn(Optional.of(template(100L, InspectionTemplateStatus.PUBLISHED)));
+
+        assertThatThrownBy(() -> inspectionTemplateService.publish(100L))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Published inspection templates cannot be modified");
+
+        verify(inspectionTemplateQuestionRepository, never()).countByInspectionTemplateIdAndActiveTrue(any());
+    }
+
+    @Test
+    void publish_shouldRejectArchivedTemplate() {
+        when(inspectionTemplateRepository.findDetailedById(100L))
+                .thenReturn(Optional.of(template(100L, InspectionTemplateStatus.ARCHIVED)));
+
+        assertThatThrownBy(() -> inspectionTemplateService.publish(100L))
                 .isInstanceOf(BusinessValidationException.class)
                 .hasMessage("Archived inspection templates cannot be modified");
     }
@@ -128,6 +192,18 @@ class InspectionTemplateServiceTest {
 
         assertThat(response.getStatus()).isEqualTo(InspectionTemplateStatus.ARCHIVED);
         verify(inspectionTemplateRepository).save(template);
+    }
+
+    @Test
+    void archive_shouldRejectDraftTemplate() {
+        when(inspectionTemplateRepository.findDetailedById(100L))
+                .thenReturn(Optional.of(template(100L, InspectionTemplateStatus.DRAFT)));
+
+        assertThatThrownBy(() -> inspectionTemplateService.archive(100L))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Only published inspection templates can be archived");
+
+        verify(inspectionTemplateRepository, never()).save(any());
     }
 
     @Test
@@ -161,6 +237,22 @@ class InspectionTemplateServiceTest {
         inspectionTemplateService.listPage(10L, InspectionTemplateStatus.DRAFT, DEFAULT_PAGEABLE);
 
         verify(inspectionTemplateRepository).findFiltered(10L, InspectionTemplateStatus.DRAFT, DEFAULT_PAGEABLE);
+    }
+
+    @Test
+    void listPage_shouldExcludeArchivedTemplatesWhenFilteringPublished() {
+        InspectionTemplate published = template(100L, InspectionTemplateStatus.PUBLISHED);
+        when(inspectionTemplateRepository.findFiltered(isNull(), eq(InspectionTemplateStatus.PUBLISHED), eq(DEFAULT_PAGEABLE)))
+                .thenReturn(new PageImpl<>(List.of(published), DEFAULT_PAGEABLE, 1));
+
+        Page<InspectionTemplateResponse> page = inspectionTemplateService.listPage(
+                null,
+                InspectionTemplateStatus.PUBLISHED,
+                DEFAULT_PAGEABLE);
+
+        assertThat(page.getContent()).hasSize(1);
+        assertThat(page.getContent().get(0).getStatus()).isEqualTo(InspectionTemplateStatus.PUBLISHED);
+        verify(inspectionTemplateRepository).findFiltered(null, InspectionTemplateStatus.PUBLISHED, DEFAULT_PAGEABLE);
     }
 
     @Test
