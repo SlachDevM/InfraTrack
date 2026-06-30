@@ -36,4 +36,20 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, Long> {
             Pageable pageable);
 
     boolean existsByOperationalDecisionId(Long operationalDecisionId);
+
+    @EntityGraph(attributePaths = {
+            "asset", "asset.department", "asset.assetCategory",
+            "operationalDecision", "operationalDecision.issue"})
+    Optional<WorkOrder> findMobileBundleById(Long id);
+
+    @EntityGraph(attributePaths = {"asset", "asset.department", "operationalDecision"})
+    List<WorkOrder> findByAssignedToUserId(Long assignedToUserId);
+
+    @EntityGraph(attributePaths = {"asset", "asset.department", "operationalDecision"})
+    List<WorkOrder> findByAsset_Department_Id(Long departmentId);
+
+    @EntityGraph(attributePaths = {"asset", "asset.department", "operationalDecision"})
+    List<WorkOrder> findByStatus(WorkOrderStatus status);
+
+    long countByAssignedToUserIdAndStatus(Long assignedToUserId, WorkOrderStatus status);
 }

@@ -65,13 +65,18 @@ The KPI API is designed for reuse by the React web client, future Android applic
 
 ---
 
-## ⬜ Version 2.2.0 — Reporting & Export
+## ⬜ Version 2.2.0 — Mobile API & Reporting
 
-**Objective:** Council-ready operational and compliance reporting.
+**Objective:** Prepare backend and reporting capabilities for field and council use.
 
-**Business value:** Exportable reports for audit, asset management plans, and executive briefings.
+**Business value:** Android field client can consume compact APIs; councils can export operational data.
 
-**Major capabilities:** Scheduled reports, template-aligned inspection analytics, preventive compliance summaries.
+**Major capabilities:**
+
+- **Sprint M1 (complete):** Mobile API foundation — read/bundle endpoints under `/api/mobile/*` (identity, dashboard, my inspections/work orders, screen bundles)
+- Scheduled reports, template-aligned inspection analytics, preventive compliance summaries (deferred)
+
+**Reference:** [Mobile API](../04-api/mobile-api.md)
 
 ---
 

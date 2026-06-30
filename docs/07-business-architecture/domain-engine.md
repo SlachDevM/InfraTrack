@@ -1190,6 +1190,21 @@ Response shape: `assets`, `inspections`, `issues`, `workOrders`, `preventive`, `
 
 Work order overdue KPIs are always zero because work orders have no due date field in the current model.
 
+### Sprint M1 — Mobile API Foundation
+
+Version 2.2.0 Sprint M1 introduces **read-only mobile bundle endpoints** under `/api/mobile/*` for the future Android field client. M1 affects presentation and data bundling only — no new workflows, write endpoints, or authorization bypass.
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/mobile/me` | Authenticated user identity summary |
+| `GET /api/mobile/dashboard` | Personal assignment counts |
+| `GET /api/mobile/my-inspections` | Scoped inspection summaries |
+| `GET /api/mobile/inspections/{id}/bundle` | Inspection screen bundle |
+| `GET /api/mobile/my-work-orders` | Scoped work order summaries |
+| `GET /api/mobile/work-orders/{id}/bundle` | Work order screen bundle |
+
+Field employees and contractors access assigned items only. Managers access department-scoped items. Administrators have support access. Write operations reuse existing web APIs (`POST /api/inspections/{id}/complete`, `POST /api/work-orders/{id}/maintenance-activity`). Android client, offline sync, and push delivery remain deferred.
+
 ---
 
 ## Authorization summary

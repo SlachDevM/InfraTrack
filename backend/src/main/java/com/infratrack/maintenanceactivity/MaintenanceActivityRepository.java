@@ -7,10 +7,24 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface MaintenanceActivityRepository extends JpaRepository<MaintenanceActivity, Long> {
 
     boolean existsByWorkOrderId(Long workOrderId);
+
+    Optional<MaintenanceActivity> findByWorkOrderId(Long workOrderId);
+
+    @Query("""
+            SELECT COUNT(ma) FROM MaintenanceActivity ma
+            WHERE ma.performedByUserId = :userId
+              AND ma.completedAt >= :start
+              AND ma.completedAt < :end
+            """)
+    long countCompletedByUserBetween(
+            @Param("userId") Long userId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
 
     List<MaintenanceActivity> findAllByOrderByCompletedAtDesc();
 
