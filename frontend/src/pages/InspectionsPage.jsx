@@ -135,14 +135,15 @@ export default function InspectionsPage() {
       .filter((inspection) => inspection.inspectionTemplateId)
       .forEach((inspection) => {
         const templateId = inspection.inspectionTemplateId;
-        if (templateQuestionsByTemplateId[templateId]) {
+        if (Object.prototype.hasOwnProperty.call(templateQuestionsByTemplateId, templateId)) {
           return;
         }
         inspectionTemplateQuestionApi.list(templateId)
           .then((questions) => {
+            const questionList = Array.isArray(questions) ? questions : [];
             setTemplateQuestionsByTemplateId((prev) => ({
               ...prev,
-              [templateId]: questions.filter((question) => question.active),
+              [templateId]: questionList.filter((question) => question.active),
             }));
           })
           .catch(() => {

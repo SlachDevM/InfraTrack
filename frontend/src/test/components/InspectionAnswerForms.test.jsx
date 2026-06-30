@@ -99,6 +99,7 @@ describe('CompleteInspectionForm checklist UI', () => {
 
     expect(screen.getByText(/Is there any visible leak/i)).toBeInTheDocument();
     expect(screen.getByText(/Additional notes/i)).toBeInTheDocument();
+    expect(screen.queryByText(/No active checklist questions are defined/i)).not.toBeInTheDocument();
     expect(screen.getByLabelText(/Observed Condition/i)).toBeInTheDocument();
   });
 

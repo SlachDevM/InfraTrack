@@ -8,6 +8,7 @@ import businessTriggerApi from '../../services/businessTriggerApi';
 import assetApi from '../../services/assetApi';
 import userApi from '../../services/userApi';
 import inspectionTemplateApi from '../../services/inspectionTemplateApi';
+import inspectionTemplateQuestionApi from '../../services/inspectionTemplateQuestionApi';
 import { USER_ROLES } from '../../constants/userRoles';
 
 const mockNavigate = vi.fn();
@@ -20,6 +21,7 @@ vi.mock('../../services/inspectionApi', () => ({
   default: {
     list: vi.fn(),
     assign: vi.fn(),
+    complete: vi.fn(),
     listWorkers: vi.fn(),
   },
 }));
@@ -110,6 +112,49 @@ const publishedTemplate = {
   assetCategoryId: 20,
 };
 
+const templateQuestions = [
+  {
+    id: 1,
+    code: 'LIGHT_WORKING',
+    questionText: 'Is the light working?',
+    questionType: 'BOOLEAN',
+    required: true,
+    active: true,
+  },
+  {
+    id: 2,
+    code: 'POLE_DAMAGE',
+    questionText: 'Pole damage level',
+    questionType: 'CHOICE',
+    required: false,
+    active: true,
+    choices: [
+      { id: 10, code: 'NONE', label: 'None', displayOrder: 1, active: true },
+      { id: 11, code: 'MINOR', label: 'Minor', displayOrder: 2, active: true },
+    ],
+  },
+  {
+    id: 3,
+    code: 'NOTES',
+    questionText: 'Additional notes',
+    questionType: 'TEXT',
+    required: false,
+    active: true,
+  },
+];
+
+const templatedInspection = {
+  id: 200,
+  status: 'ASSIGNED',
+  assignedToUserId: 20,
+  assetName: 'Street Light A',
+  businessTriggerId: 1,
+  businessTriggerType: 'CUSTOMER_REQUEST',
+  businessTriggerReason: 'Routine check',
+  inspectionTemplateId: 50,
+  inspectionTemplateName: 'Street Light Inspection',
+};
+
 describe('InspectionsPage template assignment', () => {
   afterEach(cleanup);
 
@@ -195,5 +240,79 @@ describe('InspectionsPage template assignment', () => {
         inspectionTemplateId: 50,
       });
     });
+  });
+});
+
+describe('InspectionsPage templated inspection completion', () => {
+  afterEach(cleanup);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockAuth.user = { userId: 20, role: USER_ROLES.FIELD_EMPLOYEE };
+    inspectionApi.list.mockResolvedValue(pageResponse([templatedInspection]));
+    businessTriggerApi.list.mockResolvedValue(pageResponse([]));
+    inspectionTemplateQuestionApi.list.mockResolvedValue(templateQuestions);
+    inspectionApi.complete.mockResolvedValue({ id: 200, status: 'COMPLETED' });
+  });
+
+  it('loads checklist questions for assigned templated inspection', async () => {
+    render(
+      <MemoryRouter>
+        <InspectionsPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByLabelText(/Is the light working/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Pole damage level/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Additional notes/i)).toBeInTheDocument();
+    expect(screen.queryByText(/No active checklist questions are defined/i)).not.toBeInTheDocument();
+    expect(inspectionTemplateQuestionApi.list).toHaveBeenCalledWith(50);
+  });
+
+  it('submits LIGHT_WORKING=false with structured answers', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <InspectionsPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByLabelText(/Is the light working/i);
+    await user.selectOptions(screen.getByLabelText(/Is the light working/i), 'false');
+    await user.type(screen.getByLabelText(/Observations/i), 'Light is out.');
+    await user.click(screen.getByRole('button', { name: 'Complete Inspection' }));
+
+    await waitFor(() => {
+      expect(inspectionApi.complete).toHaveBeenCalledWith(200, expect.objectContaining({
+        answers: [
+          expect.objectContaining({
+            questionId: 1,
+            booleanValue: false,
+          }),
+        ],
+      }));
+    });
+  });
+
+  it('keeps legacy completion form when inspection has no template', async () => {
+    inspectionApi.list.mockResolvedValue(pageResponse([
+      {
+        ...templatedInspection,
+        id: 201,
+        inspectionTemplateId: null,
+        inspectionTemplateName: null,
+      },
+    ]));
+
+    render(
+      <MemoryRouter>
+        <InspectionsPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByLabelText(/Observations/i);
+    expect(screen.queryByText(/Checklist Questions/i)).not.toBeInTheDocument();
+    expect(inspectionTemplateQuestionApi.list).not.toHaveBeenCalled();
   });
 });

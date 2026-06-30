@@ -64,6 +64,37 @@ class InspectionTemplateAuthorizationServiceTest {
     }
 
     @Test
+    void requireCanViewTemplateChecklist_shouldAllowFieldEmployeeForPublishedTemplate() {
+        when(userService.getById(4L)).thenReturn(user(4L, UserRole.FIELD_EMPLOYEE));
+
+        assertThatCode(() -> authorizationService.requireCanViewTemplateChecklist(
+                4L,
+                InspectionTemplateStatus.PUBLISHED))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void requireCanViewTemplateChecklist_shouldRejectFieldEmployeeForDraftTemplate() {
+        when(userService.getById(4L)).thenReturn(user(4L, UserRole.FIELD_EMPLOYEE));
+
+        assertThatThrownBy(() -> authorizationService.requireCanViewTemplateChecklist(
+                4L,
+                InspectionTemplateStatus.DRAFT))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You do not have permission to view inspection template checklist questions");
+    }
+
+    @Test
+    void requireCanViewTemplateChecklist_shouldAllowAdministratorForAnyStatus() {
+        when(userService.getById(1L)).thenReturn(user(1L, UserRole.ADMINISTRATOR));
+
+        assertThatCode(() -> authorizationService.requireCanViewTemplateChecklist(
+                1L,
+                InspectionTemplateStatus.DRAFT))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
     void requireAdministrator_shouldAllowAdministrator() {
         when(userService.getById(1L)).thenReturn(user(1L, UserRole.ADMINISTRATOR));
 

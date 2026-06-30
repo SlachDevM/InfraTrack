@@ -1,6 +1,7 @@
 package com.infratrack.inspectiontemplate;
 
 import com.infratrack.config.openapi.StandardApiResponses;
+import com.infratrack.exception.NotFoundException;
 import com.infratrack.inspectiontemplate.dto.CreateInspectionTemplateQuestionRequest;
 import com.infratrack.inspectiontemplate.dto.InspectionTemplateQuestionResponse;
 import com.infratrack.inspectiontemplate.dto.ReorderInspectionTemplateQuestionsRequest;
@@ -33,12 +34,15 @@ public class InspectionTemplateQuestionController {
 
     private final InspectionTemplateQuestionService questionService;
     private final InspectionTemplateAuthorizationService authorizationService;
+    private final InspectionTemplateRepository inspectionTemplateRepository;
 
     public InspectionTemplateQuestionController(
             InspectionTemplateQuestionService questionService,
-            InspectionTemplateAuthorizationService authorizationService) {
+            InspectionTemplateAuthorizationService authorizationService,
+            InspectionTemplateRepository inspectionTemplateRepository) {
         this.questionService = questionService;
         this.authorizationService = authorizationService;
+        this.inspectionTemplateRepository = inspectionTemplateRepository;
     }
 
     @GetMapping
@@ -48,7 +52,9 @@ public class InspectionTemplateQuestionController {
             @PathVariable Long templateId,
             Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
-        authorizationService.requireCanViewTemplates(userId);
+        InspectionTemplate template = inspectionTemplateRepository.findDetailedById(templateId)
+                .orElseThrow(() -> new NotFoundException("Inspection template not found"));
+        authorizationService.requireCanViewTemplateChecklist(userId, template.getStatus());
         return ResponseEntity.ok(questionService.listByTemplateId(templateId));
     }
 

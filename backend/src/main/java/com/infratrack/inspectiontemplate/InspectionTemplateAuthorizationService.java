@@ -22,6 +22,18 @@ public class InspectionTemplateAuthorizationService {
         }
     }
 
+    public void requireCanViewTemplateChecklist(Long userId, InspectionTemplateStatus templateStatus) {
+        UserRole role = userService.getById(userId).getRole();
+        if (canViewTemplates(role)) {
+            return;
+        }
+        if (canPerformInspectionChecklist(role) && templateStatus == InspectionTemplateStatus.PUBLISHED) {
+            return;
+        }
+        throw new ForbiddenOperationException(
+                "You do not have permission to view inspection template checklist questions");
+    }
+
     public void requireAdministrator(Long userId) {
         User user = userService.getById(userId);
         if (!user.getRole().isAdministrator()) {
@@ -32,5 +44,9 @@ public class InspectionTemplateAuthorizationService {
 
     static boolean canViewTemplates(UserRole role) {
         return role.isAdministrator() || role.isManager() || role.isOperationalCoordinator();
+    }
+
+    static boolean canPerformInspectionChecklist(UserRole role) {
+        return role.isFieldEmployee() || role.isContractor();
     }
 }
