@@ -1100,6 +1100,42 @@ Planned extensions beyond the Version 2.0.0 baseline:
 - distributed scheduler locking (ShedLock or equivalent) for multi-instance deployments;
 - native Android field client consuming the same REST API.
 
+## Operations Intelligence (Version 2.1.0 — Sprint C1)
+
+Version 2.1.0 introduces the **Operations Intelligence KPI Engine** — a **read-only** aggregation layer over existing operational data.
+
+### Responsibility
+
+The KPI Engine aggregates counts and breakdowns from Assets, Inspections, Issues, Work Orders, Preventive Maintenance, and the Decision Engine. It does **not** create, update, approve, reject, execute, or notify.
+
+### API
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/operations-intelligence/kpis` | Structured operational KPI aggregates |
+
+### Authorization
+
+| Role | Scope |
+|------|--------|
+| Administrator | Organisation-wide KPIs |
+| Manager | Own department only |
+| Operational Coordinator | Own department only |
+| Field Employee | Forbidden |
+| Contractor | Forbidden |
+
+### Deferred to Sprint C2
+
+Dashboard UI, charts, and exports are intentionally deferred. The same KPI API will be consumed by web dashboards (C2), the Android application, and future reporting.
+
+### KPI groups
+
+Response shape: `assets`, `inspections`, `issues`, `workOrders`, `preventive`, `decisionEngine` — each with explicit DTO fields (no generic maps at the top level).
+
+Work order overdue KPIs are always zero because work orders have no due date field in the current model.
+
+---
+
 ## Authorization summary
 
 | Role | Access |

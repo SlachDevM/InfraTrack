@@ -52,7 +52,13 @@ Security, stability, documentation, CI, and code quality baseline. No new busine
 
 **Business value:** Managers see trends without exporting raw data.
 
-**Major capabilities:** Summary dashboards, preventive execution KPIs, decision-engine metrics, department-scoped views.
+**Major capabilities:**
+
+- **Sprint C1 (in progress):** Read-only Operations Intelligence KPI Engine (`GET /api/operations-intelligence/kpis`) — backend aggregation only; no dashboard UI
+- **Sprint C2 (planned):** Web dashboard UI consuming the KPI API
+- Summary dashboards, preventive execution KPIs, decision-engine metrics, department-scoped views
+
+The KPI API is designed for reuse by the React web client, future Android application, and reporting exports.
 
 ---
 
