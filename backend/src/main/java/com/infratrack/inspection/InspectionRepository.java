@@ -10,6 +10,9 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 public interface InspectionRepository extends JpaRepository<Inspection, Long> {
 
     @EntityGraph(attributePaths = {"asset", "businessTrigger"})
@@ -40,4 +43,42 @@ public interface InspectionRepository extends JpaRepository<Inspection, Long> {
 
     @EntityGraph(attributePaths = {"asset", "asset.department", "inspectionTemplate"})
     Optional<Inspection> findWithEvaluationContextById(Long id);
+
+    @EntityGraph(attributePaths = {
+            "asset", "asset.department", "asset.assetCategory", "inspectionTemplate"})
+    Optional<Inspection> findMobileBundleById(Long id);
+
+    @EntityGraph(attributePaths = {"asset", "asset.assetCategory", "inspectionTemplate"})
+    List<Inspection> findByAssignedToUserId(Long assignedToUserId);
+
+    @EntityGraph(attributePaths = {"asset", "asset.assetCategory", "inspectionTemplate"})
+    List<Inspection> findByAsset_Department_Id(Long departmentId);
+
+    @EntityGraph(attributePaths = {"asset", "asset.assetCategory", "inspectionTemplate"})
+    List<Inspection> findByStatus(InspectionStatus status);
+
+    long countByAssignedToUserIdAndStatus(Long assignedToUserId, InspectionStatus status);
+
+    @Query("""
+            SELECT COUNT(i) FROM Inspection i
+            WHERE i.assignedToUserId = :userId
+              AND i.status = :status
+              AND i.expectedCompletionDate IS NOT NULL
+              AND i.expectedCompletionDate < :today
+            """)
+    long countOverdueByAssignedUser(
+            @Param("userId") Long userId,
+            @Param("status") InspectionStatus status,
+            @Param("today") LocalDate today);
+
+    @Query("""
+            SELECT COUNT(i) FROM Inspection i
+            WHERE i.completedByUserId = :userId
+              AND i.completedAt >= :start
+              AND i.completedAt < :end
+            """)
+    long countCompletedByUserBetween(
+            @Param("userId") Long userId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
 }

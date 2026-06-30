@@ -1,0 +1,529 @@
+package com.infratrack.mobile;
+
+import com.infratrack.asset.Asset;
+import com.infratrack.asset.AssetStatus;
+import com.infratrack.assetcategory.AssetCategory;
+import com.infratrack.businesstrigger.BusinessTrigger;
+import com.infratrack.businesstrigger.BusinessTriggerType;
+import com.infratrack.department.Department;
+import com.infratrack.exception.ForbiddenOperationException;
+import com.infratrack.exception.NotFoundException;
+import com.infratrack.inspection.Inspection;
+import com.infratrack.inspection.InspectionAnswer;
+import com.infratrack.inspection.InspectionAnswerQuestionTypeSnapshot;
+import com.infratrack.inspection.InspectionAnswerRepository;
+import com.infratrack.inspection.InspectionPriority;
+import com.infratrack.inspection.InspectionRepository;
+import com.infratrack.inspection.InspectionStatus;
+import com.infratrack.inspection.InspectionAuthorizationService;
+import com.infratrack.inspectiontemplate.InspectionTemplate;
+import com.infratrack.inspectiontemplate.InspectionTemplateQuestion;
+import com.infratrack.inspectiontemplate.InspectionTemplateQuestionChoice;
+import com.infratrack.inspectiontemplate.InspectionTemplateQuestionChoiceRepository;
+import com.infratrack.inspectiontemplate.InspectionTemplateQuestionRepository;
+import com.infratrack.inspectiontemplate.InspectionTemplateQuestionType;
+import com.infratrack.inspectiontemplate.InspectionTemplateStatus;
+import com.infratrack.issue.Issue;
+import com.infratrack.issue.IssueSeverity;
+import com.infratrack.maintenanceactivity.MaintenanceActivity;
+import com.infratrack.maintenanceactivity.MaintenanceActivityRepository;
+import com.infratrack.mobile.dto.MobileDashboardResponse;
+import com.infratrack.mobile.dto.MobileInspectionBundleResponse;
+import com.infratrack.mobile.dto.MobileInspectionSummaryResponse;
+import com.infratrack.mobile.dto.MobileMeResponse;
+import com.infratrack.mobile.dto.MobileWorkOrderBundleResponse;
+import com.infratrack.mobile.dto.MobileWorkOrderSummaryResponse;
+import com.infratrack.operationaldecision.OperationalDecision;
+import com.infratrack.operationaldecision.OperationalDecisionOutcome;
+import com.infratrack.user.User;
+import com.infratrack.user.UserRole;
+import com.infratrack.user.UserService;
+import com.infratrack.workorder.WorkOrder;
+import com.infratrack.workorder.WorkOrderPriority;
+import com.infratrack.workorder.WorkOrderRepository;
+import com.infratrack.workorder.WorkOrderStatus;
+import com.infratrack.workorder.WorkType;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class MobileServiceTest {
+
+    @Mock
+    private UserService userService;
+
+    @Mock
+    private InspectionRepository inspectionRepository;
+
+    @Mock
+    private InspectionAnswerRepository inspectionAnswerRepository;
+
+    @Mock
+    private InspectionTemplateQuestionRepository questionRepository;
+
+    @Mock
+    private InspectionTemplateQuestionChoiceRepository choiceRepository;
+
+    @Mock
+    private WorkOrderRepository workOrderRepository;
+
+    @Mock
+    private MaintenanceActivityRepository maintenanceActivityRepository;
+
+    private MobileService mobileService;
+
+    @BeforeEach
+    void setUp() {
+        InspectionAuthorizationService inspectionAuthorizationService =
+                new InspectionAuthorizationService(userService);
+        MobileAuthorizationService authorizationService = new MobileAuthorizationService(
+                userService, inspectionAuthorizationService);
+        mobileService = new MobileService(
+                authorizationService,
+                inspectionRepository,
+                inspectionAnswerRepository,
+                questionRepository,
+                choiceRepository,
+                workOrderRepository,
+                maintenanceActivityRepository);
+    }
+
+    @Test
+    void getMe_shouldReturnAuthenticatedUserSummary() {
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        MobileMeResponse response = mobileService.getMe(20L);
+
+        assertThat(response.getId()).isEqualTo(20L);
+        assertThat(response.getName()).isEqualTo("John Smith");
+        assertThat(response.getEmail()).isEqualTo("john@test.com");
+        assertThat(response.getRole()).isEqualTo("FIELD_EMPLOYEE");
+        assertThat(response.getDepartmentId()).isEqualTo(1L);
+        assertThat(response.getDepartmentName()).isEqualTo("Parks");
+        assertThat(response.isEnabled()).isTrue();
+    }
+
+    @Test
+    void getDashboard_shouldReturnOwnCountsForFieldUser() {
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.countByAssignedToUserIdAndStatus(20L, InspectionStatus.ASSIGNED)).thenReturn(3L);
+        when(workOrderRepository.countByAssignedToUserIdAndStatus(20L, WorkOrderStatus.ASSIGNED)).thenReturn(2L);
+        when(inspectionRepository.countOverdueByAssignedUser(eq(20L), eq(InspectionStatus.ASSIGNED), any()))
+                .thenReturn(1L);
+        when(inspectionRepository.countCompletedByUserBetween(eq(20L), any(), any())).thenReturn(1L);
+        when(maintenanceActivityRepository.countCompletedByUserBetween(eq(20L), any(), any())).thenReturn(1L);
+
+        MobileDashboardResponse response = mobileService.getDashboard(20L);
+
+        assertThat(response.getAssignedInspections()).isEqualTo(3L);
+        assertThat(response.getAssignedWorkOrders()).isEqualTo(2L);
+        assertThat(response.getOverdueInspections()).isEqualTo(1L);
+        assertThat(response.getOverdueWorkOrders()).isZero();
+        assertThat(response.getCompletedToday()).isEqualTo(2L);
+    }
+
+    @Test
+    void getMyInspections_shouldReturnOnlyAssignedInspectionsForFieldUser() {
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        Inspection assigned = assignedInspection(100L, 20L);
+        Inspection other = assignedInspection(101L, 99L);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.findByAssignedToUserId(20L)).thenReturn(List.of(assigned));
+
+        List<MobileInspectionSummaryResponse> response = mobileService.getMyInspections(20L);
+
+        assertThat(response).hasSize(1);
+        assertThat(response.get(0).getInspectionId()).isEqualTo(100L);
+        assertThat(other.getAssignedToUserId()).isNotEqualTo(20L);
+    }
+
+    @Test
+    void getMyInspections_shouldSortOverdueFirstThenDateThenPriority() {
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        Inspection overdue = assignedInspection(100L, 20L);
+        overdue = withExpectedDate(overdue, LocalDate.now().minusDays(1));
+        overdue = withPriority(overdue, InspectionPriority.NORMAL);
+
+        Inspection dueSoon = assignedInspection(101L, 20L);
+        dueSoon = withExpectedDate(dueSoon, LocalDate.now().plusDays(1));
+        dueSoon = withPriority(dueSoon, InspectionPriority.URGENT);
+
+        Inspection later = assignedInspection(102L, 20L);
+        later = withExpectedDate(later, LocalDate.now().plusDays(5));
+        later = withPriority(later, InspectionPriority.HIGH);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.findByAssignedToUserId(20L))
+                .thenReturn(List.of(later, dueSoon, overdue));
+
+        List<MobileInspectionSummaryResponse> response = mobileService.getMyInspections(20L);
+
+        assertThat(response).extracting(MobileInspectionSummaryResponse::getInspectionId)
+                .containsExactly(100L, 101L, 102L);
+    }
+
+    @Test
+    void getMyInspections_shouldMarkTemplatedInspectionAsHasChecklist() {
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        Inspection templated = templatedInspection(100L, 20L, 50L);
+        Inspection legacy = assignedInspection(101L, 20L);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.findByAssignedToUserId(20L)).thenReturn(List.of(templated, legacy));
+
+        List<MobileInspectionSummaryResponse> response = mobileService.getMyInspections(20L);
+
+        assertThat(response.get(0).isHasChecklist()).isTrue();
+        assertThat(response.get(0).getTemplateId()).isEqualTo(50L);
+        assertThat(response.get(1).isHasChecklist()).isFalse();
+        assertThat(response.get(1).getTemplateId()).isNull();
+    }
+
+    @Test
+    void getInspectionBundle_shouldAllowAssignedFieldUser() {
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        Inspection inspection = templatedInspection(100L, 20L, 50L);
+        InspectionTemplateQuestion question = templateQuestion(10L, inspection.getInspectionTemplate());
+        InspectionTemplateQuestionChoice choice = templateChoice(1L, question, "YES", "Yes");
+        InspectionAnswer answer = inspectionAnswer(inspection, question, true);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.findMobileBundleById(100L)).thenReturn(Optional.of(inspection));
+        when(questionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
+                .thenReturn(List.of(question));
+        when(choiceRepository.findByQuestionIdInOrderByQuestionIdAscDisplayOrderAsc(List.of(10L)))
+                .thenReturn(List.of(choice));
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenReturn(List.of(answer));
+
+        MobileInspectionBundleResponse response = mobileService.getInspectionBundle(20L, 100L);
+
+        assertThat(response.getInspection().getId()).isEqualTo(100L);
+        assertThat(response.getAsset().getName()).isEqualTo("Central Playground");
+        assertThat(response.getAsset().getLocation()).isEqualTo("Memorial Park");
+        assertThat(response.getTemplate().getId()).isEqualTo(50L);
+        assertThat(response.getQuestions()).hasSize(1);
+        assertThat(response.getQuestions().get(0).getChoices()).hasSize(1);
+        assertThat(response.getAnswers()).hasSize(1);
+        assertThat(response.getAllowedActions().isCanComplete()).isTrue();
+        assertThat(response.getAllowedActions().isCanViewAsset()).isTrue();
+    }
+
+    @Test
+    void getInspectionBundle_shouldRejectUnassignedFieldUser() {
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        Inspection inspection = assignedInspection(100L, 99L);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.findMobileBundleById(100L)).thenReturn(Optional.of(inspection));
+
+        assertThatThrownBy(() -> mobileService.getInspectionBundle(20L, 100L))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessageContaining("assigned to you");
+    }
+
+    @Test
+    void getInspectionBundle_shouldAllowAdministrator() {
+        User admin = user(1L, UserRole.ADMINISTRATOR);
+        Inspection inspection = assignedInspection(100L, 99L);
+
+        when(userService.getById(1L)).thenReturn(admin);
+        when(inspectionRepository.findMobileBundleById(100L)).thenReturn(Optional.of(inspection));
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenReturn(List.of());
+
+        MobileInspectionBundleResponse response = mobileService.getInspectionBundle(1L, 100L);
+
+        assertThat(response.getInspection().getId()).isEqualTo(100L);
+        assertThat(response.getQuestions()).isEmpty();
+        assertThat(response.getAllowedActions().isCanComplete()).isFalse();
+    }
+
+    @Test
+    void getInspectionBundle_shouldReturnEmptyQuestionsForLegacyInspection() {
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        Inspection inspection = assignedInspection(100L, 20L);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.findMobileBundleById(100L)).thenReturn(Optional.of(inspection));
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenReturn(List.of());
+
+        MobileInspectionBundleResponse response = mobileService.getInspectionBundle(20L, 100L);
+
+        assertThat(response.getTemplate()).isNull();
+        assertThat(response.getQuestions()).isEmpty();
+        assertThat(response.getAnswers()).isEmpty();
+    }
+
+    @Test
+    void getMyWorkOrders_shouldReturnOnlyAssignedWorkOrdersForFieldUser() {
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        WorkOrder assigned = assignedWorkOrder(200L, 20L);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(workOrderRepository.findByAssignedToUserId(20L)).thenReturn(List.of(assigned));
+
+        List<MobileWorkOrderSummaryResponse> response = mobileService.getMyWorkOrders(20L);
+
+        assertThat(response).hasSize(1);
+        assertThat(response.get(0).getWorkOrderId()).isEqualTo(200L);
+    }
+
+    @Test
+    void getWorkOrderBundle_shouldAllowAssignedFieldUser() {
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        WorkOrder workOrder = assignedWorkOrder(200L, 20L);
+        MaintenanceActivity activity = new MaintenanceActivity(
+                workOrder,
+                workOrder.getAsset(),
+                20L,
+                "Completed repair",
+                LocalDateTime.now().minusHours(1));
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(workOrderRepository.findMobileBundleById(200L)).thenReturn(Optional.of(workOrder));
+        when(maintenanceActivityRepository.findByWorkOrderId(200L)).thenReturn(Optional.of(activity));
+
+        MobileWorkOrderBundleResponse response = mobileService.getWorkOrderBundle(20L, 200L);
+
+        assertThat(response.getWorkOrder().getId()).isEqualTo(200L);
+        assertThat(response.getAsset().getName()).isEqualTo("Central Playground");
+        assertThat(response.getIssue().getIssueId()).isEqualTo(500L);
+        assertThat(response.getDecision().getOperationalDecisionId()).isEqualTo(900L);
+        assertThat(response.getMaintenanceActivity().getNotes()).isEqualTo("Completed repair");
+        assertThat(response.getAllowedActions().isCanComplete()).isTrue();
+    }
+
+    @Test
+    void getWorkOrderBundle_shouldRejectUnassignedFieldUser() {
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        WorkOrder workOrder = assignedWorkOrder(200L, 99L);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(workOrderRepository.findMobileBundleById(200L)).thenReturn(Optional.of(workOrder));
+
+        assertThatThrownBy(() -> mobileService.getWorkOrderBundle(20L, 200L))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessageContaining("assigned to you");
+    }
+
+    @Test
+    void getMe_shouldRejectOperationalCoordinator() {
+        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        when(userService.getById(10L)).thenReturn(coordinator);
+
+        assertThatThrownBy(() -> mobileService.getMe(10L))
+                .isInstanceOf(ForbiddenOperationException.class);
+    }
+
+    @Test
+    void getInspectionBundle_shouldThrowNotFoundWhenMissing() {
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.findMobileBundleById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> mobileService.getInspectionBundle(20L, 999L))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    private User user(Long id, UserRole role) {
+        User user = new User("john@test.com", "password", "John Smith", role);
+        user.setId(id);
+        user.setEnabled(true);
+        Department department = new Department("Parks");
+        department.setId(1L);
+        user.setDepartment(department);
+        return user;
+    }
+
+    private Inspection assignedInspection(Long id, Long assignedToUserId) {
+        BusinessTrigger trigger = businessTrigger();
+        Inspection inspection = new Inspection(
+                trigger.getAsset(),
+                trigger,
+                assignedToUserId,
+                10L,
+                InspectionPriority.NORMAL,
+                LocalDate.now().plusDays(7));
+        inspection.setId(id);
+        return inspection;
+    }
+
+    private Inspection templatedInspection(Long id, Long assignedToUserId, Long templateId) {
+        Inspection inspection = assignedInspection(id, assignedToUserId);
+        inspection.setInspectionTemplate(publishedTemplate(templateId));
+        return inspection;
+    }
+
+    private Inspection withExpectedDate(Inspection inspection, LocalDate date) {
+        try {
+            var field = Inspection.class.getDeclaredField("expectedCompletionDate");
+            field.setAccessible(true);
+            field.set(inspection, date);
+        } catch (ReflectiveOperationException ex) {
+            throw new IllegalStateException(ex);
+        }
+        return inspection;
+    }
+
+    private Inspection withPriority(Inspection inspection, InspectionPriority priority) {
+        try {
+            var field = Inspection.class.getDeclaredField("priority");
+            field.setAccessible(true);
+            field.set(inspection, priority);
+        } catch (ReflectiveOperationException ex) {
+            throw new IllegalStateException(ex);
+        }
+        return inspection;
+    }
+
+    private InspectionTemplate publishedTemplate(Long id) {
+        AssetCategory category = new AssetCategory("Playground");
+        category.setId(2L);
+        InspectionTemplate template = new InspectionTemplate(
+                "Pump Inspection",
+                null,
+                category,
+                1,
+                InspectionTemplateStatus.PUBLISHED);
+        template.setId(id);
+        return template;
+    }
+
+    private InspectionTemplateQuestion templateQuestion(Long id, InspectionTemplate template) {
+        InspectionTemplateQuestion question = new InspectionTemplateQuestion(
+                template,
+                "Is equipment safe?",
+                "SAFE",
+                "Check overall safety",
+                InspectionTemplateQuestionType.BOOLEAN,
+                true,
+                1);
+        question.setId(id);
+        return question;
+    }
+
+    private InspectionTemplateQuestionChoice templateChoice(
+            Long id,
+            InspectionTemplateQuestion question,
+            String code,
+            String label) {
+        InspectionTemplateQuestionChoice choice = new InspectionTemplateQuestionChoice(
+                question, code, label, 1);
+        choice.setId(id);
+        return choice;
+    }
+
+    private InspectionAnswer inspectionAnswer(
+            Inspection inspection,
+            InspectionTemplateQuestion question,
+            boolean value) {
+        return new InspectionAnswer(
+                inspection,
+                question,
+                question.getCode(),
+                question.getQuestionText(),
+                InspectionAnswerQuestionTypeSnapshot.BOOLEAN,
+                value,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                1);
+    }
+
+    private WorkOrder assignedWorkOrder(Long id, Long assignedToUserId) {
+        WorkOrder workOrder = createdWorkOrder(id);
+        workOrder.assign(assignedToUserId, 40L, LocalDateTime.now().minusHours(2));
+        return workOrder;
+    }
+
+    private WorkOrder createdWorkOrder(Long id) {
+        OperationalDecision decision = decision();
+        WorkOrder workOrder = new WorkOrder(
+                decision,
+                decision.getAsset(),
+                WorkType.INTERNAL_MAINTENANCE,
+                "Replace damaged swing chain",
+                WorkOrderPriority.HIGH,
+                40L,
+                LocalDateTime.now().minusHours(3));
+        workOrder.setId(id);
+        return workOrder;
+    }
+
+    private OperationalDecision decision() {
+        Issue issue = new Issue(
+                null,
+                asset(),
+                "Damaged swing chain",
+                IssueSeverity.HIGH,
+                30L,
+                LocalDateTime.now().minusDays(1));
+        issue.setId(500L);
+        OperationalDecision decision = new OperationalDecision(
+                issue,
+                issue.getAsset(),
+                OperationalDecisionOutcome.INTERNAL_MAINTENANCE,
+                "Proceed with maintenance",
+                30L,
+                LocalDateTime.now().minusHours(4));
+        decision.setId(900L);
+        return decision;
+    }
+
+    private BusinessTrigger businessTrigger() {
+        Asset asset = asset();
+        BusinessTrigger trigger = new BusinessTrigger(
+                asset,
+                BusinessTriggerType.CUSTOMER_REQUEST,
+                "Damaged equipment reported",
+                false,
+                10L);
+        trigger.setId(1L);
+        return trigger;
+    }
+
+    private Asset asset() {
+        Department department = new Department("Parks");
+        department.setId(1L);
+        AssetCategory category = new AssetCategory("Playground");
+        category.setId(2L);
+        Asset asset = new Asset(
+                "Central Playground",
+                department,
+                category,
+                "Memorial Park",
+                AssetStatus.ACTIVE,
+                LocalDate.of(2026, 6, 25),
+                10L);
+        asset.setId(5L);
+        return asset;
+    }
+}

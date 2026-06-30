@@ -9,6 +9,10 @@ The authoritative REST API reference is the live OpenAPI documentation served by
 
 All public endpoints are grouped by business capability (Assets, Inspections, Work Orders, and so on). Authenticated endpoints require a JWT bearer token from `POST /api/auth/login`.
 
+## Mobile API (V2.2.0)
+
+Compact read/bundle endpoints for the future Android field client. See [mobile-api.md](mobile-api.md).
+
 ## V2 Domain Engine
 
 **Version 2.0.0** introduced additional endpoint groups for the Decision Engine and Preventive Maintenance Engine. See [v2-domain-engine-api.md](v2-domain-engine-api.md) for a concise summary of major paths.
