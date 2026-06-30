@@ -1113,6 +1113,8 @@ The KPI Engine aggregates counts and breakdowns from Assets, Inspections, Issues
 | Endpoint | Purpose |
 |----------|---------|
 | `GET /api/operations-intelligence/kpis` | Structured operational KPI aggregates |
+| `GET /api/operations-intelligence/trends` | Time-series trend aggregates (Sprint C3) |
+| `GET /api/operations-intelligence/recent-activity` | Recent operational activity feed (Sprint C4) |
 
 ### Authorization
 
@@ -1126,9 +1128,9 @@ The KPI Engine aggregates counts and breakdowns from Assets, Inspections, Issues
 
 ### Deferred to later sprints
 
-- **Sprint C3 (planned):** KPI trend charts requiring time-series endpoints
 - **Reporting sprint (planned):** exports and council-ready reports
-- The same KPI API is consumed by the React dashboard (C2), the future Android application, and future reporting
+- Advanced analytics, forecasting, and PDF reporting remain deferred
+- The same KPI and trend APIs are consumed by the React dashboard, the future Android application, and future reporting
 
 ### Sprint C2 — Dashboard UI
 
@@ -1139,6 +1141,36 @@ Version 2.1.0 Sprint C2 introduces the first **Operations Intelligence Dashboard
 - Displays KPI cards, attention alerts, quick navigation links, and recent intelligence summaries
 - Does **not** approve workflows, run the scheduler, or mutate operational data
 - Field Employee and Contractor keep their existing landing experience
+
+### Sprint C3 — Trend Intelligence
+
+Version 2.1.0 Sprint C3 introduces **read-only trend time-series** aggregation.
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/operations-intelligence/trends` | Historical operational counts bucketed by DAY, WEEK, or MONTH |
+
+Query parameters: `from` and `to` (epoch millis; default last 30 days), `bucket` (`DAY` \| `WEEK` \| `MONTH`; default `DAY`). Maximum range: 365 days. Missing buckets are zero-filled in chronological order.
+
+Trend series: `inspectionsCompleted` (by `completedAt`), `issuesCreated` (by `recordedAt`), `workOrdersCompleted` (by `updatedAt` when status is COMPLETED — no dedicated completion timestamp exists), `preventiveCandidatesGenerated` (by candidate `createdAt`), `suggestedActionsAccepted` (by `decidedAt`).
+
+Authorization matches Sprint C1 (Administrator global; Manager and Operational Coordinator own department; Field Employee and Contractor forbidden).
+
+The dashboard adds lightweight CSS mini-bar trend widgets (no charting library). Exports and PDF reporting remain deferred.
+
+### Sprint C4 — Recent Activity & Dashboard Widgets
+
+Version 2.1.0 Sprint C4 refactors the dashboard into reusable widgets and adds a **read-only recent activity feed**.
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/operations-intelligence/recent-activity` | Recent operational events aggregated from existing records |
+
+Query parameter: `limit` (default 20; min 1; max 100). Items are sorted by `occurredAt` descending.
+
+Activity types: `INSPECTION_COMPLETED`, `ISSUE_CREATED`, `WORK_ORDER_COMPLETED`, `PREVENTIVE_CANDIDATE_GENERATED`, `PREVENTIVE_CANDIDATE_APPROVED`, `SUGGESTED_ACTION_ACCEPTED`.
+
+This is **not** event sourcing — it queries existing operational records with compact projections. Authorization matches Sprint C1. Dashboard personalization remains future work.
 
 ### KPI groups
 

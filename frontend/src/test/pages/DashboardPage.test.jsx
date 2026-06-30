@@ -19,6 +19,8 @@ const { mockAuth } = vi.hoisted(() => ({
 vi.mock('../../services/operationsIntelligenceApi', () => ({
   default: {
     getKpis: vi.fn(),
+    getTrends: vi.fn(),
+    getRecentActivity: vi.fn(),
   },
 }));
 
@@ -99,6 +101,60 @@ const zeroAlertKpis = {
   decisionEngine: { ...sampleKpis.decisionEngine, suggestedActionsPending: 0 },
 };
 
+const sampleTrends = {
+  from: 1717200000000,
+  to: 1719792000000,
+  bucket: 'DAY',
+  scope: { type: 'DEPARTMENT', departmentId: 10 },
+  series: {
+    inspectionsCompleted: [
+      { period: '2026-06-01', count: 4 },
+      { period: '2026-06-02', count: 0 },
+    ],
+    issuesCreated: [
+      { period: '2026-06-01', count: 2 },
+      { period: '2026-06-02', count: 1 },
+    ],
+    workOrdersCompleted: [{ period: '2026-06-01', count: 1 }],
+    preventiveCandidatesGenerated: [{ period: '2026-06-01', count: 3 }],
+    suggestedActionsAccepted: [{ period: '2026-06-02', count: 1 }],
+  },
+};
+
+const emptyTrends = {
+  ...sampleTrends,
+  series: {
+    inspectionsCompleted: [{ period: '2026-06-01', count: 0 }],
+    issuesCreated: [{ period: '2026-06-01', count: 0 }],
+    workOrdersCompleted: [{ period: '2026-06-01', count: 0 }],
+    preventiveCandidatesGenerated: [{ period: '2026-06-01', count: 0 }],
+    suggestedActionsAccepted: [{ period: '2026-06-01', count: 0 }],
+  },
+};
+
+const sampleRecentActivity = {
+  items: [
+    {
+      type: 'INSPECTION_COMPLETED',
+      title: 'Inspection completed',
+      description: 'Street Light 001',
+      assetId: 12,
+      assetName: 'Street Light 001',
+      occurredAt: 1719792000000,
+      route: '/inspections',
+    },
+    {
+      type: 'ISSUE_CREATED',
+      title: 'Issue created',
+      description: 'Park BBQ',
+      assetId: 5,
+      assetName: 'Park BBQ',
+      occurredAt: 1719705600000,
+      route: '/issues',
+    },
+  ],
+};
+
 describe('DashboardPage', () => {
   afterEach(cleanup);
 
@@ -106,6 +162,8 @@ describe('DashboardPage', () => {
     vi.clearAllMocks();
     mockAuth.user.role = USER_ROLES.MANAGER;
     operationsIntelligenceApi.getKpis.mockResolvedValue(sampleKpis);
+    operationsIntelligenceApi.getTrends.mockResolvedValue(sampleTrends);
+    operationsIntelligenceApi.getRecentActivity.mockResolvedValue(sampleRecentActivity);
   });
 
   it('loads KPIs from API and displays cards', async () => {
@@ -117,6 +175,8 @@ describe('DashboardPage', () => {
 
     await waitFor(() => {
       expect(operationsIntelligenceApi.getKpis).toHaveBeenCalled();
+      expect(operationsIntelligenceApi.getTrends).toHaveBeenCalledWith({ bucket: 'DAY' });
+      expect(operationsIntelligenceApi.getRecentActivity).toHaveBeenCalledWith({ limit: 20 });
     });
 
     expect(await screen.findByText('Good morning, Alex Manager')).toBeInTheDocument();
@@ -169,6 +229,136 @@ describe('DashboardPage', () => {
     expect(within(quickNavSection).getByRole('button', { name: 'Assets' })).toBeInTheDocument();
     expect(within(quickNavSection).getByRole('button', { name: 'Preventive Candidates' })).toBeInTheDocument();
     expect(within(quickNavSection).getByRole('button', { name: 'Scheduler' })).toBeInTheDocument();
+  });
+
+  it('renders recent activity widget with items', async () => {
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('Recent activity')).toBeInTheDocument();
+    expect(screen.getByText('Inspection completed')).toBeInTheDocument();
+    expect(screen.getByText('Street Light 001')).toBeInTheDocument();
+    expect(screen.getByText('Issue created')).toBeInTheDocument();
+  });
+
+  it('shows recent activity loading state', () => {
+    operationsIntelligenceApi.getRecentActivity.mockImplementation(() => new Promise(() => {}));
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Loading recent activity...')).toBeInTheDocument();
+  });
+
+  it('shows recent activity error state', async () => {
+    operationsIntelligenceApi.getRecentActivity.mockRejectedValue({
+      status: 500,
+      message: 'Activity service unavailable',
+    });
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('Activity service unavailable')).toBeInTheDocument();
+  });
+
+  it('shows recent activity empty state', async () => {
+    operationsIntelligenceApi.getRecentActivity.mockResolvedValue({ items: [] });
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('No recent operational activity.')).toBeInTheDocument();
+  });
+
+  it('navigates when recent activity item is clicked', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    const activityButton = await screen.findByRole('button', { name: /Inspection completed/i });
+    await user.click(activityButton);
+
+    expect(mockNavigate).toHaveBeenCalledWith('/inspections');
+  });
+
+  it('shows trends loading state', () => {
+    operationsIntelligenceApi.getTrends.mockImplementation(() => new Promise(() => {}));
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Loading operational trends...')).toBeInTheDocument();
+  });
+
+  it('shows trends error state', async () => {
+    operationsIntelligenceApi.getTrends.mockRejectedValue({
+      status: 500,
+      message: 'Trend service unavailable',
+    });
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('Trend service unavailable')).toBeInTheDocument();
+  });
+
+  it('renders trend section with at least one series', async () => {
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('Operational trends (last 30 days)')).toBeInTheDocument();
+    expect(screen.getByText('Inspections completed')).toBeInTheDocument();
+    expect(screen.getByText('Issues created')).toBeInTheDocument();
+    expect(screen.getAllByText('Total:').length).toBeGreaterThan(0);
+  });
+
+  it('shows empty state for trend series with no activity', async () => {
+    operationsIntelligenceApi.getTrends.mockResolvedValue(emptyTrends);
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findAllByText('No activity in this period.')).not.toHaveLength(0);
+  });
+
+  it('still renders KPI cards when trends load', async () => {
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('Operational KPIs');
+    expect(screen.getByText('Open Issues')).toBeInTheDocument();
   });
 
   it('shows loading state', () => {

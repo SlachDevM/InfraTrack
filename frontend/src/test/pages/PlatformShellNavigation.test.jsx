@@ -20,6 +20,8 @@ const { mockAuth } = vi.hoisted(() => ({
 vi.mock('../../services/operationsIntelligenceApi', () => ({
   default: {
     getKpis: vi.fn(),
+    getTrends: vi.fn(),
+    getRecentActivity: vi.fn(),
   },
 }));
 
@@ -134,6 +136,8 @@ describe('Dashboard navigation', () => {
         suggestedActionsDismissed: 0,
       },
     });
+    operationsIntelligenceApi.getTrends.mockResolvedValue({ series: {} });
+    operationsIntelligenceApi.getRecentActivity.mockResolvedValue({ items: [] });
   });
 
   it('shows Dashboard link for manager and keeps More menu working', async () => {
