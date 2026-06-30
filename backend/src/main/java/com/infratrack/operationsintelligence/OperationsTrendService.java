@@ -4,6 +4,7 @@ import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.operationsintelligence.dto.OperationsTrendResponse;
 import com.infratrack.operationsintelligence.dto.TrendScopeResponse;
 import com.infratrack.operationsintelligence.dto.TrendSeriesResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +22,7 @@ public class OperationsTrendService {
     private final OperationsTrendAggregationRepository aggregationRepository;
     private final ZoneId zoneId;
 
+    @Autowired
     public OperationsTrendService(
             OperationsTrendAuthorizationService authorizationService,
             OperationsTrendAggregationRepository aggregationRepository) {
