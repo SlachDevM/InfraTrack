@@ -81,6 +81,10 @@ export function canViewOperationsDashboard(role) {
   );
 }
 
+export function canExportReporting(role) {
+  return canViewOperationsDashboard(role);
+}
+
 export function canRunPreventiveScheduler(role) {
   return role === USER_ROLES.ADMINISTRATOR || role === USER_ROLES.MANAGER;
 }

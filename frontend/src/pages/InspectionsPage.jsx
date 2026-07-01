@@ -13,7 +13,8 @@ import PaginationControls from '../components/PaginationControls';
 import AssignInspectionForm from '../components/inspections/AssignInspectionForm';
 import CompleteInspectionForm from '../components/inspections/CompleteInspectionForm';
 import InspectionList from '../components/inspections/InspectionList';
-import { canAssignInspections, canPerformInspections } from '../constants/userRoles';
+import ExportCsvButton from '../components/ExportCsvButton';
+import { canAssignInspections, canPerformInspections, canExportReporting } from '../constants/userRoles';
 import {
   INSPECTION_PRIORITIES,
 } from '../constants/inspectionPriorities';
@@ -77,6 +78,7 @@ export default function InspectionsPage() {
 
   const canAssign = canAssignInspections(auth?.user?.role);
   const canPerform = canPerformInspections(auth?.user?.role);
+  const canExport = canExportReporting(auth?.user?.role);
   const currentUserId = auth?.user?.userId;
 
   const myAssignedInspections = useMemo(
@@ -373,6 +375,7 @@ export default function InspectionsPage() {
         <h1>Inspections</h1>
         <div className="user-header-actions">
           <NotificationButton />
+          {canExport && <ExportCsvButton exportType="inspections" onError={setError} />}
           <button type="button" className="logout-btn" onClick={handleLogout}>
             Logout
           </button>

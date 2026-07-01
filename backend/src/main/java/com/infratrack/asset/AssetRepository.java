@@ -53,4 +53,17 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
             @Param("userDepartmentId") Long userDepartmentId,
             @Param("at") LocalDateTime at,
             Pageable pageable);
+
+    @EntityGraph(attributePaths = {"department", "assetCategory"})
+    @Query("""
+            SELECT a FROM Asset a
+            WHERE (:departmentId IS NULL OR a.department.id = :departmentId)
+              AND (:from IS NULL OR a.createdAt >= :from)
+              AND (:to IS NULL OR a.createdAt <= :to)
+            ORDER BY a.createdAt DESC
+            """)
+    List<Asset> findForExport(
+            @Param("departmentId") Long departmentId,
+            @Param("from") Long from,
+            @Param("to") Long to);
 }

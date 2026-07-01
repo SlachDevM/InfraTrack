@@ -61,7 +61,7 @@ Security, stability, documentation, CI, and code quality baseline. No new busine
 - **Sprint C5 (complete):** User-scoped dashboard personalization (`GET/PUT /api/dashboard/preferences`, reset endpoint)
 - Summary dashboards, preventive execution KPIs, decision-engine metrics, department-scoped views
 
-The KPI API is designed for reuse by the React web client, future Android application, and reporting exports (deferred to Version 2.2.0).
+The KPI API is designed for reuse by the React web client, future Android application, and CSV reporting exports (Sprint R1).
 
 ---
 
@@ -74,9 +74,11 @@ The KPI API is designed for reuse by the React web client, future Android applic
 **Major capabilities:**
 
 - **Sprint M1 (complete):** Mobile API foundation — read/bundle endpoints under `/api/mobile/*` (identity, dashboard, my inspections/work orders, screen bundles)
+- **Sprint R1 (complete):** CSV reporting foundation — read-only exports under `/api/reporting/exports/*.csv` (Assets, Inspections, Issues, Work Orders, Preventive Execution Candidates)
 - Scheduled reports, template-aligned inspection analytics, preventive compliance summaries (deferred)
+- PDF and Excel (`.xlsx`) exports remain deferred
 
-**Reference:** [Mobile API](../04-api/mobile-api.md)
+**Reference:** [Mobile API](../04-api/mobile-api.md), [Reporting API](../04-api/reporting-api.md)
 
 ---
 

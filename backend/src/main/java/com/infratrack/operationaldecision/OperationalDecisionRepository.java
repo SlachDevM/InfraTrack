@@ -7,7 +7,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.Optional;
 
 public interface OperationalDecisionRepository extends JpaRepository<OperationalDecision, Long> {
@@ -38,4 +40,7 @@ public interface OperationalDecisionRepository extends JpaRepository<Operational
     Page<OperationalDecision> findEligibleForWorkOrderCreation(
             @Param("coordinatorDepartmentId") Long coordinatorDepartmentId,
             Pageable pageable);
+
+    @Query("SELECT od.issue.id FROM OperationalDecision od WHERE od.issue.id IN :issueIds")
+    Set<Long> findResolvedIssueIds(@Param("issueIds") Collection<Long> issueIds);
 }

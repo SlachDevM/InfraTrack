@@ -16,6 +16,7 @@ import {
   canReviewPreventiveExecutionCandidates,
   canViewPreventiveScheduler,
   canRunPreventiveScheduler,
+  canExportReporting,
 } from '../../constants/userRoles';
 
 describe('canRegisterAssets', () => {
@@ -133,5 +134,18 @@ describe('other role helpers', () => {
     expect(canRunPreventiveScheduler(USER_ROLES.MANAGER)).toBe(true);
     expect(canRunPreventiveScheduler(USER_ROLES.OPERATIONAL_COORDINATOR)).toBe(false);
     expect(canRunPreventiveScheduler(USER_ROLES.FIELD_EMPLOYEE)).toBe(false);
+  });
+});
+
+describe('canExportReporting', () => {
+  it('allows administrator, manager, and operational coordinator', () => {
+    expect(canExportReporting(USER_ROLES.ADMINISTRATOR)).toBe(true);
+    expect(canExportReporting(USER_ROLES.MANAGER)).toBe(true);
+    expect(canExportReporting(USER_ROLES.OPERATIONAL_COORDINATOR)).toBe(true);
+  });
+
+  it('denies field employee and contractor', () => {
+    expect(canExportReporting(USER_ROLES.FIELD_EMPLOYEE)).toBe(false);
+    expect(canExportReporting(USER_ROLES.CONTRACTOR)).toBe(false);
   });
 });

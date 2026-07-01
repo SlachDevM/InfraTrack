@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface PreventiveExecutionCandidateRepository
@@ -35,4 +36,17 @@ public interface PreventiveExecutionCandidateRepository
             @Param("assetId") Long assetId,
             @Param("planId") Long planId,
             Pageable pageable);
+
+    @EntityGraph(attributePaths = {"preventiveMaintenancePlan", "asset", "asset.department"})
+    @Query("""
+            SELECT c FROM PreventiveExecutionCandidate c
+            WHERE (:departmentId IS NULL OR c.asset.department.id = :departmentId)
+              AND (:from IS NULL OR c.evaluatedAt >= :from)
+              AND (:to IS NULL OR c.evaluatedAt <= :to)
+            ORDER BY c.evaluatedAt DESC
+            """)
+    List<PreventiveExecutionCandidate> findForExport(
+            @Param("departmentId") Long departmentId,
+            @Param("from") Long from,
+            @Param("to") Long to);
 }

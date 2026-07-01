@@ -13,6 +13,10 @@ All public endpoints are grouped by business capability (Assets, Inspections, Wo
 
 Compact read/bundle endpoints for the future Android field client. See [mobile-api.md](mobile-api.md).
 
+## Reporting Exports (V2.2.x)
+
+Read-only CSV exports for Assets, Inspections, Issues, Work Orders, and Preventive Execution Candidates. See [reporting-api.md](reporting-api.md).
+
 ## V2 Domain Engine
 
 **Version 2.0.0** introduced additional endpoint groups for the Decision Engine and Preventive Maintenance Engine. See [v2-domain-engine-api.md](v2-domain-engine-api.md) for a concise summary of major paths.

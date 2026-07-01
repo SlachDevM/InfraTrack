@@ -1128,9 +1128,30 @@ The KPI Engine aggregates counts and breakdowns from Assets, Inspections, Issues
 
 ### Deferred to later sprints
 
-- **Reporting sprint (planned):** exports and council-ready reports
 - Advanced analytics, forecasting, and PDF reporting remain deferred
-- The same KPI and trend APIs are consumed by the React dashboard, the future Android application, and future reporting
+- Excel (`.xlsx`) exports remain deferred
+- Scheduled and email reports remain deferred
+- The same KPI and trend APIs are consumed by the React dashboard, the future Android application, and reporting exports
+
+### Sprint R1 — CSV Reporting Foundation (V2.2.x)
+
+Version 2.2.x introduces **read-only CSV exports** for operational review and spreadsheet analysis.
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/reporting/exports/assets.csv` | Asset register export |
+| `GET /api/reporting/exports/inspections.csv` | Inspection list export |
+| `GET /api/reporting/exports/issues.csv` | Issue register export |
+| `GET /api/reporting/exports/work-orders.csv` | Work order list export |
+| `GET /api/reporting/exports/preventive-candidates.csv` | Preventive execution candidate export |
+
+Optional query parameters: `from` and `to` (epoch millis) where a reliable business or technical timestamp exists on the entity (see [reporting-api.md](../04-api/reporting-api.md)).
+
+Authorization matches Sprint C1 (Administrator global; Manager and Operational Coordinator own department; Field Employee and Contractor forbidden).
+
+Reporting **never** mutates operational data, runs the scheduler, or sends notifications. PDF and `.xlsx` remain deferred.
+
+The React web client adds lightweight **Export CSV** buttons on list pages for authorized roles.
 
 ### Sprint C2 — Dashboard UI
 

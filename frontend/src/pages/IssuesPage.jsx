@@ -6,7 +6,8 @@ import issueApi from '../services/issueApi';
 import inspectionApi from '../services/inspectionApi';
 import NotificationButton from '../components/NotificationButton';
 import PaginationControls from '../components/PaginationControls';
-import { canMakeOperationalDecisions, canRecordIssues } from '../constants/userRoles';
+import ExportCsvButton from '../components/ExportCsvButton';
+import { canMakeOperationalDecisions, canRecordIssues, canExportReporting } from '../constants/userRoles';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
 import {
   DEFAULT_PAGE,
@@ -83,6 +84,7 @@ export default function IssuesPage() {
 
   const canRecord = canRecordIssues(auth?.user?.role);
   const canEditCapa = canMakeOperationalDecisions(auth?.user?.role);
+  const canExport = canExportReporting(auth?.user?.role);
 
   const selectedInspection = useMemo(
     () => eligibleInspections.find(
@@ -254,6 +256,7 @@ export default function IssuesPage() {
         <h1>Issues</h1>
         <div className="user-header-actions">
           <NotificationButton />
+          {canExport && <ExportCsvButton exportType="issues" onError={setError} />}
           <button type="button" className="logout-btn" onClick={handleLogout}>
             Logout
           </button>

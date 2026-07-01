@@ -14,7 +14,8 @@ import AssetList from '../components/assets/AssetList';
 import AssetHistoryPanel from '../components/assets/AssetHistoryPanel';
 import OperationalDocumentsPanel from '../components/assets/OperationalDocumentsPanel';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { canRegisterAssets, canUploadOperationalDocuments } from '../constants/userRoles';
+import ExportCsvButton from '../components/ExportCsvButton';
+import { canRegisterAssets, canUploadOperationalDocuments, canExportReporting } from '../constants/userRoles';
 import { ASSET_STATUSES } from '../constants/assetStatuses';
 import {
   getApiErrorMessage,
@@ -91,6 +92,7 @@ export default function AssetsPage() {
   });
 
   const canRegister = canRegisterAssets(auth?.user?.role);
+  const canExport = canExportReporting(auth?.user?.role);
   const canUploadDocuments = canUploadOperationalDocuments(auth?.user?.role);
 
   useEffect(() => {
@@ -467,6 +469,7 @@ export default function AssetsPage() {
         <h1>Assets</h1>
         <div className="user-header-actions">
           <NotificationButton />
+          {canExport && <ExportCsvButton exportType="assets" onError={setError} />}
           <button type="button" className="logout-btn" onClick={handleLogout}>
             Logout
           </button>

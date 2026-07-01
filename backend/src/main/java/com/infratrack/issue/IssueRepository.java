@@ -52,4 +52,17 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
             @Param("managerDepartmentId") Long managerDepartmentId,
             @Param("at") LocalDateTime at,
             Pageable pageable);
+
+    @EntityGraph(attributePaths = {"asset", "asset.department"})
+    @Query("""
+            SELECT i FROM Issue i
+            WHERE (:departmentId IS NULL OR i.asset.department.id = :departmentId)
+              AND (:from IS NULL OR i.recordedAt >= :from)
+              AND (:to IS NULL OR i.recordedAt < :to)
+            ORDER BY i.recordedAt DESC
+            """)
+    List<Issue> findForExport(
+            @Param("departmentId") Long departmentId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to);
 }

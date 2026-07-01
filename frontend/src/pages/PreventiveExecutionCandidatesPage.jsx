@@ -8,8 +8,10 @@ import assetApi from '../services/assetApi';
 import inspectionApi from '../services/inspectionApi';
 import userApi from '../services/userApi';
 import ReferenceDataLayout from '../components/layout/ReferenceDataLayout';
+import ExportCsvButton from '../components/ExportCsvButton';
 import PaginationControls from '../components/PaginationControls';
 import {
+  canExportReporting,
   canGeneratePreventiveExecutionCandidates,
   canReviewPreventiveExecutionCandidates,
   canViewPreventiveExecutionCandidates,
@@ -97,6 +99,7 @@ export default function PreventiveExecutionCandidatesPage() {
   const canView = canViewPreventiveExecutionCandidates(auth?.user?.role);
   const canGenerate = canGeneratePreventiveExecutionCandidates(auth?.user?.role);
   const canReview = canReviewPreventiveExecutionCandidates(auth?.user?.role);
+  const canExport = canExportReporting(auth?.user?.role);
 
   const selectedAsset = useMemo(
     () => assets.find((asset) => asset.id === approveCandidate?.assetId),
@@ -381,7 +384,10 @@ export default function PreventiveExecutionCandidatesPage() {
   }
 
   return (
-    <ReferenceDataLayout title="Preventive Execution Candidates">
+    <ReferenceDataLayout
+      title="Preventive Execution Candidates"
+      headerActions={canExport ? <ExportCsvButton exportType="preventiveCandidates" onError={setError} /> : null}
+    >
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
 

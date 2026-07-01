@@ -81,4 +81,17 @@ public interface InspectionRepository extends JpaRepository<Inspection, Long> {
             @Param("userId") Long userId,
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end);
+
+    @EntityGraph(attributePaths = {"asset", "asset.department", "asset.assetCategory", "inspectionTemplate"})
+    @Query("""
+            SELECT i FROM Inspection i
+            WHERE (:departmentId IS NULL OR i.asset.department.id = :departmentId)
+              AND (:from IS NULL OR i.createdAt >= :from)
+              AND (:to IS NULL OR i.createdAt <= :to)
+            ORDER BY i.createdAt DESC
+            """)
+    List<Inspection> findForExport(
+            @Param("departmentId") Long departmentId,
+            @Param("from") Long from,
+            @Param("to") Long to);
 }

@@ -52,4 +52,17 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, Long> {
     List<WorkOrder> findByStatus(WorkOrderStatus status);
 
     long countByAssignedToUserIdAndStatus(Long assignedToUserId, WorkOrderStatus status);
+
+    @EntityGraph(attributePaths = {"asset", "asset.department"})
+    @Query("""
+            SELECT wo FROM WorkOrder wo
+            WHERE (:departmentId IS NULL OR wo.asset.department.id = :departmentId)
+              AND (:from IS NULL OR wo.createdAt >= :from)
+              AND (:to IS NULL OR wo.createdAt <= :to)
+            ORDER BY wo.createdAt DESC
+            """)
+    List<WorkOrder> findForExport(
+            @Param("departmentId") Long departmentId,
+            @Param("from") Long from,
+            @Param("to") Long to);
 }

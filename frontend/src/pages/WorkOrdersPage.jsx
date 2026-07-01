@@ -11,7 +11,8 @@ import CreateWorkOrderForm from '../components/workorders/CreateWorkOrderForm';
 import AssignWorkOrderForm from '../components/workorders/AssignWorkOrderForm';
 import CompleteMaintenanceForm from '../components/workorders/CompleteMaintenanceForm';
 import WorkOrderList from '../components/workorders/WorkOrderList';
-import { canAssignWorkOrders, canCompleteMaintenance, canCreateWorkOrders, canRecordCompletionReview, USER_ROLES } from '../constants/userRoles';
+import ExportCsvButton from '../components/ExportCsvButton';
+import { canAssignWorkOrders, canCompleteMaintenance, canCreateWorkOrders, canRecordCompletionReview, canExportReporting, USER_ROLES } from '../constants/userRoles';
 import {
   COMPLETION_REVIEW_DECISION_OPTIONS,
 } from '../constants/completionReviewDecisions';
@@ -86,6 +87,7 @@ export default function WorkOrdersPage() {
   const canAssign = canAssignWorkOrders(auth?.user?.role);
   const canComplete = canCompleteMaintenance(auth?.user?.role);
   const canReview = canRecordCompletionReview(auth?.user?.role);
+  const canExport = canExportReporting(auth?.user?.role);
   const isReworkRequired = reviewFormData.decision === 'REWORK_REQUIRED';
   const currentUserId = auth?.user?.userId;
 
@@ -392,6 +394,7 @@ export default function WorkOrdersPage() {
         <h1>Work Orders</h1>
         <div className="user-header-actions">
           <NotificationButton />
+          {canExport && <ExportCsvButton exportType="workOrders" onError={setError} />}
           <button type="button" className="logout-btn" onClick={handleLogout}>
             Logout
           </button>
