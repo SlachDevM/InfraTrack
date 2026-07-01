@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import ruleEvaluationReportApi from '../../services/ruleEvaluationReportApi';
+import { HTTP_STATUS } from '../../constants/httpStatus';
 import { getApiErrorMessage } from '../../utils/apiError';
 
 function formatTimestamp(value) {
@@ -27,7 +28,7 @@ export default function RuleEvaluationReportPanel({ inspectionId, assetName }) {
         }
       } catch (err) {
         if (!cancelled) {
-          if (err?.response?.status === 404) {
+          if (err?.response?.status === HTTP_STATUS.NOT_FOUND) {
             setReport(null);
           } else {
             setError(getApiErrorMessage(err, 'Failed to load rule evaluation report.'));

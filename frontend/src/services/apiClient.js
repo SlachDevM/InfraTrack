@@ -1,4 +1,5 @@
 import API_CONFIG from '../config/apiConfig';
+import { HTTP_STATUS } from '../constants/httpStatus';
 
 function isFormDataBody(body) {
   return typeof FormData !== 'undefined' && body instanceof FormData;
@@ -35,22 +36,22 @@ class ApiClient {
       error.status = response.status;
       error.statusText = response.statusText;
 
-      if (response.status === 401) {
+      if (response.status === HTTP_STATUS.UNAUTHORIZED) {
         error.type = 'UNAUTHORIZED';
-      } else if (response.status === 403) {
+      } else if (response.status === HTTP_STATUS.FORBIDDEN) {
         error.type = 'FORBIDDEN';
-      } else if (response.status === 404) {
+      } else if (response.status === HTTP_STATUS.NOT_FOUND) {
         error.type = 'NOT_FOUND';
-      } else if (response.status === 409) {
+      } else if (response.status === HTTP_STATUS.CONFLICT) {
         error.type = 'CONFLICT';
-      } else if (response.status >= 500) {
+      } else if (response.status >= HTTP_STATUS.INTERNAL_SERVER_ERROR) {
         error.type = 'SERVER_ERROR';
       }
 
       throw error;
     }
 
-    if (response.status === 204) {
+    if (response.status === HTTP_STATUS.NO_CONTENT) {
       return null;
     }
 

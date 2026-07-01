@@ -10,6 +10,7 @@ import {
   canManageInspectionTemplates,
   canViewInspectionTemplates,
 } from '../constants/userRoles';
+import { ROUTES } from '../constants/routes';
 import {
   INSPECTION_TEMPLATE_STATUS_OPTIONS,
   getInspectionTemplateStatusLabel,
@@ -59,11 +60,11 @@ export default function InspectionTemplatesPage() {
 
   useEffect(() => {
     if (!auth) {
-      navigate('/login');
+      navigate(ROUTES.LOGIN);
       return;
     }
     if (!canView) {
-      navigate('/');
+      navigate(ROUTES.HOME);
       return;
     }
     apiClient.setToken(auth.token);

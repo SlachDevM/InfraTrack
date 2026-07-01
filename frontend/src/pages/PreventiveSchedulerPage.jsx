@@ -9,6 +9,7 @@ import {
   canRunPreventiveScheduler,
   canViewPreventiveScheduler,
 } from '../constants/userRoles';
+import { ROUTES } from '../constants/routes';
 import {
   getSchedulerRunStatusLabel,
   getSchedulerTriggeredByLabel,
@@ -48,11 +49,11 @@ export default function PreventiveSchedulerPage() {
 
   useEffect(() => {
     if (!auth) {
-      navigate('/login');
+      navigate(ROUTES.LOGIN);
       return;
     }
     if (!canView) {
-      navigate('/');
+      navigate(ROUTES.HOME);
       return;
     }
     apiClient.setToken(auth.token);

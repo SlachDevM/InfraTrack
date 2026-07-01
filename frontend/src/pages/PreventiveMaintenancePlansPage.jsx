@@ -11,6 +11,7 @@ import {
   canManagePreventiveMaintenancePlans,
   canViewPreventiveMaintenancePlans,
 } from '../constants/userRoles';
+import { ROUTES } from '../constants/routes';
 import {
   PREVENTIVE_MAINTENANCE_PLAN_STATUS_OPTIONS,
   getPreventiveMaintenancePlanStatusLabel,
@@ -125,11 +126,11 @@ export default function PreventiveMaintenancePlansPage() {
 
   useEffect(() => {
     if (!auth) {
-      navigate('/login');
+      navigate(ROUTES.LOGIN);
       return;
     }
     if (!canView) {
-      navigate('/');
+      navigate(ROUTES.HOME);
       return;
     }
     apiClient.setToken(auth.token);
@@ -183,8 +184,8 @@ export default function PreventiveMaintenancePlansPage() {
       setError(null);
       const [planPage, assetPage, templatePage] = await Promise.all([
         preventiveMaintenancePlanApi.list(page, undefined, buildFilters()),
-        assetApi.list(0, MAX_PAGE_SIZE),
-        inspectionTemplateApi.list(0, MAX_PAGE_SIZE),
+        assetApi.list(DEFAULT_PAGE, MAX_PAGE_SIZE),
+        inspectionTemplateApi.list(DEFAULT_PAGE, MAX_PAGE_SIZE),
       ]);
       setPlans(unwrapPageContent(planPage));
       setPlansPage(getPageNumber(planPage, page));

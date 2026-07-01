@@ -2,13 +2,9 @@ import {
   DEFAULT_DASHBOARD_PREFERENCES,
   DEFAULT_WIDGET_ORDER,
   DASHBOARD_WIDGET_TYPES,
+  DASHBOARD_TREND_RANGES,
 } from '../constants/dashboardPreferences';
-
-const TREND_RANGE_DAYS = {
-  LAST_7_DAYS: 7,
-  LAST_30_DAYS: 30,
-  LAST_90_DAYS: 90,
-};
+import { DASHBOARD, getDashboardTrendRangeDays } from '../constants/dashboard';
 
 export function normalizeDashboardPreferences(preferences) {
   if (!preferences) {
@@ -76,7 +72,7 @@ export function moveWidget(widgetOrder, widgetType, direction) {
 }
 
 export function buildTrendQueryFromRange(defaultTrendRange) {
-  const days = TREND_RANGE_DAYS[defaultTrendRange] ?? TREND_RANGE_DAYS.LAST_30_DAYS;
+  const days = getDashboardTrendRangeDays(defaultTrendRange);
   const to = Date.now();
   const fromDate = new Date(to);
   fromDate.setHours(0, 0, 0, 0);
@@ -84,7 +80,7 @@ export function buildTrendQueryFromRange(defaultTrendRange) {
   return {
     from: fromDate.getTime(),
     to,
-    bucket: 'DAY',
+    bucket: DASHBOARD.DEFAULT_TREND_BUCKET,
   };
 }
 

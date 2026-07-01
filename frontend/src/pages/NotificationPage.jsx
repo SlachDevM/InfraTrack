@@ -6,6 +6,7 @@ import apiClient from '../services/apiClient';
 import notificationApi from '../services/notificationApi';
 import PaginationControls from '../components/PaginationControls';
 import { getApiErrorMessage } from '../utils/apiError';
+import { ROUTES } from '../constants/routes';
 import {
   DEFAULT_PAGE,
   getPageNumber,
@@ -27,7 +28,7 @@ export default function NotificationPage() {
 
   useEffect(() => {
     if (!auth?.token) {
-      navigate('/login');
+      navigate(ROUTES.LOGIN);
       return;
     }
     apiClient.setToken(auth.token);
@@ -90,7 +91,7 @@ export default function NotificationPage() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate(ROUTES.LOGIN);
   };
 
   if (loading) {
@@ -100,7 +101,7 @@ export default function NotificationPage() {
   return (
     <div className="notification-page">
       <header className="notification-header">
-        <button className="back-btn" onClick={() => navigate('/')}>
+        <button className="back-btn" onClick={() => navigate(ROUTES.HOME)}>
           ← Back to Dashboard
         </button>
         <h1>Notifications</h1>

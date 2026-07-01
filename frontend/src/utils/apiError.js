@@ -1,4 +1,8 @@
-export function getApiErrorMessage(error, fallback = 'Request failed.') {
+import { FIELD_LIMITS } from '../constants/limits';
+import { HTTP_STATUS } from '../constants/httpStatus';
+import { COMMON_MESSAGES } from '../constants/messages';
+
+export function getApiErrorMessage(error, fallback = COMMON_MESSAGES.REQUEST_FAILED) {
   if (!error?.message) {
     return fallback;
   }
@@ -12,7 +16,7 @@ export function getApiErrorMessage(error, fallback = 'Request failed.') {
     return parsed.message || parsed.detail || parsed.error || fallback;
   } catch {
     const trimmed = error.message.trim();
-    if (trimmed && trimmed.length <= 300) {
+    if (trimmed && trimmed.length <= FIELD_LIMITS.API_ERROR_MESSAGE_MAX_LENGTH) {
       return trimmed;
     }
     return fallback;
@@ -20,15 +24,15 @@ export function getApiErrorMessage(error, fallback = 'Request failed.') {
 }
 
 export function isForbidden(error) {
-  return error?.status === 403;
+  return error?.status === HTTP_STATUS.FORBIDDEN;
 }
 
 export function isConflict(error) {
-  return error?.status === 409;
+  return error?.status === HTTP_STATUS.CONFLICT;
 }
 
 export function isValidationError(error) {
-  return error?.status === 400;
+  return error?.status === HTTP_STATUS.BAD_REQUEST;
 }
 
 export function isUploadAuthorizationError(error) {

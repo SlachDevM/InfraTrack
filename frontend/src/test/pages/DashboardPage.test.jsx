@@ -7,6 +7,7 @@ import operationsIntelligenceApi from '../../services/operationsIntelligenceApi'
 import dashboardPreferencesApi from '../../services/dashboardPreferencesApi';
 import { USER_ROLES } from '../../constants/userRoles';
 import { DEFAULT_DASHBOARD_PREFERENCES } from '../../constants/dashboardPreferences';
+import { DASHBOARD } from '../../constants/dashboard';
 
 const mockNavigate = vi.fn();
 const mockLogout = vi.fn();
@@ -190,7 +191,9 @@ describe('DashboardPage', () => {
       expect(operationsIntelligenceApi.getTrends).toHaveBeenCalledWith(
         expect.objectContaining({ bucket: 'DAY', from: expect.any(Number), to: expect.any(Number) }),
       );
-      expect(operationsIntelligenceApi.getRecentActivity).toHaveBeenCalledWith({ limit: 20 });
+      expect(operationsIntelligenceApi.getRecentActivity).toHaveBeenCalledWith({
+        limit: DASHBOARD.DEFAULT_ACTIVITY_LIMIT,
+      });
     });
 
     expect(await screen.findByText('Good morning, Alex Manager')).toBeInTheDocument();

@@ -5,6 +5,7 @@ import apiClient from '../services/apiClient';
 import assetCategoryApi from '../services/assetCategoryApi';
 import ReferenceDataLayout from '../components/layout/ReferenceDataLayout';
 import { canManageUsers } from '../constants/userRoles';
+import { ROUTES } from '../constants/routes';
 import { getApiErrorMessage } from '../utils/apiError';
 
 export default function AssetCategoriesPage() {
@@ -21,7 +22,7 @@ export default function AssetCategoriesPage() {
 
   useEffect(() => {
     if (!auth) {
-      navigate('/login');
+      navigate(ROUTES.LOGIN);
       return;
     }
     apiClient.setToken(auth.token);

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AppNavbar from '../components/navigation/AppNavbar';
 import { canViewOperationsDashboard, getRoleLabel } from '../constants/userRoles';
+import { ROUTES } from '../constants/routes';
 import {
   FIELD_EMPLOYEE_SHORTCUTS,
   isFieldEmployeeRole,
@@ -17,13 +18,13 @@ export default function PlatformShell() {
 
   useEffect(() => {
     if (canViewOperationsDashboard(auth?.user?.role)) {
-      navigate('/dashboard', { replace: true });
+      navigate(ROUTES.DASHBOARD, { replace: true });
     }
   }, [auth?.user?.role, navigate]);
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate(ROUTES.LOGIN);
   };
 
   if (canViewOperationsDashboard(auth?.user?.role)) {

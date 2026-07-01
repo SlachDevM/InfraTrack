@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  PAGINATION,
   DEFAULT_PAGE,
   DEFAULT_SIZE,
   paginatedQuery,
@@ -11,6 +12,12 @@ import {
 } from '../../utils/pagination';
 
 describe('paginatedQuery', () => {
+  it('exposes pagination configuration constants', () => {
+    expect(PAGINATION.DEFAULT_PAGE).toBe(DEFAULT_PAGE);
+    expect(PAGINATION.DEFAULT_PAGE_SIZE).toBe(DEFAULT_SIZE);
+    expect(PAGINATION.MAX_PAGE_SIZE).toBe(100);
+  });
+
   it('builds default page query', () => {
     expect(paginatedQuery()).toBe(`page=${DEFAULT_PAGE}&size=${DEFAULT_SIZE}`);
   });

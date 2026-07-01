@@ -12,6 +12,7 @@ import {
   canManageInspectionTemplates,
   canViewInspectionTemplates,
 } from '../constants/userRoles';
+import { ROUTES } from '../constants/routes';
 import {
   INSPECTION_TEMPLATE_QUESTION_TYPE_OPTIONS,
   getInspectionTemplateQuestionTypeLabel,
@@ -95,11 +96,11 @@ export default function InspectionTemplateQuestionsPage() {
 
   useEffect(() => {
     if (!auth) {
-      navigate('/login');
+      navigate(ROUTES.LOGIN);
       return;
     }
     if (!canView) {
-      navigate('/');
+      navigate(ROUTES.HOME);
       return;
     }
     apiClient.setToken(auth.token);
@@ -558,7 +559,7 @@ export default function InspectionTemplateQuestionsPage() {
     <ReferenceDataLayout
       title="Checklist Questions"
       backLabel="← Back to Templates"
-      onBack={() => navigate('/inspection-templates')}
+      onBack={() => navigate(ROUTES.INSPECTION_TEMPLATES)}
     >
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}

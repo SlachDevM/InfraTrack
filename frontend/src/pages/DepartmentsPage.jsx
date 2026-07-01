@@ -5,6 +5,7 @@ import apiClient from '../services/apiClient';
 import departmentApi from '../services/departmentApi';
 import ReferenceDataLayout from '../components/layout/ReferenceDataLayout';
 import { canManageUsers } from '../constants/userRoles';
+import { ROUTES } from '../constants/routes';
 import { getApiErrorMessage } from '../utils/apiError';
 
 export default function DepartmentsPage() {
@@ -21,7 +22,7 @@ export default function DepartmentsPage() {
 
   useEffect(() => {
     if (!auth) {
-      navigate('/login');
+      navigate(ROUTES.LOGIN);
       return;
     }
     apiClient.setToken(auth.token);

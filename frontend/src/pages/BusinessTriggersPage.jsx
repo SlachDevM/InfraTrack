@@ -8,6 +8,7 @@ import userApi from '../services/userApi';
 import NotificationButton from '../components/NotificationButton';
 import PaginationControls from '../components/PaginationControls';
 import { canCreateBusinessTriggers } from '../constants/userRoles';
+import { ROUTES } from '../constants/routes';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
 import {
   filterAssetsByUserDepartment,
@@ -51,7 +52,7 @@ export default function BusinessTriggersPage() {
 
   useEffect(() => {
     if (!auth) {
-      navigate('/login');
+      navigate(ROUTES.LOGIN);
       return;
     }
     apiClient.setToken(auth.token);
@@ -64,7 +65,7 @@ export default function BusinessTriggersPage() {
       setError(null);
       const [triggerPage, assetPage, profile] = await Promise.all([
         businessTriggerApi.list(page),
-        assetApi.list(0, MAX_PAGE_SIZE),
+        assetApi.list(DEFAULT_PAGE, MAX_PAGE_SIZE),
         canCreate ? userApi.getCurrentUser() : Promise.resolve(null),
       ]);
       setTriggers(unwrapPageContent(triggerPage));
@@ -142,7 +143,7 @@ export default function BusinessTriggersPage() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate(ROUTES.LOGIN);
   };
 
   if (loading) {
@@ -158,7 +159,7 @@ export default function BusinessTriggersPage() {
           color: 'white',
         }}
       >
-        <button type="button" className="back-btn" onClick={() => navigate('/')}>
+        <button type="button" className="back-btn" onClick={() => navigate(ROUTES.HOME)}>
           ← Back
         </button>
         <h1>Business Triggers</h1>

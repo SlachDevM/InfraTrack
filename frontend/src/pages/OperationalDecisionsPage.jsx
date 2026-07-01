@@ -7,6 +7,7 @@ import issueApi from '../services/issueApi';
 import NotificationButton from '../components/NotificationButton';
 import PaginationControls from '../components/PaginationControls';
 import { canMakeOperationalDecisions } from '../constants/userRoles';
+import { ROUTES } from '../constants/routes';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
 import {
   DEFAULT_PAGE,
@@ -57,7 +58,7 @@ export default function OperationalDecisionsPage() {
 
   useEffect(() => {
     if (!auth) {
-      navigate('/login');
+      navigate(ROUTES.LOGIN);
       return;
     }
     apiClient.setToken(auth.token);
@@ -86,7 +87,7 @@ export default function OperationalDecisionsPage() {
       const [decisionPage, issuePage] = await Promise.all([
         operationalDecisionApi.list(page),
         canDecide
-          ? issueApi.listEligibleForOperationalDecision(0, MAX_PAGE_SIZE)
+          ? issueApi.listEligibleForOperationalDecision(DEFAULT_PAGE, MAX_PAGE_SIZE)
           : Promise.resolve(null),
       ]);
       setDecisions(unwrapPageContent(decisionPage));
@@ -141,7 +142,7 @@ export default function OperationalDecisionsPage() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate(ROUTES.LOGIN);
   };
 
   if (loading) {
@@ -157,7 +158,7 @@ export default function OperationalDecisionsPage() {
           color: 'white',
         }}
       >
-        <button type="button" className="back-btn" onClick={() => navigate('/')}>
+        <button type="button" className="back-btn" onClick={() => navigate(ROUTES.HOME)}>
           ← Back
         </button>
         <h1>Operational Decisions</h1>

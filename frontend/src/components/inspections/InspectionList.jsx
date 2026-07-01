@@ -1,5 +1,6 @@
 import { getBusinessTriggerTypeLabel } from '../../constants/businessTriggerTypes';
 import { getInspectionPriorityLabel } from '../../constants/inspectionPriorities';
+import { INSPECTION_STATUS } from '../../constants/statuses';
 import { getPhysicalConditionLabel } from '../../constants/physicalConditions';
 import RuleEvaluationReportPanel from './RuleEvaluationReportPanel';
 import DecisionAssistantPanel from './DecisionAssistantPanel';
@@ -7,7 +8,7 @@ import DecisionAssistantPanel from './DecisionAssistantPanel';
 export default function InspectionList({ inspections }) {
   const completedTemplatedInspections = inspections.filter(
     (inspection) =>
-      inspection.status === 'COMPLETED' && inspection.inspectionTemplateId != null
+      inspection.status === INSPECTION_STATUS.COMPLETED && inspection.inspectionTemplateId != null
   );
 
   return (

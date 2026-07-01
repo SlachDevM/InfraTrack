@@ -8,6 +8,9 @@ import userApi from '../services/userApi';
 import NotificationButton from '../components/NotificationButton';
 import PaginationControls from '../components/PaginationControls';
 import { canManageDelegatedAuthority } from '../constants/userRoles';
+import { ROUTES } from '../constants/routes';
+import { FIELD_LIMITS } from '../constants/limits';
+import { TIME } from '../constants/time';
 import { getApiErrorMessage } from '../utils/apiError';
 import {
   DEFAULT_PAGE,
@@ -20,6 +23,11 @@ import '../styles/ReferenceDataPage.css';
 function toDateTimeLocalValue(date = new Date()) {
   const pad = (value) => String(value).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function defaultDelegationValidUntil() {
+  const days = FIELD_LIMITS.DEFAULT_DELEGATION_VALIDITY_DAYS;
+  return toDateTimeLocalValue(new Date(Date.now() + days * TIME.MILLIS_PER_DAY));
 }
 
 export default function DelegatedAuthoritiesPage() {
@@ -40,14 +48,14 @@ export default function DelegatedAuthoritiesPage() {
     targetDepartmentId: '',
     reason: '',
     validFrom: toDateTimeLocalValue(),
-    validUntil: toDateTimeLocalValue(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
+    validUntil: defaultDelegationValidUntil(),
   });
 
   const canManage = canManageDelegatedAuthority(auth?.user?.role);
 
   useEffect(() => {
     if (!auth) {
-      navigate('/login');
+      navigate(ROUTES.LOGIN);
       return;
     }
     apiClient.setToken(auth.token);
@@ -121,7 +129,7 @@ export default function DelegatedAuthoritiesPage() {
         targetDepartmentId: '',
         reason: '',
         validFrom: toDateTimeLocalValue(),
-        validUntil: toDateTimeLocalValue(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
+        validUntil: defaultDelegationValidUntil(),
       });
       await loadPageData();
     } catch (err) {
@@ -145,7 +153,7 @@ export default function DelegatedAuthoritiesPage() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate(ROUTES.LOGIN);
   };
 
   if (loading) {
@@ -161,7 +169,7 @@ export default function DelegatedAuthoritiesPage() {
           color: 'white',
         }}
       >
-        <button type="button" className="back-btn" onClick={() => navigate('/')}>
+        <button type="button" className="back-btn" onClick={() => navigate(ROUTES.HOME)}>
           ← Back to Dashboard
         </button>
         <h1>Delegated Authority</h1>

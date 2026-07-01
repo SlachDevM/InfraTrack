@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import IssuesPage from '../../pages/IssuesPage';
 import issueApi from '../../services/issueApi';
 import inspectionApi from '../../services/inspectionApi';
-import { MAX_PAGE_SIZE } from '../../utils/pagination';
+import { DEFAULT_PAGE, MAX_PAGE_SIZE } from '../../utils/pagination';
 
 const mockNavigate = vi.fn();
 
@@ -115,7 +115,7 @@ describe('IssuesPage', () => {
     expect(await screen.findByRole('option', {
       name: '#10 — Central Playground (Customer Request)',
     })).toBeInTheDocument();
-    expect(inspectionApi.listEligibleForIssueRecording).toHaveBeenCalledWith(0, MAX_PAGE_SIZE);
+    expect(inspectionApi.listEligibleForIssueRecording).toHaveBeenCalledWith(DEFAULT_PAGE, MAX_PAGE_SIZE);
     expect(inspectionApi.list).not.toHaveBeenCalled();
   });
 

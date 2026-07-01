@@ -3,6 +3,8 @@ import { useAuth } from '../../context/AuthContext';
 import NotificationButton from '../NotificationButton';
 import NavigationMoreMenu from './NavigationMoreMenu';
 import { canManageUsers } from '../../constants/userRoles';
+import { ROUTES } from '../../constants/routes';
+import { COMMON_LABELS } from '../../constants/uiLabels';
 import {
   getOverflowNavigationItems,
   getPrimaryNavigationItems,
@@ -15,7 +17,7 @@ export default function AppNavbar({ onNavigate, onLogout }) {
   const overflowNavigationItems = useMemo(() => {
     const items = getOverflowNavigationItems(auth?.user?.role);
     if (canManageUsers(auth?.user?.role)) {
-      return [...items, { path: '/users', label: 'Users' }];
+      return [...items, { path: ROUTES.USERS, label: 'Users' }];
     }
     return items;
   }, [auth?.user?.role]);
@@ -40,7 +42,7 @@ export default function AppNavbar({ onNavigate, onLogout }) {
         />
         <NotificationButton />
         <button type="button" className="navbar-link logout" onClick={onLogout}>
-          Logout
+          {COMMON_LABELS.LOGOUT}
         </button>
       </div>
     </nav>

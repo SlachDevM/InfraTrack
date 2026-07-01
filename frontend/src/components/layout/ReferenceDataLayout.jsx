@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { ROUTES } from '../../constants/routes';
+import { COMMON_LABELS } from '../../constants/uiLabels';
 import NotificationButton from '../NotificationButton';
 import '../../styles/ReferenceDataPage.css';
 
@@ -17,7 +19,7 @@ export default function ReferenceDataLayout({
   title,
   children,
   showBackButton = true,
-  backLabel = '← Back',
+  backLabel = COMMON_LABELS.BACK,
   onBack,
   pageClassName = '',
   headerStyle = REFERENCE_HEADER_STYLE_GREEN,
@@ -26,11 +28,11 @@ export default function ReferenceDataLayout({
   const navigate = useNavigate();
   const { logout } = useAuth();
 
-  const handleBack = onBack ?? (() => navigate('/'));
+  const handleBack = onBack ?? (() => navigate(ROUTES.HOME));
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate(ROUTES.LOGIN);
   };
 
   const pageClasses = ['reference-data-page', pageClassName].filter(Boolean).join(' ');

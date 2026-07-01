@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import apiClient from '../services/apiClient';
 import { API_ENDPOINTS } from '../constants/apiEndpoints';
 import { canViewOperationsDashboard } from '../constants/userRoles';
+import { ROUTES } from '../constants/routes';
 import { getApiErrorMessage } from '../utils/apiError';
 import '../styles/Login.css';
 
@@ -36,7 +37,7 @@ export default function Login() {
 
       const { token, ...user } = data;
       login(user, token);
-      navigate(canViewOperationsDashboard(user.role) ? '/dashboard' : '/');
+      navigate(canViewOperationsDashboard(user.role) ? ROUTES.DASHBOARD : ROUTES.HOME);
     } catch (err) {
       setError(getApiErrorMessage(err, 'Email or password is incorrect.'));
     }

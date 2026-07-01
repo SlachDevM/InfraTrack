@@ -12,6 +12,9 @@ import AssignWorkOrderForm from '../components/workorders/AssignWorkOrderForm';
 import CompleteMaintenanceForm from '../components/workorders/CompleteMaintenanceForm';
 import WorkOrderList from '../components/workorders/WorkOrderList';
 import ExportCsvButton from '../components/ExportCsvButton';
+import { WORK_ORDER_STATUS } from '../constants/statuses';
+import { REPORTING_EXPORT_TYPES } from '../constants/reportingExports';
+import { ROUTES } from '../constants/routes';
 import { canAssignWorkOrders, canCompleteMaintenance, canCreateWorkOrders, canRecordCompletionReview, canExportReporting, USER_ROLES } from '../constants/userRoles';
 import {
   COMPLETION_REVIEW_DECISION_OPTIONS,
@@ -119,7 +122,7 @@ export default function WorkOrdersPage() {
 
   const assignedWorkOrdersForCurrentUser = useMemo(
     () => workOrders.filter(
-      (order) => order.status === 'ASSIGNED'
+      (order) => order.status === WORK_ORDER_STATUS.ASSIGNED
         && currentUserId
         && order.assignedToUserId === currentUserId
     ),
@@ -140,7 +143,7 @@ export default function WorkOrdersPage() {
 
   useEffect(() => {
     if (!auth) {
-      navigate('/login');
+      navigate(ROUTES.LOGIN);
       return;
     }
     apiClient.setToken(auth.token);
@@ -168,11 +171,11 @@ export default function WorkOrdersPage() {
       const [workOrderPage, decisionData, maintenanceActivityData, assignablePage, reviewableActivityData] = await Promise.all([
         workOrderApi.list(page),
         canCreate
-          ? operationalDecisionApi.listEligibleForWorkOrderCreation(0, MAX_PAGE_SIZE)
+          ? operationalDecisionApi.listEligibleForWorkOrderCreation(DEFAULT_PAGE, MAX_PAGE_SIZE)
           : Promise.resolve(null),
         canComplete ? maintenanceActivityApi.list() : Promise.resolve([]),
         canAssign
-          ? workOrderApi.listEligibleForAssignment(0, MAX_PAGE_SIZE)
+          ? workOrderApi.listEligibleForAssignment(DEFAULT_PAGE, MAX_PAGE_SIZE)
           : Promise.resolve(null),
         canReview
           ? maintenanceActivityApi.listEligibleForCompletionReview()
@@ -372,7 +375,7 @@ export default function WorkOrdersPage() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate(ROUTES.LOGIN);
   };
 
   if (loading) {
@@ -388,13 +391,13 @@ export default function WorkOrdersPage() {
           color: 'white',
         }}
       >
-        <button type="button" className="back-btn" onClick={() => navigate('/')}>
+        <button type="button" className="back-btn" onClick={() => navigate(ROUTES.HOME)}>
           ← Back
         </button>
         <h1>Work Orders</h1>
         <div className="user-header-actions">
           <NotificationButton />
-          {canExport && <ExportCsvButton exportType="workOrders" onError={setError} />}
+          {canExport && <ExportCsvButton exportType={REPORTING_EXPORT_TYPES.WORK_ORDERS} onError={setError} />}
           <button type="button" className="logout-btn" onClick={handleLogout}>
             Logout
           </button>

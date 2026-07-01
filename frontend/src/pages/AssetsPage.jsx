@@ -15,6 +15,9 @@ import AssetHistoryPanel from '../components/assets/AssetHistoryPanel';
 import OperationalDocumentsPanel from '../components/assets/OperationalDocumentsPanel';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ExportCsvButton from '../components/ExportCsvButton';
+import { ROUTES } from '../constants/routes';
+import { HTTP_STATUS } from '../constants/httpStatus';
+import { REPORTING_EXPORT_TYPES } from '../constants/reportingExports';
 import { canRegisterAssets, canUploadOperationalDocuments, canExportReporting } from '../constants/userRoles';
 import { ASSET_STATUSES } from '../constants/assetStatuses';
 import {
@@ -97,7 +100,7 @@ export default function AssetsPage() {
 
   useEffect(() => {
     if (!auth) {
-      navigate('/login');
+      navigate(ROUTES.LOGIN);
       return;
     }
     apiClient.setToken(auth.token);
@@ -204,7 +207,7 @@ export default function AssetsPage() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate(ROUTES.LOGIN);
   };
 
   const loadAssetDetails = async (
@@ -227,7 +230,7 @@ export default function AssetsPage() {
       setDocumentsPage(getPageNumber(documentsPageResponse, documentsPageIndex));
       setDocumentsTotalPages(getTotalPages(documentsPageResponse));
     } catch (err) {
-      if (err.status === 404) {
+      if (err.status === HTTP_STATUS.NOT_FOUND) {
         setError('Asset not found.');
       } else {
         setError(getApiErrorMessage(err, 'Failed to load asset details.'));
@@ -367,7 +370,7 @@ export default function AssetsPage() {
     } catch (err) {
       if (isUploadAuthorizationError(err)) {
         setError('You do not have permission to upload documents for this context.');
-      } else if (err.status === 404) {
+      } else if (err.status === HTTP_STATUS.NOT_FOUND) {
         setError('Asset or operational owner not found.');
       } else {
         setError(getApiErrorMessage(err, 'Document upload failed.'));
@@ -436,7 +439,7 @@ export default function AssetsPage() {
     } catch (err) {
       if (isForbidden(err)) {
         setError('You do not have permission to delete this document.');
-      } else if (err.status === 404) {
+      } else if (err.status === HTTP_STATUS.NOT_FOUND) {
         setError('Document not found.');
       } else {
         setError(getApiErrorMessage(err, 'Failed to delete document.'));
@@ -463,13 +466,13 @@ export default function AssetsPage() {
           color: 'white',
         }}
       >
-        <button type="button" className="back-btn" onClick={() => navigate('/')}>
+        <button type="button" className="back-btn" onClick={() => navigate(ROUTES.HOME)}>
           ← Back
         </button>
         <h1>Assets</h1>
         <div className="user-header-actions">
           <NotificationButton />
-          {canExport && <ExportCsvButton exportType="assets" onError={setError} />}
+          {canExport && <ExportCsvButton exportType={REPORTING_EXPORT_TYPES.ASSETS} onError={setError} />}
           <button type="button" className="logout-btn" onClick={handleLogout}>
             Logout
           </button>

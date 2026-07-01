@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import { useAuth } from './AuthContext';
 import apiClient from '../services/apiClient';
 import { API_ENDPOINTS } from '../constants/apiEndpoints';
+import { NOTIFICATION_POLL_INTERVAL_MS } from '../constants/time';
 
 const defaultNotificationContext = {
   unreadCount: 0,
@@ -41,7 +42,7 @@ export function NotificationProvider({ children }) {
 
   useEffect(() => {
     if (authLoading || !auth?.token) return;
-    const id = setInterval(refreshUnreadCount, 60000);
+    const id = setInterval(refreshUnreadCount, NOTIFICATION_POLL_INTERVAL_MS);
     return () => clearInterval(id);
   }, [auth?.token, authLoading, refreshUnreadCount]);
 

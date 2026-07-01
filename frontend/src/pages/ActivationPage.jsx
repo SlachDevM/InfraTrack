@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import authApi from '../services/authApi';
+import { ROUTES } from '../constants/routes';
 import { getApiErrorMessage } from '../utils/apiError';
 import {
   isPasswordLengthValid,
@@ -73,7 +74,7 @@ export default function ActivationPage() {
             to request a new invitation.
           </div>
           <p className="activation-footer">
-            <Link to="/login">Back to Login</Link>
+            <Link to={ROUTES.LOGIN}>Back to Login</Link>
           </p>
         </div>
       </div>
@@ -93,7 +94,7 @@ export default function ActivationPage() {
           <div className="success-message">
             Your account has been activated. You can now log in with your new password.
           </div>
-          <Link to="/login" className="submit-button activation-login-link">
+          <Link to={ROUTES.LOGIN} className="submit-button activation-login-link">
             Go to Login
           </Link>
         </div>
@@ -151,7 +152,7 @@ export default function ActivationPage() {
         </form>
 
         <p className="activation-footer">
-          <Link to="/login">Back to Login</Link>
+          <Link to={ROUTES.LOGIN}>Back to Login</Link>
         </p>
       </div>
     </div>

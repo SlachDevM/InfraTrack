@@ -12,6 +12,7 @@ import QuickNavigationWidget from '../components/dashboard/QuickNavigationWidget
 import RecentActivityWidget from '../components/dashboard/RecentActivityWidget';
 import DashboardSettingsPanel from '../components/dashboard/DashboardSettingsPanel';
 import { canViewOperationsDashboard } from '../constants/userRoles';
+import { ROUTES } from '../constants/routes';
 import { canAccessRoute } from '../constants/navigation';
 import { DASHBOARD_WIDGET_TYPES } from '../constants/dashboardPreferences';
 import { getApiErrorMessage } from '../utils/apiError';
@@ -21,17 +22,18 @@ import {
   isWidgetVisible,
   normalizeDashboardPreferences,
 } from '../utils/dashboardPreferences';
+import { DASHBOARD } from '../constants/dashboard';
 import { APP_VERSION } from '../config/appVersion';
 import '../styles/PlatformShell.css';
 import '../styles/DashboardPage.css';
 
 const QUICK_NAVIGATION_LINKS = [
-  { path: '/assets', label: 'Assets' },
-  { path: '/inspections', label: 'Inspections' },
-  { path: '/issues', label: 'Issues' },
-  { path: '/work-orders', label: 'Work Orders' },
-  { path: '/preventive-execution-candidates', label: 'Preventive Candidates' },
-  { path: '/preventive-scheduler', label: 'Scheduler' },
+  { path: ROUTES.ASSETS, label: 'Assets' },
+  { path: ROUTES.INSPECTIONS, label: 'Inspections' },
+  { path: ROUTES.ISSUES, label: 'Issues' },
+  { path: ROUTES.WORK_ORDERS, label: 'Work Orders' },
+  { path: ROUTES.PREVENTIVE_CANDIDATES, label: 'Preventive Candidates' },
+  { path: ROUTES.PREVENTIVE_SCHEDULER, label: 'Scheduler' },
 ];
 
 function getDisplayName(user) {
@@ -105,7 +107,9 @@ export default function DashboardPage() {
       try {
         setActivityLoading(true);
         setActivityError(null);
-        const data = await operationsIntelligenceApi.getRecentActivity({ limit: 20 });
+        const data = await operationsIntelligenceApi.getRecentActivity({
+          limit: DASHBOARD.DEFAULT_ACTIVITY_LIMIT,
+        });
         setRecentActivity(data);
       } catch (err) {
         setActivityError(getApiErrorMessage(err, 'Failed to load recent activity.'));
@@ -123,11 +127,11 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!auth) {
-      navigate('/login');
+      navigate(ROUTES.LOGIN);
       return;
     }
     if (!canViewOperationsDashboard(role)) {
-      navigate('/');
+      navigate(ROUTES.HOME);
       return;
     }
 
@@ -245,7 +249,7 @@ export default function DashboardPage() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate(ROUTES.LOGIN);
   };
 
   if (!auth || !canViewOperationsDashboard(role)) {

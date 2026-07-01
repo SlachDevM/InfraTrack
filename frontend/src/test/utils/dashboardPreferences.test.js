@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { DEFAULT_DASHBOARD_PREFERENCES, DASHBOARD_WIDGET_TYPES } from '../../constants/dashboardPreferences';
+import { DASHBOARD } from '../../constants/dashboard';
 import {
   buildTrendQueryFromRange,
   countVisibleWidgets,
@@ -37,7 +38,7 @@ describe('dashboardPreferences utils', () => {
 
   it('builds trend query for saved range', () => {
     const query = buildTrendQueryFromRange('LAST_7_DAYS');
-    expect(query.bucket).toBe('DAY');
+    expect(query.bucket).toBe(DASHBOARD.DEFAULT_TREND_BUCKET);
     expect(query.to).toBeGreaterThan(query.from);
   });
 });

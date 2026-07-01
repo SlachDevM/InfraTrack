@@ -7,6 +7,8 @@ import inspectionApi from '../services/inspectionApi';
 import NotificationButton from '../components/NotificationButton';
 import PaginationControls from '../components/PaginationControls';
 import ExportCsvButton from '../components/ExportCsvButton';
+import { ROUTES } from '../constants/routes';
+import { REPORTING_EXPORT_TYPES } from '../constants/reportingExports';
 import { canMakeOperationalDecisions, canRecordIssues, canExportReporting } from '../constants/userRoles';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
 import {
@@ -100,7 +102,7 @@ export default function IssuesPage() {
 
   useEffect(() => {
     if (!auth) {
-      navigate('/login');
+      navigate(ROUTES.LOGIN);
       return;
     }
     apiClient.setToken(auth.token);
@@ -132,7 +134,7 @@ export default function IssuesPage() {
       setIssuesTotalPages(getTotalPages(issuePage));
 
       if (canRecord) {
-        const inspectionPage = await inspectionApi.listEligibleForIssueRecording(0, MAX_PAGE_SIZE);
+        const inspectionPage = await inspectionApi.listEligibleForIssueRecording(DEFAULT_PAGE, MAX_PAGE_SIZE);
         setEligibleInspections(unwrapPageContent(inspectionPage));
       } else {
         setEligibleInspections([]);
@@ -234,7 +236,7 @@ export default function IssuesPage() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate(ROUTES.LOGIN);
   };
 
   if (loading) {
@@ -250,13 +252,13 @@ export default function IssuesPage() {
           color: 'white',
         }}
       >
-        <button type="button" className="back-btn" onClick={() => navigate('/')}>
+        <button type="button" className="back-btn" onClick={() => navigate(ROUTES.HOME)}>
           ← Back
         </button>
         <h1>Issues</h1>
         <div className="user-header-actions">
           <NotificationButton />
-          {canExport && <ExportCsvButton exportType="issues" onError={setError} />}
+          {canExport && <ExportCsvButton exportType={REPORTING_EXPORT_TYPES.ISSUES} onError={setError} />}
           <button type="button" className="logout-btn" onClick={handleLogout}>
             Logout
           </button>

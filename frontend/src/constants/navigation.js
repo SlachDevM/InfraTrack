@@ -1,21 +1,29 @@
 import { USER_ROLES, canViewOperationsDashboard } from './userRoles';
+import {
+  ROUTES,
+  DASHBOARD_ROUTE,
+  INSPECTION_TEMPLATES_ROUTE,
+  PREVENTIVE_MAINTENANCE_PLANS_ROUTE,
+  PREVENTIVE_EXECUTION_CANDIDATES_ROUTE,
+  PREVENTIVE_SCHEDULER_ROUTE,
+  INSPECTION_TEMPLATE_ROUTE_PREFIX,
+} from './routes';
 
-export const DASHBOARD_ROUTE = '/dashboard';
+export {
+  DASHBOARD_ROUTE,
+  INSPECTION_TEMPLATES_ROUTE,
+  PREVENTIVE_MAINTENANCE_PLANS_ROUTE,
+  PREVENTIVE_EXECUTION_CANDIDATES_ROUTE,
+  PREVENTIVE_SCHEDULER_ROUTE,
+};
 
 export const FIELD_EMPLOYEE_ROUTES = new Set([
-  '/',
-  '/inspections',
-  '/work-orders',
-  '/notifications',
-  '/assets',
+  ROUTES.HOME,
+  ROUTES.INSPECTIONS,
+  ROUTES.WORK_ORDERS,
+  ROUTES.NOTIFICATIONS,
+  ROUTES.ASSETS,
 ]);
-
-export const INSPECTION_TEMPLATES_ROUTE = '/inspection-templates';
-export const PREVENTIVE_MAINTENANCE_PLANS_ROUTE = '/preventive-maintenance-plans';
-export const PREVENTIVE_EXECUTION_CANDIDATES_ROUTE = '/preventive-execution-candidates';
-export const PREVENTIVE_SCHEDULER_ROUTE = '/preventive-scheduler';
-
-const INSPECTION_TEMPLATE_ROUTE_PREFIX = '/inspection-templates/';
 
 const INSPECTION_TEMPLATE_VIEWER_ROLES = new Set([
   USER_ROLES.ADMINISTRATOR,
@@ -28,28 +36,28 @@ const PREVENTIVE_EXECUTION_CANDIDATE_VIEWER_ROLES = INSPECTION_TEMPLATE_VIEWER_R
 const PREVENTIVE_SCHEDULER_VIEWER_ROLES = INSPECTION_TEMPLATE_VIEWER_ROLES;
 
 export const PRIMARY_NAVIGATION_PATHS = new Set([
-  '/dashboard',
-  '/assets',
-  '/inspections',
-  '/work-orders',
-  '/issues',
+  ROUTES.DASHBOARD,
+  ROUTES.ASSETS,
+  ROUTES.INSPECTIONS,
+  ROUTES.WORK_ORDERS,
+  ROUTES.ISSUES,
 ]);
 
 export const APP_NAVIGATION_ITEMS = [
-  { path: '/dashboard', label: 'Dashboard', dashboardOnly: true },
-  { path: '/assets', label: 'Assets', fieldEmployeeLabel: 'Documents' },
-  { path: '/business-triggers', label: 'Business Triggers' },
-  { path: '/inspections', label: 'Inspections' },
-  { path: '/inspection-templates', label: 'Inspection Templates' },
-  { path: '/preventive-maintenance-plans', label: 'Preventive Maintenance Plans' },
-  { path: '/preventive-execution-candidates', label: 'Preventive Execution Candidates' },
-  { path: '/preventive-scheduler', label: 'Preventive Scheduler' },
-  { path: '/issues', label: 'Issues' },
-  { path: '/operational-decisions', label: 'Decisions' },
-  { path: '/delegated-authorities', label: 'Delegations' },
-  { path: '/work-orders', label: 'Work Orders' },
-  { path: '/departments', label: 'Departments' },
-  { path: '/asset-categories', label: 'Categories' },
+  { path: ROUTES.DASHBOARD, label: 'Dashboard', dashboardOnly: true },
+  { path: ROUTES.ASSETS, label: 'Assets', fieldEmployeeLabel: 'Documents' },
+  { path: ROUTES.BUSINESS_TRIGGERS, label: 'Business Triggers' },
+  { path: ROUTES.INSPECTIONS, label: 'Inspections' },
+  { path: ROUTES.INSPECTION_TEMPLATES, label: 'Inspection Templates' },
+  { path: ROUTES.PREVENTIVE_PLANS, label: 'Preventive Maintenance Plans' },
+  { path: ROUTES.PREVENTIVE_CANDIDATES, label: 'Preventive Execution Candidates' },
+  { path: ROUTES.PREVENTIVE_SCHEDULER, label: 'Preventive Scheduler' },
+  { path: ROUTES.ISSUES, label: 'Issues' },
+  { path: ROUTES.OPERATIONAL_DECISIONS, label: 'Decisions' },
+  { path: ROUTES.DELEGATED_AUTHORITIES, label: 'Delegations' },
+  { path: ROUTES.WORK_ORDERS, label: 'Work Orders' },
+  { path: ROUTES.DEPARTMENTS, label: 'Departments' },
+  { path: ROUTES.ASSET_CATEGORIES, label: 'Categories' },
 ];
 
 function normalizeRole(role) {
@@ -58,11 +66,11 @@ function normalizeRole(role) {
 
 function normalizePath(path) {
   if (!path) {
-    return '/';
+    return ROUTES.HOME;
   }
 
   const pathname = path.split('?')[0].replace(/\/+$/, '');
-  return pathname || '/';
+  return pathname || ROUTES.HOME;
 }
 
 export function isFieldEmployeeRole(role) {
@@ -126,8 +134,8 @@ export function getOverflowNavigationItems(role) {
 }
 
 export const FIELD_EMPLOYEE_SHORTCUTS = [
-  { path: '/inspections', label: 'Assigned Inspections' },
-  { path: '/work-orders', label: 'Assigned Work Orders' },
-  { path: '/assets', label: 'Operational Documents' },
-  { path: '/notifications', label: 'Notifications' },
+  { path: ROUTES.INSPECTIONS, label: 'Assigned Inspections' },
+  { path: ROUTES.WORK_ORDERS, label: 'Assigned Work Orders' },
+  { path: ROUTES.ASSETS, label: 'Operational Documents' },
+  { path: ROUTES.NOTIFICATIONS, label: 'Notifications' },
 ];

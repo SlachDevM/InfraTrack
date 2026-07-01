@@ -14,6 +14,9 @@ import AssignInspectionForm from '../components/inspections/AssignInspectionForm
 import CompleteInspectionForm from '../components/inspections/CompleteInspectionForm';
 import InspectionList from '../components/inspections/InspectionList';
 import ExportCsvButton from '../components/ExportCsvButton';
+import { INSPECTION_STATUS } from '../constants/statuses';
+import { REPORTING_EXPORT_TYPES } from '../constants/reportingExports';
+import { ROUTES } from '../constants/routes';
 import { canAssignInspections, canPerformInspections, canExportReporting } from '../constants/userRoles';
 import {
   INSPECTION_PRIORITIES,
@@ -84,7 +87,7 @@ export default function InspectionsPage() {
   const myAssignedInspections = useMemo(
     () => inspections.filter(
       (inspection) =>
-        inspection.status === 'ASSIGNED'
+        inspection.status === INSPECTION_STATUS.ASSIGNED
         && String(inspection.assignedToUserId) === String(currentUserId)
     ),
     [inspections, currentUserId]
@@ -114,7 +117,7 @@ export default function InspectionsPage() {
 
   useEffect(() => {
     if (!auth) {
-      navigate('/login');
+      navigate(ROUTES.LOGIN);
       return;
     }
     apiClient.setToken(auth.token);
@@ -127,7 +130,7 @@ export default function InspectionsPage() {
       return;
     }
     inspectionTemplateApi
-      .list(0, MAX_PAGE_SIZE, { assetCategoryId: selectedAssetCategoryId, status: 'PUBLISHED' })
+      .list(DEFAULT_PAGE, MAX_PAGE_SIZE, { assetCategoryId: selectedAssetCategoryId, status: 'PUBLISHED' })
       .then((page) => setPublishedTemplates(unwrapPageContent(page)))
       .catch(() => setPublishedTemplates([]));
   }, [canAssign, selectedAssetCategoryId]);
@@ -175,8 +178,8 @@ export default function InspectionsPage() {
       const canAssignRole = canAssignInspections(auth?.user?.role);
       const [inspectionPage, triggerPage, assetPage] = await Promise.all([
         inspectionApi.list(page),
-        businessTriggerApi.list(0, MAX_PAGE_SIZE),
-        canAssignRole ? assetApi.list(0, MAX_PAGE_SIZE) : Promise.resolve(null),
+        businessTriggerApi.list(DEFAULT_PAGE, MAX_PAGE_SIZE),
+        canAssignRole ? assetApi.list(DEFAULT_PAGE, MAX_PAGE_SIZE) : Promise.resolve(null),
       ]);
       setInspections(unwrapPageContent(inspectionPage));
       setInspectionsPage(getPageNumber(inspectionPage, page));
@@ -353,7 +356,7 @@ export default function InspectionsPage() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate(ROUTES.LOGIN);
   };
 
   if (loading) {
@@ -369,13 +372,13 @@ export default function InspectionsPage() {
           color: 'white',
         }}
       >
-        <button type="button" className="back-btn" onClick={() => navigate('/')}>
+        <button type="button" className="back-btn" onClick={() => navigate(ROUTES.HOME)}>
           ← Back
         </button>
         <h1>Inspections</h1>
         <div className="user-header-actions">
           <NotificationButton />
-          {canExport && <ExportCsvButton exportType="inspections" onError={setError} />}
+          {canExport && <ExportCsvButton exportType={REPORTING_EXPORT_TYPES.INSPECTIONS} onError={setError} />}
           <button type="button" className="logout-btn" onClick={handleLogout}>
             Logout
           </button>

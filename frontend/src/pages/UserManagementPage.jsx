@@ -8,6 +8,7 @@ import InviteUserModal from '../components/InviteUserModal';
 import EditUserModal from '../components/EditUserModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { canManageUsers, getRoleLabel } from '../constants/userRoles';
+import { ROUTES } from '../constants/routes';
 import { getApiErrorMessage } from '../utils/apiError';
 import '../styles/UserManagementPage.css';
 
@@ -50,7 +51,7 @@ export default function UserManagementPage() {
   // Check authorization
   useEffect(() => {
     if (!auth || !canManageUsers(auth.user.role)) {
-      navigate('/');
+      navigate(ROUTES.HOME);
       return;
     }
     apiClient.setToken(auth.token);
@@ -171,7 +172,7 @@ export default function UserManagementPage() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate(ROUTES.LOGIN);
   };
 
   const isAdministrator = canManageUsers(auth?.user.role);
@@ -202,7 +203,7 @@ export default function UserManagementPage() {
         <button
           type="button"
           className="back-btn"
-          onClick={() => navigate('/')}
+          onClick={() => navigate(ROUTES.HOME)}
         >
           ← Back to Dashboard
         </button>

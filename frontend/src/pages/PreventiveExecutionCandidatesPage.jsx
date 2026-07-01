@@ -16,6 +16,9 @@ import {
   canReviewPreventiveExecutionCandidates,
   canViewPreventiveExecutionCandidates,
 } from '../constants/userRoles';
+import { PREVENTIVE_CANDIDATE_STATUS } from '../constants/statuses';
+import { REPORTING_EXPORT_TYPES } from '../constants/reportingExports';
+import { ROUTES } from '../constants/routes';
 import {
   EXECUTION_CANDIDATE_STATUS_OPTIONS,
   getExecutionCandidateStatusLabel,
@@ -108,11 +111,11 @@ export default function PreventiveExecutionCandidatesPage() {
 
   useEffect(() => {
     if (!auth) {
-      navigate('/login');
+      navigate(ROUTES.LOGIN);
       return;
     }
     if (!canView) {
-      navigate('/');
+      navigate(ROUTES.HOME);
       return;
     }
     apiClient.setToken(auth.token);
@@ -156,8 +159,8 @@ export default function PreventiveExecutionCandidatesPage() {
       setError(null);
       const [candidatePage, assetPage, planPage] = await Promise.all([
         preventiveExecutionCandidateApi.list(page, undefined, buildFilters()),
-        assetApi.list(0, MAX_PAGE_SIZE),
-        preventiveMaintenancePlanApi.list(0, MAX_PAGE_SIZE),
+        assetApi.list(DEFAULT_PAGE, MAX_PAGE_SIZE),
+        preventiveMaintenancePlanApi.list(DEFAULT_PAGE, MAX_PAGE_SIZE),
       ]);
       setCandidates(unwrapPageContent(candidatePage));
       setCandidatesPage(getPageNumber(candidatePage, page));
@@ -386,7 +389,7 @@ export default function PreventiveExecutionCandidatesPage() {
   return (
     <ReferenceDataLayout
       title="Preventive Execution Candidates"
-      headerActions={canExport ? <ExportCsvButton exportType="preventiveCandidates" onError={setError} /> : null}
+      headerActions={canExport ? <ExportCsvButton exportType={REPORTING_EXPORT_TYPES.PREVENTIVE_CANDIDATES} onError={setError} /> : null}
     >
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
@@ -597,7 +600,7 @@ export default function PreventiveExecutionCandidatesPage() {
                 <>
                   <dt>Created Inspection</dt>
                   <dd>
-                    <Link to="/inspections">
+                    <Link to={ROUTES.INSPECTIONS}>
                       Inspection #
                       {selectedCandidate.createdInspectionId}
                     </Link>
@@ -649,7 +652,7 @@ export default function PreventiveExecutionCandidatesPage() {
                 <>
                   <dt>Created Inspection</dt>
                   <dd>
-                    <Link to="/inspections">
+                    <Link to={ROUTES.INSPECTIONS}>
                       Inspection #
                       {selectedReport.createdInspectionId}
                     </Link>
@@ -670,7 +673,7 @@ export default function PreventiveExecutionCandidatesPage() {
           ) : (
             <p>No execution report available.</p>
           )}
-          {!detailLoading && canReview && selectedCandidate.candidateStatus === 'PENDING' && (
+          {!detailLoading && canReview && selectedCandidate.candidateStatus === PREVENTIVE_CANDIDATE_STATUS.PENDING && (
             <div className="review-actions">
               <button type="button" className="btn-primary" onClick={() => openApproveDialog(selectedCandidate)}>
                 Approve
@@ -780,7 +783,7 @@ export default function PreventiveExecutionCandidatesPage() {
             <p>
               Inspection created:
               {' '}
-              <Link to="/inspections">
+              <Link to={ROUTES.INSPECTIONS}>
                 #
                 {createdInspectionId}
               </Link>

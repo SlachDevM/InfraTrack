@@ -6,7 +6,7 @@ import WorkOrdersPage from '../../pages/WorkOrdersPage';
 import workOrderApi from '../../services/workOrderApi';
 import operationalDecisionApi from '../../services/operationalDecisionApi';
 import maintenanceActivityApi from '../../services/maintenanceActivityApi';
-import { MAX_PAGE_SIZE } from '../../utils/pagination';
+import { DEFAULT_PAGE, MAX_PAGE_SIZE } from '../../utils/pagination';
 
 const mockNavigate = vi.fn();
 
@@ -113,7 +113,7 @@ describe('WorkOrdersPage', () => {
     expect(await screen.findByRole('option', {
       name: /#1 — Central Playground \(Internal Maintenance\)/i,
     })).toBeInTheDocument();
-    expect(operationalDecisionApi.listEligibleForWorkOrderCreation).toHaveBeenCalledWith(0, MAX_PAGE_SIZE);
+    expect(operationalDecisionApi.listEligibleForWorkOrderCreation).toHaveBeenCalledWith(DEFAULT_PAGE, MAX_PAGE_SIZE);
   });
 
   it('shows only assignable work orders from backend in assignment selector', async () => {
@@ -130,7 +130,7 @@ describe('WorkOrdersPage', () => {
     expect(await screen.findByRole('option', {
       name: /#100 — Central Playground/i,
     })).toBeInTheDocument();
-    expect(workOrderApi.listEligibleForAssignment).toHaveBeenCalledWith(0, MAX_PAGE_SIZE);
+    expect(workOrderApi.listEligibleForAssignment).toHaveBeenCalledWith(DEFAULT_PAGE, MAX_PAGE_SIZE);
     expect(screen.queryByRole('option', { name: /Other Department Asset/i })).not.toBeInTheDocument();
   });
 

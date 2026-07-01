@@ -1,32 +1,31 @@
 import downloadCsv from '../utils/downloadCsv';
+import { REPORTING_EXPORT_TYPES, REPORTING_EXPORTS } from '../constants/reportingExports';
 
-const ENDPOINTS = {
-  assets: '/api/reporting/exports/assets.csv',
-  inspections: '/api/reporting/exports/inspections.csv',
-  issues: '/api/reporting/exports/issues.csv',
-  workOrders: '/api/reporting/exports/work-orders.csv',
-  preventiveCandidates: '/api/reporting/exports/preventive-candidates.csv',
-};
-
-const DEFAULT_FILENAMES = {
-  assets: 'assets-export.csv',
-  inspections: 'inspections-export.csv',
-  issues: 'issues-export.csv',
-  workOrders: 'work-orders-export.csv',
-  preventiveCandidates: 'preventive-candidates-export.csv',
-};
+function getExportConfig(type) {
+  return REPORTING_EXPORTS[type];
+}
 
 export const reportingExportApi = {
-  exportAssets: (token, params) =>
-    downloadCsv(ENDPOINTS.assets, token, params, DEFAULT_FILENAMES.assets),
-  exportInspections: (token, params) =>
-    downloadCsv(ENDPOINTS.inspections, token, params, DEFAULT_FILENAMES.inspections),
-  exportIssues: (token, params) =>
-    downloadCsv(ENDPOINTS.issues, token, params, DEFAULT_FILENAMES.issues),
-  exportWorkOrders: (token, params) =>
-    downloadCsv(ENDPOINTS.workOrders, token, params, DEFAULT_FILENAMES.workOrders),
-  exportPreventiveCandidates: (token, params) =>
-    downloadCsv(ENDPOINTS.preventiveCandidates, token, params, DEFAULT_FILENAMES.preventiveCandidates),
+  exportAssets: (token, params) => {
+    const config = getExportConfig(REPORTING_EXPORT_TYPES.ASSETS);
+    return downloadCsv(config.endpoint, token, params, config.filename);
+  },
+  exportInspections: (token, params) => {
+    const config = getExportConfig(REPORTING_EXPORT_TYPES.INSPECTIONS);
+    return downloadCsv(config.endpoint, token, params, config.filename);
+  },
+  exportIssues: (token, params) => {
+    const config = getExportConfig(REPORTING_EXPORT_TYPES.ISSUES);
+    return downloadCsv(config.endpoint, token, params, config.filename);
+  },
+  exportWorkOrders: (token, params) => {
+    const config = getExportConfig(REPORTING_EXPORT_TYPES.WORK_ORDERS);
+    return downloadCsv(config.endpoint, token, params, config.filename);
+  },
+  exportPreventiveCandidates: (token, params) => {
+    const config = getExportConfig(REPORTING_EXPORT_TYPES.PREVENTIVE_CANDIDATES);
+    return downloadCsv(config.endpoint, token, params, config.filename);
+  },
 };
 
 export default reportingExportApi;

@@ -1,4 +1,6 @@
 import API_CONFIG from '../config/apiConfig';
+import { HTTP_STATUS } from '../constants/httpStatus';
+import { COMMON_MESSAGES } from '../constants/messages';
 
 /**
  * Download a CSV file via authenticated GET and trigger a browser save.
@@ -23,10 +25,10 @@ export async function downloadCsv(url, token, params = {}, defaultFilename = 'ex
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
 
-  if (response.status === 403) {
+  if (response.status === HTTP_STATUS.FORBIDDEN) {
     const text = await response.text();
-    const error = new Error(text || 'You do not have permission to export.');
-    error.status = 403;
+    const error = new Error(text || COMMON_MESSAGES.EXPORT_FORBIDDEN_GENERIC);
+    error.status = HTTP_STATUS.FORBIDDEN;
     throw error;
   }
 

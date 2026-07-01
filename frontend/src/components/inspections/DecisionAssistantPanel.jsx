@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import suggestedActionApi from '../../services/suggestedActionApi';
 import { canReviewSuggestedActions } from '../../constants/userRoles';
+import { SUGGESTED_ACTION_STATUS } from '../../constants/statuses';
 import { ISSUE_SEVERITIES } from '../../constants/issueSeverities';
 import { getApiErrorMessage } from '../../utils/apiError';
 
@@ -180,7 +181,7 @@ function SuggestionReviewCard({
   const [acting, setActing] = useState(false);
 
   const display = detail || summary;
-    const isPending = (detail?.status ?? summary.status) === 'PENDING';
+    const isPending = (detail?.status ?? summary.status) === SUGGESTED_ACTION_STATUS.PENDING;
 
   useEffect(() => {
     if (!expanded || detail || !canReview) {

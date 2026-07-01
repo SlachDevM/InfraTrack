@@ -1,4 +1,6 @@
-const MAX_LENGTH = 100;
+import { FIELD_LIMITS } from '../constants/limits';
+
+const { INSPECTION_QUESTION_CODE_MAX_LENGTH: MAX_LENGTH } = FIELD_LIMITS;
 
 export function suggestQuestionCode(questionText) {
   if (!questionText || !questionText.trim()) {

@@ -22,6 +22,7 @@ import PreventiveMaintenancePlansPage from './pages/PreventiveMaintenancePlansPa
 import PreventiveExecutionCandidatesPage from './pages/PreventiveExecutionCandidatesPage';
 import PreventiveSchedulerPage from './pages/PreventiveSchedulerPage';
 import DashboardPage from './pages/DashboardPage';
+import { ROUTES } from './constants/routes';
 import './App.css';
 
 function App() {
@@ -30,10 +31,10 @@ function App() {
       <AuthProvider>
         <NotificationProvider>
           <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/activate" element={<ActivationPage />} />
+            <Route path={ROUTES.LOGIN} element={<Login />} />
+            <Route path={ROUTES.ACTIVATE} element={<ActivationPage />} />
             <Route
-              path="/"
+              path={ROUTES.HOME}
               element={
                 <PrivateRoute>
                   <PlatformShell />
@@ -41,7 +42,7 @@ function App() {
               }
             />
             <Route
-              path="/dashboard"
+              path={ROUTES.DASHBOARD}
               element={
                 <PrivateRoute>
                   <DashboardPage />
@@ -49,7 +50,7 @@ function App() {
               }
             />
             <Route
-              path="/notifications"
+              path={ROUTES.NOTIFICATIONS}
               element={
                 <PrivateRoute>
                   <NotificationPage />
@@ -57,7 +58,7 @@ function App() {
               }
             />
             <Route
-              path="/users"
+              path={ROUTES.USERS}
               element={
                 <PrivateRoute>
                   <UserManagementPage />
@@ -65,7 +66,7 @@ function App() {
               }
             />
             <Route
-              path="/departments"
+              path={ROUTES.DEPARTMENTS}
               element={
                 <PrivateRoute>
                   <DepartmentsPage />
@@ -73,7 +74,7 @@ function App() {
               }
             />
             <Route
-              path="/asset-categories"
+              path={ROUTES.ASSET_CATEGORIES}
               element={
                 <PrivateRoute>
                   <AssetCategoriesPage />
@@ -81,7 +82,7 @@ function App() {
               }
             />
             <Route
-              path="/assets"
+              path={ROUTES.ASSETS}
               element={
                 <PrivateRoute>
                   <AssetsPage />
@@ -89,7 +90,7 @@ function App() {
               }
             />
             <Route
-              path="/business-triggers"
+              path={ROUTES.BUSINESS_TRIGGERS}
               element={
                 <PrivateRoute>
                   <BusinessTriggersPage />
@@ -97,7 +98,7 @@ function App() {
               }
             />
             <Route
-              path="/inspections"
+              path={ROUTES.INSPECTIONS}
               element={
                 <PrivateRoute>
                   <InspectionsPage />
@@ -105,7 +106,7 @@ function App() {
               }
             />
             <Route
-              path="/inspection-templates"
+              path={ROUTES.INSPECTION_TEMPLATES}
               element={
                 <PrivateRoute>
                   <InspectionTemplatesPage />
@@ -113,7 +114,7 @@ function App() {
               }
             />
             <Route
-              path="/inspection-templates/:templateId/questions"
+              path={`${ROUTES.INSPECTION_TEMPLATES}/:templateId/questions`}
               element={
                 <PrivateRoute>
                   <InspectionTemplateQuestionsPage />
@@ -121,7 +122,7 @@ function App() {
               }
             />
             <Route
-              path="/preventive-maintenance-plans"
+              path={ROUTES.PREVENTIVE_PLANS}
               element={
                 <PrivateRoute>
                   <PreventiveMaintenancePlansPage />
@@ -129,7 +130,7 @@ function App() {
               }
             />
             <Route
-              path="/preventive-execution-candidates"
+              path={ROUTES.PREVENTIVE_CANDIDATES}
               element={
                 <PrivateRoute>
                   <PreventiveExecutionCandidatesPage />
@@ -137,7 +138,7 @@ function App() {
               }
             />
             <Route
-              path="/preventive-scheduler"
+              path={ROUTES.PREVENTIVE_SCHEDULER}
               element={
                 <PrivateRoute>
                   <PreventiveSchedulerPage />
@@ -145,7 +146,7 @@ function App() {
               }
             />
             <Route
-              path="/issues"
+              path={ROUTES.ISSUES}
               element={
                 <PrivateRoute>
                   <IssuesPage />
@@ -153,7 +154,7 @@ function App() {
               }
             />
             <Route
-              path="/operational-decisions"
+              path={ROUTES.OPERATIONAL_DECISIONS}
               element={
                 <PrivateRoute>
                   <OperationalDecisionsPage />
@@ -161,7 +162,7 @@ function App() {
               }
             />
             <Route
-              path="/delegated-authorities"
+              path={ROUTES.DELEGATED_AUTHORITIES}
               element={
                 <PrivateRoute>
                   <DelegatedAuthoritiesPage />
@@ -169,14 +170,14 @@ function App() {
               }
             />
             <Route
-              path="/work-orders"
+              path={ROUTES.WORK_ORDERS}
               element={
                 <PrivateRoute>
                   <WorkOrdersPage />
                 </PrivateRoute>
               }
             />
-            <Route path="*" element={<Navigate to="/" />} />
+            <Route path="*" element={<Navigate to={ROUTES.HOME} />} />
           </Routes>
         </NotificationProvider>
       </AuthProvider>

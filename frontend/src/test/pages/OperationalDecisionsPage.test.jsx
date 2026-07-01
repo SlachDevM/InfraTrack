@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import OperationalDecisionsPage from '../../pages/OperationalDecisionsPage';
 import operationalDecisionApi from '../../services/operationalDecisionApi';
 import issueApi from '../../services/issueApi';
-import { MAX_PAGE_SIZE } from '../../utils/pagination';
+import { DEFAULT_PAGE, MAX_PAGE_SIZE } from '../../utils/pagination';
 
 const mockNavigate = vi.fn();
 
@@ -151,7 +151,7 @@ describe('OperationalDecisionsPage', () => {
     expect(await screen.findByRole('option', {
       name: '#10 — Central Playground (High)',
     })).toBeInTheDocument();
-    expect(issueApi.listEligibleForOperationalDecision).toHaveBeenCalledWith(0, MAX_PAGE_SIZE);
+    expect(issueApi.listEligibleForOperationalDecision).toHaveBeenCalledWith(DEFAULT_PAGE, MAX_PAGE_SIZE);
   });
 
   it('does not show cross-department issues when backend returns only eligible issues', async () => {

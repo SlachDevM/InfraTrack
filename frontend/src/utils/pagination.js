@@ -1,6 +1,12 @@
-export const DEFAULT_PAGE = 0;
-export const DEFAULT_SIZE = 20;
-export const MAX_PAGE_SIZE = 100;
+export {
+  PAGINATION,
+  DEFAULT_PAGE,
+  DEFAULT_PAGE_SIZE,
+  DEFAULT_SIZE,
+  MAX_PAGE_SIZE,
+} from '../constants/pagination';
+
+import { DEFAULT_PAGE, DEFAULT_SIZE } from '../constants/pagination';
 
 export function paginatedQuery(page = DEFAULT_PAGE, size = DEFAULT_SIZE) {
   return `page=${page}&size=${size}`;
@@ -29,7 +35,7 @@ export function getTotalPages(pageResponse) {
 }
 
 export function isFirstPage(pageIndex) {
-  return pageIndex <= 0;
+  return pageIndex <= DEFAULT_PAGE;
 }
 
 export function isLastPage(pageIndex, totalPages) {
