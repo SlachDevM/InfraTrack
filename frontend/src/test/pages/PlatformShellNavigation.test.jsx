@@ -87,7 +87,7 @@ describe('PlatformShell navigation', () => {
     expect(screen.getByRole('button', { name: 'Inspections' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Work Orders' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Dashboard' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'More' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'More navigation' })).not.toBeInTheDocument();
     expect(screen.getByText('Assigned Inspections')).toBeInTheDocument();
   });
 
@@ -162,9 +162,9 @@ describe('Dashboard navigation', () => {
 
     expect(await screen.findByRole('button', { name: 'Dashboard' })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Assets' }).length).toBeGreaterThan(0);
-    expect(screen.getByRole('button', { name: 'More' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'More navigation' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'More' }));
+    await user.click(screen.getByRole('button', { name: 'More navigation' }));
     expect(screen.getByRole('menuitem', { name: 'Departments' })).toBeInTheDocument();
   });
 

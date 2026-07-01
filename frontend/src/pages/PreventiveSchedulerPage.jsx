@@ -183,8 +183,9 @@ export default function PreventiveSchedulerPage() {
       <section className="reference-form-section">
         <h2>Run History</h2>
         {listLoading ? (
-          <p>Loading runs...</p>
+          <p className="loading-state-inline" role="status">Loading runs...</p>
         ) : (
+          <div className="table-scroll">
           <table className="reference-table">
             <thead>
               <tr>
@@ -201,7 +202,7 @@ export default function PreventiveSchedulerPage() {
             <tbody>
               {runs.length === 0 ? (
                 <tr>
-                  <td colSpan={8}>No scheduler runs found.</td>
+                  <td colSpan={8} className="empty-state">No scheduler runs found.</td>
                 </tr>
               ) : (
                 runs.map((run) => (
@@ -231,6 +232,7 @@ export default function PreventiveSchedulerPage() {
               )}
             </tbody>
           </table>
+          </div>
         )}
       </section>
 

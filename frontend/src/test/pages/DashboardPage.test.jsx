@@ -430,7 +430,7 @@ describe('DashboardPage', () => {
     );
 
     await screen.findByText('Operational KPIs');
-    await user.click(screen.getByRole('button', { name: 'Dashboard Settings' }));
+    await user.click(screen.getByRole('button', { name: 'Dashboard settings' }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
 
     await user.click(screen.getByLabelText('Recent Activity'));
@@ -453,7 +453,7 @@ describe('DashboardPage', () => {
     );
 
     await screen.findByText('Operational KPIs');
-    await user.click(screen.getByRole('button', { name: 'Dashboard Settings' }));
+    await user.click(screen.getByRole('button', { name: 'Dashboard settings' }));
     await user.click(screen.getByRole('button', { name: 'Reset Dashboard' }));
     await user.click(screen.getAllByRole('button', { name: 'Reset Dashboard' })[1]);
 

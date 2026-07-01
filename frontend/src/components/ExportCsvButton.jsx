@@ -19,6 +19,7 @@ export default function ExportCsvButton({
 }) {
   const { auth } = useAuth();
   const [exporting, setExporting] = useState(false);
+  const buttonLabel = exporting ? 'Exporting...' : label;
 
   const handleClick = async () => {
     const handler = EXPORT_HANDLERS[exportType];
@@ -47,8 +48,10 @@ export default function ExportCsvButton({
       className={className}
       onClick={handleClick}
       disabled={exporting}
+      aria-label={label}
+      aria-busy={exporting}
     >
-      {exporting ? 'Exporting...' : label}
+      {buttonLabel}
     </button>
   );
 }

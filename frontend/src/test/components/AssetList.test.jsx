@@ -27,6 +27,8 @@ describe('AssetList', () => {
 
   it('shows empty state when no assets', () => {
     render(<AssetList assets={[]} />);
-    expect(screen.getByText('No assets registered yet.')).toBeInTheDocument();
+    const message = screen.getByText('No assets registered yet.');
+    expect(message).toBeInTheDocument();
+    expect(message).toHaveClass('empty-state');
   });
 });

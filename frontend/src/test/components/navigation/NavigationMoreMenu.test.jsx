@@ -25,10 +25,27 @@ describe('NavigationMoreMenu', () => {
       />
     );
 
-    await user.click(screen.getByRole('button', { name: 'More' }));
+    await user.click(screen.getByRole('button', { name: 'More navigation' }));
     await user.click(screen.getByRole('menuitem', { name: 'Departments' }));
 
     expect(onNavigate).toHaveBeenCalledWith('/departments');
+    expect(screen.queryByRole('menuitem', { name: 'Departments' })).not.toBeInTheDocument();
+  });
+
+  it('closes the menu when Escape is pressed', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <NavigationMoreMenu
+        items={[{ path: '/departments', label: 'Departments' }]}
+        onNavigate={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: 'More navigation' }));
+    expect(screen.getByRole('menuitem', { name: 'Departments' })).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
     expect(screen.queryByRole('menuitem', { name: 'Departments' })).not.toBeInTheDocument();
   });
 });

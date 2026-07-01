@@ -14,8 +14,9 @@ export default function InspectionList({ inspections }) {
     <section className="inspection-list-section">
       <h2>Inspections</h2>
       {inspections.length === 0 ? (
-        <p className="no-items">No inspections assigned yet.</p>
+        <p className="empty-state no-items">No inspections assigned yet.</p>
       ) : (
+        <div className="table-scroll">
         <table className="reference-table inspections-table">
           <thead>
             <tr>
@@ -62,6 +63,7 @@ export default function InspectionList({ inspections }) {
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       {completedTemplatedInspections.length > 0 && (

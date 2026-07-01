@@ -7,8 +7,9 @@ export default function WorkOrderList({ workOrders, maintenanceActivities }) {
     <section className="work-order-list-section">
       <h2>Work Orders</h2>
       {workOrders.length === 0 ? (
-        <p className="no-items">No work orders yet.</p>
+        <p className="empty-state no-items">No work orders yet.</p>
       ) : (
+        <div className="table-scroll">
         <table className="reference-table work-orders-table">
           <thead>
             <tr>
@@ -58,6 +59,7 @@ export default function WorkOrderList({ workOrders, maintenanceActivities }) {
             })}
           </tbody>
         </table>
+        </div>
       )}
     </section>
   );

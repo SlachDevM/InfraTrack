@@ -5,8 +5,9 @@ export default function AssetList({ assets }) {
     <section className="asset-list-section">
       <h2>Registered Assets</h2>
       {assets.length === 0 ? (
-        <p className="no-items">No assets registered yet.</p>
+        <p className="empty-state no-items">No assets registered yet.</p>
       ) : (
+        <div className="table-scroll">
         <table className="reference-table assets-table">
           <thead>
             <tr>
@@ -31,6 +32,7 @@ export default function AssetList({ assets }) {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </section>
   );

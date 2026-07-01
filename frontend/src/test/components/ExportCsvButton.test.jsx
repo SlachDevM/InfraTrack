@@ -34,12 +34,21 @@ describe('ExportCsvButton', () => {
 
     render(<ExportCsvButton exportType="assets" onError={onError} />);
 
-    await user.click(screen.getByRole('button', { name: 'Export CSV' }));
+    const button = screen.getByRole('button', { name: 'Export CSV' });
+    expect(button).toHaveAttribute('aria-busy', 'false');
+
+    await user.click(button);
 
     await waitFor(() => {
       expect(reportingExportApi.exportAssets).toHaveBeenCalledWith('test-token', undefined);
     });
     expect(onError).not.toHaveBeenCalled();
+  });
+
+  it('uses custom label for accessible name', () => {
+    render(<ExportCsvButton exportType="assets" label="Export assets CSV" onError={vi.fn()} />);
+
+    expect(screen.getByRole('button', { name: 'Export assets CSV' })).toBeInTheDocument();
   });
 
   it('reports forbidden errors via onError', async () => {

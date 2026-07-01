@@ -44,7 +44,7 @@ export default function ReferenceDataLayout({
           </button>
         )}
         <h1>{title}</h1>
-        <div className="user-header-actions">
+        <div className="user-header-actions page-actions">
           <NotificationButton />
           {headerActions}
           <button type="button" className="logout-btn" onClick={handleLogout}>

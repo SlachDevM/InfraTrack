@@ -12,13 +12,17 @@ export default function DashboardWidget({
     <section className="dashboard-section" aria-label={ariaLabel}>
       {title && <h2>{title}</h2>}
       {loading && loadingMessage && (
-        <div className="dashboard-state-message">{loadingMessage}</div>
+        <div className="dashboard-state-message loading-state-inline" role="status">
+          {loadingMessage}
+        </div>
       )}
       {!loading && error && (
-        <div className="dashboard-state-message error">{error}</div>
+        <div className="dashboard-state-message error error-state" role="alert">
+          {error}
+        </div>
       )}
       {!loading && !error && empty && emptyMessage && (
-        <div className="dashboard-state-message">{emptyMessage}</div>
+        <div className="dashboard-state-message empty-state">{emptyMessage}</div>
       )}
       {!loading && !error && !empty && children}
     </section>

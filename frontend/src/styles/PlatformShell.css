@@ -27,9 +27,10 @@
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   min-width: 0;
   justify-content: flex-end;
+  max-width: 100%;
 }
 
 .navbar-link {
@@ -73,6 +74,12 @@
 
 .navbar-more-button:hover {
   background: rgba(255, 255, 255, 0.16);
+}
+
+.navbar-more-button:focus-visible,
+.navbar-link:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }
 
 .navbar-more-menu {

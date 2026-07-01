@@ -134,7 +134,9 @@
   gap: 1rem;
 }
 
-.dashboard-state-message {
+.dashboard-state-message,
+.loading-state-inline,
+.empty-state {
   background: white;
   border: 1px solid #dde3df;
   border-radius: 8px;
@@ -142,7 +144,8 @@
   color: #555;
 }
 
-.dashboard-state-message.error {
+.dashboard-state-message.error,
+.error-state {
   background: #fdecea;
   border-color: #f5c6cb;
   color: #a94442;
@@ -408,11 +411,48 @@
   padding: 0.55rem 0.9rem;
   cursor: pointer;
   font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.dashboard-settings-reset:hover:not(:disabled) {
+  background: #fdecea;
+}
+
+.dashboard-settings-reset:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .dashboard-settings-footer-actions {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.dashboard-settings-footer-actions .btn-cancel,
+.dashboard-settings-footer-actions .btn-confirm {
+  border-radius: 8px;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dashboard-settings-footer-actions .btn-cancel {
+  border: 1px solid #c5d0c8;
+  background: #f0f4f1;
+  color: #333;
+}
+
+.dashboard-settings-footer-actions .btn-confirm {
+  border: 1px solid #1a472a;
+  background: #1a472a;
+  color: white;
+}
+
+.dashboard-settings-footer-actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 @media (max-width: 640px) {

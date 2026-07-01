@@ -271,6 +271,7 @@ export default function DashboardPage() {
               type="button"
               className="dashboard-settings-button"
               onClick={() => setSettingsOpen(true)}
+              aria-label="Dashboard settings"
             >
               Dashboard Settings
             </button>
@@ -278,19 +279,27 @@ export default function DashboardPage() {
         </header>
 
         {preferencesLoading && (
-          <div className="dashboard-state-message">Loading dashboard preferences...</div>
+          <div className="dashboard-state-message loading-state-inline" role="status">
+            Loading dashboard preferences...
+          </div>
         )}
 
         {!preferencesLoading && preferencesError && (
-          <div className="dashboard-state-message error">{preferencesError}</div>
+          <div className="dashboard-state-message error error-state" role="alert">
+            {preferencesError}
+          </div>
         )}
 
         {loading && (
-          <div className="dashboard-state-message">Loading operational KPIs...</div>
+          <div className="dashboard-state-message loading-state-inline" role="status">
+            Loading operational KPIs...
+          </div>
         )}
 
         {!loading && error && (
-          <div className="dashboard-state-message error">{error}</div>
+          <div className="dashboard-state-message error error-state" role="alert">
+            {error}
+          </div>
         )}
 
         {!preferencesLoading && normalizedPreferences.widgetOrder.map(renderWidget)}
