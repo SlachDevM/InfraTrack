@@ -21,7 +21,7 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
- * Validates upload permissions and resolves operational document ownership context.
+ * Validates upload, download and delete permissions and resolves operational document ownership context.
  */
 @Service
 public class OperationalDocumentAuthorizationService {
@@ -49,6 +49,33 @@ public class OperationalDocumentAuthorizationService {
         requireUploadAuthorized(user, ownerContext);
     }
 
+    public void requireDownloadAuthorized(User user, OperationalDocumentOwnerContext ownerContext) {
+        UserRole role = user.getRole();
+        if (role == null) {
+            throw forbiddenDownload();
+        }
+        if (role.isAdministrator()) {
+            return;
+        }
+
+        requireAssetDepartmentAccess(
+                user,
+                ownerContext.asset(),
+                "You may only download operational documents for assets in your own department.",
+                "Unauthorized to download operational evidence");
+
+        switch (role) {
+            case MANAGER, OPERATIONAL_COORDINATOR -> {
+                // Department ownership verified above.
+            }
+            case FIELD_EMPLOYEE, CONTRACTOR -> requireFieldOwnerAccess(
+                    user,
+                    ownerContext,
+                    "Unauthorized to download operational evidence for this context");
+            default -> throw forbiddenDownload();
+        }
+    }
+
     public void requireUploadAuthorized(User user, OperationalDocumentOwnerContext ownerContext) {
         UserRole role = user.getRole();
         if (role == null) {
@@ -71,32 +98,42 @@ public class OperationalDocumentAuthorizationService {
     }
 
     public void requireAssetDepartmentAuthorized(User user, Asset asset) {
+        requireAssetDepartmentAccess(
+                user,
+                asset,
+                "You may only upload operational documents for assets in your own department.",
+                "Unauthorized to upload operational evidence");
+    }
+
+    private void requireAssetDepartmentAccess(
+            User user,
+            Asset asset,
+            String crossDepartmentMessage,
+            String roleDeniedMessage) {
         UserRole role = user.getRole();
         if (role == null) {
-            throw forbiddenUpload();
+            throw new ForbiddenOperationException(roleDeniedMessage);
         }
         if (role.isManager()) {
             if (!delegatedAuthorityService.canManagerActForAssetDepartment(
                     user, asset.getDepartment(), LocalDateTime.now())) {
-                throw new ForbiddenOperationException(
-                        "You may only upload operational documents for assets in your own department.");
+                throw new ForbiddenOperationException(crossDepartmentMessage);
             }
             return;
         }
         if (role.isOperationalCoordinator() || role.isFieldEmployee() || role.isContractor()) {
-            requireSameDepartment(user, asset);
+            requireSameDepartment(user, asset, crossDepartmentMessage);
             return;
         }
-        throw forbiddenUpload();
+        throw new ForbiddenOperationException(roleDeniedMessage);
     }
 
-    private void requireSameDepartment(User user, Asset asset) {
+    private void requireSameDepartment(User user, Asset asset, String crossDepartmentMessage) {
         Department userDepartment = user.getDepartment();
         Department assetDepartment = asset.getDepartment();
         if (userDepartment == null || assetDepartment == null
                 || !userDepartment.getId().equals(assetDepartment.getId())) {
-            throw new ForbiddenOperationException(
-                    "You may only upload operational documents for assets in your own department.");
+            throw new ForbiddenOperationException(crossDepartmentMessage);
         }
     }
 
@@ -104,41 +141,51 @@ public class OperationalDocumentAuthorizationService {
         return new ForbiddenOperationException("Unauthorized to upload operational evidence");
     }
 
+    private ForbiddenOperationException forbiddenDownload() {
+        return new ForbiddenOperationException("Unauthorized to download operational evidence");
+    }
+
     private void requireFieldUploadAuthorized(User user, OperationalDocumentOwnerContext ownerContext) {
+        requireFieldOwnerAccess(
+                user,
+                ownerContext,
+                "Unauthorized to upload operational evidence for this context");
+    }
+
+    private void requireFieldOwnerAccess(
+            User user,
+            OperationalDocumentOwnerContext ownerContext,
+            String contextDeniedMessage) {
         switch (ownerContext.ownerType()) {
             case ASSET, OPERATIONAL_DECISION, COMPLETION_REVIEW -> throw new ForbiddenOperationException(
-                    "Unauthorized to upload operational evidence for this context");
+                    contextDeniedMessage);
             case INSPECTION -> {
                 Inspection inspection = inspectionRepository.findById(ownerContext.ownerId())
                         .orElseThrow(() -> new NotFoundException("Operational owner not found"));
                 if (!Objects.equals(inspection.getAssignedToUserId(), user.getId())
                         && !Objects.equals(inspection.getCompletedByUserId(), user.getId())) {
-                    throw new ForbiddenOperationException(
-                            "Unauthorized to upload operational evidence for this context");
+                    throw new ForbiddenOperationException(contextDeniedMessage);
                 }
             }
             case ISSUE -> {
                 Issue issue = issueRepository.findById(ownerContext.ownerId())
                         .orElseThrow(() -> new NotFoundException("Operational owner not found"));
                 if (!Objects.equals(issue.getRecordedByUserId(), user.getId())) {
-                    throw new ForbiddenOperationException(
-                            "Unauthorized to upload operational evidence for this context");
+                    throw new ForbiddenOperationException(contextDeniedMessage);
                 }
             }
             case WORK_ORDER -> {
                 WorkOrder workOrder = workOrderRepository.findById(ownerContext.ownerId())
                         .orElseThrow(() -> new NotFoundException("Operational owner not found"));
                 if (!Objects.equals(workOrder.getAssignedToUserId(), user.getId())) {
-                    throw new ForbiddenOperationException(
-                            "Unauthorized to upload operational evidence for this context");
+                    throw new ForbiddenOperationException(contextDeniedMessage);
                 }
             }
             case MAINTENANCE_ACTIVITY -> {
                 MaintenanceActivity maintenanceActivity = maintenanceActivityRepository.findById(ownerContext.ownerId())
                         .orElseThrow(() -> new NotFoundException("Operational owner not found"));
                 if (!Objects.equals(maintenanceActivity.getPerformedByUserId(), user.getId())) {
-                    throw new ForbiddenOperationException(
-                            "Unauthorized to upload operational evidence for this context");
+                    throw new ForbiddenOperationException(contextDeniedMessage);
                 }
             }
         }

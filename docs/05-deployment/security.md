@@ -151,6 +151,42 @@ Direct exposure of the Spring Boot port to the public internet without a proxy a
 
 ---
 
+## Operational document download authorization
+
+`GET /api/operational-documents/{id}/download` enforces the same ownership model as upload and delete.
+
+| Role | Download access |
+|------|-----------------|
+| Administrator | Any operational document |
+| Manager | Documents for assets in the manager's department (including delegated authority) |
+| Operational Coordinator | Documents for assets in the coordinator's department |
+| Field Employee | Documents linked to inspections, issues, work orders, or maintenance activities they performed or were assigned to |
+| Contractor | Same assignment rules as Field Employee |
+
+Authorization runs in `OperationalDocumentAuthorizationService.requireDownloadAuthorized` **before** the file is read from storage. Cross-department and unassigned access returns HTTP `403`. Unknown documents return HTTP `404` without touching storage.
+
+Upload and delete rules are unchanged. Administrators may download but cannot upload operational evidence.
+
+---
+
+## Dependency and static analysis (CI)
+
+| Check | Scope | Policy |
+|-------|-------|--------|
+| `npm audit --audit-level=high --omit=dev` | Frontend production dependencies | Fails CI on high or critical runtime findings |
+| OWASP Dependency-Check | Backend Maven dependencies | Fails CI on CVSS ≥ 9 (see below) |
+| GitHub CodeQL | Java backend and JavaScript frontend | Scheduled and on `main` pushes/PRs |
+
+### Known npm audit findings (dev toolchain)
+
+`npm audit` without `--omit=dev` reports moderate/high issues in **Vite / esbuild / Vitest** (development server and test tooling only, e.g. GHSA-67mh-4wv8-2f99). These do not affect the production bundle built by `npm run build`. Remediation requires a major Vite upgrade and is deferred.
+
+### OWASP Dependency-Check threshold
+
+The build fails on CVSS **≥ 9**. The threshold remains at 9 because lowering to 7 has not been validated against the current dependency tree in CI; the existing suppression file documents one confirmed false positive (gRPC-Go CVE mapped incorrectly to gRPC-Java). Revisit when the NVD scan is run after the next dependency upgrade sprint.
+
+---
+
 ## Firebase (optional)
 
 FCM push notifications remain optional. See [secrets.md](secrets.md) for credential management.

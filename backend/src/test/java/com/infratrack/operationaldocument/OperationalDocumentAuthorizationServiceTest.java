@@ -144,6 +144,89 @@ class OperationalDocumentAuthorizationServiceTest {
                 .hasMessage("Unauthorized to upload operational evidence for this context");
     }
 
+    @Test
+    void requireDownloadAuthorized_shouldAllowAdministrator() {
+        User administrator = user(1L, UserRole.ADMINISTRATOR);
+        OperationalDocumentOwnerContext context = ownerContext(asset(5L));
+
+        assertThatCode(() -> authorizationService.requireDownloadAuthorized(administrator, context))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void requireDownloadAuthorized_shouldAllowManagerForOwnDepartmentAsset() {
+        User manager = managerInDepartment(30L, 1L);
+        OperationalDocumentOwnerContext context = ownerContext(asset(5L));
+
+        when(delegatedAuthorityService.canManagerActForAssetDepartment(
+                eq(manager), eq(context.asset().getDepartment()), any(LocalDateTime.class)))
+                .thenReturn(true);
+
+        assertThatCode(() -> authorizationService.requireDownloadAuthorized(manager, context))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void requireDownloadAuthorized_shouldRejectManagerForCrossDepartmentAssetWithoutDelegation() {
+        User manager = managerInDepartment(30L, 2L);
+        OperationalDocumentOwnerContext context = ownerContext(asset(5L));
+
+        when(delegatedAuthorityService.canManagerActForAssetDepartment(
+                eq(manager), eq(context.asset().getDepartment()), any(LocalDateTime.class)))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> authorizationService.requireDownloadAuthorized(manager, context))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You may only download operational documents for assets in your own department.");
+    }
+
+    @Test
+    void requireDownloadAuthorized_shouldAllowAssignedFieldEmployeeForInspection() {
+        Asset asset = asset(5L);
+        User fieldEmployee = userInDepartment(20L, UserRole.FIELD_EMPLOYEE, 1L);
+        Inspection inspection = new Inspection(asset, null, 20L, 10L, InspectionPriority.NORMAL, null);
+        inspection.setId(100L);
+        OperationalDocumentOwnerContext context = new OperationalDocumentOwnerContext(
+                asset, OperationalDocumentOwnerType.INSPECTION, 100L);
+
+        when(inspectionRepository.findById(100L)).thenReturn(java.util.Optional.of(inspection));
+
+        assertThatCode(() -> authorizationService.requireDownloadAuthorized(fieldEmployee, context))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void requireDownloadAuthorized_shouldRejectUnassignedFieldEmployeeForInspection() {
+        Asset asset = asset(5L);
+        User fieldEmployee = userInDepartment(20L, UserRole.FIELD_EMPLOYEE, 1L);
+        Inspection inspection = new Inspection(asset, null, 99L, 10L, InspectionPriority.NORMAL, null);
+        inspection.setId(100L);
+        inspection.complete(
+                com.infratrack.inspection.PhysicalCondition.GOOD,
+                "Observed",
+                false,
+                LocalDateTime.now(),
+                88L);
+        OperationalDocumentOwnerContext context = new OperationalDocumentOwnerContext(
+                asset, OperationalDocumentOwnerType.INSPECTION, 100L);
+
+        when(inspectionRepository.findById(100L)).thenReturn(java.util.Optional.of(inspection));
+
+        assertThatThrownBy(() -> authorizationService.requireDownloadAuthorized(fieldEmployee, context))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("Unauthorized to download operational evidence for this context");
+    }
+
+    @Test
+    void requireDownloadAuthorized_shouldRejectFieldEmployeeForAssetLevelDocument() {
+        User fieldEmployee = userInDepartment(20L, UserRole.FIELD_EMPLOYEE, 1L);
+        OperationalDocumentOwnerContext context = ownerContext(asset(5L));
+
+        assertThatThrownBy(() -> authorizationService.requireDownloadAuthorized(fieldEmployee, context))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("Unauthorized to download operational evidence for this context");
+    }
+
     private OperationalDocumentOwnerContext ownerContext(Asset asset) {
         return new OperationalDocumentOwnerContext(asset, OperationalDocumentOwnerType.ASSET, asset.getId());
     }

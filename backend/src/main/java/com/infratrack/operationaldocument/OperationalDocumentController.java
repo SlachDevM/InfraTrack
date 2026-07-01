@@ -102,9 +102,12 @@ public class OperationalDocumentController {
     @GetMapping("/api/operational-documents/{id}/download")
     @Operation(summary = "Download operational document", description = "Returns the stored file as an attachment.")
     @ApiResponse(responseCode = "200", description = "File download")
-    public ResponseEntity<Resource> downloadDocument(@PathVariable Long id) {
+    public ResponseEntity<Resource> downloadDocument(
+            @PathVariable Long id,
+            Authentication authentication) {
+        Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         OperationalDocumentService.OperationalDocumentDownload download =
-                operationalDocumentService.downloadDocument(id);
+                operationalDocumentService.downloadDocument(id, userId);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=\"" + download.originalFileName() + "\"")

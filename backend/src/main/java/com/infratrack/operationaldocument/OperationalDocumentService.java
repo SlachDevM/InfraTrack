@@ -111,9 +111,15 @@ public class OperationalDocumentService {
     }
 
     @Transactional(readOnly = true)
-    public OperationalDocumentDownload downloadDocument(Long documentId) {
+    public OperationalDocumentDownload downloadDocument(Long documentId, Long userId) {
+        User user = userService.getById(userId);
         OperationalDocument document = operationalDocumentRepository.findById(documentId)
                 .orElseThrow(() -> new NotFoundException("Document not found"));
+        OperationalDocumentOwnerContext ownerContext = ownerResolver.resolveForAsset(
+                document.getAsset(),
+                document.getOwnerType(),
+                document.getOwnerId());
+        authorizationService.requireDownloadAuthorized(user, ownerContext);
         Resource resource = fileStore.loadAsResource(document.getStoragePath());
         return new OperationalDocumentDownload(resource, document.getOriginalFileName(), document.getContentType());
     }

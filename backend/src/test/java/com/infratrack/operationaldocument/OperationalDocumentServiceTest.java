@@ -42,6 +42,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -665,10 +666,136 @@ class OperationalDocumentServiceTest {
     }
 
     @Test
+    void downloadDocument_shouldAllowAdministratorEvenWhenUploadIsForbidden() {
+        Asset asset = asset(5L);
+        User administrator = user(1L, UserRole.ADMINISTRATOR);
+        OperationalDocument document = savedDocument(103L, asset);
+        Resource resource = mock(Resource.class);
+
+        when(userService.getById(1L)).thenReturn(administrator);
+        when(operationalDocumentRepository.findById(103L)).thenReturn(Optional.of(document));
+        when(fileStore.loadAsResource("/tmp/stored-file")).thenReturn(resource);
+
+        OperationalDocumentService.OperationalDocumentDownload download =
+                operationalDocumentService.downloadDocument(103L, 1L);
+
+        assertThat(download.resource()).isSameAs(resource);
+        assertThat(download.originalFileName()).isEqualTo("report.pdf");
+        verify(fileStore).loadAsResource("/tmp/stored-file");
+    }
+
+    @Test
+    void downloadDocument_shouldAllowManagerForOwnDepartmentDocument() {
+        Asset asset = asset(5L);
+        User manager = user(30L, UserRole.MANAGER);
+        OperationalDocument document = savedDocument(103L, asset);
+        Resource resource = mock(Resource.class);
+
+        when(userService.getById(30L)).thenReturn(manager);
+        when(operationalDocumentRepository.findById(103L)).thenReturn(Optional.of(document));
+        when(delegatedAuthorityService.canManagerActForAssetDepartment(
+                eq(manager), eq(asset.getDepartment()), any(LocalDateTime.class)))
+                .thenReturn(true);
+        when(fileStore.loadAsResource("/tmp/stored-file")).thenReturn(resource);
+
+        operationalDocumentService.downloadDocument(103L, 30L);
+
+        verify(fileStore).loadAsResource("/tmp/stored-file");
+    }
+
+    @Test
+    void downloadDocument_shouldRejectManagerForCrossDepartmentDocumentWithoutLoadingStorage() {
+        Asset asset = asset(5L);
+        User manager = userInDepartment(30L, UserRole.MANAGER, 2L);
+        OperationalDocument document = savedDocument(103L, asset);
+
+        when(userService.getById(30L)).thenReturn(manager);
+        when(operationalDocumentRepository.findById(103L)).thenReturn(Optional.of(document));
+        when(delegatedAuthorityService.canManagerActForAssetDepartment(
+                eq(manager), eq(asset.getDepartment()), any(LocalDateTime.class)))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> operationalDocumentService.downloadDocument(103L, 30L))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You may only download operational documents for assets in your own department.");
+
+        verify(fileStore, never()).loadAsResource(any());
+    }
+
+    @Test
+    void downloadDocument_shouldAllowAssignedFieldEmployeeForInspectionDocument() {
+        Asset asset = asset(5L);
+        Inspection inspection = inspection(100L, asset, 20L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        OperationalDocument document = inspectionDocument(104L, asset, 100L);
+        Resource resource = mock(Resource.class);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(operationalDocumentRepository.findById(104L)).thenReturn(Optional.of(document));
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(fileStore.loadAsResource("/tmp/stored-file")).thenReturn(resource);
+
+        operationalDocumentService.downloadDocument(104L, 20L);
+
+        verify(fileStore).loadAsResource("/tmp/stored-file");
+    }
+
+    @Test
+    void downloadDocument_shouldRejectUnassignedFieldEmployeeWithoutLoadingStorage() {
+        Asset asset = asset(5L);
+        Inspection inspection = inspection(100L, asset, 99L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        OperationalDocument document = inspectionDocument(104L, asset, 100L);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(operationalDocumentRepository.findById(104L)).thenReturn(Optional.of(document));
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+
+        assertThatThrownBy(() -> operationalDocumentService.downloadDocument(104L, 20L))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("Unauthorized to download operational evidence for this context");
+
+        verify(fileStore, never()).loadAsResource(any());
+    }
+
+    @Test
+    void downloadDocument_shouldAllowAssignedContractorForWorkOrderDocument() {
+        Asset asset = asset(5L);
+        User contractor = user(25L, UserRole.CONTRACTOR);
+        WorkOrder workOrder = assignedWorkOrder(1000L, asset, 25L);
+        OperationalDocument document = workOrderDocument(105L, asset, 1000L);
+        Resource resource = mock(Resource.class);
+
+        when(userService.getById(25L)).thenReturn(contractor);
+        when(operationalDocumentRepository.findById(105L)).thenReturn(Optional.of(document));
+        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+        when(fileStore.loadAsResource("/tmp/stored-file")).thenReturn(resource);
+
+        operationalDocumentService.downloadDocument(105L, 25L);
+
+        verify(fileStore).loadAsResource("/tmp/stored-file");
+    }
+
+    @Test
+    void downloadDocument_shouldRejectNonexistentDocument() {
+        User manager = user(30L, UserRole.MANAGER);
+        when(userService.getById(30L)).thenReturn(manager);
+        when(operationalDocumentRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> operationalDocumentService.downloadDocument(999L, 30L))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Document not found");
+
+        verify(fileStore, never()).loadAsResource(any());
+    }
+
+    @Test
     void deleteDocument_shouldPreventDownloadAfterDeletion() {
+        User manager = user(30L, UserRole.MANAGER);
+        when(userService.getById(30L)).thenReturn(manager);
         when(operationalDocumentRepository.findById(103L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> operationalDocumentService.downloadDocument(103L))
+        assertThatThrownBy(() -> operationalDocumentService.downloadDocument(103L, 30L))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Document not found");
     }
@@ -689,6 +816,64 @@ class OperationalDocumentServiceTest {
                 LocalDateTime.of(2026, 6, 20, 10, 0));
         document.setId(id);
         return document;
+    }
+
+    private OperationalDocument inspectionDocument(Long id, Asset asset, Long inspectionId) {
+        OperationalDocument document = new OperationalDocument(
+                asset,
+                OperationalDocumentOwnerType.INSPECTION,
+                inspectionId,
+                OperationalDocumentType.PHOTO,
+                "photo.jpg",
+                "stored-file",
+                "image/jpeg",
+                1024L,
+                "/tmp/stored-file",
+                null,
+                20L,
+                LocalDateTime.of(2026, 6, 20, 10, 0));
+        document.setId(id);
+        return document;
+    }
+
+    private OperationalDocument workOrderDocument(Long id, Asset asset, Long workOrderId) {
+        OperationalDocument document = new OperationalDocument(
+                asset,
+                OperationalDocumentOwnerType.WORK_ORDER,
+                workOrderId,
+                OperationalDocumentType.REPORT,
+                "report.pdf",
+                "stored-file",
+                "application/pdf",
+                1024L,
+                "/tmp/stored-file",
+                null,
+                25L,
+                LocalDateTime.of(2026, 6, 20, 10, 0));
+        document.setId(id);
+        return document;
+    }
+
+    private WorkOrder assignedWorkOrder(Long id, Asset asset, Long assigneeId) {
+        OperationalDecision decision = new OperationalDecision(
+                issue(500L, asset),
+                asset,
+                OperationalDecisionOutcome.INTERNAL_MAINTENANCE,
+                "Replace damaged swing chain",
+                30L,
+                LocalDateTime.now().minusHours(2));
+        decision.setId(200L);
+        WorkOrder workOrder = new WorkOrder(
+                decision,
+                asset,
+                WorkType.CONTRACTOR_WORK,
+                "Replace damaged swing chain",
+                WorkOrderPriority.HIGH,
+                40L,
+                LocalDateTime.now().minusHours(1));
+        workOrder.setId(id);
+        workOrder.assign(assigneeId, 10L, LocalDateTime.now().minusMinutes(30));
+        return workOrder;
     }
 
     private MultipartFile file(String originalFilename, String contentType, long size) {
