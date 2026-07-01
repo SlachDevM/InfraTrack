@@ -18,6 +18,12 @@ This is an **internally validated baseline** for development and regression trac
 
 InfraTrack is an enterprise software product for managing public infrastructure operations for Australian Local Governments.
 
+**[Product Vision](docs/00-product-vision.md)** — why the platform exists, its principles, evolution, and long-term direction.
+
+**[Business Capability Map](docs/01-business-architecture/business-capability-map.md)** — what the platform can do today at a business level.
+
+**[API Consumer Guide](docs/04-api/api-consumer-guide.md)** — how client applications should consume the platform API.
+
 | Version | Capability |
 |---------|------------|
 | **1.0.0** | Core CMMS — complete V1 operational workflow |
@@ -115,6 +121,9 @@ See [docs/README.md](docs/README.md) for the full structure and reading order.
 
 Key entry points:
 
+- [**Product Vision**](docs/00-product-vision.md)
+- [**API Consumer Guide**](docs/04-api/api-consumer-guide.md)
+- [**Business Capability Map**](docs/01-business-architecture/business-capability-map.md)
 - [Development Philosophy](docs/00-business-discovery/00-development-philosophy.md)
 - [Domain Overview](docs/00-business-discovery/02-domain-overview.md)
 - [Functional Use Cases](docs/01-business-architecture/functional-use-cases.md)

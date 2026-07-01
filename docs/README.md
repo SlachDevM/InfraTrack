@@ -2,6 +2,10 @@
 
 Documentation is organised by project phase. Each folder represents a stage of product development, from business understanding through implementation reference.
 
+**[Product Vision](00-product-vision.md)** — why InfraTrack exists, who it serves, product principles, platform evolution, and long-term direction. Start here for the product story; use the phase folders below for detail.
+
+**[Business Capability Map](01-business-architecture/business-capability-map.md)** — what the platform can do today; high-level functional reference by business capability.
+
 Read documents in phase order when starting a new capability:
 
 ```text
@@ -32,6 +36,9 @@ Navigate product releases and planning:
 
 | Topic | Document |
 |-------|----------|
+| **Product Vision** | [00-product-vision.md](00-product-vision.md) — why the platform exists and where it is heading |
+| **Business Capability Map** | [business-capability-map.md](01-business-architecture/business-capability-map.md) — what the platform can do today |
+| **API Consumer Guide** | [api-consumer-guide.md](04-api/api-consumer-guide.md) — how clients should consume the API |
 | **Platform Version History** | [platform-version-history.md](06-release-notes/platform-version-history.md) — authoritative product versions |
 | **Current release** | Version **2.0.1** — [v2-0-1-security-hardening.md](06-release-notes/v2-0-1-security-hardening.md) |
 | **Roadmap** | [v2-roadmap.md](06-release-notes/v2-roadmap.md) — planned versions |
@@ -46,6 +53,9 @@ Versioning rules: [ADR-004 — Platform Versioning Strategy](03-architecture/adr
 
 | Topic | Document |
 |-------|----------|
+| Product Vision | [00-product-vision.md](00-product-vision.md) |
+| Business Capability Map | [business-capability-map.md](01-business-architecture/business-capability-map.md) |
+| API Consumer Guide | [api-consumer-guide.md](04-api/api-consumer-guide.md) |
 | Platform versions | [platform-version-history.md](06-release-notes/platform-version-history.md) |
 | Domain Engine (authoritative) | [domain-engine.md](07-business-architecture/domain-engine.md) |
 | Business Glossary | [glossary.md](01-business-architecture/glossary.md) |
@@ -68,11 +78,14 @@ Versioning rules: [ADR-004 — Platform Versioning Strategy](03-architecture/adr
 ```text
 docs/
 │
+├── 00-product-vision.md
+│
 ├── 00-business-discovery/
 │   └── … domain model, actors, workflows, business rules
 │
 ├── 01-business-architecture/
 │   ├── business-architecture.md
+│   ├── business-capability-map.md
 │   ├── functional-use-cases.md
 │   └── glossary.md
 │
@@ -89,6 +102,9 @@ docs/
 │
 ├── 04-api/
 │   ├── README.md
+│   ├── api-consumer-guide.md
+│   ├── mobile-api.md
+│   ├── reporting-api.md
 │   └── v2-domain-engine-api.md
 │
 ├── 05-deployment/
@@ -124,7 +140,7 @@ Start with [00-development-philosophy.md](00-business-discovery/00-development-p
 
 ### 01 — Business Architecture
 
-Defines the long-term business architecture and translates business discovery into use cases. See [business-architecture.md](01-business-architecture/business-architecture.md), [functional-use-cases.md](01-business-architecture/functional-use-cases.md), and [glossary.md](01-business-architecture/glossary.md).
+Defines the long-term business architecture and translates business discovery into use cases. See [business-architecture.md](01-business-architecture/business-architecture.md), [business-capability-map.md](01-business-architecture/business-capability-map.md), [functional-use-cases.md](01-business-architecture/functional-use-cases.md), and [glossary.md](01-business-architecture/glossary.md).
 
 ### 02 — System Blueprint
 
@@ -143,7 +159,7 @@ Architecture Decision Records (ADRs) and Business Decision Records (BDRs):
 
 ### 04 — API
 
-Live OpenAPI documentation is served by the backend (Swagger UI). See [04-api/README.md](04-api/README.md) and [v2-domain-engine-api.md](04-api/v2-domain-engine-api.md) for V2 endpoint groups. The [project README API Developer Guide](../README.md#api-developer-guide) covers authentication, pagination, and errors.
+Live OpenAPI documentation is served by the backend (Swagger UI). See [04-api/README.md](04-api/README.md), [api-consumer-guide.md](04-api/api-consumer-guide.md), and [v2-domain-engine-api.md](04-api/v2-domain-engine-api.md) for V2 endpoint groups. The [project README API Developer Guide](../README.md#api-developer-guide) covers authentication, pagination, and errors.
 
 ### 05 — Deployment
 

@@ -9,6 +9,10 @@ The authoritative REST API reference is the live OpenAPI documentation served by
 
 All public endpoints are grouped by business capability (Assets, Inspections, Work Orders, and so on). Authenticated endpoints require a JWT bearer token from `POST /api/auth/login`.
 
+## API Consumer Guide
+
+How client applications should authenticate, consume bundles, handle permissions, and interact with the platform. See [api-consumer-guide.md](api-consumer-guide.md).
+
 ## Mobile API (V2.2.0)
 
 Compact read/bundle endpoints for the future Android field client. See [mobile-api.md](mobile-api.md).
