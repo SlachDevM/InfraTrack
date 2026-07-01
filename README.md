@@ -128,6 +128,7 @@ Key entry points:
 - [Domain Overview](docs/00-business-discovery/02-domain-overview.md)
 - [Functional Use Cases](docs/01-business-architecture/functional-use-cases.md)
 - [System Blueprint](docs/02-system-blueprint/INFRATRACK_SYSTEM_BLUEPRINT_V1_SKELETON.md)
+- [**Workflow Sequence Diagrams**](docs/02-system-blueprint/workflow-sequence-diagrams.md)
 - [Platform Version History](docs/06-release-notes/platform-version-history.md)
 - [Domain Engine (V2)](docs/07-business-architecture/domain-engine.md)
 - [Business Glossary](docs/01-business-architecture/glossary.md)

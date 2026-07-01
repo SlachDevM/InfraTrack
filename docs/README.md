@@ -39,6 +39,7 @@ Navigate product releases and planning:
 | **Product Vision** | [00-product-vision.md](00-product-vision.md) — why the platform exists and where it is heading |
 | **Business Capability Map** | [business-capability-map.md](01-business-architecture/business-capability-map.md) — what the platform can do today |
 | **API Consumer Guide** | [api-consumer-guide.md](04-api/api-consumer-guide.md) — how clients should consume the API |
+| **Workflow Sequence Diagrams** | [workflow-sequence-diagrams.md](02-system-blueprint/workflow-sequence-diagrams.md) — visual workflow guides |
 | **Platform Version History** | [platform-version-history.md](06-release-notes/platform-version-history.md) — authoritative product versions |
 | **Current release** | Version **2.0.1** — [v2-0-1-security-hardening.md](06-release-notes/v2-0-1-security-hardening.md) |
 | **Roadmap** | [v2-roadmap.md](06-release-notes/v2-roadmap.md) — planned versions |
@@ -56,6 +57,7 @@ Versioning rules: [ADR-004 — Platform Versioning Strategy](03-architecture/adr
 | Product Vision | [00-product-vision.md](00-product-vision.md) |
 | Business Capability Map | [business-capability-map.md](01-business-architecture/business-capability-map.md) |
 | API Consumer Guide | [api-consumer-guide.md](04-api/api-consumer-guide.md) |
+| Workflow Sequence Diagrams | [workflow-sequence-diagrams.md](02-system-blueprint/workflow-sequence-diagrams.md) |
 | Platform versions | [platform-version-history.md](06-release-notes/platform-version-history.md) |
 | Domain Engine (authoritative) | [domain-engine.md](07-business-architecture/domain-engine.md) |
 | Business Glossary | [glossary.md](01-business-architecture/glossary.md) |
@@ -90,6 +92,8 @@ docs/
 │   └── glossary.md
 │
 ├── 02-system-blueprint/
+│   ├── README.md
+│   ├── workflow-sequence-diagrams.md
 │   └── INFRATRACK_SYSTEM_BLUEPRINT_V1_SKELETON.md
 │
 ├── 03-architecture/
@@ -144,7 +148,7 @@ Defines the long-term business architecture and translates business discovery in
 
 ### 02 — System Blueprint
 
-Engineering handbook: architecture principles, coding standards, AI collaboration rules and development workflow. See [INFRATRACK_SYSTEM_BLUEPRINT_V1_SKELETON.md](02-system-blueprint/INFRATRACK_SYSTEM_BLUEPRINT_V1_SKELETON.md).
+Engineering handbook and visual workflow guides. See [02-system-blueprint/README.md](02-system-blueprint/README.md), [workflow-sequence-diagrams.md](02-system-blueprint/workflow-sequence-diagrams.md), and [INFRATRACK_SYSTEM_BLUEPRINT_V1_SKELETON.md](02-system-blueprint/INFRATRACK_SYSTEM_BLUEPRINT_V1_SKELETON.md).
 
 ### 03 — Architecture
 
