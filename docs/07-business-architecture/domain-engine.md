@@ -300,6 +300,30 @@ These snapshots remain immutable even if the template question is later edited o
 - Decision Matrix rules
 - Mandatory templates for all inspections
 
+## Sprint V2.2.x — Progressive Inspection Completion
+
+Assigned templated inspections can now persist structured answers **before** final completion. This supports field workflows where workers save partial progress, leave the site, and return later.
+
+### Save vs complete
+
+| | Progressive save | Final completion |
+|--|------------------|------------------|
+| Endpoint | `PUT /api/inspections/{inspectionId}/answers` | `POST /api/inspections/{inspectionId}/complete` |
+| Inspection status | Remains `ASSIGNED` | Becomes `COMPLETED` |
+| Mandatory questions | Not required | Required |
+| Upsert behaviour | Yes — partial payloads update only submitted questions | Merges any new answers with previously saved answers |
+| Decision Engine | **Not executed** | **Executed once** |
+| Rule Evaluation Report | Not created | Created when applicable |
+| Suggested Actions | Not created | Created when applicable |
+
+### Side-effect guarantees
+
+Progressive saves must never create Issues, Suggested Actions, Rule Evaluation Reports, Operational Decisions, Work Orders, or notifications. Only final completion may trigger those outcomes.
+
+### Authorization
+
+The same inspection access rules apply: assigned Field Employee or Contractor, Administrator (support), and Manager / Operational Coordinator where existing view permissions allow. Completed inspections reject further saves with `409 Conflict`.
+
 ## Sprint A2.3.2 — Inspection Value Model
 
 Template questions now define what constitutes a valid answer, not only what is asked.

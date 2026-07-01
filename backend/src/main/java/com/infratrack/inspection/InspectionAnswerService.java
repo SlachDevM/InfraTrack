@@ -19,6 +19,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -56,6 +57,35 @@ public class InspectionAnswerService {
                 .toList();
     }
 
+    /**
+     * Upserts answers during progressive save. Partial payloads are supported; omitted questions are unchanged.
+     */
+    @Transactional
+    public List<InspectionAnswerResponse> upsertProgressiveAnswers(
+            Inspection inspection,
+            List<InspectionAnswerRequest> requests) {
+        if (inspection.getInspectionTemplate() == null) {
+            if (requests != null && !requests.isEmpty()) {
+                throw new BusinessValidationException(
+                        "Structured answers are only supported for templated inspections");
+            }
+            return listByInspectionId(inspection.getId());
+        }
+
+        List<InspectionAnswerRequest> answerRequests = requests == null ? List.of() : requests;
+        if (answerRequests.isEmpty()) {
+            return listByInspectionId(inspection.getId());
+        }
+
+        Map<Long, InspectionTemplateQuestion> questionById = loadQuestionMap(inspection);
+        validateSubmittedAnswersForUpsert(answerRequests, questionById);
+        upsertAnswers(inspection, answerRequests, questionById);
+        return listByInspectionId(inspection.getId());
+    }
+
+    /**
+     * Merges any submitted answers with previously saved answers and validates mandatory questions at completion.
+     */
     @Transactional
     public int saveAnswers(Inspection inspection, List<InspectionAnswerRequest> requests) {
         if (inspection.getInspectionTemplate() == null) {
@@ -72,25 +102,48 @@ public class InspectionAnswerService {
         Map<Long, InspectionTemplateQuestion> questionById = templateQuestions.stream()
                 .collect(Collectors.toMap(InspectionTemplateQuestion::getId, Function.identity()));
 
-        validateRequiredSupportedQuestions(templateQuestions, answerRequests, questionById);
-        validateSubmittedAnswers(inspection, answerRequests, questionById);
-
-        int savedCount = 0;
-        for (InspectionAnswerRequest request : answerRequests) {
-            InspectionTemplateQuestion question = questionById.get(request.getQuestionId());
-            InspectionAnswer answer = buildAnswer(inspection, question, request);
-            inspectionAnswerRepository.save(answer);
-            savedCount++;
+        if (!answerRequests.isEmpty()) {
+            validateSubmittedAnswersForUpsert(answerRequests, questionById);
+            upsertAnswers(inspection, answerRequests, questionById);
         }
-        return savedCount;
+
+        validateAllRequiredQuestionsAnswered(inspection, templateQuestions);
+        return inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(inspection.getId()).size();
     }
 
-    private void validateRequiredSupportedQuestions(
-            List<InspectionTemplateQuestion> templateQuestions,
+    private Map<Long, InspectionTemplateQuestion> loadQuestionMap(Inspection inspection) {
+        return questionRepository
+                .findByInspectionTemplateIdOrderByDisplayOrderAsc(inspection.getInspectionTemplate().getId())
+                .stream()
+                .collect(Collectors.toMap(InspectionTemplateQuestion::getId, Function.identity()));
+    }
+
+    private void upsertAnswers(
+            Inspection inspection,
             List<InspectionAnswerRequest> answerRequests,
             Map<Long, InspectionTemplateQuestion> questionById) {
-        Set<Long> answeredQuestionIds = answerRequests.stream()
-                .map(InspectionAnswerRequest::getQuestionId)
+        for (InspectionAnswerRequest request : answerRequests) {
+            InspectionTemplateQuestion question = questionById.get(request.getQuestionId());
+            InspectionAnswer built = buildAnswer(inspection, question, request);
+            Optional<InspectionAnswer> existing = inspectionAnswerRepository.findByInspectionIdAndQuestionId(
+                    inspection.getId(), question.getId());
+            if (existing.isPresent()) {
+                InspectionAnswer answer = existing.get();
+                answer.applyValuesFrom(built);
+                inspectionAnswerRepository.save(answer);
+            } else {
+                inspectionAnswerRepository.save(built);
+            }
+        }
+    }
+
+    private void validateAllRequiredQuestionsAnswered(
+            Inspection inspection,
+            List<InspectionTemplateQuestion> templateQuestions) {
+        Set<Long> answeredQuestionIds = inspectionAnswerRepository
+                .findByInspectionIdOrderByQuestionDisplayOrder(inspection.getId())
+                .stream()
+                .map(answer -> answer.getQuestion().getId())
                 .collect(Collectors.toSet());
 
         for (InspectionTemplateQuestion question : templateQuestions) {
@@ -102,17 +155,9 @@ public class InspectionAnswerService {
                         "Required checklist question '" + question.getCode() + "' must be answered");
             }
         }
-
-        if (answerRequests.isEmpty() && templateQuestions.stream()
-                .anyMatch(question -> question.isActive()
-                        && question.isRequired()
-                        && SUPPORTED_TYPES.contains(question.getQuestionType()))) {
-            throw new BusinessValidationException("Required checklist questions must be answered");
-        }
     }
 
-    private void validateSubmittedAnswers(
-            Inspection inspection,
+    private void validateSubmittedAnswersForUpsert(
             List<InspectionAnswerRequest> answerRequests,
             Map<Long, InspectionTemplateQuestion> questionById) {
         Set<Long> seenQuestionIds = new HashSet<>();
@@ -135,10 +180,6 @@ public class InspectionAnswerService {
             if (!SUPPORTED_TYPES.contains(question.getQuestionType())) {
                 throw new BusinessValidationException(
                         "Answers for question type " + question.getQuestionType() + " are not supported yet");
-            }
-            if (inspectionAnswerRepository.existsByInspectionIdAndQuestionId(
-                    inspection.getId(), question.getId())) {
-                throw new ConflictException("An answer already exists for this checklist question");
             }
             validateValueMatchesQuestionType(question, request);
         }

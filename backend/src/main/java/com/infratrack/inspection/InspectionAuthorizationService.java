@@ -50,6 +50,24 @@ public class InspectionAuthorizationService {
         requireSameDepartment(user, inspection.getAsset());
     }
 
+    public void requireCanSaveInspectionAnswers(User user, Inspection inspection) {
+        if (user.getRole() != null && user.getRole().isAdministrator()) {
+            return;
+        }
+        if (user.getRole().isManager() || user.getRole().isOperationalCoordinator()) {
+            requireCanViewInspection(user, inspection);
+            return;
+        }
+        if (user.getRole().isFieldEmployee() || user.getRole().isContractor()) {
+            if (!inspection.getAssignedToUserId().equals(user.getId())) {
+                throw new ForbiddenOperationException(
+                        "Only the assigned user can save inspection answers");
+            }
+            return;
+        }
+        throw new ForbiddenOperationException("You do not have permission to save inspection answers");
+    }
+
     private void requireSameDepartment(User user, Asset asset) {
         Department userDepartment = user.getDepartment();
         Department assetDepartment = asset.getDepartment();

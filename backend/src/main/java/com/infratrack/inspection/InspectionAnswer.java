@@ -214,4 +214,24 @@ public class InspectionAnswer {
     public Long getUpdatedAt() {
         return updatedAt;
     }
+
+    void applyValuesFrom(InspectionAnswer source) {
+        this.questionCodeSnapshot = source.getQuestionCodeSnapshot();
+        this.questionTextSnapshot = source.getQuestionTextSnapshot();
+        this.questionTypeSnapshot = source.getQuestionTypeSnapshot();
+        this.booleanValue = source.getBooleanValue();
+        this.textValue = source.getTextValue();
+        this.numberValue = source.getNumberValue();
+        this.choiceCodeValue = source.getChoiceCodeValue();
+        this.choiceLabelSnapshot = source.getChoiceLabelSnapshot();
+        this.numberUnitSnapshot = source.getNumberUnitSnapshot();
+        this.numberMinSnapshot = source.getNumberMinSnapshot();
+        this.numberMaxSnapshot = source.getNumberMaxSnapshot();
+        this.decimalPlacesSnapshot = source.getDecimalPlacesSnapshot();
+        this.unitCodeSnapshot = source.getUnitCodeSnapshot();
+        this.unitSymbolSnapshot = source.getUnitSymbolSnapshot();
+        this.unitNameSnapshot = source.getUnitNameSnapshot();
+        this.questionVersionSnapshot = source.getQuestionVersionSnapshot();
+        this.updatedAt = System.currentTimeMillis();
+    }
 }

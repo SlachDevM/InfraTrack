@@ -70,8 +70,36 @@ class InspectionAnswerServiceTest {
 
         when(questionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
                 .thenReturn(List.of(question));
-        when(inspectionAnswerRepository.existsByInspectionIdAndQuestionId(100L, 1L)).thenReturn(false);
-        when(inspectionAnswerRepository.save(any(InspectionAnswer.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(inspectionAnswerRepository.findByInspectionIdAndQuestionId(100L, 1L)).thenReturn(Optional.empty());
+        when(inspectionAnswerRepository.save(any(InspectionAnswer.class))).thenAnswer(invocation -> {
+            InspectionAnswer answer = invocation.getArgument(0);
+            answer.setId(500L);
+            return answer;
+        });
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenAnswer(invocation -> {
+                    InspectionAnswer answer = new InspectionAnswer(
+                            inspection,
+                            question,
+                            "LEAK",
+                            "Is there a visible leak?",
+                            InspectionAnswerQuestionTypeSnapshot.BOOLEAN,
+                            true,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            1);
+                    answer.setId(500L);
+                    return List.of(answer);
+                });
 
         int saved = inspectionAnswerService.saveAnswers(inspection, List.of(request));
 
@@ -82,19 +110,143 @@ class InspectionAnswerServiceTest {
     }
 
     @Test
-    void saveAnswers_shouldRejectDuplicateAnswer() {
+    void upsertProgressiveAnswers_shouldUpdateExistingAnswer() {
         Inspection inspection = inspection(100L, template(50L));
         InspectionTemplateQuestion question = question(1L, inspection.getInspectionTemplate());
         InspectionAnswerRequest request = new InspectionAnswerRequest();
         request.setQuestionId(1L);
+        request.setBooleanValue(false);
+
+        InspectionAnswer existing = new InspectionAnswer(
+                inspection,
+                question,
+                "LEAK",
+                "Is there a leak?",
+                InspectionAnswerQuestionTypeSnapshot.BOOLEAN,
+                true,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                1);
+        existing.setId(500L);
+
+        when(questionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
+                .thenReturn(List.of(question));
+        when(inspectionAnswerRepository.findByInspectionIdAndQuestionId(100L, 1L))
+                .thenReturn(Optional.of(existing));
+        when(inspectionAnswerRepository.save(any(InspectionAnswer.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenReturn(List.of(existing));
+
+        List<com.infratrack.inspection.dto.InspectionAnswerResponse> responses =
+                inspectionAnswerService.upsertProgressiveAnswers(inspection, List.of(request));
+
+        assertThat(responses).hasSize(1);
+        verify(inspectionAnswerRepository).save(argThat(answer ->
+                Boolean.FALSE.equals(answer.getBooleanValue())));
+    }
+
+    @Test
+    void upsertProgressiveAnswers_shouldSupportPartialSave() {
+        Inspection inspection = inspection(100L, template(50L));
+        InspectionTemplateQuestion question1 = question(1L, inspection.getInspectionTemplate());
+        InspectionTemplateQuestion question2 = question(2L, inspection.getInspectionTemplate());
+        InspectionAnswerRequest request = new InspectionAnswerRequest();
+        request.setQuestionId(2L);
+        request.setBooleanValue(true);
+
+        InspectionAnswer existingAnswer = new InspectionAnswer(
+                inspection,
+                question1,
+                "LEAK",
+                "Is there a leak?",
+                InspectionAnswerQuestionTypeSnapshot.BOOLEAN,
+                true,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                1);
+        existingAnswer.setId(500L);
+
+        when(questionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
+                .thenReturn(List.of(question1, question2));
+        when(inspectionAnswerRepository.findByInspectionIdAndQuestionId(100L, 2L))
+                .thenReturn(Optional.empty());
+        when(inspectionAnswerRepository.save(any(InspectionAnswer.class))).thenAnswer(invocation -> {
+            InspectionAnswer answer = invocation.getArgument(0);
+            answer.setId(501L);
+            return answer;
+        });
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenReturn(List.of(existingAnswer));
+
+        inspectionAnswerService.upsertProgressiveAnswers(inspection, List.of(request));
+
+        verify(inspectionAnswerRepository).save(any(InspectionAnswer.class));
+        verify(inspectionAnswerRepository, never()).delete(any());
+    }
+
+    @Test
+    void upsertProgressiveAnswers_shouldRejectCompletedInspectionTemplateMissing() {
+        Inspection inspection = inspection(100L, null);
+        InspectionAnswerRequest request = new InspectionAnswerRequest();
+        request.setQuestionId(1L);
+        request.setBooleanValue(true);
+
+        assertThatThrownBy(() -> inspectionAnswerService.upsertProgressiveAnswers(inspection, List.of(request)))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Structured answers are only supported for templated inspections");
+    }
+
+    @Test
+    void saveAnswers_shouldRejectDuplicateAnswerInSameRequest() {
+        Inspection inspection = inspection(100L, template(50L));
+        InspectionTemplateQuestion question = question(1L, inspection.getInspectionTemplate());
+        InspectionAnswerRequest request1 = new InspectionAnswerRequest();
+        request1.setQuestionId(1L);
+        request1.setBooleanValue(true);
+        InspectionAnswerRequest request2 = new InspectionAnswerRequest();
+        request2.setQuestionId(1L);
+        request2.setBooleanValue(false);
+
+        when(questionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
+                .thenReturn(List.of(question));
+
+        assertThatThrownBy(() -> inspectionAnswerService.saveAnswers(inspection, List.of(request1, request2)))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Duplicate answer submitted for the same checklist question");
+    }
+
+    @Test
+    void upsertProgressiveAnswers_shouldRejectInvalidQuestion() {
+        Inspection inspection = inspection(100L, template(50L));
+        InspectionTemplateQuestion question = question(1L, inspection.getInspectionTemplate());
+        InspectionAnswerRequest request = new InspectionAnswerRequest();
+        request.setQuestionId(99L);
         request.setBooleanValue(true);
 
         when(questionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
                 .thenReturn(List.of(question));
-        when(inspectionAnswerRepository.existsByInspectionIdAndQuestionId(100L, 1L)).thenReturn(true);
 
-        assertThatThrownBy(() -> inspectionAnswerService.saveAnswers(inspection, List.of(request)))
-                .isInstanceOf(ConflictException.class);
+        assertThatThrownBy(() -> inspectionAnswerService.upsertProgressiveAnswers(inspection, List.of(request)))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Checklist question does not belong to this inspection template");
     }
 
     @Test
@@ -141,8 +293,10 @@ class InspectionAnswerServiceTest {
 
         when(questionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
                 .thenReturn(List.of(question));
-        when(inspectionAnswerRepository.existsByInspectionIdAndQuestionId(100L, 1L)).thenReturn(false);
+        when(inspectionAnswerRepository.findByInspectionIdAndQuestionId(100L, 1L)).thenReturn(Optional.empty());
         when(inspectionAnswerRepository.save(any(InspectionAnswer.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenReturn(List.of(savedNumberAnswer(inspection, question)));
 
         int saved = inspectionAnswerService.saveAnswers(inspection, List.of(request));
 
@@ -220,8 +374,10 @@ class InspectionAnswerServiceTest {
         when(questionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
                 .thenReturn(List.of(question));
         when(choiceRepository.findByQuestionIdAndCode(2L, "GOOD")).thenReturn(Optional.of(choice));
-        when(inspectionAnswerRepository.existsByInspectionIdAndQuestionId(100L, 2L)).thenReturn(false);
+        when(inspectionAnswerRepository.findByInspectionIdAndQuestionId(100L, 2L)).thenReturn(Optional.empty());
         when(inspectionAnswerRepository.save(any(InspectionAnswer.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenReturn(List.of(savedChoiceAnswer(inspection, question)));
 
         int saved = inspectionAnswerService.saveAnswers(inspection, List.of(request));
 
@@ -361,5 +517,53 @@ class InspectionAnswerServiceTest {
         );
         question.setId(id);
         return question;
+    }
+
+    private InspectionAnswer savedNumberAnswer(Inspection inspection, InspectionTemplateQuestion question) {
+        InspectionAnswer answer = new InspectionAnswer(
+                inspection,
+                question,
+                "TEMPERATURE",
+                "Temperature",
+                InspectionAnswerQuestionTypeSnapshot.NUMBER,
+                null,
+                null,
+                new BigDecimal("87.5"),
+                null,
+                null,
+                "°C",
+                new BigDecimal("0"),
+                new BigDecimal("120"),
+                1,
+                "CELSIUS",
+                "°C",
+                "Celsius",
+                1);
+        answer.setId(500L);
+        return answer;
+    }
+
+    private InspectionAnswer savedChoiceAnswer(Inspection inspection, InspectionTemplateQuestion question) {
+        InspectionAnswer answer = new InspectionAnswer(
+                inspection,
+                question,
+                "CONDITION",
+                "Condition",
+                InspectionAnswerQuestionTypeSnapshot.CHOICE,
+                null,
+                null,
+                null,
+                "GOOD",
+                "Good",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                1);
+        answer.setId(501L);
+        return answer;
     }
 }

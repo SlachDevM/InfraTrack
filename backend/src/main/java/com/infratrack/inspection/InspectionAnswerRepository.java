@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface InspectionAnswerRepository extends JpaRepository<InspectionAnswer, Long> {
 
@@ -17,4 +18,6 @@ public interface InspectionAnswerRepository extends JpaRepository<InspectionAnsw
     List<InspectionAnswer> findByInspectionIdOrderByQuestionDisplayOrder(@Param("inspectionId") Long inspectionId);
 
     boolean existsByInspectionIdAndQuestionId(Long inspectionId, Long questionId);
+
+    Optional<InspectionAnswer> findByInspectionIdAndQuestionId(Long inspectionId, Long questionId);
 }

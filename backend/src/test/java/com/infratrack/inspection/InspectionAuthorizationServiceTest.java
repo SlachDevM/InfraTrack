@@ -99,6 +99,48 @@ class InspectionAuthorizationServiceTest {
                 .doesNotThrowAnyException();
     }
 
+    @Test
+    void requireCanSaveInspectionAnswers_shouldAllowAssignedFieldEmployee() {
+        Asset asset = asset(5L);
+        Inspection inspection = new Inspection(asset, null, 20L, 10L, InspectionPriority.NORMAL, null);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        assertThatCode(() -> authorizationService.requireCanSaveInspectionAnswers(fieldEmployee, inspection))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void requireCanSaveInspectionAnswers_shouldAllowAdministrator() {
+        Asset asset = asset(5L);
+        Inspection inspection = new Inspection(asset, null, 20L, 10L, InspectionPriority.NORMAL, null);
+        User administrator = user(1L, UserRole.ADMINISTRATOR);
+
+        assertThatCode(() -> authorizationService.requireCanSaveInspectionAnswers(administrator, inspection))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void requireCanSaveInspectionAnswers_shouldAllowManagerInSameDepartment() {
+        Asset asset = asset(5L);
+        Inspection inspection = new Inspection(asset, null, 20L, 10L, InspectionPriority.NORMAL, null);
+        User manager = user(30L, UserRole.MANAGER);
+        manager.setDepartment(asset.getDepartment());
+
+        assertThatCode(() -> authorizationService.requireCanSaveInspectionAnswers(manager, inspection))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void requireCanSaveInspectionAnswers_shouldRejectUnassignedFieldEmployee() {
+        Asset asset = asset(5L);
+        Inspection inspection = new Inspection(asset, null, 20L, 10L, InspectionPriority.NORMAL, null);
+        User otherFieldEmployee = user(99L, UserRole.FIELD_EMPLOYEE);
+
+        assertThatThrownBy(() -> authorizationService.requireCanSaveInspectionAnswers(otherFieldEmployee, inspection))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("Only the assigned user can save inspection answers");
+    }
+
     private Asset asset(Long id) {
         Department department = new Department("Parks");
         department.setId(1L);

@@ -6,13 +6,16 @@ import com.infratrack.businesstrigger.BusinessTriggerRepository;
 import com.infratrack.businesstrigger.BusinessTriggerType;
 import com.infratrack.department.Department;
 import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ConflictException;
 import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.exception.NotFoundException;
 import com.infratrack.inspection.dto.AssignInspectionRequest;
 import com.infratrack.inspection.dto.CompleteInspectionRequest;
+import com.infratrack.inspection.dto.InspectionAnswerRequest;
 import com.infratrack.inspection.dto.InspectionAnswerResponse;
 import com.infratrack.inspection.dto.InspectionResponse;
 import com.infratrack.inspection.dto.InspectionSummaryResponse;
+import com.infratrack.inspection.dto.SaveInspectionAnswersRequest;
 import com.infratrack.inspectiontemplate.InspectionTemplate;
 import com.infratrack.inspectiontemplate.InspectionTemplateRepository;
 import com.infratrack.inspectiontemplate.InspectionTemplateStatus;
@@ -268,6 +271,20 @@ public class InspectionService {
     }
 
     @Transactional
+    public List<InspectionAnswerResponse> saveInspectionAnswers(
+            Long inspectionId,
+            SaveInspectionAnswersRequest request,
+            Long userId) {
+        Inspection inspection = findInspectionOrThrow(inspectionId);
+        User user = userService.getById(userId);
+        authorizationService.requireCanSaveInspectionAnswers(user, inspection);
+        requireActiveForAnswerSave(inspection);
+
+        List<InspectionAnswerRequest> answers = request.getAnswers() == null ? List.of() : request.getAnswers();
+        return inspectionAnswerService.upsertProgressiveAnswers(inspection, answers);
+    }
+
+    @Transactional
     public InspectionResponse completeInspection(Long inspectionId, CompleteInspectionRequest request, Long userId) {
         Inspection inspection = findInspectionOrThrow(inspectionId);
         User performer = authorizationService.requireAssignedPerformer(userId, inspection);
@@ -325,7 +342,7 @@ public class InspectionService {
             Inspection inspection,
             User assignedToUser,
             RuleEvaluationReportSummaryResponse ruleEvaluationReportSummary) {
-        List<InspectionAnswerResponse> answers = inspection.getStatus() == InspectionStatus.COMPLETED
+        List<InspectionAnswerResponse> answers = inspection.getInspectionTemplate() != null
                 ? inspectionAnswerService.listByInspectionId(inspection.getId())
                 : List.of();
         return InspectionResponse.from(
@@ -418,6 +435,12 @@ public class InspectionService {
         if (inspection.getStatus() != InspectionStatus.ASSIGNED) {
             throw new BusinessValidationException(
                     "Only assigned inspections can be completed");
+        }
+    }
+
+    private void requireActiveForAnswerSave(Inspection inspection) {
+        if (inspection.getStatus() != InspectionStatus.ASSIGNED) {
+            throw new ConflictException("Inspection answers cannot be modified after completion");
         }
     }
 

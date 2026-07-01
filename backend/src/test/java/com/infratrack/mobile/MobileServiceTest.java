@@ -258,6 +258,28 @@ class MobileServiceTest {
     }
 
     @Test
+    void getInspectionBundle_shouldReturnProgressivelySavedAnswers() {
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        Inspection inspection = templatedInspection(100L, 20L, 50L);
+        InspectionTemplateQuestion question = templateQuestion(10L, inspection.getInspectionTemplate());
+        InspectionAnswer progressiveAnswer = inspectionAnswer(inspection, question, false);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.findMobileBundleById(100L)).thenReturn(Optional.of(inspection));
+        when(questionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
+                .thenReturn(List.of(question));
+        when(choiceRepository.findByQuestionIdInOrderByQuestionIdAscDisplayOrderAsc(List.of(10L)))
+                .thenReturn(List.of());
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenReturn(List.of(progressiveAnswer));
+
+        MobileInspectionBundleResponse response = mobileService.getInspectionBundle(20L, 100L);
+
+        assertThat(response.getAnswers()).hasSize(1);
+        assertThat(response.getAnswers().get(0).getBooleanValue()).isFalse();
+    }
+
+    @Test
     void getInspectionBundle_shouldReturnEmptyQuestionsForLegacyInspection() {
         User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
         Inspection inspection = assignedInspection(100L, 20L);

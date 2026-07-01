@@ -4,8 +4,10 @@ import com.infratrack.config.PaginationSupport;
 import com.infratrack.config.openapi.StandardApiResponses;
 import com.infratrack.inspection.dto.AssignInspectionRequest;
 import com.infratrack.inspection.dto.CompleteInspectionRequest;
+import com.infratrack.inspection.dto.InspectionAnswerResponse;
 import com.infratrack.inspection.dto.InspectionResponse;
 import com.infratrack.inspection.dto.InspectionSummaryResponse;
+import com.infratrack.inspection.dto.SaveInspectionAnswersRequest;
 import com.infratrack.inspectiontemplate.DecisionRuleEvaluationService;
 import com.infratrack.inspectiontemplate.dto.DecisionRuleEvaluationResult;
 import com.infratrack.security.JwtAuthenticationToken;
@@ -24,6 +26,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -99,6 +102,20 @@ public class InspectionController {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         InspectionResponse response = inspectionService.assignInspection(request, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PutMapping("/{id}/answers")
+    @Operation(
+            summary = "Save inspection answers progressively",
+            description = "Upserts structured checklist answers on an assigned inspection without completing it.")
+    @ApiResponse(responseCode = "200", description = "Current saved answers")
+    public ResponseEntity<List<InspectionAnswerResponse>> saveInspectionAnswers(
+            @PathVariable Long id,
+            @Valid @RequestBody SaveInspectionAnswersRequest request,
+            Authentication authentication) {
+        Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+        List<InspectionAnswerResponse> answers = inspectionService.saveInspectionAnswers(id, request, userId);
+        return ResponseEntity.ok(answers);
     }
 
     @PostMapping("/{id}/complete")

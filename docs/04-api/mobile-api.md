@@ -11,7 +11,7 @@ Field users need one backend call per mobile screen instead of orchestrating mul
 - preserves backend authorization (Bearer JWT);
 - does **not** change existing web APIs or business workflows.
 
-Write operations (complete inspection, complete maintenance, upload documents) continue to use existing `/api/*` endpoints. Gaps for mobile-specific writes are deferred to M2.
+Write operations (complete inspection, save inspection answers progressively, complete maintenance, upload documents) continue to use existing `/api/*` endpoints. Gaps for mobile-specific writes are deferred to M2.
 
 ## Authentication
 
@@ -57,8 +57,19 @@ A **bundle** endpoint returns all data needed to render one mobile screen in a s
 - Asset summary (name, category, department, location)
 - Template summary (when templated)
 - Active checklist questions with choices
-- Existing answers (if any)
+- Existing answers (including progressively saved answers while `ASSIGNED`)
 - Allowed actions (`canComplete`, `canUploadDocument`, `canViewAsset`)
+
+Progressive save workflow for field clients:
+
+```text
+GET  /api/mobile/inspections/{id}/bundle
+PUT  /api/inspections/{id}/answers
+GET  /api/mobile/inspections/{id}/bundle
+POST /api/inspections/{id}/complete
+```
+
+`PUT /api/inspections/{id}/answers` upserts structured answers without completing the inspection. The bundle `answers` array reflects whatever is persisted in the backend — reload the bundle after each save. Completion still uses `POST /api/inspections/{id}/complete` and runs mandatory validation and the Decision Engine exactly once.
 
 Legacy inspections without a template return empty `questions` and `answers`.
 

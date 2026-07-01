@@ -217,6 +217,27 @@ Typical flags include `canComplete`, `canCompleteMaintenance`, `canUploadDocumen
 
 **Never** infer `canComplete` from role `FIELD_EMPLOYEE` alone. **Never** show actions that the bundle did not explicitly allow.
 
+### Progressive inspection answers
+
+Templated inspections support **progressive answer saving** while status remains `ASSIGNED`:
+
+```text
+GET /api/mobile/inspections/{id}/bundle   (load questions + saved answers)
+        ↓
+PUT /api/inspections/{id}/answers       (upsert one or more answers)
+        ↓
+GET /api/mobile/inspections/{id}/bundle   (reload saved answers)
+        ↓
+POST /api/inspections/{id}/complete       (mandatory validation + Decision Engine)
+```
+
+| Action | Endpoint | Mandatory questions | Decision Engine | Changes status |
+|--------|----------|---------------------|-----------------|----------------|
+| Save progress | `PUT /api/inspections/{id}/answers` | No | No | No (`ASSIGNED`) |
+| Complete | `POST /api/inspections/{id}/complete` | Yes | Yes (once) | Yes (`COMPLETED`) |
+
+`PUT /answers` is idempotent and supports partial payloads — omitted questions are left unchanged. Completed inspections return `409 Conflict` on further saves. The Decision Engine runs **only** on final completion.
+
 ### Department and assignment scoping
 
 Managers see department-scoped data. Field employees see assigned work only. Administrators have broader read access. Exact rules vary by endpoint group — when in doubt, handle `403` and display the server message.
@@ -242,6 +263,7 @@ Managers see department-scoped data. Field employees see assigned work only. Adm
 
 Examples:
 
+- Save inspection answers (progressive) — `PUT /api/inspections/{id}/answers`
 - Complete inspection — `POST /api/inspections/{id}/complete`
 - Record issue — `POST /api/issues`
 - Operational decision — `POST /api/operational-decisions`

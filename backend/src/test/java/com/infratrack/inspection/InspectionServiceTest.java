@@ -1,6 +1,7 @@
 package com.infratrack.inspection;
 
 import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ConflictException;
 import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.exception.NotFoundException;
 import com.infratrack.asset.Asset;
@@ -17,6 +18,7 @@ import com.infratrack.inspection.dto.AssignInspectionRequest;
 import com.infratrack.inspection.dto.CompleteInspectionRequest;
 import com.infratrack.inspection.dto.InspectionAnswerRequest;
 import com.infratrack.inspection.dto.InspectionSummaryResponse;
+import com.infratrack.inspection.dto.SaveInspectionAnswersRequest;
 import com.infratrack.inspectiontemplate.InspectionTemplate;
 import com.infratrack.inspectiontemplate.InspectionTemplateQuestion;
 import com.infratrack.inspectiontemplate.InspectionTemplateQuestionType;
@@ -793,14 +795,36 @@ class InspectionServiceTest {
         when(userService.getById(20L)).thenReturn(fieldEmployee);
         when(inspectionTemplateQuestionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
                 .thenReturn(List.of(question));
-        when(inspectionAnswerRepository.existsByInspectionIdAndQuestionId(100L, 1L)).thenReturn(false);
+        when(inspectionAnswerRepository.findByInspectionIdAndQuestionId(100L, 1L)).thenReturn(Optional.empty());
         when(inspectionAnswerRepository.save(any(InspectionAnswer.class))).thenAnswer(invocation -> {
             InspectionAnswer answer = invocation.getArgument(0);
             answer.setId(500L);
             return answer;
         });
         when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
-                .thenReturn(List.of());
+                .thenAnswer(invocation -> {
+                    InspectionAnswer answer = new InspectionAnswer(
+                            inspection,
+                            question,
+                            "LEAK",
+                            "Is there a visible leak?",
+                            InspectionAnswerQuestionTypeSnapshot.BOOLEAN,
+                            true,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            1);
+                    answer.setId(500L);
+                    return List.of(answer);
+                });
 
         inspectionService.completeInspection(100L, request, 20L);
 
@@ -847,6 +871,8 @@ class InspectionServiceTest {
         when(userService.getById(20L)).thenReturn(fieldEmployee);
         when(inspectionTemplateQuestionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
                 .thenReturn(List.of(requiredQuestion));
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenReturn(List.of());
 
         assertThatThrownBy(() -> inspectionService.completeInspection(100L, request, 20L))
                 .isInstanceOf(BusinessValidationException.class)
@@ -874,6 +900,196 @@ class InspectionServiceTest {
         assertThatThrownBy(() -> inspectionService.completeInspection(100L, request, 20L))
                 .isInstanceOf(BusinessValidationException.class)
                 .hasMessage("Answers for question type PHOTO are not supported yet");
+    }
+
+    @Test
+    void completeInspection_shouldSucceedWithPreviouslySavedAnswers() {
+        CompleteInspectionRequest request = validCompleteRequest();
+        request.setAnswers(List.of());
+
+        Inspection inspection = templatedAssignedInspection(100L, 20L, 50L);
+        InspectionTemplateQuestion requiredQuestion = templateQuestion(1L, inspection.getInspectionTemplate());
+        requiredQuestion.setRequired(true);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        InspectionAnswer savedAnswer = new InspectionAnswer(
+                inspection,
+                requiredQuestion,
+                "LEAK",
+                "Is there a visible leak?",
+                InspectionAnswerQuestionTypeSnapshot.BOOLEAN,
+                true,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                1);
+        savedAnswer.setId(500L);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionTemplateQuestionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
+                .thenReturn(List.of(requiredQuestion));
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenReturn(List.of(savedAnswer));
+
+        inspectionService.completeInspection(100L, request, 20L);
+
+        verify(inspectionAnswerRepository, never()).save(any(InspectionAnswer.class));
+        verify(ruleEvaluationReportService).createReportIfApplicable(100L);
+    }
+
+    @Test
+    void completeInspection_shouldTriggerDecisionEngineOnlyOnce() {
+        CompleteInspectionRequest request = validCompleteRequest();
+        InspectionAnswerRequest answerRequest = new InspectionAnswerRequest();
+        answerRequest.setQuestionId(1L);
+        answerRequest.setBooleanValue(true);
+        request.setAnswers(List.of(answerRequest));
+
+        Inspection inspection = templatedAssignedInspection(100L, 20L, 50L);
+        InspectionTemplateQuestion question = templateQuestion(1L, inspection.getInspectionTemplate());
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionTemplateQuestionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
+                .thenReturn(List.of(question));
+        when(inspectionAnswerRepository.findByInspectionIdAndQuestionId(100L, 1L)).thenReturn(Optional.empty());
+        when(inspectionAnswerRepository.save(any(InspectionAnswer.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenAnswer(invocation -> {
+                    InspectionAnswer answer = new InspectionAnswer(
+                            inspection,
+                            question,
+                            "LEAK",
+                            "Is there a visible leak?",
+                            InspectionAnswerQuestionTypeSnapshot.BOOLEAN,
+                            true,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            1);
+                    return List.of(answer);
+                });
+
+        inspectionService.completeInspection(100L, request, 20L);
+
+        verify(ruleEvaluationReportService, times(1)).createReportIfApplicable(100L);
+    }
+
+    @Test
+    void saveInspectionAnswers_shouldPersistFirstAnswer() {
+        SaveInspectionAnswersRequest request = new SaveInspectionAnswersRequest();
+        InspectionAnswerRequest answerRequest = new InspectionAnswerRequest();
+        answerRequest.setQuestionId(1L);
+        answerRequest.setBooleanValue(true);
+        request.setAnswers(List.of(answerRequest));
+
+        Inspection inspection = templatedAssignedInspection(100L, 20L, 50L);
+        InspectionTemplateQuestion question = templateQuestion(1L, inspection.getInspectionTemplate());
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionTemplateQuestionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
+                .thenReturn(List.of(question));
+        when(inspectionAnswerRepository.findByInspectionIdAndQuestionId(100L, 1L)).thenReturn(Optional.empty());
+        when(inspectionAnswerRepository.save(any(InspectionAnswer.class))).thenAnswer(invocation -> {
+            InspectionAnswer answer = invocation.getArgument(0);
+            answer.setId(500L);
+            return answer;
+        });
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenAnswer(invocation -> {
+                    InspectionAnswer answer = new InspectionAnswer(
+                            inspection,
+                            question,
+                            "LEAK",
+                            "Is there a visible leak?",
+                            InspectionAnswerQuestionTypeSnapshot.BOOLEAN,
+                            true,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            1);
+                    answer.setId(500L);
+                    return List.of(answer);
+                });
+
+        var responses = inspectionService.saveInspectionAnswers(100L, request, 20L);
+
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).getQuestionId()).isEqualTo(1L);
+        assertThat(responses.get(0).getBooleanValue()).isTrue();
+        verify(ruleEvaluationReportService, never()).createReportIfApplicable(any());
+    }
+
+    @Test
+    void saveInspectionAnswers_shouldRejectCompletedInspection() {
+        SaveInspectionAnswersRequest request = new SaveInspectionAnswersRequest();
+        InspectionAnswerRequest answerRequest = new InspectionAnswerRequest();
+        answerRequest.setQuestionId(1L);
+        answerRequest.setBooleanValue(true);
+        request.setAnswers(List.of(answerRequest));
+
+        Inspection inspection = templatedAssignedInspection(100L, 20L, 50L);
+        inspection.complete(
+                PhysicalCondition.GOOD,
+                "Done",
+                false,
+                LocalDateTime.now().minusHours(1),
+                20L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        assertThatThrownBy(() -> inspectionService.saveInspectionAnswers(100L, request, 20L))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Inspection answers cannot be modified after completion");
+    }
+
+    @Test
+    void saveInspectionAnswers_shouldRejectUnassignedUser() {
+        SaveInspectionAnswersRequest request = new SaveInspectionAnswersRequest();
+        InspectionAnswerRequest answerRequest = new InspectionAnswerRequest();
+        answerRequest.setQuestionId(1L);
+        answerRequest.setBooleanValue(true);
+        request.setAnswers(List.of(answerRequest));
+
+        Inspection inspection = templatedAssignedInspection(100L, 99L, 50L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        assertThatThrownBy(() -> inspectionService.saveInspectionAnswers(100L, request, 20L))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("Only the assigned user can save inspection answers");
     }
 
     private CompleteInspectionRequest validCompleteRequest() {
