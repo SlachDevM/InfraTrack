@@ -85,6 +85,7 @@ The backend is the single source of truth for all business rules. Clients consum
 | [BDR-002 Preventive candidates](docs/03-architecture/bdr-002-preventive-candidates-before-automation.md) | Why scheduler generates candidates only |
 | [ADR-003 V2 workflow](docs/03-architecture/adr-003-v2-domain-driven-workflow.md) | How V2 business domains interact |
 | [BDR-003 Bearer tokens](docs/03-architecture/bdr-003-bearer-token-architecture.md) | Why JWT Bearer tokens are used |
+| [**ADR Index**](docs/03-architecture/ADR-INDEX.md) | Entry point for all ADRs and BDRs |
 | [Business Glossary](docs/01-business-architecture/glossary.md) | Stakeholder terminology |
 | [Product Roadmap](docs/06-release-notes/v2-roadmap.md) | Planned versions |
 
@@ -136,6 +137,7 @@ Key entry points:
 - [Version 2.0.1 Security Hardening](docs/06-release-notes/v2-0-1-security-hardening.md)
 - [Product Roadmap](docs/06-release-notes/v2-roadmap.md)
 - [ADR-004 Versioning strategy](docs/03-architecture/adr-004-platform-versioning-strategy.md)
+- [**ADR Index**](docs/03-architecture/ADR-INDEX.md)
 
 ---
 

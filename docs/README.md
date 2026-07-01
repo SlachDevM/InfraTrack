@@ -44,7 +44,7 @@ Navigate product releases and planning:
 | **Current release** | Version **2.0.1** — [v2-0-1-security-hardening.md](06-release-notes/v2-0-1-security-hardening.md) |
 | **Roadmap** | [v2-roadmap.md](06-release-notes/v2-roadmap.md) — planned versions |
 | **Release notes** | [06-release-notes/](06-release-notes/) — sprint and version reports |
-| **Architecture decisions** | [ADR-004 Versioning](03-architecture/adr-004-platform-versioning-strategy.md) · [ADR-003 V2 workflow](03-architecture/adr-003-v2-domain-driven-workflow.md) · [all ADRs/BDRs](03-architecture/) |
+| **Architecture decisions** | [**ADR Index**](03-architecture/ADR-INDEX.md) · [ADR-004 Versioning](03-architecture/adr-004-platform-versioning-strategy.md) · [ADR-003 V2 workflow](03-architecture/adr-003-v2-domain-driven-workflow.md) · [all ADRs/BDRs](03-architecture/) |
 
 Versioning rules: [ADR-004 — Platform Versioning Strategy](03-architecture/adr-004-platform-versioning-strategy.md)
 
@@ -58,6 +58,7 @@ Versioning rules: [ADR-004 — Platform Versioning Strategy](03-architecture/adr
 | Business Capability Map | [business-capability-map.md](01-business-architecture/business-capability-map.md) |
 | API Consumer Guide | [api-consumer-guide.md](04-api/api-consumer-guide.md) |
 | Workflow Sequence Diagrams | [workflow-sequence-diagrams.md](02-system-blueprint/workflow-sequence-diagrams.md) |
+| ADR Index | [ADR-INDEX.md](03-architecture/ADR-INDEX.md) |
 | Platform versions | [platform-version-history.md](06-release-notes/platform-version-history.md) |
 | Domain Engine (authoritative) | [domain-engine.md](07-business-architecture/domain-engine.md) |
 | Business Glossary | [glossary.md](01-business-architecture/glossary.md) |
@@ -97,12 +98,15 @@ docs/
 │   └── INFRATRACK_SYSTEM_BLUEPRINT_V1_SKELETON.md
 │
 ├── 03-architecture/
+│   ├── README.md
+│   ├── ADR-INDEX.md
 │   ├── ADR-001-asset-history-starts-with-registration.md
 │   ├── ADR-002-inspection-produces-at-most-one-issue-v1.md
 │   ├── adr-003-v2-domain-driven-workflow.md
 │   ├── adr-004-platform-versioning-strategy.md
 │   ├── bdr-001-human-in-the-loop-decision-engine.md
-│   └── bdr-002-preventive-candidates-before-automation.md
+│   ├── bdr-002-preventive-candidates-before-automation.md
+│   └── bdr-003-bearer-token-architecture.md
 │
 ├── 04-api/
 │   ├── README.md
@@ -152,7 +156,7 @@ Engineering handbook and visual workflow guides. See [02-system-blueprint/README
 
 ### 03 — Architecture
 
-Architecture Decision Records (ADRs) and Business Decision Records (BDRs):
+Architecture Decision Records (ADRs) and Business Decision Records (BDRs). **Start with the [ADR Index](03-architecture/ADR-INDEX.md)** for a complete list and reading guidance. See also [03-architecture/README.md](03-architecture/README.md).
 
 - [ADR-001](03-architecture/ADR-001-asset-history-starts-with-registration.md) — Asset history starts with registration
 - [ADR-002](03-architecture/ADR-002-inspection-produces-at-most-one-issue-v1.md) — Inspection produces at most one Issue (V1)
@@ -160,6 +164,7 @@ Architecture Decision Records (ADRs) and Business Decision Records (BDRs):
 - [ADR-004](03-architecture/adr-004-platform-versioning-strategy.md) — Platform versioning strategy
 - [BDR-001](03-architecture/bdr-001-human-in-the-loop-decision-engine.md) — Rules suggest; managers decide
 - [BDR-002](03-architecture/bdr-002-preventive-candidates-before-automation.md) — Scheduler generates candidates only
+- [BDR-003](03-architecture/bdr-003-bearer-token-architecture.md) — Bearer token architecture
 
 ### 04 — API
 
