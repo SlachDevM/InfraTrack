@@ -1,10 +1,13 @@
 package com.infratrack.assethistory;
 
+import com.infratrack.asset.Asset;
+import com.infratrack.asset.AssetAuthorizationService;
 import com.infratrack.asset.AssetHistoryEvent;
 import com.infratrack.asset.AssetHistoryEventRepository;
 import com.infratrack.asset.AssetRepository;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRepository;
+import com.infratrack.user.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -25,19 +28,27 @@ public class AssetHistoryService {
     private final AssetRepository assetRepository;
     private final AssetHistoryEventRepository assetHistoryEventRepository;
     private final UserRepository userRepository;
+    private final UserService userService;
+    private final AssetAuthorizationService assetAuthorizationService;
 
     public AssetHistoryService(
             AssetRepository assetRepository,
             AssetHistoryEventRepository assetHistoryEventRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            UserService userService,
+            AssetAuthorizationService assetAuthorizationService) {
         this.assetRepository = assetRepository;
         this.assetHistoryEventRepository = assetHistoryEventRepository;
         this.userRepository = userRepository;
+        this.userService = userService;
+        this.assetAuthorizationService = assetAuthorizationService;
     }
 
     @Transactional(readOnly = true)
-    public Page<AssetHistoryResponse> getAssetHistory(Long assetId, Pageable pageable) {
-        requireAssetExists(assetId);
+    public Page<AssetHistoryResponse> getAssetHistory(Long assetId, Long userId, Pageable pageable) {
+        User user = userService.getById(userId);
+        Asset asset = findAssetOrThrow(assetId);
+        assetAuthorizationService.requireCanViewAsset(user, asset);
 
         Page<AssetHistoryEvent> events = assetHistoryEventRepository
                 .findByAssetIdOrderByEventDateDescCreatedAtDesc(assetId, pageable);
@@ -66,9 +77,8 @@ public class AssetHistoryService {
         );
     }
 
-    private void requireAssetExists(Long assetId) {
-        if (!assetRepository.existsById(assetId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found");
-        }
+    private Asset findAssetOrThrow(Long assetId) {
+        return assetRepository.findById(assetId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"));
     }
 }

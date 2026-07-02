@@ -82,6 +82,9 @@ class MaintenanceActivityServiceTest {
     @Mock
     private WorkflowClock workflowClock;
 
+    @Mock
+    private MaintenanceActivityAuthorizationService maintenanceActivityAuthorizationService;
+
     @InjectMocks
     private MaintenanceActivityService maintenanceActivityService;
 
@@ -490,6 +493,116 @@ class MaintenanceActivityServiceTest {
         user.setId(id);
         user.setEnabled(true);
         return user;
+    }
+
+    @Test
+    void listForUser_shouldReturnAllActivitiesForAdministrator() {
+        User administrator = user(1L, UserRole.ADMINISTRATOR);
+        MaintenanceActivity activity = completedMaintenanceActivity(5000L, 1000L);
+
+        when(userService.getById(1L)).thenReturn(administrator);
+        when(maintenanceActivityRepository.findAllByOrderByCompletedAtDesc())
+                .thenReturn(java.util.List.of(activity));
+
+        var responses = maintenanceActivityService.listForUser(1L);
+
+        assertThat(responses).hasSize(1);
+        verify(maintenanceActivityRepository).findAllByOrderByCompletedAtDesc();
+        verify(maintenanceActivityRepository, never()).findAllVisibleToManager(any(), any(), any());
+    }
+
+    @Test
+    void listForUser_shouldReturnDepartmentActivitiesForManager() {
+        User manager = managerInDepartment(30L, 1L);
+        MaintenanceActivity activity = completedMaintenanceActivity(5000L, 1000L);
+
+        when(userService.getById(30L)).thenReturn(manager);
+        when(maintenanceActivityRepository.findAllVisibleToManager(eq(30L), eq(1L), any(LocalDateTime.class)))
+                .thenReturn(java.util.List.of(activity));
+
+        var responses = maintenanceActivityService.listForUser(30L);
+
+        assertThat(responses).hasSize(1);
+        verify(maintenanceActivityRepository, never()).findAllByOrderByCompletedAtDesc();
+    }
+
+    @Test
+    void listForUser_shouldReturnDepartmentActivitiesForOperationalCoordinator() {
+        User coordinator = managerInDepartment(40L, 1L);
+        coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
+        Department department = new Department("Department 1");
+        department.setId(1L);
+        coordinator.setDepartment(department);
+        MaintenanceActivity activity = completedMaintenanceActivity(5000L, 1000L);
+
+        when(userService.getById(40L)).thenReturn(coordinator);
+        when(maintenanceActivityRepository.findAllByAsset_Department_IdOrderByCompletedAtDesc(1L))
+                .thenReturn(java.util.List.of(activity));
+
+        var responses = maintenanceActivityService.listForUser(40L);
+
+        assertThat(responses).hasSize(1);
+    }
+
+    @Test
+    void listForUser_shouldReturnAssignedActivitiesForFieldEmployee() {
+        User fieldEmployee = managerInDepartment(20L, 1L);
+        fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        Department department = new Department("Department 1");
+        department.setId(1L);
+        fieldEmployee.setDepartment(department);
+        MaintenanceActivity activity = completedMaintenanceActivity(5000L, 1000L);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(maintenanceActivityRepository.findAllVisibleToAssignee(20L))
+                .thenReturn(java.util.List.of(activity));
+
+        var responses = maintenanceActivityService.listForUser(20L);
+
+        assertThat(responses).hasSize(1);
+        verify(maintenanceActivityRepository, never()).findAllByOrderByCompletedAtDesc();
+    }
+
+    @Test
+    void getById_shouldReturnActivityWhenAuthorized() {
+        User manager = managerInDepartment(30L, 1L);
+        MaintenanceActivity activity = completedMaintenanceActivity(5000L, 1000L);
+
+        when(userService.getById(30L)).thenReturn(manager);
+        when(maintenanceActivityRepository.findDetailedById(5000L)).thenReturn(Optional.of(activity));
+
+        var response = maintenanceActivityService.getById(5000L, 30L);
+
+        assertThat(response.getId()).isEqualTo(5000L);
+        verify(maintenanceActivityAuthorizationService).requireCanViewMaintenanceActivity(manager, activity);
+    }
+
+    @Test
+    void getById_shouldReturn404WhenActivityNotFound() {
+        User manager = managerInDepartment(30L, 1L);
+        when(userService.getById(30L)).thenReturn(manager);
+        when(maintenanceActivityRepository.findDetailedById(5000L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> maintenanceActivityService.getById(5000L, 30L))
+                .isInstanceOf(NotFoundException.class);
+
+        verify(maintenanceActivityAuthorizationService, never()).requireCanViewMaintenanceActivity(any(), any());
+    }
+
+    @Test
+    void getById_shouldReturn403WhenUserCannotViewActivity() {
+        User fieldEmployee = user(21L, UserRole.FIELD_EMPLOYEE);
+        MaintenanceActivity activity = completedMaintenanceActivity(5000L, 1000L);
+
+        when(userService.getById(21L)).thenReturn(fieldEmployee);
+        when(maintenanceActivityRepository.findDetailedById(5000L)).thenReturn(Optional.of(activity));
+        doThrow(new ForbiddenOperationException(
+                "You may only view maintenance activities for work orders assigned to you."))
+                .when(maintenanceActivityAuthorizationService)
+                .requireCanViewMaintenanceActivity(fieldEmployee, activity);
+
+        assertThatThrownBy(() -> maintenanceActivityService.getById(5000L, 21L))
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test

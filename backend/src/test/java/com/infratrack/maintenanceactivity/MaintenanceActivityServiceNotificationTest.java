@@ -8,6 +8,7 @@ import com.infratrack.businesstrigger.BusinessTrigger;
 import com.infratrack.businesstrigger.BusinessTriggerType;
 import com.infratrack.completionreview.CompletionReviewAuthorizationService;
 import com.infratrack.completionreview.CompletionReviewRepository;
+import com.infratrack.delegatedauthority.DelegatedAuthorityService;
 import com.infratrack.department.Department;
 import com.infratrack.inspection.Inspection;
 import com.infratrack.inspection.InspectionPriority;
@@ -74,6 +75,9 @@ class MaintenanceActivityServiceNotificationTest {
     @Mock
     private CompletionReviewAuthorizationService completionReviewAuthorizationService;
 
+    @Mock
+    private DelegatedAuthorityService delegatedAuthorityService;
+
     private MaintenanceActivityService maintenanceActivityService;
 
     @BeforeEach
@@ -88,7 +92,8 @@ class MaintenanceActivityServiceNotificationTest {
                 completionReviewRepository,
                 operationalEventNotificationService,
                 completionReviewAuthorizationService,
-                new WorkflowClock(java.time.Clock.systemDefaultZone()));
+                new WorkflowClock(java.time.Clock.systemDefaultZone()),
+                new MaintenanceActivityAuthorizationService(delegatedAuthorityService));
     }
 
     @Test

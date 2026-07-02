@@ -41,10 +41,10 @@ public class MaintenanceActivityListController {
             @Parameter(description = "When true, returns only maintenance activities eligible for completion review")
             @RequestParam(required = false) Boolean eligibleForCompletionReview,
             Authentication authentication) {
+        Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         if (Boolean.TRUE.equals(eligibleForCompletionReview)) {
-            Long userId = ((JwtAuthenticationToken) authentication).getUserId();
             return ResponseEntity.ok(maintenanceActivityService.listEligibleForCompletionReview(userId));
         }
-        return ResponseEntity.ok(maintenanceActivityService.listAll());
+        return ResponseEntity.ok(maintenanceActivityService.listForUser(userId));
     }
 }

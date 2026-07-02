@@ -42,6 +42,7 @@ public class MaintenanceActivityService {
     private final OperationalEventNotificationService operationalEventNotificationService;
     private final CompletionReviewAuthorizationService completionReviewAuthorizationService;
     private final WorkflowClock workflowClock;
+    private final MaintenanceActivityAuthorizationService maintenanceActivityAuthorizationService;
 
     public MaintenanceActivityService(
             MaintenanceActivityRepository maintenanceActivityRepository,
@@ -51,7 +52,8 @@ public class MaintenanceActivityService {
             CompletionReviewRepository completionReviewRepository,
             OperationalEventNotificationService operationalEventNotificationService,
             CompletionReviewAuthorizationService completionReviewAuthorizationService,
-            WorkflowClock workflowClock) {
+            WorkflowClock workflowClock,
+            MaintenanceActivityAuthorizationService maintenanceActivityAuthorizationService) {
         this.maintenanceActivityRepository = maintenanceActivityRepository;
         this.workOrderRepository = workOrderRepository;
         this.assetHistoryEventRepository = assetHistoryEventRepository;
@@ -60,13 +62,24 @@ public class MaintenanceActivityService {
         this.operationalEventNotificationService = operationalEventNotificationService;
         this.completionReviewAuthorizationService = completionReviewAuthorizationService;
         this.workflowClock = workflowClock;
+        this.maintenanceActivityAuthorizationService = maintenanceActivityAuthorizationService;
     }
 
     @Transactional(readOnly = true)
-    public List<MaintenanceActivityResponse> listAll() {
-        return maintenanceActivityRepository.findAllByOrderByCompletedAtDesc().stream()
+    public List<MaintenanceActivityResponse> listForUser(Long userId) {
+        User user = userService.getById(userId);
+        List<MaintenanceActivity> activities = findVisibleActivities(user);
+        return activities.stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public MaintenanceActivityResponse getById(Long maintenanceActivityId, Long userId) {
+        User user = userService.getById(userId);
+        MaintenanceActivity maintenanceActivity = findMaintenanceActivityOrThrow(maintenanceActivityId);
+        maintenanceActivityAuthorizationService.requireCanViewMaintenanceActivity(user, maintenanceActivity);
+        return toResponse(maintenanceActivity);
     }
 
     @Transactional(readOnly = true)
@@ -179,6 +192,44 @@ public class MaintenanceActivityService {
             throw new BusinessValidationException("Completion notes are required");
         }
         return completionNotes.trim();
+    }
+
+    private List<MaintenanceActivity> findVisibleActivities(User user) {
+        if (user.getRole() == null) {
+            throw listForbidden();
+        }
+        if (user.getRole().isAdministrator()) {
+            return maintenanceActivityRepository.findAllByOrderByCompletedAtDesc();
+        }
+        if (user.getRole().isManager()) {
+            Long managerDepartmentId = user.getDepartment() != null
+                    ? user.getDepartment().getId()
+                    : null;
+            return maintenanceActivityRepository.findAllVisibleToManager(
+                    user.getId(),
+                    managerDepartmentId,
+                    LocalDateTime.now());
+        }
+        if (user.getRole().isOperationalCoordinator()) {
+            if (user.getDepartment() == null) {
+                return List.of();
+            }
+            return maintenanceActivityRepository.findAllByAsset_Department_IdOrderByCompletedAtDesc(
+                    user.getDepartment().getId());
+        }
+        if (user.getRole().isFieldEmployee() || user.getRole().isContractor()) {
+            return maintenanceActivityRepository.findAllVisibleToAssignee(user.getId());
+        }
+        throw listForbidden();
+    }
+
+    private MaintenanceActivity findMaintenanceActivityOrThrow(Long maintenanceActivityId) {
+        return maintenanceActivityRepository.findDetailedById(maintenanceActivityId)
+                .orElseThrow(() -> new NotFoundException("Maintenance activity not found"));
+    }
+
+    private static ForbiddenOperationException listForbidden() {
+        return new ForbiddenOperationException("You are not authorized to view maintenance activities.");
     }
 
 }

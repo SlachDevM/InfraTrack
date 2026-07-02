@@ -171,6 +171,40 @@ Upload and delete rules are unchanged. Administrators may download but cannot up
 
 ---
 
+## Asset history read authorization
+
+`GET /api/assets/{assetId}/history` returns operational history only when the caller is authorized to view the asset.
+
+| Role | History access |
+|------|----------------|
+| Administrator | Any asset history |
+| Manager | History for assets in the manager's department (including delegated authority) |
+| Operational Coordinator | History for assets in the coordinator's department |
+| Field Employee | History for assets in the employee's department |
+| Contractor | Same department rule as Field Employee |
+
+Authorization runs in `AssetAuthorizationService.requireCanViewAsset` **before** history events are loaded. Cross-department access returns HTTP `403`. Unknown assets return HTTP `404`.
+
+---
+
+## Maintenance activity read authorization
+
+`GET /api/maintenance-activities` returns maintenance activities scoped to the caller's authorized work order / asset context.
+
+| Role | List access |
+|------|-------------|
+| Administrator | All maintenance activities |
+| Manager | Activities for assets in the manager's department (including delegated authority) |
+| Operational Coordinator | Activities for assets in the coordinator's department |
+| Field Employee | Activities for work orders assigned to the employee or performed by them |
+| Contractor | Same assignment rule as Field Employee |
+
+The `eligibleForCompletionReview=true` query parameter continues to return only manager-eligible activities for completion review (UC-010), already scoped by department and delegation.
+
+Authorization uses `MaintenanceActivityAuthorizationService` for single-record checks. Cross-department access returns HTTP `403`. Unknown activities return HTTP `404`.
+
+---
+
 ## Dependency and static analysis (CI)
 
 | Check | Scope | Policy |
