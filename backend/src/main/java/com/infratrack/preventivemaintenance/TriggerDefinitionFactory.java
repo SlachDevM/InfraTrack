@@ -1,13 +1,9 @@
 package com.infratrack.preventivemaintenance;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.validation.JsonPayloadSupport;
 
 final class TriggerDefinitionFactory {
-
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private TriggerDefinitionFactory() {
     }
@@ -35,10 +31,6 @@ final class TriggerDefinitionFactory {
     }
 
     private static JsonNode parseJson(String configurationJson) {
-        try {
-            return OBJECT_MAPPER.readTree(configurationJson);
-        } catch (JsonProcessingException ex) {
-            throw new BusinessValidationException("Trigger configuration must be valid JSON");
-        }
+        return JsonPayloadSupport.parse(configurationJson, "Trigger configuration must be valid JSON");
     }
 }

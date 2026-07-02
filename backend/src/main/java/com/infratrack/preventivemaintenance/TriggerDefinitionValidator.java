@@ -1,39 +1,29 @@
 package com.infratrack.preventivemaintenance;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.validation.JsonPayloadSupport;
 
 /**
  * Validates trigger configuration JSON according to trigger type (V2 Phase B Sprint B1.2).
  */
 public final class TriggerDefinitionValidator {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
     private TriggerDefinitionValidator() {
     }
 
     public static String validateAndNormalize(PlanTriggerType triggerType, String configurationJson) {
-        if (configurationJson == null || configurationJson.isBlank()) {
-            throw new BusinessValidationException("Trigger configuration is required");
-        }
-        JsonNode root = parseJson(configurationJson.trim());
+        JsonNode root = JsonPayloadSupport.parseRequired(
+                configurationJson,
+                "Trigger configuration is required",
+                "Trigger configuration must be valid JSON");
         return switch (triggerType) {
             case TIME -> validateTime(root);
             case METER -> validateMeter(root);
             case EVENT -> validateEvent(root);
         };
-    }
-
-    private static JsonNode parseJson(String configurationJson) {
-        try {
-            return OBJECT_MAPPER.readTree(configurationJson);
-        } catch (JsonProcessingException ex) {
-            throw new BusinessValidationException("Trigger configuration must be valid JSON");
-        }
     }
 
     private static String validateTime(JsonNode root) {
@@ -49,7 +39,7 @@ public final class TriggerDefinitionValidator {
             throw new BusinessValidationException("Trigger unit is required");
         }
         PlanTimeUnit unit = parseEnum(unitNode.asText(), PlanTimeUnit.class, "Unsupported trigger unit");
-        ObjectNode normalized = OBJECT_MAPPER.createObjectNode();
+        ObjectNode normalized = JsonNodeFactory.instance.objectNode();
         normalized.put("every", everyNode.asInt());
         normalized.put("unit", unit.name());
         return writeJson(normalized);
@@ -68,7 +58,7 @@ public final class TriggerDefinitionValidator {
         if (everyNode == null || !everyNode.isInt() || everyNode.asInt() <= 0) {
             throw new BusinessValidationException("Trigger every must be greater than zero");
         }
-        ObjectNode normalized = OBJECT_MAPPER.createObjectNode();
+        ObjectNode normalized = JsonNodeFactory.instance.objectNode();
         normalized.put("meter", meter.name());
         normalized.put("every", everyNode.asInt());
         return writeJson(normalized);
@@ -83,7 +73,7 @@ public final class TriggerDefinitionValidator {
             throw new BusinessValidationException("Trigger event is required");
         }
         PlanEventType event = parseEnum(eventNode.asText(), PlanEventType.class, "Unsupported trigger event");
-        ObjectNode normalized = OBJECT_MAPPER.createObjectNode();
+        ObjectNode normalized = JsonNodeFactory.instance.objectNode();
         normalized.put("event", event.name());
         return writeJson(normalized);
     }
@@ -97,10 +87,6 @@ public final class TriggerDefinitionValidator {
     }
 
     private static String writeJson(JsonNode node) {
-        try {
-            return OBJECT_MAPPER.writeValueAsString(node);
-        } catch (JsonProcessingException ex) {
-            throw new BusinessValidationException("Trigger configuration must be valid JSON");
-        }
+        return JsonPayloadSupport.write(node, "Trigger configuration must be valid JSON");
     }
 }

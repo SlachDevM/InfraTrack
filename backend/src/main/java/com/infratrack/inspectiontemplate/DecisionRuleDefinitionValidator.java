@@ -1,8 +1,7 @@
 package com.infratrack.inspectiontemplate;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.validation.JsonPayloadSupport;
 
 import java.math.BigDecimal;
 import java.util.EnumSet;
@@ -12,8 +11,6 @@ import java.util.Set;
  * Validates decision rule definitions without evaluating them (V2 Domain Engine A3.1).
  */
 public final class DecisionRuleDefinitionValidator {
-
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private static final Set<DecisionRuleOperator> BOOLEAN_OPERATORS = EnumSet.of(
             DecisionRuleOperator.IS_TRUE,
@@ -153,14 +150,7 @@ public final class DecisionRuleDefinitionValidator {
     }
 
     public static void validateActionPayload(String actionPayload) {
-        if (actionPayload == null || actionPayload.isBlank()) {
-            return;
-        }
-        try {
-            OBJECT_MAPPER.readTree(actionPayload);
-        } catch (JsonProcessingException ex) {
-            throw new BusinessValidationException("Action payload must be valid JSON");
-        }
+        JsonPayloadSupport.validateOptional(actionPayload, "Action payload must be valid JSON");
     }
 
     public static String normalizeOptionalDescription(String description) {
