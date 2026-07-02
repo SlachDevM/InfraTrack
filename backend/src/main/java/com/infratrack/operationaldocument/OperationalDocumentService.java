@@ -3,6 +3,7 @@ package com.infratrack.operationaldocument;
 import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.exception.NotFoundException;
+import com.infratrack.messages.OperationalEvidenceMessages;
 import com.infratrack.operationaldocument.dto.OperationalDocumentEligibleOwnerResponse;
 import com.infratrack.operationaldocument.dto.OperationalDocumentResponse;
 import com.infratrack.operationaldocument.dto.OperationalDocumentSummaryResponse;
@@ -139,13 +140,14 @@ public class OperationalDocumentService {
                             .toList();
 
             if (authorized.isEmpty()) {
-                throw new ForbiddenOperationException("Unauthorized to download operational evidence for this context");
+                throw new ForbiddenOperationException(
+                        OperationalEvidenceMessages.UNAUTHORIZED_DOWNLOAD_OPERATIONAL_EVIDENCE_CONTEXT);
             }
 
             return new PageImpl<>(authorized, pageable, authorized.size());
         }
 
-        throw new ForbiddenOperationException("Unauthorized to download operational evidence");
+        throw new ForbiddenOperationException(OperationalEvidenceMessages.UNAUTHORIZED_DOWNLOAD_OPERATIONAL_EVIDENCE);
     }
 
     private boolean canViewDocumentMetadata(User user, Asset asset, OperationalDocument document) {

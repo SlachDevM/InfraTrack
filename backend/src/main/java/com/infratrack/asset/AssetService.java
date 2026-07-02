@@ -13,6 +13,7 @@ import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.ConflictException;
 import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.exception.NotFoundException;
+import com.infratrack.messages.OperationalEvidenceMessages;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
 import org.springframework.stereotype.Service;
@@ -149,7 +150,7 @@ public class AssetService {
                 && !user.getRole().isFieldEmployee()
                 && !user.getRole().isContractor()) {
             throw new ForbiddenOperationException(
-                    "Unauthorized to upload operational evidence");
+                    OperationalEvidenceMessages.UNAUTHORIZED_UPLOAD_OPERATIONAL_EVIDENCE);
         }
     }
 

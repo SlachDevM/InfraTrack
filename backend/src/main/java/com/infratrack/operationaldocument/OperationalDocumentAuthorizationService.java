@@ -11,6 +11,7 @@ import com.infratrack.issue.Issue;
 import com.infratrack.issue.IssueRepository;
 import com.infratrack.maintenanceactivity.MaintenanceActivity;
 import com.infratrack.maintenanceactivity.MaintenanceActivityRepository;
+import com.infratrack.messages.OperationalEvidenceMessages;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.workorder.WorkOrder;
@@ -62,7 +63,7 @@ public class OperationalDocumentAuthorizationService {
                 user,
                 ownerContext.asset(),
                 "You may only download operational documents for assets in your own department.",
-                "Unauthorized to download operational evidence");
+                OperationalEvidenceMessages.UNAUTHORIZED_DOWNLOAD_OPERATIONAL_EVIDENCE);
 
         switch (role) {
             case MANAGER, OPERATIONAL_COORDINATOR -> {
@@ -71,7 +72,7 @@ public class OperationalDocumentAuthorizationService {
             case FIELD_EMPLOYEE, CONTRACTOR -> requireFieldOwnerAccess(
                     user,
                     ownerContext,
-                    "Unauthorized to download operational evidence for this context");
+                    OperationalEvidenceMessages.UNAUTHORIZED_DOWNLOAD_OPERATIONAL_EVIDENCE_CONTEXT);
             default -> throw forbiddenDownload();
         }
     }
@@ -81,7 +82,7 @@ public class OperationalDocumentAuthorizationService {
                 user,
                 asset,
                 "You may only download operational documents for assets in your own department.",
-                "Unauthorized to download operational evidence");
+                OperationalEvidenceMessages.UNAUTHORIZED_DOWNLOAD_OPERATIONAL_EVIDENCE);
     }
 
     public void requireUploadAuthorized(User user, OperationalDocumentOwnerContext ownerContext) {
@@ -110,7 +111,7 @@ public class OperationalDocumentAuthorizationService {
                 user,
                 asset,
                 "You may only upload operational documents for assets in your own department.",
-                "Unauthorized to upload operational evidence");
+                OperationalEvidenceMessages.UNAUTHORIZED_UPLOAD_OPERATIONAL_EVIDENCE);
     }
 
     private void requireAssetDepartmentAccess(
@@ -146,18 +147,18 @@ public class OperationalDocumentAuthorizationService {
     }
 
     private ForbiddenOperationException forbiddenUpload() {
-        return new ForbiddenOperationException("Unauthorized to upload operational evidence");
+        return new ForbiddenOperationException(OperationalEvidenceMessages.UNAUTHORIZED_UPLOAD_OPERATIONAL_EVIDENCE);
     }
 
     private ForbiddenOperationException forbiddenDownload() {
-        return new ForbiddenOperationException("Unauthorized to download operational evidence");
+        return new ForbiddenOperationException(OperationalEvidenceMessages.UNAUTHORIZED_DOWNLOAD_OPERATIONAL_EVIDENCE);
     }
 
     private void requireFieldUploadAuthorized(User user, OperationalDocumentOwnerContext ownerContext) {
         requireFieldOwnerAccess(
                 user,
                 ownerContext,
-                "Unauthorized to upload operational evidence for this context");
+                OperationalEvidenceMessages.UNAUTHORIZED_UPLOAD_OPERATIONAL_EVIDENCE_CONTEXT);
     }
 
     private void requireFieldOwnerAccess(
@@ -169,7 +170,7 @@ public class OperationalDocumentAuthorizationService {
                     contextDeniedMessage);
             case INSPECTION -> {
                 Inspection inspection = inspectionRepository.findById(ownerContext.ownerId())
-                        .orElseThrow(() -> new NotFoundException("Operational owner not found"));
+                        .orElseThrow(() -> new NotFoundException(OperationalEvidenceMessages.OPERATIONAL_OWNER_NOT_FOUND));
                 if (!Objects.equals(inspection.getAssignedToUserId(), user.getId())
                         && !Objects.equals(inspection.getCompletedByUserId(), user.getId())) {
                     throw new ForbiddenOperationException(contextDeniedMessage);
@@ -177,21 +178,21 @@ public class OperationalDocumentAuthorizationService {
             }
             case ISSUE -> {
                 Issue issue = issueRepository.findById(ownerContext.ownerId())
-                        .orElseThrow(() -> new NotFoundException("Operational owner not found"));
+                        .orElseThrow(() -> new NotFoundException(OperationalEvidenceMessages.OPERATIONAL_OWNER_NOT_FOUND));
                 if (!Objects.equals(issue.getRecordedByUserId(), user.getId())) {
                     throw new ForbiddenOperationException(contextDeniedMessage);
                 }
             }
             case WORK_ORDER -> {
                 WorkOrder workOrder = workOrderRepository.findById(ownerContext.ownerId())
-                        .orElseThrow(() -> new NotFoundException("Operational owner not found"));
+                        .orElseThrow(() -> new NotFoundException(OperationalEvidenceMessages.OPERATIONAL_OWNER_NOT_FOUND));
                 if (!Objects.equals(workOrder.getAssignedToUserId(), user.getId())) {
                     throw new ForbiddenOperationException(contextDeniedMessage);
                 }
             }
             case MAINTENANCE_ACTIVITY -> {
                 MaintenanceActivity maintenanceActivity = maintenanceActivityRepository.findById(ownerContext.ownerId())
-                        .orElseThrow(() -> new NotFoundException("Operational owner not found"));
+                        .orElseThrow(() -> new NotFoundException(OperationalEvidenceMessages.OPERATIONAL_OWNER_NOT_FOUND));
                 if (!Objects.equals(maintenanceActivity.getPerformedByUserId(), user.getId())) {
                     throw new ForbiddenOperationException(contextDeniedMessage);
                 }

@@ -12,6 +12,7 @@ import com.infratrack.issue.Issue;
 import com.infratrack.issue.IssueRepository;
 import com.infratrack.maintenanceactivity.MaintenanceActivity;
 import com.infratrack.maintenanceactivity.MaintenanceActivityRepository;
+import com.infratrack.messages.OperationalEvidenceMessages;
 import com.infratrack.operationaldecision.OperationalDecision;
 import com.infratrack.operationaldecision.OperationalDecisionRepository;
 import com.infratrack.workorder.WorkOrder;
@@ -102,21 +103,21 @@ public class OperationalDocumentOwnerResolver {
 
     private OperationalDocumentOwnerContext ownerFromInspection(Asset asset, Long ownerId) {
         Inspection inspection = inspectionRepository.findById(ownerId)
-                .orElseThrow(() -> new NotFoundException("Operational owner not found"));
+                .orElseThrow(() -> new NotFoundException(OperationalEvidenceMessages.OPERATIONAL_OWNER_NOT_FOUND));
         requireSameAsset(asset, inspection.getAsset().getId());
         return new OperationalDocumentOwnerContext(asset, OperationalDocumentOwnerType.INSPECTION, inspection.getId());
     }
 
     private OperationalDocumentOwnerContext ownerFromIssue(Asset asset, Long ownerId) {
         Issue issue = issueRepository.findById(ownerId)
-                .orElseThrow(() -> new NotFoundException("Operational owner not found"));
+                .orElseThrow(() -> new NotFoundException(OperationalEvidenceMessages.OPERATIONAL_OWNER_NOT_FOUND));
         requireSameAsset(asset, issue.getAsset().getId());
         return new OperationalDocumentOwnerContext(asset, OperationalDocumentOwnerType.ISSUE, issue.getId());
     }
 
     private OperationalDocumentOwnerContext ownerFromOperationalDecision(Asset asset, Long ownerId) {
         OperationalDecision decision = operationalDecisionRepository.findById(ownerId)
-                .orElseThrow(() -> new NotFoundException("Operational owner not found"));
+                .orElseThrow(() -> new NotFoundException(OperationalEvidenceMessages.OPERATIONAL_OWNER_NOT_FOUND));
         requireSameAsset(asset, decision.getAsset().getId());
         return new OperationalDocumentOwnerContext(
                 asset, OperationalDocumentOwnerType.OPERATIONAL_DECISION, decision.getId());
@@ -124,14 +125,14 @@ public class OperationalDocumentOwnerResolver {
 
     private OperationalDocumentOwnerContext ownerFromWorkOrder(Asset asset, Long ownerId) {
         WorkOrder workOrder = workOrderRepository.findById(ownerId)
-                .orElseThrow(() -> new NotFoundException("Operational owner not found"));
+                .orElseThrow(() -> new NotFoundException(OperationalEvidenceMessages.OPERATIONAL_OWNER_NOT_FOUND));
         requireSameAsset(asset, workOrder.getAsset().getId());
         return new OperationalDocumentOwnerContext(asset, OperationalDocumentOwnerType.WORK_ORDER, workOrder.getId());
     }
 
     private OperationalDocumentOwnerContext ownerFromMaintenanceActivity(Asset asset, Long ownerId) {
         MaintenanceActivity maintenanceActivity = maintenanceActivityRepository.findById(ownerId)
-                .orElseThrow(() -> new NotFoundException("Operational owner not found"));
+                .orElseThrow(() -> new NotFoundException(OperationalEvidenceMessages.OPERATIONAL_OWNER_NOT_FOUND));
         requireSameAsset(asset, maintenanceActivity.getAsset().getId());
         return new OperationalDocumentOwnerContext(
                 asset, OperationalDocumentOwnerType.MAINTENANCE_ACTIVITY, maintenanceActivity.getId());
@@ -139,7 +140,7 @@ public class OperationalDocumentOwnerResolver {
 
     private OperationalDocumentOwnerContext ownerFromCompletionReview(Asset asset, Long ownerId) {
         CompletionReview completionReview = completionReviewRepository.findById(ownerId)
-                .orElseThrow(() -> new NotFoundException("Operational owner not found"));
+                .orElseThrow(() -> new NotFoundException(OperationalEvidenceMessages.OPERATIONAL_OWNER_NOT_FOUND));
         requireSameAsset(asset, completionReview.getAsset().getId());
         return new OperationalDocumentOwnerContext(
                 asset, OperationalDocumentOwnerType.COMPLETION_REVIEW, completionReview.getId());
