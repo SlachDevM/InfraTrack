@@ -42,7 +42,18 @@ Rules produce **Suggested Actions**, not automatic Issues. The scheduler generat
 
 ### Organizational policy foundation (BDR-004)
 
-As of V2.3 foundation work, **Inspection Visibility Policy** is the first concrete implementation of the BDR-004 principle: business rules remain stable; organizational policies are configurable. No configurability is introduced yet — the policy encapsulates the current behaviour only.
+As of V2.3 foundation work, **Inspection Visibility Policy** is the first concrete implementation of the BDR-004 principle: business rules remain stable; organizational policies are configurable.
+
+Visibility is configured by property:
+
+```properties
+app.policies.inspection.visibility=DEPARTMENT
+```
+
+Supported modes:
+
+- `DEPARTMENT` (default)
+- `ORGANIZATION` (small-council view mode; view-only)
 
 ### Phase A — Decision Engine (implemented)
 

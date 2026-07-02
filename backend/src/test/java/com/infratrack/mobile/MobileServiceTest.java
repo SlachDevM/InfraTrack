@@ -91,7 +91,7 @@ class MobileServiceTest {
     @BeforeEach
     void setUp() {
         InspectionAuthorizationService inspectionAuthorizationService =
-                new InspectionAuthorizationService(userService, new InspectionVisibilityPolicyService());
+                new InspectionAuthorizationService(userService, new InspectionVisibilityPolicyService("DEPARTMENT"));
         MobileAuthorizationService authorizationService = new MobileAuthorizationService(
                 userService, inspectionAuthorizationService);
         mobileService = new MobileService(

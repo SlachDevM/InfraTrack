@@ -59,7 +59,7 @@ class DecisionRuleEvaluationServiceAuthorizationTest {
                 inspectionRepository,
                 answerRepository,
                 ruleRepository,
-                new InspectionAuthorizationService(userService, new InspectionVisibilityPolicyService()),
+                new InspectionAuthorizationService(userService, new InspectionVisibilityPolicyService("DEPARTMENT")),
                 userService);
     }
 

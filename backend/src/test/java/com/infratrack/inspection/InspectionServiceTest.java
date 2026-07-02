@@ -95,7 +95,7 @@ class InspectionServiceTest {
     void setUp() {
         InspectionAuthorizationService authorizationService = new InspectionAuthorizationService(
                 userService,
-                new InspectionVisibilityPolicyService());
+                new InspectionVisibilityPolicyService("DEPARTMENT"));
         InspectionHistoryRecorder historyRecorder = new InspectionHistoryRecorder(assetHistoryEventRepository);
         InspectionAnswerService inspectionAnswerService = new InspectionAnswerService(
                 inspectionAnswerRepository,

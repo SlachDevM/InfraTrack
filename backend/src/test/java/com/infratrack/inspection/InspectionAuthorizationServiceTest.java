@@ -34,7 +34,7 @@ class InspectionAuthorizationServiceTest {
     void setUp() {
         authorizationService = new InspectionAuthorizationService(
                 userService,
-                new InspectionVisibilityPolicyService());
+                new InspectionVisibilityPolicyService("DEPARTMENT"));
     }
 
     @Test
@@ -92,6 +92,43 @@ class InspectionAuthorizationServiceTest {
         otherDepartmentUser.setDepartment(otherDepartment);
 
         assertThatThrownBy(() -> authorizationService.requireCanViewInspection(otherDepartmentUser, inspection))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You may only view inspections for assets in your own department.");
+    }
+
+    @Test
+    void requireCanViewInspection_shouldAllowCrossDepartmentUser_whenOrganizationModeConfigured() {
+        Asset asset = asset(5L);
+        Inspection inspection = new Inspection(asset, null, 20L, 10L, InspectionPriority.NORMAL, null);
+
+        User otherDepartmentUser = user(30L, UserRole.OPERATIONAL_COORDINATOR);
+        Department otherDepartment = new Department("Water");
+        otherDepartment.setId(99L);
+        otherDepartmentUser.setDepartment(otherDepartment);
+
+        InspectionAuthorizationService orgModeService = new InspectionAuthorizationService(
+                userService,
+                new InspectionVisibilityPolicyService("ORGANIZATION"));
+
+        assertThatCode(() -> orgModeService.requireCanViewInspection(otherDepartmentUser, inspection))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void requireCanSaveInspectionAnswers_shouldStillRejectCrossDepartmentManager_whenOrganizationModeConfigured() {
+        Asset asset = asset(5L);
+        Inspection inspection = new Inspection(asset, null, 20L, 10L, InspectionPriority.NORMAL, null);
+
+        User manager = user(30L, UserRole.MANAGER);
+        Department otherDepartment = new Department("Water");
+        otherDepartment.setId(99L);
+        manager.setDepartment(otherDepartment);
+
+        InspectionAuthorizationService orgModeService = new InspectionAuthorizationService(
+                userService,
+                new InspectionVisibilityPolicyService("ORGANIZATION"));
+
+        assertThatThrownBy(() -> orgModeService.requireCanSaveInspectionAnswers(manager, inspection))
                 .isInstanceOf(ForbiddenOperationException.class)
                 .hasMessage("You may only view inspections for assets in your own department.");
     }

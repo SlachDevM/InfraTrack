@@ -81,7 +81,12 @@ The first planned implementation of this decision will be:
 
 **Inspection Visibility Policy**
 
-It is intentionally **not implemented yet**.
+The policy is implemented incrementally:
+
+- **DEPARTMENT** (default, backwards compatible)
+- **ORGANIZATION** (small-council view mode)
+
+It remains a **view-only** policy: it does not grant assignment, completion, answer saving, approvals, or other mutations.
 
 This policy will become the first concrete example of configurable organizational policy. It may support modes such as:
 

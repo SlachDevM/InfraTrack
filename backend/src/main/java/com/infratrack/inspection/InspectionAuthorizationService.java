@@ -1,6 +1,7 @@
 package com.infratrack.inspection;
 
 import com.infratrack.exception.ForbiddenOperationException;
+import com.infratrack.organization.policy.visibility.DepartmentInspectionVisibilityPolicy;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
 import com.infratrack.organization.policy.visibility.InspectionVisibilityPolicyService;
@@ -14,6 +15,7 @@ public class InspectionAuthorizationService {
 
     private final UserService userService;
     private final InspectionVisibilityPolicyService visibilityPolicyService;
+    private final DepartmentInspectionVisibilityPolicy writeVisibilityPolicy = new DepartmentInspectionVisibilityPolicy();
 
     public InspectionAuthorizationService(
             UserService userService,
@@ -55,7 +57,8 @@ public class InspectionAuthorizationService {
             return;
         }
         if (user.getRole().isManager() || user.getRole().isOperationalCoordinator()) {
-            requireCanViewInspection(user, inspection);
+            // View policies are configurable; write permissions must remain stable.
+            writeVisibilityPolicy.requireCanView(user, inspection);
             return;
         }
         if (user.getRole().isFieldEmployee() || user.getRole().isContractor()) {

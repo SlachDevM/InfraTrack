@@ -78,7 +78,7 @@ class InspectionServiceNotificationTest {
                 new OperationalEventNotificationService(notificationService, userRepository);
         InspectionAuthorizationService authorizationService = new InspectionAuthorizationService(
                 userService,
-                new InspectionVisibilityPolicyService());
+                new InspectionVisibilityPolicyService("DEPARTMENT"));
         InspectionHistoryRecorder historyRecorder = new InspectionHistoryRecorder(assetHistoryEventRepository);
         InspectionAnswerService inspectionAnswerService = new InspectionAnswerService(
                 inspectionAnswerRepository,

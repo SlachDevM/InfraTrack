@@ -109,6 +109,7 @@ docker compose -f docker-compose.prod.yml up -d --build
 | `BOOTSTRAP_ADMIN_ENABLED` | No | Default `false` in production |
 | `PREVENTIVE_SCHEDULER_ENABLED` | No | Default `false`; enable scheduled preventive candidate generation |
 | `PREVENTIVE_SCHEDULER_CRON` | No | Cron expression (default `0 0 6 * * *`) |
+| `INSPECTION_VISIBILITY_POLICY` | No | Inspection visibility mode: `DEPARTMENT` (default) or `ORGANIZATION` |
 
 Full list: [`.env.example`](../../.env.example)
 
