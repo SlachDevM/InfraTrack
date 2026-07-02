@@ -21,12 +21,14 @@ import com.infratrack.issue.IssueType;
 import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.operationaldecision.OperationalDecisionOutcome;
 import com.infratrack.operationaldecision.OperationalDecision;
+import com.infratrack.time.WorkflowClock;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.workorder.WorkOrder;
 import com.infratrack.workorder.WorkOrderPriority;
 import com.infratrack.workorder.WorkOrderStatus;
 import com.infratrack.workorder.WorkType;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -39,6 +41,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import static org.mockito.Mockito.lenient;
+
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -46,6 +50,8 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CompletionReviewServiceTest {
+
+    private static final LocalDateTime FIXED_NOW = LocalDateTime.of(2026, 7, 2, 10, 0);
 
     @Mock
     private CompletionReviewRepository completionReviewRepository;
@@ -65,8 +71,16 @@ class CompletionReviewServiceTest {
     @Mock
     private OperationalEventNotificationService operationalEventNotificationService;
 
+    @Mock
+    private WorkflowClock workflowClock;
+
     @InjectMocks
     private CompletionReviewService completionReviewService;
+
+    @BeforeEach
+    void setUpClock() {
+        lenient().when(workflowClock.now()).thenReturn(FIXED_NOW);
+    }
 
     @Test
     void recordCompletionReview_shouldAllowManagerToRecordApprovedReview() {
@@ -312,7 +326,7 @@ class CompletionReviewServiceTest {
     }
 
     @Test
-    void recordCompletionReview_shouldRejectMissingReviewedAt() {
+    void recordCompletionReview_shouldGenerateReviewedAtFromServer_whenClientOmitsTimestamp() {
         RecordCompletionReviewRequest request = approvedRequest();
         request.setReviewedAt(null);
         MaintenanceActivity maintenanceActivity = completedMaintenanceActivity(5000L, 1000L);
@@ -321,39 +335,36 @@ class CompletionReviewServiceTest {
         when(authorizationService.requireManager(30L)).thenReturn(manager);
         when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
         when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
+        doNothing().when(authorizationService).requireManagerAuthorizedForAsset(
+                eq(manager), eq(maintenanceActivity.getAsset()), eq(FIXED_NOW));
+        when(completionReviewRepository.save(any(CompletionReview.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        assertThatThrownBy(() -> completionReviewService.recordCompletionReview(5000L, request, 30L))
-                .isInstanceOf(BusinessValidationException.class);
+        completionReviewService.recordCompletionReview(5000L, request, 30L);
+
+        ArgumentCaptor<CompletionReview> reviewCaptor = ArgumentCaptor.forClass(CompletionReview.class);
+        verify(completionReviewRepository).save(reviewCaptor.capture());
+        assertThat(reviewCaptor.getValue().getReviewedAt()).isEqualTo(FIXED_NOW);
     }
 
     @Test
-    void recordCompletionReview_shouldRejectReviewedAtBeforeMaintenanceCompletion() {
+    void recordCompletionReview_shouldIgnoreClientProvidedReviewedAt() {
         RecordCompletionReviewRequest request = approvedRequest();
-        MaintenanceActivity maintenanceActivity = completedMaintenanceActivity(5000L, 1000L);
-        request.setReviewedAt(maintenanceActivity.getCompletedAt().minusMinutes(1));
-        User manager = user(30L, UserRole.MANAGER);
-
-        when(authorizationService.requireManager(30L)).thenReturn(manager);
-        when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
-        when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
-
-        assertThatThrownBy(() -> completionReviewService.recordCompletionReview(5000L, request, 30L))
-                .isInstanceOf(BusinessValidationException.class);
-    }
-
-    @Test
-    void recordCompletionReview_shouldRejectFutureReviewedAt() {
-        RecordCompletionReviewRequest request = approvedRequest();
-        request.setReviewedAt(LocalDateTime.now().plusHours(1));
+        request.setReviewedAt(LocalDateTime.now().minusDays(30));
         MaintenanceActivity maintenanceActivity = completedMaintenanceActivity(5000L, 1000L);
         User manager = user(30L, UserRole.MANAGER);
 
         when(authorizationService.requireManager(30L)).thenReturn(manager);
         when(maintenanceActivityRepository.findById(5000L)).thenReturn(Optional.of(maintenanceActivity));
         when(completionReviewRepository.existsByMaintenanceActivityId(5000L)).thenReturn(false);
+        doNothing().when(authorizationService).requireManagerAuthorizedForAsset(
+                eq(manager), eq(maintenanceActivity.getAsset()), eq(FIXED_NOW));
+        when(completionReviewRepository.save(any(CompletionReview.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        assertThatThrownBy(() -> completionReviewService.recordCompletionReview(5000L, request, 30L))
-                .isInstanceOf(BusinessValidationException.class);
+        completionReviewService.recordCompletionReview(5000L, request, 30L);
+
+        ArgumentCaptor<CompletionReview> reviewCaptor = ArgumentCaptor.forClass(CompletionReview.class);
+        verify(completionReviewRepository).save(reviewCaptor.capture());
+        assertThat(reviewCaptor.getValue().getReviewedAt()).isEqualTo(FIXED_NOW);
     }
 
     @Test

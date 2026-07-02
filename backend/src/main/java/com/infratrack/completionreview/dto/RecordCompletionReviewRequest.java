@@ -19,7 +19,10 @@ public class RecordCompletionReviewRequest {
     @Size(max = 4000)
     private String reviewNotes;
 
-    @NotNull
+    @Schema(
+            description = "Deprecated: retained for backward compatibility. "
+                    + "The server generates the authoritative review timestamp.",
+            deprecated = true)
     private LocalDateTime reviewedAt;
 
     @Schema(description = "Severity for the rework issue when decision is REWORK_REQUIRED")

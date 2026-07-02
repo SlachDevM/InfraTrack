@@ -16,6 +16,7 @@ import com.infratrack.suggestedaction.SuggestedAction;
 import com.infratrack.suggestedaction.dto.ApproveSuggestedActionRequest;
 import com.infratrack.issue.dto.IssueResponse;
 import com.infratrack.issue.dto.UpdateIssueCapaRequest;
+import com.infratrack.time.WorkflowClock;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
 import org.springframework.data.domain.Page;
@@ -35,16 +36,19 @@ public class IssueService {
     private final InspectionRepository inspectionRepository;
     private final AssetHistoryEventRepository assetHistoryEventRepository;
     private final UserService userService;
+    private final WorkflowClock workflowClock;
 
     public IssueService(
             IssueRepository issueRepository,
             InspectionRepository inspectionRepository,
             AssetHistoryEventRepository assetHistoryEventRepository,
-            UserService userService) {
+            UserService userService,
+            WorkflowClock workflowClock) {
         this.issueRepository = issueRepository;
         this.inspectionRepository = inspectionRepository;
         this.assetHistoryEventRepository = assetHistoryEventRepository;
         this.userService = userService;
+        this.workflowClock = workflowClock;
     }
 
     @Transactional(readOnly = true)
@@ -123,7 +127,7 @@ public class IssueService {
 
         String description = buildIssueDescription(request.getTitle(), request.getDescription());
         IssueSeverity severity = validateSeverity(request.getSeverity());
-        LocalDateTime recordedAt = validateRecordedAt(request.getRecordedAt(), inspection);
+        LocalDateTime recordedAt = workflowClock.now();
 
         Asset asset = inspection.getAsset();
         Issue issue = new Issue(

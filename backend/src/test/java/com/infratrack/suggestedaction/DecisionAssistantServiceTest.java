@@ -24,6 +24,7 @@ import com.infratrack.suggestedaction.dto.ApproveSuggestedActionRequest;
 import com.infratrack.suggestedaction.dto.ApproveSuggestedActionResponse;
 import com.infratrack.suggestedaction.dto.DismissSuggestedActionRequest;
 import com.infratrack.suggestedaction.dto.RejectSuggestedActionRequest;
+import com.infratrack.time.WorkflowClock;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
@@ -33,7 +34,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,6 +51,9 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class DecisionAssistantServiceTest {
 
+    private static final Instant FIXED_INSTANT = Instant.parse("2026-07-02T10:00:00Z");
+    private static final long FIXED_MILLIS = FIXED_INSTANT.toEpochMilli();
+
     @Mock
     private SuggestedActionRepository suggestedActionRepository;
 
@@ -57,13 +64,16 @@ class DecisionAssistantServiceTest {
     private UserService userService;
 
     private DecisionAssistantService decisionAssistantService;
+    private WorkflowClock workflowClock;
 
     @BeforeEach
     void setUp() {
+        workflowClock = new WorkflowClock(Clock.fixed(FIXED_INSTANT, ZoneId.systemDefault()));
         decisionAssistantService = new DecisionAssistantService(
                 suggestedActionRepository,
                 issueService,
-                userService);
+                userService,
+                workflowClock);
     }
 
     @Test
@@ -90,7 +100,21 @@ class DecisionAssistantServiceTest {
 
         assertThat(action.getStatus()).isEqualTo(SuggestedActionStatus.ACCEPTED);
         assertThat(action.getCreatedIssueId()).isEqualTo(99L);
+        assertThat(action.getDecidedAt()).isEqualTo(FIXED_MILLIS);
         verify(issueService).recordIssueFromApprovedSuggestion(action, request, 30L);
+    }
+
+    @Test
+    void reject_shouldSetDecidedAtFromServer() {
+        SuggestedAction action = pendingAction();
+        User manager = manager(30L);
+        when(userService.getById(30L)).thenReturn(manager);
+        when(suggestedActionRepository.findDetailedById(7L)).thenReturn(Optional.of(action));
+        when(suggestedActionRepository.save(action)).thenAnswer(invocation -> invocation.getArgument(0));
+
+        decisionAssistantService.reject(7L, new RejectSuggestedActionRequest(), 30L);
+
+        assertThat(action.getDecidedAt()).isEqualTo(FIXED_MILLIS);
     }
 
     @Test
@@ -126,7 +150,7 @@ class DecisionAssistantServiceTest {
     @Test
     void approve_shouldRejectAlreadyRejectedSuggestion() {
         SuggestedAction action = pendingAction();
-        action.markRejected(30L, "Not valid");
+        action.markRejected(30L, "Not valid", FIXED_MILLIS);
         User manager = manager(30L);
         when(userService.getById(30L)).thenReturn(manager);
         when(suggestedActionRepository.findDetailedById(7L)).thenReturn(Optional.of(action));

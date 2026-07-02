@@ -1,6 +1,7 @@
 package com.infratrack.suggestedaction.dto;
 
 import com.infratrack.issue.IssueSeverity;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -29,7 +30,10 @@ public class ApproveSuggestedActionRequest {
     @Size(max = 4000)
     private String preventiveAction;
 
-    @NotNull
+    @Schema(
+            description = "Deprecated: retained for backward compatibility. "
+                    + "The server generates the authoritative issue recorded timestamp.",
+            deprecated = true)
     private LocalDateTime recordedAt;
 
     public String getTitle() {

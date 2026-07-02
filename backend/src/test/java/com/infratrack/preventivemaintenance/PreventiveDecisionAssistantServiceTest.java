@@ -16,6 +16,7 @@ import com.infratrack.preventivemaintenance.dto.ApprovePreventiveCandidateReques
 import com.infratrack.preventivemaintenance.dto.ApprovePreventiveCandidateResponse;
 import com.infratrack.preventivemaintenance.dto.DismissPreventiveCandidateRequest;
 import com.infratrack.preventivemaintenance.dto.RejectPreventiveCandidateRequest;
+import com.infratrack.time.WorkflowClock;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
@@ -25,7 +26,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,6 +42,9 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PreventiveDecisionAssistantServiceTest {
+
+    private static final Instant FIXED_INSTANT = Instant.parse("2026-07-02T10:00:00Z");
+    private static final long FIXED_MILLIS = FIXED_INSTANT.toEpochMilli();
 
     @Mock
     private PreventiveExecutionCandidateRepository candidateRepository;
@@ -53,15 +60,18 @@ class PreventiveDecisionAssistantServiceTest {
 
     private PreventiveExecutionCandidateAuthorizationService authorizationService;
     private PreventiveDecisionAssistantService decisionAssistantService;
+    private WorkflowClock workflowClock;
 
     @BeforeEach
     void setUp() {
+        workflowClock = new WorkflowClock(Clock.fixed(FIXED_INSTANT, ZoneId.systemDefault()));
         authorizationService = new PreventiveExecutionCandidateAuthorizationService(userService);
         decisionAssistantService = new PreventiveDecisionAssistantService(
                 candidateRepository,
                 authorizationService,
                 inspectionService,
-                reportService);
+                reportService,
+                workflowClock);
     }
 
     @Test
@@ -81,6 +91,7 @@ class PreventiveDecisionAssistantServiceTest {
         assertThat(candidate.getCandidateStatus()).isEqualTo(ExecutionCandidateStatus.APPROVED);
         assertThat(candidate.getCreatedInspectionId()).isEqualTo(900L);
         assertThat(candidate.getDecidedByUserId()).isEqualTo(30L);
+        assertThat(candidate.getDecidedAt()).isEqualTo(FIXED_MILLIS);
         assertThat(response.getInspection().getId()).isEqualTo(900L);
         verify(inspectionService).createInspectionFromApprovedPreventiveCandidate(candidate, request, 30L);
         verify(reportService).markApproved(candidate, 30L);
@@ -100,6 +111,7 @@ class PreventiveDecisionAssistantServiceTest {
 
         assertThat(response.getCandidateStatus()).isEqualTo(ExecutionCandidateStatus.REJECTED);
         assertThat(response.getRejectionReason()).isEqualTo("Already inspected");
+        assertThat(candidate.getDecidedAt()).isEqualTo(FIXED_MILLIS);
         verify(inspectionService, never()).createInspectionFromApprovedPreventiveCandidate(any(), any(), eq(30L));
         verify(reportService).markRejected(candidate, 30L, "Already inspected");
     }
@@ -124,7 +136,7 @@ class PreventiveDecisionAssistantServiceTest {
     @Test
     void approve_shouldRejectAlreadyApprovedCandidate() {
         PreventiveExecutionCandidate candidate = pendingCandidate();
-        candidate.markApproved(30L, 900L, null);
+        candidate.markApproved(30L, 900L, null, FIXED_MILLIS);
         User manager = manager(30L, department(10L));
         when(userService.getById(30L)).thenReturn(manager);
         when(candidateRepository.findDetailedById(500L)).thenReturn(Optional.of(candidate));

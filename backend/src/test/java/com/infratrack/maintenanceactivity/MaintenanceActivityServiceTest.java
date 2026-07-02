@@ -24,6 +24,7 @@ import com.infratrack.maintenanceactivity.dto.CompleteMaintenanceActivityRequest
 import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.operationaldecision.OperationalDecision;
 import com.infratrack.operationaldecision.OperationalDecisionOutcome;
+import com.infratrack.time.WorkflowClock;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
@@ -32,6 +33,7 @@ import com.infratrack.workorder.WorkOrderPriority;
 import com.infratrack.workorder.WorkOrderRepository;
 import com.infratrack.workorder.WorkOrderStatus;
 import com.infratrack.workorder.WorkType;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -44,6 +46,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import static org.mockito.Mockito.lenient;
+
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -51,6 +55,8 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class MaintenanceActivityServiceTest {
+
+    private static final LocalDateTime FIXED_NOW = LocalDateTime.of(2026, 7, 2, 10, 0);
 
     @Mock
     private MaintenanceActivityRepository maintenanceActivityRepository;
@@ -73,8 +79,16 @@ class MaintenanceActivityServiceTest {
     @Mock
     private CompletionReviewAuthorizationService completionReviewAuthorizationService;
 
+    @Mock
+    private WorkflowClock workflowClock;
+
     @InjectMocks
     private MaintenanceActivityService maintenanceActivityService;
+
+    @BeforeEach
+    void setUpClock() {
+        lenient().when(workflowClock.now()).thenReturn(FIXED_NOW);
+    }
 
     @Test
     void completeMaintenance_shouldAllowAssignedFieldEmployeeForInternalMaintenance() {
@@ -283,7 +297,7 @@ class MaintenanceActivityServiceTest {
     }
 
     @Test
-    void completeMaintenance_shouldRejectMissingCompletedAt() {
+    void completeMaintenance_shouldGenerateCompletedAtFromServer_whenClientOmitsTimestamp() {
         CompleteMaintenanceActivityRequest request = validRequest();
         request.setCompletedAt(null);
         WorkOrder workOrder = assignedWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE, 20L);
@@ -292,39 +306,34 @@ class MaintenanceActivityServiceTest {
         when(userService.getById(20L)).thenReturn(fieldEmployee);
         when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
         when(maintenanceActivityRepository.existsByWorkOrderId(1000L)).thenReturn(false);
+        when(maintenanceActivityRepository.save(any(MaintenanceActivity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        assertThatThrownBy(() -> maintenanceActivityService.completeMaintenance(1000L, request, 20L))
-                .isInstanceOf(BusinessValidationException.class);
+        var response = maintenanceActivityService.completeMaintenance(1000L, request, 20L);
+
+        assertThat(response.getCompletedAt()).isEqualTo(FIXED_NOW);
     }
 
     @Test
-    void completeMaintenance_shouldRejectCompletedAtBeforeAssignedAt() {
+    void completeMaintenance_shouldIgnoreClientProvidedCompletedAt() {
         CompleteMaintenanceActivityRequest request = validRequest();
-        WorkOrder workOrder = assignedWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE, 20L);
-        request.setCompletedAt(workOrder.getAssignedAt().minusMinutes(30));
-        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
-
-        when(userService.getById(20L)).thenReturn(fieldEmployee);
-        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
-        when(maintenanceActivityRepository.existsByWorkOrderId(1000L)).thenReturn(false);
-
-        assertThatThrownBy(() -> maintenanceActivityService.completeMaintenance(1000L, request, 20L))
-                .isInstanceOf(BusinessValidationException.class);
-    }
-
-    @Test
-    void completeMaintenance_shouldRejectFutureCompletedAt() {
-        CompleteMaintenanceActivityRequest request = validRequest();
-        request.setCompletedAt(LocalDateTime.now().plusDays(1));
+        request.setCompletedAt(LocalDateTime.now().minusDays(30));
         WorkOrder workOrder = assignedWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE, 20L);
         User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
 
         when(userService.getById(20L)).thenReturn(fieldEmployee);
         when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
         when(maintenanceActivityRepository.existsByWorkOrderId(1000L)).thenReturn(false);
+        when(maintenanceActivityRepository.save(any(MaintenanceActivity.class))).thenAnswer(invocation -> {
+            MaintenanceActivity activity = invocation.getArgument(0);
+            activity.setId(5000L);
+            return activity;
+        });
+        when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        assertThatThrownBy(() -> maintenanceActivityService.completeMaintenance(1000L, request, 20L))
-                .isInstanceOf(BusinessValidationException.class);
+        var response = maintenanceActivityService.completeMaintenance(1000L, request, 20L);
+
+        assertThat(response.getCompletedAt()).isEqualTo(FIXED_NOW);
     }
 
     @Test

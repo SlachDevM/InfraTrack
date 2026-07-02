@@ -9,6 +9,7 @@ import com.infratrack.preventivemaintenance.dto.ApprovePreventiveCandidateRespon
 import com.infratrack.preventivemaintenance.dto.DismissPreventiveCandidateRequest;
 import com.infratrack.preventivemaintenance.dto.PreventiveExecutionCandidateResponse;
 import com.infratrack.preventivemaintenance.dto.RejectPreventiveCandidateRequest;
+import com.infratrack.time.WorkflowClock;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,16 +23,19 @@ public class PreventiveDecisionAssistantService {
     private final PreventiveExecutionCandidateAuthorizationService authorizationService;
     private final InspectionService inspectionService;
     private final PreventiveExecutionReportService reportService;
+    private final WorkflowClock workflowClock;
 
     public PreventiveDecisionAssistantService(
             PreventiveExecutionCandidateRepository candidateRepository,
             PreventiveExecutionCandidateAuthorizationService authorizationService,
             InspectionService inspectionService,
-            PreventiveExecutionReportService reportService) {
+            PreventiveExecutionReportService reportService,
+            WorkflowClock workflowClock) {
         this.candidateRepository = candidateRepository;
         this.authorizationService = authorizationService;
         this.inspectionService = inspectionService;
         this.reportService = reportService;
+        this.workflowClock = workflowClock;
     }
 
     @Transactional
@@ -48,7 +52,8 @@ public class PreventiveDecisionAssistantService {
                 request,
                 userId);
         reportService.markApproved(candidate, userId);
-        candidate.markApproved(userId, inspection.getId(), normalizeOptionalText(request.getNotes()));
+        long decidedAt = workflowClock.nowMillis();
+        candidate.markApproved(userId, inspection.getId(), normalizeOptionalText(request.getNotes()), decidedAt);
         PreventiveExecutionCandidate saved = candidateRepository.save(candidate);
         reportService.markInspectionCreated(candidate, inspection.getId(), userId);
 
@@ -63,7 +68,8 @@ public class PreventiveDecisionAssistantService {
             RejectPreventiveCandidateRequest request,
             Long userId) {
         PreventiveExecutionCandidate candidate = findAuthorizedCandidate(candidateId, userId);
-        candidate.markRejected(userId, normalizeOptionalText(request.getReason()));
+        long decidedAt = workflowClock.nowMillis();
+        candidate.markRejected(userId, normalizeOptionalText(request.getReason()), decidedAt);
         PreventiveExecutionCandidate saved = candidateRepository.save(candidate);
         reportService.markRejected(saved, userId, saved.getRejectionReason());
         return PreventiveExecutionCandidateResponse.from(saved);
@@ -75,7 +81,8 @@ public class PreventiveDecisionAssistantService {
             DismissPreventiveCandidateRequest request,
             Long userId) {
         PreventiveExecutionCandidate candidate = findAuthorizedCandidate(candidateId, userId);
-        candidate.markDismissed(userId, normalizeOptionalText(request.getComment()));
+        long decidedAt = workflowClock.nowMillis();
+        candidate.markDismissed(userId, normalizeOptionalText(request.getComment()), decidedAt);
         PreventiveExecutionCandidate saved = candidateRepository.save(candidate);
         reportService.markDismissed(saved, userId, saved.getDismissComment());
         return PreventiveExecutionCandidateResponse.from(saved);

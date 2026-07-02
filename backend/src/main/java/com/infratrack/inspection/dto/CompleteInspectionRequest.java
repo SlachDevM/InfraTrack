@@ -23,7 +23,10 @@ public class CompleteInspectionRequest {
     @Schema(description = "Whether a new issue was identified during inspection")
     private Boolean issueIdentified;
 
-    @NotNull
+    @Schema(
+            description = "Deprecated: retained for backward compatibility. "
+                    + "The server generates the authoritative completion timestamp.",
+            deprecated = true)
     private LocalDateTime completedAt;
 
     @Valid

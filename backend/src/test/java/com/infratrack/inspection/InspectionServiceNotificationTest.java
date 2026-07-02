@@ -13,6 +13,7 @@ import com.infratrack.inspectiontemplate.InspectionTemplateRepository;
 import com.infratrack.notification.NotificationService;
 import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.organization.policy.visibility.InspectionVisibilityPolicyService;
+import com.infratrack.time.WorkflowClock;
 import com.infratrack.user.User;
 import com.infratrack.user.UserNameLookup;
 import com.infratrack.user.UserRepository;
@@ -24,7 +25,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -94,7 +98,8 @@ class InspectionServiceNotificationTest {
                 userService,
                 userNameLookup,
                 operationalEventNotificationService,
-                ruleEvaluationReportService);
+                ruleEvaluationReportService,
+                new WorkflowClock(Clock.systemDefaultZone()));
     }
 
     @Test

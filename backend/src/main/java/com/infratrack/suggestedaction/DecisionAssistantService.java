@@ -11,6 +11,7 @@ import com.infratrack.suggestedaction.dto.ApproveSuggestedActionResponse;
 import com.infratrack.suggestedaction.dto.DismissSuggestedActionRequest;
 import com.infratrack.suggestedaction.dto.RejectSuggestedActionRequest;
 import com.infratrack.suggestedaction.dto.SuggestedActionDetailResponse;
+import com.infratrack.time.WorkflowClock;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
 import org.springframework.stereotype.Service;
@@ -22,14 +23,17 @@ public class DecisionAssistantService {
     private final SuggestedActionRepository suggestedActionRepository;
     private final IssueService issueService;
     private final UserService userService;
+    private final WorkflowClock workflowClock;
 
     public DecisionAssistantService(
             SuggestedActionRepository suggestedActionRepository,
             IssueService issueService,
-            UserService userService) {
+            UserService userService,
+            WorkflowClock workflowClock) {
         this.suggestedActionRepository = suggestedActionRepository;
         this.issueService = issueService;
         this.userService = userService;
+        this.workflowClock = workflowClock;
     }
 
     @Transactional(readOnly = true)
@@ -48,7 +52,8 @@ public class DecisionAssistantService {
         requireIssueApprovalActionType(action.getActionType());
 
         IssueResponse issue = issueService.recordIssueFromApprovedSuggestion(action, request, userId);
-        action.markAccepted(userId, issue.getId());
+        long decidedAt = workflowClock.nowMillis();
+        action.markAccepted(userId, issue.getId(), decidedAt);
         suggestedActionRepository.save(action);
 
         return new ApproveSuggestedActionResponse(
@@ -62,7 +67,7 @@ public class DecisionAssistantService {
             RejectSuggestedActionRequest request,
             Long userId) {
         SuggestedAction action = findAuthorizedAction(suggestedActionId, userId);
-        action.markRejected(userId, normalizeOptionalText(request.getReason()));
+        action.markRejected(userId, normalizeOptionalText(request.getReason()), workflowClock.nowMillis());
         return SuggestedActionDetailResponse.from(suggestedActionRepository.save(action));
     }
 
@@ -72,7 +77,7 @@ public class DecisionAssistantService {
             DismissSuggestedActionRequest request,
             Long userId) {
         SuggestedAction action = findAuthorizedAction(suggestedActionId, userId);
-        action.markDismissed(userId, normalizeOptionalText(request.getComment()));
+        action.markDismissed(userId, normalizeOptionalText(request.getComment()), workflowClock.nowMillis());
         return SuggestedActionDetailResponse.from(suggestedActionRepository.save(action));
     }
 

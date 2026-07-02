@@ -27,6 +27,7 @@ import com.infratrack.inspectiontemplate.InspectionTemplateRepository;
 import com.infratrack.inspectiontemplate.InspectionTemplateStatus;
 import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.organization.policy.visibility.InspectionVisibilityPolicyService;
+import com.infratrack.time.WorkflowClock;
 import com.infratrack.user.User;
 import com.infratrack.user.UserNameLookup;
 import com.infratrack.user.UserRole;
@@ -44,8 +45,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -56,6 +60,10 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class InspectionServiceTest {
+
+    private static final Instant FIXED_INSTANT = Instant.parse("2026-07-02T10:00:00Z");
+    private static final LocalDateTime FIXED_NOW =
+            LocalDateTime.ofInstant(FIXED_INSTANT, ZoneId.systemDefault());
 
     @Mock
     private InspectionRepository inspectionRepository;
@@ -91,9 +99,11 @@ class InspectionServiceTest {
     private com.infratrack.ruleevaluation.RuleEvaluationReportService ruleEvaluationReportService;
 
     private InspectionService inspectionService;
+    private WorkflowClock workflowClock;
 
     @BeforeEach
     void setUp() {
+        workflowClock = new WorkflowClock(Clock.fixed(FIXED_INSTANT, ZoneId.systemDefault()));
         InspectionAuthorizationService authorizationService = new InspectionAuthorizationService(
                 userService,
                 new InspectionVisibilityPolicyService("DEPARTMENT"));
@@ -112,7 +122,8 @@ class InspectionServiceTest {
                 userService,
                 userNameLookup,
                 operationalEventNotificationService,
-                ruleEvaluationReportService);
+                ruleEvaluationReportService,
+                workflowClock);
     }
 
     @Test
@@ -469,6 +480,7 @@ class InspectionServiceTest {
         assertThat(response.getObservations()).isEqualTo("Equipment inspected and operating normally");
         assertThat(response.isIssueIdentified()).isFalse();
         assertThat(response.getCompletedByUserId()).isEqualTo(20L);
+        assertThat(response.getCompletedAt()).isEqualTo(FIXED_NOW);
 
         ArgumentCaptor<AssetHistoryEvent> historyCaptor = ArgumentCaptor.forClass(AssetHistoryEvent.class);
         verify(assetHistoryEventRepository).save(historyCaptor.capture());
@@ -506,7 +518,8 @@ class InspectionServiceTest {
         var response = inspectionService.completeInspection(100L, request, 20L);
 
         assertThat(response.isIssueIdentified()).isTrue();
-        verify(inspectionRepository).save(argThat(saved -> saved.isIssueIdentified()));
+        verify(inspectionRepository, times(2)).save(argThat(saved ->
+                saved.getStatus() == InspectionStatus.COMPLETED && saved.isIssueIdentified()));
     }
 
     @Test
@@ -612,7 +625,7 @@ class InspectionServiceTest {
     }
 
     @Test
-    void completeInspection_shouldRejectMissingCompletedAt() {
+    void completeInspection_shouldGenerateCompletedAtFromServer_whenClientOmitsTimestamp() {
         CompleteInspectionRequest request = validCompleteRequest();
         request.setCompletedAt(null);
         Inspection inspection = assignedInspection(100L, 20L);
@@ -620,23 +633,27 @@ class InspectionServiceTest {
 
         when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
         when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.save(any(Inspection.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        assertThatThrownBy(() -> inspectionService.completeInspection(100L, request, 20L))
-                .isInstanceOf(BusinessValidationException.class);
+        var response = inspectionService.completeInspection(100L, request, 20L);
+
+        assertThat(response.getCompletedAt()).isEqualTo(FIXED_NOW);
     }
 
     @Test
-    void completeInspection_shouldRejectFutureCompletedAt() {
+    void completeInspection_shouldIgnoreClientProvidedCompletedAt() {
         CompleteInspectionRequest request = validCompleteRequest();
-        request.setCompletedAt(LocalDateTime.now().plusDays(1));
+        request.setCompletedAt(LocalDateTime.now().minusDays(30));
         Inspection inspection = assignedInspection(100L, 20L);
         User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
 
         when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
         when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.save(any(Inspection.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        assertThatThrownBy(() -> inspectionService.completeInspection(100L, request, 20L))
-                .isInstanceOf(BusinessValidationException.class);
+        var response = inspectionService.completeInspection(100L, request, 20L);
+
+        assertThat(response.getCompletedAt()).isEqualTo(FIXED_NOW);
     }
 
     @Test

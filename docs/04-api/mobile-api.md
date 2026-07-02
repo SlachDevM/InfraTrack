@@ -115,6 +115,8 @@ This is **not** the Operations Intelligence web dashboard.
 | Register FCM token | `PUT /api/users/me/fcm-token` |
 | Upload operational document | Existing operational document endpoints |
 
+**Workflow timestamps:** Mobile clients send workflow intent only. The backend sets authoritative `completedAt`, `reviewedAt`, and decision timestamps. Deprecated request fields such as `completedAt` on completion requests may still be accepted for compatibility but are ignored — read timestamps from API responses after each write.
+
 ## Future phases (deferred)
 
 | Phase | Capability |

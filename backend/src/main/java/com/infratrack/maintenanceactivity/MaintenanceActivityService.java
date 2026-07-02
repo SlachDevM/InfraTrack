@@ -15,6 +15,7 @@ import com.infratrack.exception.NotFoundException;
 import com.infratrack.maintenanceactivity.dto.CompleteMaintenanceActivityRequest;
 import com.infratrack.maintenanceactivity.dto.MaintenanceActivityResponse;
 import com.infratrack.notification.OperationalEventNotificationService;
+import com.infratrack.time.WorkflowClock;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
 import com.infratrack.workorder.WorkOrder;
@@ -40,6 +41,7 @@ public class MaintenanceActivityService {
     private final CompletionReviewRepository completionReviewRepository;
     private final OperationalEventNotificationService operationalEventNotificationService;
     private final CompletionReviewAuthorizationService completionReviewAuthorizationService;
+    private final WorkflowClock workflowClock;
 
     public MaintenanceActivityService(
             MaintenanceActivityRepository maintenanceActivityRepository,
@@ -48,7 +50,8 @@ public class MaintenanceActivityService {
             UserService userService,
             CompletionReviewRepository completionReviewRepository,
             OperationalEventNotificationService operationalEventNotificationService,
-            CompletionReviewAuthorizationService completionReviewAuthorizationService) {
+            CompletionReviewAuthorizationService completionReviewAuthorizationService,
+            WorkflowClock workflowClock) {
         this.maintenanceActivityRepository = maintenanceActivityRepository;
         this.workOrderRepository = workOrderRepository;
         this.assetHistoryEventRepository = assetHistoryEventRepository;
@@ -56,6 +59,7 @@ public class MaintenanceActivityService {
         this.completionReviewRepository = completionReviewRepository;
         this.operationalEventNotificationService = operationalEventNotificationService;
         this.completionReviewAuthorizationService = completionReviewAuthorizationService;
+        this.workflowClock = workflowClock;
     }
 
     @Transactional(readOnly = true)
@@ -93,7 +97,7 @@ public class MaintenanceActivityService {
         requireNoExistingMaintenanceActivity(workOrderId);
 
         String completionNotes = normalizeCompletionNotes(request.getCompletionNotes());
-        LocalDateTime completedAt = validateCompletedAt(request.getCompletedAt(), workOrder);
+        LocalDateTime completedAt = workflowClock.now();
 
         Asset asset = workOrder.getAsset();
         MaintenanceActivity maintenanceActivity = maintenanceActivityRepository.save(new MaintenanceActivity(
@@ -177,18 +181,4 @@ public class MaintenanceActivityService {
         return completionNotes.trim();
     }
 
-    private LocalDateTime validateCompletedAt(LocalDateTime completedAt, WorkOrder workOrder) {
-        if (completedAt == null) {
-            throw new BusinessValidationException("Completion date and time are required");
-        }
-        if (workOrder.getAssignedAt() != null && completedAt.isBefore(workOrder.getAssignedAt())) {
-            throw new BusinessValidationException(
-                    "Completion date and time cannot be before the work order was assigned");
-        }
-        if (completedAt.isAfter(LocalDateTime.now())) {
-            throw new BusinessValidationException(
-                    "Completion date and time cannot be in the future");
-        }
-        return completedAt;
-    }
 }

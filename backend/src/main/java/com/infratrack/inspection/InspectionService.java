@@ -27,6 +27,7 @@ import com.infratrack.preventivemaintenance.dto.ApprovePreventiveCandidateReques
 import com.infratrack.ruleevaluation.RuleEvaluationReport;
 import com.infratrack.ruleevaluation.RuleEvaluationReportService;
 import com.infratrack.ruleevaluation.dto.RuleEvaluationReportSummaryResponse;
+import com.infratrack.time.WorkflowClock;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import com.infratrack.notification.OperationalEventNotificationService;
@@ -60,6 +61,7 @@ public class InspectionService {
     private final UserNameLookup userNameLookup;
     private final OperationalEventNotificationService operationalEventNotificationService;
     private final RuleEvaluationReportService ruleEvaluationReportService;
+    private final WorkflowClock workflowClock;
 
     public InspectionService(
             InspectionRepository inspectionRepository,
@@ -71,7 +73,8 @@ public class InspectionService {
             UserService userService,
             UserNameLookup userNameLookup,
             OperationalEventNotificationService operationalEventNotificationService,
-            RuleEvaluationReportService ruleEvaluationReportService) {
+            RuleEvaluationReportService ruleEvaluationReportService,
+            WorkflowClock workflowClock) {
         this.inspectionRepository = inspectionRepository;
         this.businessTriggerRepository = businessTriggerRepository;
         this.inspectionTemplateRepository = inspectionTemplateRepository;
@@ -82,6 +85,7 @@ public class InspectionService {
         this.userNameLookup = userNameLookup;
         this.operationalEventNotificationService = operationalEventNotificationService;
         this.ruleEvaluationReportService = ruleEvaluationReportService;
+        this.workflowClock = workflowClock;
     }
 
     @Transactional(readOnly = true)
@@ -321,7 +325,7 @@ public class InspectionService {
         PhysicalCondition observedCondition = validateObservedCondition(request.getObservedCondition());
         String observations = normalizeObservations(request.getObservations());
         boolean issueIdentified = request.getIssueIdentified() != null && request.getIssueIdentified();
-        LocalDateTime completedAt = validateCompletedAt(request.getCompletedAt());
+        LocalDateTime completedAt = workflowClock.now();
 
         saveInspectionProgress(
                 inspection,
@@ -513,14 +517,4 @@ public class InspectionService {
         return observations.trim();
     }
 
-    private LocalDateTime validateCompletedAt(LocalDateTime completedAt) {
-        if (completedAt == null) {
-            throw new BusinessValidationException("Completion date and time are required");
-        }
-        if (completedAt.isAfter(LocalDateTime.now())) {
-            throw new BusinessValidationException(
-                    "Completion date and time cannot be in the future");
-        }
-        return completedAt;
-    }
 }

@@ -117,31 +117,31 @@ public class SuggestedAction {
         }
     }
 
-    public void markAccepted(Long managerId, Long issueId) {
+    public void markAccepted(Long managerId, Long issueId, long decidedAt) {
         requirePending();
         this.status = SuggestedActionStatus.ACCEPTED;
         this.createdIssueId = issueId;
         this.decidedByUserId = managerId;
-        this.decidedAt = System.currentTimeMillis();
-        this.updatedAt = this.decidedAt;
+        this.decidedAt = decidedAt;
+        this.updatedAt = decidedAt;
     }
 
-    public void markRejected(Long managerId, String reason) {
+    public void markRejected(Long managerId, String reason, long decidedAt) {
         requirePending();
         this.status = SuggestedActionStatus.REJECTED;
         this.rejectionReason = reason;
         this.decidedByUserId = managerId;
-        this.decidedAt = System.currentTimeMillis();
-        this.updatedAt = this.decidedAt;
+        this.decidedAt = decidedAt;
+        this.updatedAt = decidedAt;
     }
 
-    public void markDismissed(Long managerId, String comment) {
+    public void markDismissed(Long managerId, String comment, long decidedAt) {
         requirePending();
         this.status = SuggestedActionStatus.DISMISSED;
         this.dismissComment = comment;
         this.decidedByUserId = managerId;
-        this.decidedAt = System.currentTimeMillis();
-        this.updatedAt = this.decidedAt;
+        this.decidedAt = decidedAt;
+        this.updatedAt = decidedAt;
     }
 
     public Long getId() {

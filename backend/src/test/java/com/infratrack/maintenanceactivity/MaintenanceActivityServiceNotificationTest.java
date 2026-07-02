@@ -17,6 +17,7 @@ import com.infratrack.issue.IssueSeverity;
 import com.infratrack.maintenanceactivity.dto.CompleteMaintenanceActivityRequest;
 import com.infratrack.notification.NotificationService;
 import com.infratrack.notification.OperationalEventNotificationService;
+import com.infratrack.time.WorkflowClock;
 import com.infratrack.operationaldecision.OperationalDecision;
 import com.infratrack.operationaldecision.OperationalDecisionOutcome;
 import com.infratrack.user.User;
@@ -86,7 +87,8 @@ class MaintenanceActivityServiceNotificationTest {
                 userService,
                 completionReviewRepository,
                 operationalEventNotificationService,
-                completionReviewAuthorizationService);
+                completionReviewAuthorizationService,
+                new WorkflowClock(java.time.Clock.systemDefaultZone()));
     }
 
     @Test

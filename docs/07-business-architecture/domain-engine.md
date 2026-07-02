@@ -340,6 +340,22 @@ Progressive saves must never create Issues, Suggested Actions, Rule Evaluation R
 
 The same inspection access rules apply: assigned Field Employee or Contractor, Administrator (support), and Manager / Operational Coordinator where existing view permissions allow. Completed inspections reject further saves with `409 Conflict`.
 
+## Sprint V2.3.x — Server-Generated Workflow Audit Timestamps
+
+Workflow endpoints no longer treat client-supplied audit timestamps as authoritative. The client submits the business action; the backend records when that action was processed.
+
+| Workflow | Deprecated request fields (ignored) | Server-generated fields |
+|----------|-------------------------------------|-------------------------|
+| Inspection completion | `completedAt` | `Inspection.completedAt` |
+| Maintenance completion | `completedAt` | `MaintenanceActivity.completedAt` |
+| Completion review | `reviewedAt` | `CompletionReview.reviewedAt` |
+| Suggested action approve/reject/dismiss | `recordedAt` on approve (issue path only) | `SuggestedAction.decidedAt`; issue `recordedAt` on approve |
+| Preventive candidate approve/reject/dismiss | — | `PreventiveExecutionCandidate.decidedAt` |
+
+User-entered business dates (`expectedCompletionDate`, preventive `plannedAt`, UC-005 issue `recordedAt` from field recording) are unchanged.
+
+Implementation uses an injectable `WorkflowClock` (`java.time.Clock`) for deterministic tests. Workflow behaviour, status transitions, notifications, and Decision Engine timing are unchanged.
+
 ## Sprint A2.3.2 — Inspection Value Model
 
 Template questions now define what constitutes a valid answer, not only what is asked.

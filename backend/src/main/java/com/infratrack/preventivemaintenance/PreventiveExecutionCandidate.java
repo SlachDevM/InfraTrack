@@ -124,32 +124,32 @@ public class PreventiveExecutionCandidate {
         }
     }
 
-    public void markApproved(Long managerId, Long inspectionId, String decisionNotes) {
+    public void markApproved(Long managerId, Long inspectionId, String decisionNotes, long decidedAt) {
         requirePending();
         this.candidateStatus = ExecutionCandidateStatus.APPROVED;
         this.createdInspectionId = inspectionId;
         this.decisionNotes = decisionNotes;
         this.decidedByUserId = managerId;
-        this.decidedAt = System.currentTimeMillis();
-        this.updatedAt = this.decidedAt;
+        this.decidedAt = decidedAt;
+        this.updatedAt = decidedAt;
     }
 
-    public void markRejected(Long managerId, String reason) {
+    public void markRejected(Long managerId, String reason, long decidedAt) {
         requirePending();
         this.candidateStatus = ExecutionCandidateStatus.REJECTED;
         this.rejectionReason = reason;
         this.decidedByUserId = managerId;
-        this.decidedAt = System.currentTimeMillis();
-        this.updatedAt = this.decidedAt;
+        this.decidedAt = decidedAt;
+        this.updatedAt = decidedAt;
     }
 
-    public void markDismissed(Long managerId, String comment) {
+    public void markDismissed(Long managerId, String comment, long decidedAt) {
         requirePending();
         this.candidateStatus = ExecutionCandidateStatus.DISMISSED;
         this.dismissComment = comment;
         this.decidedByUserId = managerId;
-        this.decidedAt = System.currentTimeMillis();
-        this.updatedAt = this.decidedAt;
+        this.decidedAt = decidedAt;
+        this.updatedAt = decidedAt;
     }
 
     public Long getId() {

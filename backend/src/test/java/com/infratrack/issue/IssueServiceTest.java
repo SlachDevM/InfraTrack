@@ -20,9 +20,23 @@ import com.infratrack.inspection.PhysicalCondition;
 import com.infratrack.issue.dto.CreateIssueRequest;
 import com.infratrack.issue.dto.IssueResponse;
 import com.infratrack.issue.dto.UpdateIssueCapaRequest;
+import com.infratrack.ruleevaluation.RuleEvaluationReport;
+import com.infratrack.ruleevaluation.RuleEvaluationResult;
+import com.infratrack.ruleevaluation.RuleEvaluationStatus;
+import com.infratrack.ruleevaluation.RuleEngineVersion;
+import com.infratrack.suggestedaction.SuggestedAction;
+import com.infratrack.suggestedaction.SuggestionConfidence;
+import com.infratrack.suggestedaction.dto.ApproveSuggestedActionRequest;
+import com.infratrack.inspectiontemplate.DecisionRuleActionType;
+import com.infratrack.inspectiontemplate.DecisionRuleConditionType;
+import com.infratrack.inspectiontemplate.DecisionRuleOperator;
+import com.infratrack.inspectiontemplate.InspectionTemplate;
+import com.infratrack.inspectiontemplate.InspectionTemplateStatus;
+import com.infratrack.time.WorkflowClock;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -40,6 +54,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import static org.mockito.Mockito.lenient;
+
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -47,6 +63,8 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class IssueServiceTest {
+
+    private static final LocalDateTime FIXED_NOW = LocalDateTime.of(2026, 7, 2, 10, 0);
 
     @Mock
     private IssueRepository issueRepository;
@@ -60,8 +78,16 @@ class IssueServiceTest {
     @Mock
     private UserService userService;
 
+    @Mock
+    private WorkflowClock workflowClock;
+
     @InjectMocks
     private IssueService issueService;
+
+    @BeforeEach
+    void setUpClock() {
+        lenient().when(workflowClock.now()).thenReturn(FIXED_NOW);
+    }
 
     @Test
     void recordIssue_shouldCreateIssueAndHistoryEvent_whenValid() {
@@ -408,6 +434,29 @@ class IssueServiceTest {
     }
 
     @Test
+    void recordIssueFromApprovedSuggestion_shouldGenerateRecordedAtFromServer() {
+        SuggestedAction action = suggestedAction();
+        ApproveSuggestedActionRequest request = approveSuggestionRequest();
+        request.setRecordedAt(LocalDateTime.now().minusDays(30));
+        User manager = managerInDepartment(30L, 1L);
+
+        when(userService.getById(30L)).thenReturn(manager);
+        when(issueRepository.existsByInspectionId(100L)).thenReturn(false);
+        when(issueRepository.save(any(Issue.class))).thenAnswer(invocation -> {
+            Issue issue = invocation.getArgument(0);
+            issue.setId(500L);
+            return issue;
+        });
+
+        IssueResponse response = issueService.recordIssueFromApprovedSuggestion(action, request, 30L);
+
+        assertThat(response.getRecordedAt()).isEqualTo(FIXED_NOW);
+        ArgumentCaptor<Issue> issueCaptor = ArgumentCaptor.forClass(Issue.class);
+        verify(issueRepository).save(issueCaptor.capture());
+        assertThat(issueCaptor.getValue().getRecordedAt()).isEqualTo(FIXED_NOW);
+    }
+
+    @Test
     void listEligibleForOperationalDecisionPage_shouldReturnIssuesForManagerDepartment() {
         User manager = managerInDepartment(30L, 1L);
         Issue issue = issue(50L);
@@ -522,5 +571,41 @@ class IssueServiceTest {
         );
         issue.setId(id);
         return issue;
+    }
+
+    private SuggestedAction suggestedAction() {
+        Inspection inspection = completedInspectionWithIssue(100L, 20L);
+        InspectionTemplate template = new InspectionTemplate(
+                "Pump", null, inspection.getAsset().getAssetCategory(), 1, InspectionTemplateStatus.PUBLISHED);
+        inspection.setInspectionTemplate(template);
+        RuleEvaluationReport report = new RuleEvaluationReport(
+                inspection, 1L, RuleEngineVersion.CURRENT, 1L, 1, 1);
+        report.setId(10L);
+        report.setEvaluationStatus(RuleEvaluationStatus.SUCCESS);
+        report.setTemplateVersionSnapshot(1);
+        RuleEvaluationResult result = new RuleEvaluationResult(
+                1L, "HIGH_TEMP", "High temperature",
+                DecisionRuleConditionType.NUMBER,
+                DecisionRuleOperator.GREATER_THAN,
+                "90", "95", true,
+                DecisionRuleActionType.SUGGEST_ISSUE,
+                "{\"severity\":\"HIGH\"}", 10, 1L, 1L);
+        SuggestedAction action = new SuggestedAction(
+                inspection, report, result,
+                DecisionRuleActionType.SUGGEST_ISSUE,
+                "Replace swing chain",
+                "Chain shows excessive wear",
+                "HIGH", "{}", 1, "HIGH_TEMP", SuggestionConfidence.LOW);
+        action.setId(7L);
+        return action;
+    }
+
+    private ApproveSuggestedActionRequest approveSuggestionRequest() {
+        ApproveSuggestedActionRequest request = new ApproveSuggestedActionRequest();
+        request.setTitle("Replace swing chain");
+        request.setDescription("Chain shows excessive wear");
+        request.setSeverity(IssueSeverity.HIGH);
+        request.setRecordedAt(LocalDateTime.now().minusMinutes(5));
+        return request;
     }
 }
