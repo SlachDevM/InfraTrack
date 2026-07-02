@@ -68,6 +68,7 @@ For visual workflow context, see also [Workflow Sequence Diagrams](../02-system-
 | [BDR-001](bdr-001-human-in-the-loop-decision-engine.md) | Human-in-the-Loop Decision Engine | Accepted | Decision Rules produce Suggested Actions only; Managers must approve before an Issue is created — no automatic Issues, Decisions, or Work Orders. |
 | [BDR-002](bdr-002-preventive-candidates-before-automation.md) | Preventive Candidates Before Automation | Accepted | Preventive automation stops at Execution Candidate generation; the scheduler does not create Inspections — Manager approval is required. |
 | [BDR-003](bdr-003-bearer-token-architecture.md) | Bearer Token Architecture | Accepted | JWT access tokens are sent via `Authorization: Bearer`; HttpOnly cookies are not used — intentional for SPA, API, and future Android clients. |
+| [BDR-004](bdr-004-configurable-organizational-policies.md) | Configurable Organizational Policies | Accepted | Business rules remain stable; organizations configure operational policies (visibility, approvals, notifications) without redefining the domain. |
 
 ---
 
@@ -163,8 +164,8 @@ Create a BDR when a **product or domain** choice changes how councils operate or
 | Category | Count |
 |----------|------:|
 | ADR | 4 |
-| BDR | 3 |
-| **Total** | **7** |
+| BDR | 4 |
+| **Total** | **8** |
 
 All records listed above are **Accepted** as of the last index update.
 

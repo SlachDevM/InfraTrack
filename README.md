@@ -69,6 +69,7 @@ See [Functional Use Cases](docs/01-business-architecture/functional-use-cases.md
 | [Business Capability Map](docs/01-business-architecture/business-capability-map.md) | What the platform can do today |
 | [Product Roadmap](docs/06-release-notes/v2-roadmap.md) | Planned versions |
 | [ADR Index](docs/03-architecture/ADR-INDEX.md) | Architecture decisions |
+| [BDR-004](docs/03-architecture/bdr-004-configurable-organizational-policies.md) | Configurable organizational policies principle |
 
 ---
 

@@ -165,6 +165,7 @@ Architecture Decision Records (ADRs) and Business Decision Records (BDRs). **Sta
 - [BDR-001](03-architecture/bdr-001-human-in-the-loop-decision-engine.md) — Rules suggest; managers decide
 - [BDR-002](03-architecture/bdr-002-preventive-candidates-before-automation.md) — Scheduler generates candidates only
 - [BDR-003](03-architecture/bdr-003-bearer-token-architecture.md) — Bearer token architecture
+- [BDR-004](03-architecture/bdr-004-configurable-organizational-policies.md) — Configurable organizational policies
 
 ### 04 — API
 

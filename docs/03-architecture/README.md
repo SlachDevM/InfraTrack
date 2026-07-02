@@ -12,5 +12,6 @@ Architecture Decision Records (ADRs) and Business Decision Records (BDRs) for In
 | [BDR-001 — Human-in-the-Loop Decision Engine](bdr-001-human-in-the-loop-decision-engine.md) | Rules suggest; managers decide |
 | [BDR-002 — Preventive Candidates Before Automation](bdr-002-preventive-candidates-before-automation.md) | Scheduler generates candidates only |
 | [BDR-003 — Bearer Token Architecture](bdr-003-bearer-token-architecture.md) | JWT Bearer tokens for web and mobile |
+| [BDR-004 — Configurable Organizational Policies](bdr-004-configurable-organizational-policies.md) | Business rules are stable; organizational policies are configurable |
 
 **Start here:** [ADR Index](ADR-INDEX.md)
