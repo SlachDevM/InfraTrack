@@ -19,6 +19,7 @@ import com.infratrack.inspection.dto.CompleteInspectionRequest;
 import com.infratrack.inspection.dto.InspectionAnswerRequest;
 import com.infratrack.inspection.dto.InspectionSummaryResponse;
 import com.infratrack.inspection.dto.SaveInspectionAnswersRequest;
+import com.infratrack.inspection.dto.SaveInspectionProgressRequest;
 import com.infratrack.inspectiontemplate.InspectionTemplate;
 import com.infratrack.inspectiontemplate.InspectionTemplateQuestion;
 import com.infratrack.inspectiontemplate.InspectionTemplateQuestionType;
@@ -1093,6 +1094,101 @@ class InspectionServiceTest {
         assertThatThrownBy(() -> inspectionService.saveInspectionAnswers(100L, request, 20L))
                 .isInstanceOf(ForbiddenOperationException.class)
                 .hasMessage("Only the assigned user can save inspection answers");
+    }
+
+    @Test
+    void saveInspectionProgress_shouldSaveSummaryOnly_withoutCompletingOrTriggeringSideEffects() {
+        SaveInspectionProgressRequest request = new SaveInspectionProgressRequest();
+        request.setObservedCondition(PhysicalCondition.GOOD);
+        request.setObservations("Draft notes");
+        request.setIssueIdentified(true);
+
+        Inspection inspection = assignedInspection(100L, 20L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        var response = inspectionService.saveInspectionProgress(100L, request, 20L);
+
+        assertThat(response.getId()).isEqualTo(100L);
+        assertThat(response.getStatus()).isEqualTo(InspectionStatus.ASSIGNED);
+        assertThat(response.getObservedCondition()).isEqualTo(PhysicalCondition.GOOD);
+        assertThat(response.getObservations()).isEqualTo("Draft notes");
+        assertThat(response.isIssueIdentified()).isTrue();
+
+        verify(ruleEvaluationReportService, never()).createReportIfApplicable(any());
+        verify(assetHistoryEventRepository, never()).save(any());
+    }
+
+    @Test
+    void saveInspectionProgress_shouldRejectCompletedInspection() {
+        SaveInspectionProgressRequest request = new SaveInspectionProgressRequest();
+        request.setObservations("Draft");
+
+        Inspection inspection = assignedInspection(100L, 20L);
+        inspection.complete(
+                PhysicalCondition.GOOD,
+                "Done",
+                false,
+                LocalDateTime.now().minusHours(1),
+                20L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        assertThatThrownBy(() -> inspectionService.saveInspectionProgress(100L, request, 20L))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Inspection progress cannot be modified after completion");
+    }
+
+    @Test
+    void completeInspection_shouldSucceed_whenAnswersWerePreviouslySavedProgressively() {
+        CompleteInspectionRequest request = validCompleteRequest();
+        request.setAnswers(null);
+
+        Inspection inspection = templatedAssignedInspection(100L, 20L, 50L);
+        InspectionTemplateQuestion question = templateQuestion(1L, inspection.getInspectionTemplate());
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionTemplateQuestionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
+                .thenReturn(List.of(question));
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenAnswer(invocation -> List.of(new InspectionAnswer(
+                        inspection,
+                        question,
+                        "LEAK",
+                        "Is there a visible leak?",
+                        InspectionAnswerQuestionTypeSnapshot.BOOLEAN,
+                        true,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        1)));
+
+        SaveInspectionAnswersRequest saveRequest = new SaveInspectionAnswersRequest();
+        InspectionAnswerRequest answerRequest = new InspectionAnswerRequest();
+        answerRequest.setQuestionId(1L);
+        answerRequest.setBooleanValue(true);
+        saveRequest.setAnswers(List.of(answerRequest));
+        when(inspectionAnswerRepository.findByInspectionIdAndQuestionId(100L, 1L)).thenReturn(Optional.empty());
+        when(inspectionAnswerRepository.save(any(InspectionAnswer.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        inspectionService.saveInspectionAnswers(100L, saveRequest, 20L);
+        inspectionService.completeInspection(100L, request, 20L);
+
+        verify(ruleEvaluationReportService, times(1)).createReportIfApplicable(100L);
     }
 
     private CompleteInspectionRequest validCompleteRequest() {

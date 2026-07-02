@@ -202,6 +202,7 @@ class MobileServiceTest {
     void getInspectionBundle_shouldAllowAssignedFieldUser() {
         User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
         Inspection inspection = templatedInspection(100L, 20L, 50L);
+        inspection.saveProgress(com.infratrack.inspection.PhysicalCondition.GOOD, "Draft observations", true);
         InspectionTemplateQuestion question = templateQuestion(10L, inspection.getInspectionTemplate());
         InspectionTemplateQuestionChoice choice = templateChoice(1L, question, "YES", "Yes");
         InspectionAnswer answer = inspectionAnswer(inspection, question, true);
@@ -220,6 +221,9 @@ class MobileServiceTest {
         assertThat(response.getInspection().getId()).isEqualTo(100L);
         assertThat(response.getAsset().getName()).isEqualTo("Central Playground");
         assertThat(response.getAsset().getLocation()).isEqualTo("Memorial Park");
+        assertThat(response.getInspection().getObservedCondition()).isEqualTo(com.infratrack.inspection.PhysicalCondition.GOOD);
+        assertThat(response.getInspection().getObservations()).isEqualTo("Draft observations");
+        assertThat(response.getInspection().isIssueIdentified()).isTrue();
         assertThat(response.getTemplate().getId()).isEqualTo(50L);
         assertThat(response.getQuestions()).hasSize(1);
         assertThat(response.getQuestions().get(0).getChoices()).hasSize(1);

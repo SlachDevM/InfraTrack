@@ -16,6 +16,7 @@ import com.infratrack.inspection.dto.InspectionAnswerResponse;
 import com.infratrack.inspection.dto.InspectionResponse;
 import com.infratrack.inspection.dto.InspectionSummaryResponse;
 import com.infratrack.inspection.dto.SaveInspectionAnswersRequest;
+import com.infratrack.inspection.dto.SaveInspectionProgressRequest;
 import com.infratrack.inspectiontemplate.InspectionTemplate;
 import com.infratrack.inspectiontemplate.InspectionTemplateRepository;
 import com.infratrack.inspectiontemplate.InspectionTemplateStatus;
@@ -281,7 +282,34 @@ public class InspectionService {
         requireActiveForAnswerSave(inspection);
 
         List<InspectionAnswerRequest> answers = request.getAnswers() == null ? List.of() : request.getAnswers();
-        return inspectionAnswerService.upsertProgressiveAnswers(inspection, answers);
+        return saveInspectionProgress(inspection, null, null, null, answers);
+    }
+
+    @Transactional
+    public InspectionResponse saveInspectionProgress(
+            Long inspectionId,
+            SaveInspectionProgressRequest request,
+            Long userId) {
+        Inspection inspection = findInspectionOrThrow(inspectionId);
+        User user = userService.getById(userId);
+        authorizationService.requireCanSaveInspectionAnswers(user, inspection);
+        requireActiveForProgressSave(inspection);
+
+        PhysicalCondition observedCondition = request.getObservedCondition() != null
+                ? validateObservedCondition(request.getObservedCondition())
+                : null;
+        String observations = request.getObservations() != null
+                ? normalizeObservations(request.getObservations())
+                : null;
+
+        saveInspectionProgress(
+                inspection,
+                observedCondition,
+                observations,
+                request.getIssueIdentified(),
+                request.getAnswers());
+
+        return toResponse(inspection);
     }
 
     @Transactional
@@ -295,10 +323,17 @@ public class InspectionService {
         boolean issueIdentified = request.getIssueIdentified() != null && request.getIssueIdentified();
         LocalDateTime completedAt = validateCompletedAt(request.getCompletedAt());
 
+        saveInspectionProgress(
+                inspection,
+                observedCondition,
+                observations,
+                issueIdentified,
+                request.getAnswers());
+
+        int answerCount = inspectionAnswerService.saveAnswers(inspection, List.of());
+
         inspection.complete(observedCondition, observations, issueIdentified, completedAt, performer.getId());
         inspectionRepository.save(inspection);
-
-        int answerCount = inspectionAnswerService.saveAnswers(inspection, request.getAnswers());
 
         RuleEvaluationReport evaluationReport = ruleEvaluationReportService.createReportIfApplicable(inspectionId);
 
@@ -442,6 +477,26 @@ public class InspectionService {
         if (inspection.getStatus() != InspectionStatus.ASSIGNED) {
             throw new ConflictException("Inspection answers cannot be modified after completion");
         }
+    }
+
+    private void requireActiveForProgressSave(Inspection inspection) {
+        if (inspection.getStatus() != InspectionStatus.ASSIGNED) {
+            throw new ConflictException("Inspection progress cannot be modified after completion");
+        }
+    }
+
+    private List<InspectionAnswerResponse> saveInspectionProgress(
+            Inspection inspection,
+            PhysicalCondition observedCondition,
+            String observations,
+            Boolean issueIdentified,
+            List<InspectionAnswerRequest> answers) {
+        inspection.saveProgress(observedCondition, observations, issueIdentified);
+        inspectionRepository.save(inspection);
+        if (answers == null) {
+            return null;
+        }
+        return inspectionAnswerService.upsertProgressiveAnswers(inspection, answers);
     }
 
     private PhysicalCondition validateObservedCondition(PhysicalCondition observedCondition) {

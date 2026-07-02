@@ -64,12 +64,19 @@ Progressive save workflow for field clients:
 
 ```text
 GET  /api/mobile/inspections/{id}/bundle
-PUT  /api/inspections/{id}/answers
+PUT  /api/inspections/{id}/progress
 GET  /api/mobile/inspections/{id}/bundle
 POST /api/inspections/{id}/complete
 ```
 
-`PUT /api/inspections/{id}/answers` upserts structured answers without completing the inspection. The bundle `answers` array reflects whatever is persisted in the backend — reload the bundle after each save. Completion still uses `POST /api/inspections/{id}/complete` and runs mandatory validation and the Decision Engine exactly once.
+`PUT /api/inspections/{id}/progress` saves draft inspection progress while status remains `ASSIGNED`:
+
+- inspection summary fields (`observedCondition`, `observations`, `issueIdentified`)
+- checklist answers (templated inspections only)
+
+The inspection bundle reflects whatever is persisted in the backend — reload the bundle after each save. Completion still uses `POST /api/inspections/{id}/complete` and runs mandatory validation and the Decision Engine exactly once.
+
+`PUT /api/inspections/{id}/answers` remains supported as a compatibility endpoint for saving answers only.
 
 Legacy inspections without a template return empty `questions` and `answers`.
 

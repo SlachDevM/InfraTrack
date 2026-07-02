@@ -6,6 +6,7 @@ import com.infratrack.exception.ConflictException;
 import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.exception.NotFoundException;
 import com.infratrack.inspection.dto.InspectionAnswerResponse;
+import com.infratrack.inspection.dto.InspectionResponse;
 import com.infratrack.inspectiontemplate.DecisionRuleEvaluationService;
 import com.infratrack.security.JwtAuthenticationFilter;
 import com.infratrack.security.JwtTokenProvider;
@@ -119,6 +120,78 @@ class InspectionControllerTest {
                 .andExpect(content().string("Inspection answers cannot be modified after completion"));
     }
 
+    @Test
+    void saveInspectionProgress_withoutToken_returnsForbidden() throws Exception {
+        mockMvc.perform(put("/api/inspections/100/progress")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validProgressPayload()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void saveInspectionProgress_success_returnsInspectionResponse() throws Exception {
+        when(inspectionService.saveInspectionProgress(eq(100L), org.mockito.ArgumentMatchers.any(), eq(FIELD_USER_ID)))
+                .thenReturn(progressResponse());
+
+        mockMvc.perform(put("/api/inspections/100/progress")
+                        .header("Authorization", bearerToken(FIELD_USER_ID))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validProgressPayload()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(100))
+                .andExpect(jsonPath("$.observedCondition").value("GOOD"))
+                .andExpect(jsonPath("$.observations").value("Draft notes"))
+                .andExpect(jsonPath("$.issueIdentified").value(true));
+    }
+
+    @Test
+    void saveInspectionProgress_invalidPayload_returnsBadRequest() throws Exception {
+        mockMvc.perform(put("/api/inspections/100/progress")
+                        .header("Authorization", bearerToken(FIELD_USER_ID))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"answers\":[{\"questionId\":null,\"booleanValue\":true}]}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void saveInspectionProgress_unknownInspection_returnsNotFound() throws Exception {
+        when(inspectionService.saveInspectionProgress(eq(999L), org.mockito.ArgumentMatchers.any(), eq(FIELD_USER_ID)))
+                .thenThrow(new NotFoundException("Inspection not found."));
+
+        mockMvc.perform(put("/api/inspections/999/progress")
+                        .header("Authorization", bearerToken(FIELD_USER_ID))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validProgressPayload()))
+                .andExpect(status().isNotFound())
+                .andExpect(content().string("Inspection not found."));
+    }
+
+    @Test
+    void saveInspectionProgress_forbidden_returnsForbidden() throws Exception {
+        when(inspectionService.saveInspectionProgress(eq(100L), org.mockito.ArgumentMatchers.any(), eq(FIELD_USER_ID)))
+                .thenThrow(new ForbiddenOperationException("Only the assigned user can save inspection answers"));
+
+        mockMvc.perform(put("/api/inspections/100/progress")
+                        .header("Authorization", bearerToken(FIELD_USER_ID))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validProgressPayload()))
+                .andExpect(status().isForbidden())
+                .andExpect(content().string("Only the assigned user can save inspection answers"));
+    }
+
+    @Test
+    void saveInspectionProgress_completedInspection_returnsConflict() throws Exception {
+        when(inspectionService.saveInspectionProgress(eq(100L), org.mockito.ArgumentMatchers.any(), eq(FIELD_USER_ID)))
+                .thenThrow(new ConflictException("Inspection progress cannot be modified after completion"));
+
+        mockMvc.perform(put("/api/inspections/100/progress")
+                        .header("Authorization", bearerToken(FIELD_USER_ID))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validProgressPayload()))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("Inspection progress cannot be modified after completion"));
+    }
+
     private InspectionAnswerResponse answerResponse() {
         return InspectionAnswerResponse.from(savedAnswerEntity());
     }
@@ -199,6 +272,28 @@ class InspectionControllerTest {
                   ]
                 }
                 """;
+    }
+
+    private String validProgressPayload() {
+        return """
+                {
+                  "observedCondition": "GOOD",
+                  "observations": "Draft notes",
+                  "issueIdentified": true,
+                  "answers": [
+                    {
+                      "questionId": 12,
+                      "booleanValue": true
+                    }
+                  ]
+                }
+                """;
+    }
+
+    private InspectionResponse progressResponse() {
+        Inspection inspection = savedAnswerEntity().getInspection();
+        inspection.saveProgress(com.infratrack.inspection.PhysicalCondition.GOOD, "Draft notes", true);
+        return InspectionResponse.from(inspection);
     }
 
     private String bearerToken(Long userId) {

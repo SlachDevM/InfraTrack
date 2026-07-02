@@ -110,6 +110,22 @@ public class Inspection {
         this.updatedAt = System.currentTimeMillis();
     }
 
+    public void saveProgress(
+            PhysicalCondition observedCondition,
+            String observations,
+            Boolean issueIdentified) {
+        if (observedCondition != null) {
+            this.observedCondition = observedCondition;
+        }
+        if (observations != null) {
+            this.observations = observations;
+        }
+        if (issueIdentified != null) {
+            this.issueIdentified = issueIdentified;
+        }
+        this.updatedAt = System.currentTimeMillis();
+    }
+
     public Long getId() {
         return id;
     }

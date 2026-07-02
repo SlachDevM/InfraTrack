@@ -8,6 +8,7 @@ import com.infratrack.inspection.dto.InspectionAnswerResponse;
 import com.infratrack.inspection.dto.InspectionResponse;
 import com.infratrack.inspection.dto.InspectionSummaryResponse;
 import com.infratrack.inspection.dto.SaveInspectionAnswersRequest;
+import com.infratrack.inspection.dto.SaveInspectionProgressRequest;
 import com.infratrack.inspectiontemplate.DecisionRuleEvaluationService;
 import com.infratrack.inspectiontemplate.dto.DecisionRuleEvaluationResult;
 import com.infratrack.security.JwtAuthenticationToken;
@@ -119,6 +120,19 @@ public class InspectionController {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         List<InspectionAnswerResponse> answers = inspectionService.saveInspectionAnswers(id, request, userId);
         return ResponseEntity.ok(answers);
+    }
+
+    @PutMapping("/{id}/progress")
+    @Operation(
+            summary = "Save inspection progress",
+            description = "Saves draft inspection summary fields and/or checklist answers without completing the inspection.")
+    @ApiResponse(responseCode = "200", description = "Saved inspection progress")
+    public ResponseEntity<InspectionResponse> saveInspectionProgress(
+            @PathVariable Long id,
+            @Valid @RequestBody SaveInspectionProgressRequest request,
+            Authentication authentication) {
+        Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+        return ResponseEntity.ok(inspectionService.saveInspectionProgress(id, request, userId));
     }
 
     @PostMapping("/{id}/complete")

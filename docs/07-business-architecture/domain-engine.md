@@ -321,15 +321,16 @@ Assigned templated inspections can now persist structured answers **before** fin
 
 ### Save vs complete
 
-| | Progressive save | Final completion |
-|--|------------------|------------------|
-| Endpoint | `PUT /api/inspections/{inspectionId}/answers` | `POST /api/inspections/{inspectionId}/complete` |
-| Inspection status | Remains `ASSIGNED` | Becomes `COMPLETED` |
-| Mandatory questions | Not required | Required |
-| Upsert behaviour | Yes — partial payloads update only submitted questions | Merges any new answers with previously saved answers |
-| Decision Engine | **Not executed** | **Executed once** |
-| Rule Evaluation Report | Not created | Created when applicable |
-| Suggested Actions | Not created | Created when applicable |
+| | Save progress (draft) | Save answers (compat) | Final completion |
+|--|-----------------------|----------------------|------------------|
+| Endpoint | `PUT /api/inspections/{inspectionId}/progress` | `PUT /api/inspections/{inspectionId}/answers` | `POST /api/inspections/{inspectionId}/complete` |
+| Persists | Summary fields + answers | Answers only | Summary fields + answers (final) |
+| Inspection status | Remains `ASSIGNED` | Remains `ASSIGNED` | Becomes `COMPLETED` |
+| Mandatory questions | Not required | Not required | Required |
+| Upsert behaviour | Yes — partial payloads update only submitted fields/questions | Yes — partial payloads update only submitted questions | Merges any new answers with previously saved answers |
+| Decision Engine | **Not executed** | **Not executed** | **Executed once** |
+| Rule Evaluation Report | Not created | Not created | Created when applicable |
+| Suggested Actions | Not created | Not created | Created when applicable |
 
 ### Side-effect guarantees
 

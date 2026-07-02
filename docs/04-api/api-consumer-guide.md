@@ -219,12 +219,12 @@ Typical flags include `canComplete`, `canCompleteMaintenance`, `canUploadDocumen
 
 ### Progressive inspection answers
 
-Templated inspections support **progressive answer saving** while status remains `ASSIGNED`:
+Inspections support **progress persistence** while status remains `ASSIGNED`:
 
 ```text
 GET /api/mobile/inspections/{id}/bundle   (load questions + saved answers)
         ↓
-PUT /api/inspections/{id}/answers       (upsert one or more answers)
+PUT /api/inspections/{id}/progress      (save draft summary + checklist answers)
         ↓
 GET /api/mobile/inspections/{id}/bundle   (reload saved answers)
         ↓
@@ -233,10 +233,11 @@ POST /api/inspections/{id}/complete       (mandatory validation + Decision Engin
 
 | Action | Endpoint | Mandatory questions | Decision Engine | Changes status |
 |--------|----------|---------------------|-----------------|----------------|
-| Save progress | `PUT /api/inspections/{id}/answers` | No | No | No (`ASSIGNED`) |
+| Save progress (summary + answers) | `PUT /api/inspections/{id}/progress` | No | No | No (`ASSIGNED`) |
+| Save answers (compatibility) | `PUT /api/inspections/{id}/answers` | No | No | No (`ASSIGNED`) |
 | Complete | `POST /api/inspections/{id}/complete` | Yes | Yes (once) | Yes (`COMPLETED`) |
 
-`PUT /answers` is idempotent and supports partial payloads — omitted questions are left unchanged. Completed inspections return `409 Conflict` on further saves. The Decision Engine runs **only** on final completion.
+`PUT /progress` and `PUT /answers` are idempotent and support partial payloads — omitted fields/questions are left unchanged. Completed inspections return `409 Conflict` on further saves. The Decision Engine runs **only** on final completion.
 
 ### Department and assignment scoping
 
