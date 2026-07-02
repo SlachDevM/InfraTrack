@@ -25,6 +25,7 @@ import com.infratrack.inspectiontemplate.InspectionTemplateQuestionType;
 import com.infratrack.inspectiontemplate.InspectionTemplateRepository;
 import com.infratrack.inspectiontemplate.InspectionTemplateStatus;
 import com.infratrack.notification.OperationalEventNotificationService;
+import com.infratrack.organization.policy.visibility.InspectionVisibilityPolicyService;
 import com.infratrack.user.User;
 import com.infratrack.user.UserNameLookup;
 import com.infratrack.user.UserRole;
@@ -92,7 +93,9 @@ class InspectionServiceTest {
 
     @BeforeEach
     void setUp() {
-        InspectionAuthorizationService authorizationService = new InspectionAuthorizationService(userService);
+        InspectionAuthorizationService authorizationService = new InspectionAuthorizationService(
+                userService,
+                new InspectionVisibilityPolicyService());
         InspectionHistoryRecorder historyRecorder = new InspectionHistoryRecorder(assetHistoryEventRepository);
         InspectionAnswerService inspectionAnswerService = new InspectionAnswerService(
                 inspectionAnswerRepository,

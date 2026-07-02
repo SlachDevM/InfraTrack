@@ -14,6 +14,7 @@ import com.infratrack.inspection.InspectionAuthorizationService;
 import com.infratrack.inspection.InspectionPriority;
 import com.infratrack.inspection.InspectionRepository;
 import com.infratrack.inspectiontemplate.dto.DecisionRuleEvaluationResult;
+import com.infratrack.organization.policy.visibility.InspectionVisibilityPolicyService;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
@@ -58,7 +59,7 @@ class DecisionRuleEvaluationServiceAuthorizationTest {
                 inspectionRepository,
                 answerRepository,
                 ruleRepository,
-                new InspectionAuthorizationService(userService),
+                new InspectionAuthorizationService(userService, new InspectionVisibilityPolicyService()),
                 userService);
     }
 

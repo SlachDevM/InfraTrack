@@ -1,10 +1,9 @@
 package com.infratrack.inspection;
 
-import com.infratrack.asset.Asset;
-import com.infratrack.department.Department;
 import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
+import com.infratrack.organization.policy.visibility.InspectionVisibilityPolicyService;
 import org.springframework.stereotype.Service;
 
 /**
@@ -14,9 +13,13 @@ import org.springframework.stereotype.Service;
 public class InspectionAuthorizationService {
 
     private final UserService userService;
+    private final InspectionVisibilityPolicyService visibilityPolicyService;
 
-    public InspectionAuthorizationService(UserService userService) {
+    public InspectionAuthorizationService(
+            UserService userService,
+            InspectionVisibilityPolicyService visibilityPolicyService) {
         this.userService = userService;
+        this.visibilityPolicyService = visibilityPolicyService;
     }
 
     public void requireCanAssignInspections(Long userId) {
@@ -44,10 +47,7 @@ public class InspectionAuthorizationService {
     }
 
     public void requireCanViewInspection(User user, Inspection inspection) {
-        if (user.getRole() != null && user.getRole().isAdministrator()) {
-            return;
-        }
-        requireSameDepartment(user, inspection.getAsset());
+        visibilityPolicyService.getPolicy().requireCanView(user, inspection);
     }
 
     public void requireCanSaveInspectionAnswers(User user, Inspection inspection) {
@@ -68,13 +68,5 @@ public class InspectionAuthorizationService {
         throw new ForbiddenOperationException("You do not have permission to save inspection answers");
     }
 
-    private void requireSameDepartment(User user, Asset asset) {
-        Department userDepartment = user.getDepartment();
-        Department assetDepartment = asset.getDepartment();
-        if (userDepartment == null || assetDepartment == null
-                || !userDepartment.getId().equals(assetDepartment.getId())) {
-            throw new ForbiddenOperationException(
-                    "You may only view inspections for assets in your own department.");
-        }
-    }
+    // Visibility rules are delegated to InspectionVisibilityPolicy (BDR-004).
 }

@@ -38,6 +38,7 @@ import com.infratrack.operationaldecision.OperationalDecisionOutcome;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
+import com.infratrack.organization.policy.visibility.InspectionVisibilityPolicyService;
 import com.infratrack.workorder.WorkOrder;
 import com.infratrack.workorder.WorkOrderPriority;
 import com.infratrack.workorder.WorkOrderRepository;
@@ -90,7 +91,7 @@ class MobileServiceTest {
     @BeforeEach
     void setUp() {
         InspectionAuthorizationService inspectionAuthorizationService =
-                new InspectionAuthorizationService(userService);
+                new InspectionAuthorizationService(userService, new InspectionVisibilityPolicyService());
         MobileAuthorizationService authorizationService = new MobileAuthorizationService(
                 userService, inspectionAuthorizationService);
         mobileService = new MobileService(

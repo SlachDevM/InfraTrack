@@ -12,6 +12,7 @@ import com.infratrack.inspection.dto.AssignInspectionRequest;
 import com.infratrack.inspectiontemplate.InspectionTemplateRepository;
 import com.infratrack.notification.NotificationService;
 import com.infratrack.notification.OperationalEventNotificationService;
+import com.infratrack.organization.policy.visibility.InspectionVisibilityPolicyService;
 import com.infratrack.user.User;
 import com.infratrack.user.UserNameLookup;
 import com.infratrack.user.UserRepository;
@@ -75,7 +76,9 @@ class InspectionServiceNotificationTest {
     void setUp() {
         OperationalEventNotificationService operationalEventNotificationService =
                 new OperationalEventNotificationService(notificationService, userRepository);
-        InspectionAuthorizationService authorizationService = new InspectionAuthorizationService(userService);
+        InspectionAuthorizationService authorizationService = new InspectionAuthorizationService(
+                userService,
+                new InspectionVisibilityPolicyService());
         InspectionHistoryRecorder historyRecorder = new InspectionHistoryRecorder(assetHistoryEventRepository);
         InspectionAnswerService inspectionAnswerService = new InspectionAnswerService(
                 inspectionAnswerRepository,

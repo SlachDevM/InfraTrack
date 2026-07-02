@@ -5,12 +5,13 @@ import com.infratrack.asset.AssetStatus;
 import com.infratrack.assetcategory.AssetCategory;
 import com.infratrack.department.Department;
 import com.infratrack.exception.ForbiddenOperationException;
+import com.infratrack.organization.policy.visibility.InspectionVisibilityPolicyService;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -27,8 +28,14 @@ class InspectionAuthorizationServiceTest {
     @Mock
     private UserService userService;
 
-    @InjectMocks
     private InspectionAuthorizationService authorizationService;
+
+    @BeforeEach
+    void setUp() {
+        authorizationService = new InspectionAuthorizationService(
+                userService,
+                new InspectionVisibilityPolicyService());
+    }
 
     @Test
     void requireCanAssignInspections_shouldRejectManager() {
