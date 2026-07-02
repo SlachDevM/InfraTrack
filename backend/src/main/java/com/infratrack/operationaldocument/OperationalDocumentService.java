@@ -1,11 +1,13 @@
 package com.infratrack.operationaldocument;
 
 import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.exception.NotFoundException;
 import com.infratrack.operationaldocument.dto.OperationalDocumentEligibleOwnerResponse;
 import com.infratrack.operationaldocument.dto.OperationalDocumentResponse;
 import com.infratrack.operationaldocument.dto.OperationalDocumentSummaryResponse;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.infratrack.asset.Asset;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -104,10 +107,58 @@ public class OperationalDocumentService {
     }
 
     @Transactional(readOnly = true)
-    public Page<OperationalDocumentSummaryResponse> listDocuments(Long assetId, Pageable pageable) {
+    public Page<OperationalDocumentSummaryResponse> listDocuments(Long assetId, Pageable pageable, Long userId) {
+        User user = userService.getById(userId);
         ownerResolver.requireAssetExists(assetId);
-        return operationalDocumentRepository.findByAssetIdOrderByUploadedAtDesc(assetId, pageable)
-                .map(OperationalDocumentSummaryResponse::from);
+
+        OperationalDocumentOwnerContext assetContext = ownerResolver.resolve(assetId, null, null);
+        Asset asset = assetContext.asset();
+
+        if (user.getRole() != null && user.getRole().isAdministrator()) {
+            return operationalDocumentRepository.findByAssetIdOrderByUploadedAtDesc(assetId, pageable)
+                    .map(OperationalDocumentSummaryResponse::from);
+        }
+
+        if (user.getRole() != null
+                && (user.getRole().isManager() || user.getRole().isOperationalCoordinator())) {
+            authorizationService.requireAssetDepartmentDownloadAuthorized(user, asset);
+            return operationalDocumentRepository.findByAssetIdOrderByUploadedAtDesc(assetId, pageable)
+                    .map(OperationalDocumentSummaryResponse::from);
+        }
+
+        if (user.getRole() != null && (user.getRole().isFieldEmployee() || user.getRole().isContractor())) {
+            authorizationService.requireAssetDepartmentDownloadAuthorized(user, asset);
+
+            Page<OperationalDocument> page = operationalDocumentRepository
+                    .findByAssetIdOrderByUploadedAtDesc(assetId, pageable);
+
+            List<OperationalDocumentSummaryResponse> authorized =
+                    page.getContent().stream()
+                            .filter(document -> canViewDocumentMetadata(user, asset, document))
+                            .map(OperationalDocumentSummaryResponse::from)
+                            .toList();
+
+            if (authorized.isEmpty()) {
+                throw new ForbiddenOperationException("Unauthorized to download operational evidence for this context");
+            }
+
+            return new PageImpl<>(authorized, pageable, authorized.size());
+        }
+
+        throw new ForbiddenOperationException("Unauthorized to download operational evidence");
+    }
+
+    private boolean canViewDocumentMetadata(User user, Asset asset, OperationalDocument document) {
+        try {
+            OperationalDocumentOwnerContext ownerContext = ownerResolver.resolveForAsset(
+                    asset,
+                    document.getOwnerType(),
+                    document.getOwnerId());
+            authorizationService.requireDownloadAuthorized(user, ownerContext);
+            return true;
+        } catch (ForbiddenOperationException e) {
+            return false;
+        }
     }
 
     @Transactional(readOnly = true)

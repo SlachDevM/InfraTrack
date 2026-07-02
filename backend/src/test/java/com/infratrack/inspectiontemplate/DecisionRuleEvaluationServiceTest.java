@@ -5,8 +5,10 @@ import com.infratrack.inspection.Inspection;
 import com.infratrack.inspection.InspectionAnswer;
 import com.infratrack.inspection.InspectionAnswerQuestionTypeSnapshot;
 import com.infratrack.inspection.InspectionAnswerRepository;
+import com.infratrack.inspection.InspectionAuthorizationService;
 import com.infratrack.inspection.InspectionRepository;
 import com.infratrack.inspectiontemplate.dto.DecisionRuleEvaluationResult;
+import com.infratrack.user.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +33,12 @@ class DecisionRuleEvaluationServiceTest {
     @Mock
     private InspectionTemplateQuestionRuleRepository ruleRepository;
 
+    @Mock
+    private InspectionAuthorizationService authorizationService;
+
+    @Mock
+    private UserService userService;
+
     private DecisionRuleEvaluationService evaluationService;
     private InspectionTemplate template;
     private Inspection inspection;
@@ -38,7 +46,11 @@ class DecisionRuleEvaluationServiceTest {
     @BeforeEach
     void setUp() {
         evaluationService = new DecisionRuleEvaluationService(
-                inspectionRepository, answerRepository, ruleRepository);
+                inspectionRepository,
+                answerRepository,
+                ruleRepository,
+                authorizationService,
+                userService);
         template = template();
         inspection = inspection();
     }
@@ -372,9 +384,6 @@ class DecisionRuleEvaluationServiceTest {
         InspectionAnswer temperatureAnswer = numberAnswer(temperatureQuestion, new BigDecimal("95"));
         InspectionAnswer notesAnswer = textAnswer(notesQuestion, "Small leak detected");
 
-        when(inspectionRepository.findWithEvaluationContextById(10L)).thenReturn(java.util.Optional.of(inspection));
-        when(answerRepository.findByInspectionIdOrderByQuestionDisplayOrder(10L))
-                .thenReturn(List.of(temperatureAnswer, notesAnswer));
         when(ruleRepository.findByQuestionIdInAndActiveTrueOrderByPriorityAscRuleCodeAsc(List.of(1L, 3L)))
                 .thenReturn(List.of(
                         rule(temperatureQuestion, "HIGH_TEMP", DecisionRuleConditionType.NUMBER,
@@ -382,7 +391,8 @@ class DecisionRuleEvaluationServiceTest {
                         rule(notesQuestion, "CONTAINS_LEAK", DecisionRuleConditionType.TEXT,
                                 DecisionRuleOperator.CONTAINS, "leak", 100)));
 
-        List<DecisionRuleEvaluationResult> results = evaluationService.evaluateInspection(10L);
+        List<DecisionRuleEvaluationResult> results =
+                evaluationService.evaluateLoadedInspection(inspection, List.of(temperatureAnswer, notesAnswer));
 
         assertThat(results).hasSize(2);
         assertThat(results).allMatch(DecisionRuleEvaluationResult::isMatched);

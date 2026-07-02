@@ -43,6 +43,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -138,6 +142,157 @@ class OperationalDocumentServiceTest {
                 ownerLookupService);
         lenient().when(delegatedAuthorityService.canManagerActForAssetDepartment(
                 any(User.class), any(Department.class), any(LocalDateTime.class))).thenReturn(true);
+    }
+
+    @Test
+    void listDocuments_shouldAllowAdministratorToListMetadata() {
+        Asset asset = asset(5L);
+        User administrator = user(1L, UserRole.ADMINISTRATOR);
+        Pageable pageable = PageRequest.of(0, 20);
+
+        OperationalDocument assetDocument = savedDocument(200L, asset);
+        OperationalDocument inspectionDocument = inspectionDocument(201L, asset, 100L);
+
+        when(userService.getById(1L)).thenReturn(administrator);
+        when(assetRepository.existsById(5L)).thenReturn(true);
+        when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
+        when(operationalDocumentRepository.findByAssetIdOrderByUploadedAtDesc(5L, pageable))
+                .thenReturn(new PageImpl<>(java.util.List.of(assetDocument, inspectionDocument), pageable, 2));
+
+        Page<?> page = operationalDocumentService.listDocuments(5L, pageable, 1L);
+
+        assertThat(page.getContent()).hasSize(2);
+    }
+
+    @Test
+    void listDocuments_shouldAllowManagerForOwnDepartment() {
+        Asset asset = asset(5L);
+        User manager = user(30L, UserRole.MANAGER);
+        Pageable pageable = PageRequest.of(0, 20);
+
+        when(userService.getById(30L)).thenReturn(manager);
+        when(assetRepository.existsById(5L)).thenReturn(true);
+        when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
+        when(operationalDocumentRepository.findByAssetIdOrderByUploadedAtDesc(5L, pageable))
+                .thenReturn(new PageImpl<>(java.util.List.of(savedDocument(200L, asset)), pageable, 1));
+
+        Page<?> page = operationalDocumentService.listDocuments(5L, pageable, 30L);
+
+        assertThat(page.getContent()).hasSize(1);
+    }
+
+    @Test
+    void listDocuments_shouldRejectManagerForCrossDepartmentWithoutListing() {
+        Asset asset = asset(5L);
+        User manager = user(30L, UserRole.MANAGER);
+        Pageable pageable = PageRequest.of(0, 20);
+
+        when(userService.getById(30L)).thenReturn(manager);
+        when(assetRepository.existsById(5L)).thenReturn(true);
+        when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
+        when(delegatedAuthorityService.canManagerActForAssetDepartment(any(User.class), any(Department.class), any(LocalDateTime.class)))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> operationalDocumentService.listDocuments(5L, pageable, 30L))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You may only download operational documents for assets in your own department.");
+
+        verify(operationalDocumentRepository, never()).findByAssetIdOrderByUploadedAtDesc(anyLong(), any(Pageable.class));
+    }
+
+    @Test
+    void listDocuments_shouldAllowOperationalCoordinatorForOwnDepartment() {
+        Asset asset = asset(5L);
+        User coordinator = user(10L, UserRole.OPERATIONAL_COORDINATOR);
+        Pageable pageable = PageRequest.of(0, 20);
+
+        when(userService.getById(10L)).thenReturn(coordinator);
+        when(assetRepository.existsById(5L)).thenReturn(true);
+        when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
+        when(operationalDocumentRepository.findByAssetIdOrderByUploadedAtDesc(5L, pageable))
+                .thenReturn(new PageImpl<>(java.util.List.of(savedDocument(200L, asset)), pageable, 1));
+
+        Page<?> page = operationalDocumentService.listDocuments(5L, pageable, 10L);
+
+        assertThat(page.getContent()).hasSize(1);
+    }
+
+    @Test
+    void listDocuments_shouldAllowAssignedFieldEmployeeToListMetadataForAuthorizedContext() {
+        Asset asset = asset(5L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        Pageable pageable = PageRequest.of(0, 20);
+
+        Inspection inspection = inspection(100L, asset, 20L);
+        OperationalDocument inspectionDocument = inspectionDocument(201L, asset, 100L);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(assetRepository.existsById(5L)).thenReturn(true);
+        when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(operationalDocumentRepository.findByAssetIdOrderByUploadedAtDesc(5L, pageable))
+                .thenReturn(new PageImpl<>(java.util.List.of(inspectionDocument), pageable, 1));
+
+        Page<?> page = operationalDocumentService.listDocuments(5L, pageable, 20L);
+
+        assertThat(page.getContent()).hasSize(1);
+    }
+
+    @Test
+    void listDocuments_shouldRejectUnassignedFieldEmployee() {
+        Asset asset = asset(5L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        Pageable pageable = PageRequest.of(0, 20);
+
+        Inspection inspection = inspection(100L, asset, 999L);
+        OperationalDocument inspectionDocument = inspectionDocument(201L, asset, 100L);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(assetRepository.existsById(5L)).thenReturn(true);
+        when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(operationalDocumentRepository.findByAssetIdOrderByUploadedAtDesc(5L, pageable))
+                .thenReturn(new PageImpl<>(java.util.List.of(inspectionDocument), pageable, 1));
+
+        assertThatThrownBy(() -> operationalDocumentService.listDocuments(5L, pageable, 20L))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("Unauthorized to download operational evidence for this context");
+    }
+
+    @Test
+    void listDocuments_shouldAllowAssignedContractorToListMetadataForAuthorizedContext() {
+        Asset asset = asset(5L);
+        User contractor = user(25L, UserRole.CONTRACTOR);
+        Pageable pageable = PageRequest.of(0, 20);
+
+        WorkOrder workOrder = assignedWorkOrder(1000L, asset, 25L);
+        OperationalDocument workOrderDocument = workOrderDocument(301L, asset, 1000L);
+
+        when(userService.getById(25L)).thenReturn(contractor);
+        when(assetRepository.existsById(5L)).thenReturn(true);
+        when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
+        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+        when(operationalDocumentRepository.findByAssetIdOrderByUploadedAtDesc(5L, pageable))
+                .thenReturn(new PageImpl<>(java.util.List.of(workOrderDocument), pageable, 1));
+
+        Page<?> page = operationalDocumentService.listDocuments(5L, pageable, 25L);
+
+        assertThat(page.getContent()).hasSize(1);
+    }
+
+    @Test
+    void listDocuments_shouldPreserveNotFoundWhenAssetDoesNotExist() {
+        Pageable pageable = PageRequest.of(0, 20);
+        User administrator = user(1L, UserRole.ADMINISTRATOR);
+
+        when(userService.getById(1L)).thenReturn(administrator);
+        when(assetRepository.existsById(999L)).thenReturn(false);
+
+        assertThatThrownBy(() -> operationalDocumentService.listDocuments(999L, pageable, 1L))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Asset not found");
+
+        verify(operationalDocumentRepository, never()).findByAssetIdOrderByUploadedAtDesc(anyLong(), any(Pageable.class));
     }
 
     @Test

@@ -87,8 +87,11 @@ public class InspectionController {
             summary = "Evaluate decision rules for an inspection",
             description = "Returns in-memory rule evaluation results. No persistence or workflow side effects (A3.2).")
     @ApiResponse(responseCode = "200", description = "Rule evaluation results")
-    public ResponseEntity<List<DecisionRuleEvaluationResult>> evaluateRules(@PathVariable Long id) {
-        return ResponseEntity.ok(decisionRuleEvaluationService.evaluateInspection(id));
+    public ResponseEntity<List<DecisionRuleEvaluationResult>> evaluateRules(
+            @PathVariable Long id,
+            Authentication authentication) {
+        Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+        return ResponseEntity.ok(decisionRuleEvaluationService.evaluateInspection(id, userId));
     }
 
     @PostMapping

@@ -1,11 +1,12 @@
 package com.infratrack.notification;
 
+import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
@@ -28,8 +29,16 @@ class NotificationServiceTest {
     @Mock
     private FirebaseNotificationService firebaseNotificationService;
 
-    @InjectMocks
     private NotificationService notificationService;
+
+    @BeforeEach
+    void setUp() {
+        notificationService = new NotificationService(
+                notificationRepository,
+                userRepository,
+                firebaseNotificationService,
+                new NotificationAuthorizationService());
+    }
 
     @Test
     void getUnreadCount_shouldReturnRepositoryCount() {
@@ -41,7 +50,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    void markAsRead_shouldSetNotificationAsRead() {
+    void markAsRead_shouldSetNotificationAsRead_whenOwnerMarksOwnNotification() {
         Notification notification = new Notification(1L, "Test Title", "Test message");
         notification.setId(5L);
         notification.setIsRead(false);
@@ -49,19 +58,64 @@ class NotificationServiceTest {
         when(notificationRepository.findById(5L)).thenReturn(Optional.of(notification));
         when(notificationRepository.save(notification)).thenReturn(notification);
 
-        Notification result = notificationService.markAsRead(5L);
+        Notification result = notificationService.markAsRead(5L, 1L);
 
         assertThat(result.getIsRead()).isTrue();
         verify(notificationRepository).save(notification);
     }
 
     @Test
+    void markAsRead_shouldRemainIdempotent_whenNotificationAlreadyRead() {
+        Notification notification = new Notification(1L, "Test Title", "Test message");
+        notification.setId(5L);
+        notification.setIsRead(true);
+
+        when(notificationRepository.findById(5L)).thenReturn(Optional.of(notification));
+        when(notificationRepository.save(notification)).thenReturn(notification);
+
+        Notification result = notificationService.markAsRead(5L, 1L);
+
+        assertThat(result.getIsRead()).isTrue();
+        verify(notificationRepository).save(notification);
+    }
+
+    @Test
+    void markAsRead_shouldThrowForbidden_whenDifferentUserAttemptsMarkAsRead() {
+        Notification notification = new Notification(1L, "Test Title", "Test message");
+        notification.setId(5L);
+
+        when(notificationRepository.findById(5L)).thenReturn(Optional.of(notification));
+
+        assertThatThrownBy(() -> notificationService.markAsRead(5L, 2L))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You may only mark your own notifications as read.");
+
+        verify(notificationRepository, never()).save(any());
+    }
+
+    @Test
+    void markAsRead_shouldThrowForbidden_whenAdministratorMarksAnotherUsersNotification() {
+        Notification notification = new Notification(10L, "Test Title", "Test message");
+        notification.setId(5L);
+
+        when(notificationRepository.findById(5L)).thenReturn(Optional.of(notification));
+
+        assertThatThrownBy(() -> notificationService.markAsRead(5L, 1L))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You may only mark your own notifications as read.");
+
+        verify(notificationRepository, never()).save(any());
+    }
+
+    @Test
     void markAsRead_shouldThrowNotFound_whenNotificationDoesNotExist() {
         when(notificationRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> notificationService.markAsRead(99L))
+        assertThatThrownBy(() -> notificationService.markAsRead(99L, 1L))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("404");
+
+        verify(notificationRepository, never()).save(any());
     }
 
     @Test

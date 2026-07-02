@@ -13,6 +13,7 @@ import com.infratrack.issue.dto.IssueResponse;
 import com.infratrack.operationaldocument.OperationalDocumentController;
 import com.infratrack.operationaldocument.OperationalDocumentService;
 import com.infratrack.operationaldocument.dto.OperationalDocumentSummaryResponse;
+import com.infratrack.security.JwtAuthenticationToken;
 import com.infratrack.workorder.WorkOrderController;
 import com.infratrack.workorder.WorkOrderService;
 import com.infratrack.workorder.dto.WorkOrderSummaryResponse;
@@ -170,13 +171,13 @@ class PaginationControllerValidationTest {
     @Test
     void operationalDocumentController_shouldAcceptValidPagination() {
         Page<OperationalDocumentSummaryResponse> page = new PageImpl<>(List.of(), Pageable.ofSize(20), 0);
-        when(operationalDocumentService.listDocuments(eq(1L), any(Pageable.class))).thenReturn(page);
+        when(operationalDocumentService.listDocuments(eq(1L), any(Pageable.class), eq(99L))).thenReturn(page);
 
         ResponseEntity<?> response = operationalDocumentController.listDocuments(
-                1L, 0, 20, null, null, null);
+                1L, 0, 20, null, null, new JwtAuthenticationToken(99L, "test@example.com", true));
 
         assertThat(response.getStatusCode().value()).isEqualTo(200);
-        verify(operationalDocumentService).listDocuments(eq(1L), any(Pageable.class));
+        verify(operationalDocumentService).listDocuments(eq(1L), any(Pageable.class), eq(99L));
     }
 
     private record PaginatedListEndpoint(String name, PaginatedListInvoker invoker) {

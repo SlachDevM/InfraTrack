@@ -22,15 +22,18 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final FirebaseNotificationService firebaseNotificationService;
+    private final NotificationAuthorizationService authorizationService;
 
     public NotificationService(
             NotificationRepository notificationRepository,
             UserRepository userRepository,
-            FirebaseNotificationService firebaseNotificationService
+            FirebaseNotificationService firebaseNotificationService,
+            NotificationAuthorizationService authorizationService
     ) {
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
         this.firebaseNotificationService = firebaseNotificationService;
+        this.authorizationService = authorizationService;
     }
 
     @Transactional(readOnly = true)
@@ -59,10 +62,12 @@ public class NotificationService {
     }
 
     @Transactional
-    public Notification markAsRead(Long notificationId) {
+    public Notification markAsRead(Long notificationId, Long userId) {
         Notification notification =
                 notificationRepository.findById(notificationId)
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        authorizationService.requireNotificationOwner(userId, notification);
 
         notification.setIsRead(true);
 

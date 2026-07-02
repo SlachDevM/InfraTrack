@@ -76,6 +76,14 @@ public class OperationalDocumentAuthorizationService {
         }
     }
 
+    public void requireAssetDepartmentDownloadAuthorized(User user, Asset asset) {
+        requireAssetDepartmentAccess(
+                user,
+                asset,
+                "You may only download operational documents for assets in your own department.",
+                "Unauthorized to download operational evidence");
+    }
+
     public void requireUploadAuthorized(User user, OperationalDocumentOwnerContext ownerContext) {
         UserRole role = user.getRole();
         if (role == null) {

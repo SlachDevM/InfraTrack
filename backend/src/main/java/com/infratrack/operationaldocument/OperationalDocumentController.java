@@ -68,7 +68,8 @@ public class OperationalDocumentController {
                 page,
                 size,
                 Sort.by(Sort.Direction.DESC, "uploadedAt"));
-        return ResponseEntity.ok(operationalDocumentService.listDocuments(assetId, pageable));
+        Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+        return ResponseEntity.ok(operationalDocumentService.listDocuments(assetId, pageable, userId));
     }
 
     @PostMapping(value = "/api/assets/{assetId}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

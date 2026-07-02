@@ -83,7 +83,8 @@ public class NotificationController {
     @Operation(summary = "Mark notification as read")
     @ApiResponse(responseCode = "200", description = "Updated notification")
     public ResponseEntity<NotificationResponse> markAsRead(@PathVariable("id") Long id, Authentication authentication) {
-        return ResponseEntity.ok(NotificationResponse.from(notificationService.markAsRead(id)));
+        Long userId = getUserId(authentication);
+        return ResponseEntity.ok(NotificationResponse.from(notificationService.markAsRead(id, userId)));
     }
 
     @PutMapping("/read-all")

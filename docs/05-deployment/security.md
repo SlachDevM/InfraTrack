@@ -165,6 +165,8 @@ Direct exposure of the Spring Boot port to the public internet without a proxy a
 
 Authorization runs in `OperationalDocumentAuthorizationService.requireDownloadAuthorized` **before** the file is read from storage. Cross-department and unassigned access returns HTTP `403`. Unknown documents return HTTP `404` without touching storage.
 
+Operational document metadata listing (`GET /api/assets/{assetId}/documents`) applies the same role-, department-, and ownership-based authorization rules as download. Cross-department and unassigned access returns HTTP `403`.
+
 Upload and delete rules are unchanged. Administrators may download but cannot upload operational evidence.
 
 ---

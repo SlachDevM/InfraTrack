@@ -1,12 +1,15 @@
 package com.infratrack.inspectiontemplate;
 
+import com.infratrack.exception.NotFoundException;
 import com.infratrack.inspection.Inspection;
 import com.infratrack.inspection.InspectionAnswer;
 import com.infratrack.inspection.InspectionAnswerQuestionTypeSnapshot;
 import com.infratrack.inspection.InspectionAnswerRepository;
-import com.infratrack.inspectiontemplate.dto.DecisionRuleEvaluationResult;
-import com.infratrack.exception.NotFoundException;
+import com.infratrack.inspection.InspectionAuthorizationService;
 import com.infratrack.inspection.InspectionRepository;
+import com.infratrack.inspectiontemplate.dto.DecisionRuleEvaluationResult;
+import com.infratrack.user.User;
+import com.infratrack.user.UserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,20 +33,29 @@ public class DecisionRuleEvaluationService {
     private final InspectionRepository inspectionRepository;
     private final InspectionAnswerRepository answerRepository;
     private final InspectionTemplateQuestionRuleRepository ruleRepository;
+    private final InspectionAuthorizationService authorizationService;
+    private final UserService userService;
 
     public DecisionRuleEvaluationService(
             InspectionRepository inspectionRepository,
             InspectionAnswerRepository answerRepository,
-            InspectionTemplateQuestionRuleRepository ruleRepository) {
+            InspectionTemplateQuestionRuleRepository ruleRepository,
+            InspectionAuthorizationService authorizationService,
+            UserService userService) {
         this.inspectionRepository = inspectionRepository;
         this.answerRepository = answerRepository;
         this.ruleRepository = ruleRepository;
+        this.authorizationService = authorizationService;
+        this.userService = userService;
     }
 
     @Transactional(readOnly = true)
-    public List<DecisionRuleEvaluationResult> evaluateInspection(Long inspectionId) {
+    public List<DecisionRuleEvaluationResult> evaluateInspection(Long inspectionId, Long userId) {
         Inspection inspection = inspectionRepository.findWithEvaluationContextById(inspectionId)
                 .orElseThrow(() -> new NotFoundException("Inspection not found"));
+
+        User user = userService.getById(userId);
+        authorizationService.requireCanViewInspection(user, inspection);
 
         List<InspectionAnswer> answers =
                 answerRepository.findByInspectionIdOrderByQuestionDisplayOrder(inspectionId);
