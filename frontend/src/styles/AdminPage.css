@@ -68,7 +68,9 @@
   cursor: pointer;
   font-weight: 600;
   color: #666;
-  transition: color 0.2s, border-bottom-color 0.2s;
+  transition:
+    color 0.2s,
+    border-bottom-color 0.2s;
 }
 
 .tab-button.active {

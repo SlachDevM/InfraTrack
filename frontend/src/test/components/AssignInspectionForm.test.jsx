@@ -41,12 +41,7 @@ describe('AssignInspectionForm', () => {
   afterEach(cleanup);
 
   it('renders assign controls', () => {
-    render(
-      <AssignInspectionForm
-        {...baseProps}
-        publishedTemplates={[]}
-      />
-    );
+    render(<AssignInspectionForm {...baseProps} publishedTemplates={[]} />);
 
     expect(screen.getByLabelText('Business Trigger')).toBeInTheDocument();
     expect(screen.getByLabelText('Assign To')).toBeInTheDocument();
@@ -65,9 +60,12 @@ describe('AssignInspectionForm', () => {
     );
 
     expect(screen.getByLabelText('Inspection Template')).toBeInTheDocument();
-    expect(screen.getByLabelText('Inspection Template'))
-      .toHaveDisplayValue('No template (legacy free-text inspection)');
-    expect(screen.getByRole('option', { name: 'Street Light Inspection (v1)' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Inspection Template')).toHaveDisplayValue(
+      'No template (legacy free-text inspection)'
+    );
+    expect(
+      screen.getByRole('option', { name: 'Street Light Inspection (v1)' })
+    ).toBeInTheDocument();
 
     const labels = getFieldOrder(container);
     const priorityIndex = labels.indexOf('Priority');
@@ -88,7 +86,8 @@ describe('AssignInspectionForm', () => {
       />
     );
 
-    expect(screen.getByLabelText('Inspection Template'))
-      .toContainHTML('No template (legacy free-text inspection)');
+    expect(screen.getByLabelText('Inspection Template')).toContainHTML(
+      'No template (legacy free-text inspection)'
+    );
   });
 });

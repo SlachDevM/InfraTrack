@@ -12,9 +12,10 @@ export const ASSET_STATUS_LABELS = {
   [ASSET_STATUSES.DECOMMISSIONED]: 'Decommissioned',
 };
 
-export const ASSET_STATUS_OPTIONS = Object.entries(ASSET_STATUS_LABELS).map(
-  ([value, label]) => ({ value, label })
-);
+export const ASSET_STATUS_OPTIONS = Object.entries(ASSET_STATUS_LABELS).map(([value, label]) => ({
+  value,
+  label,
+}));
 
 export function getAssetStatusLabel(status) {
   return ASSET_STATUS_LABELS[status] || status;

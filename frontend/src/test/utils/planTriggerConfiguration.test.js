@@ -21,8 +21,9 @@ describe('planTriggerConfiguration', () => {
     });
 
     expect(JSON.parse(json)).toEqual({ every: 1, unit: 'MONTH' });
-    expect(buildTriggerSummaryPreview('TIME', { timeEvery: '1', timeUnit: 'MONTH' }))
-      .toBe('Every month');
+    expect(buildTriggerSummaryPreview('TIME', { timeEvery: '1', timeUnit: 'MONTH' })).toBe(
+      'Every month'
+    );
   });
 
   it('builds METER trigger configuration', () => {
@@ -32,10 +33,12 @@ describe('planTriggerConfiguration', () => {
     });
 
     expect(JSON.parse(json)).toEqual({ meter: 'OPERATING_HOURS', every: 250 });
-    expect(buildTriggerSummaryPreview('METER', {
-      meterType: 'OPERATING_HOURS',
-      meterEvery: '250',
-    })).toBe('Every 250 operating hours');
+    expect(
+      buildTriggerSummaryPreview('METER', {
+        meterType: 'OPERATING_HOURS',
+        meterEvery: '250',
+      })
+    ).toBe('Every 250 operating hours');
   });
 
   it('builds EVENT trigger configuration', () => {
@@ -44,8 +47,9 @@ describe('planTriggerConfiguration', () => {
     });
 
     expect(JSON.parse(json)).toEqual({ event: 'COMPLETION_REVIEW' });
-    expect(buildTriggerSummaryPreview('EVENT', { eventType: 'COMPLETION_REVIEW' }))
-      .toBe('After Completion Review');
+    expect(buildTriggerSummaryPreview('EVENT', { eventType: 'COMPLETION_REVIEW' })).toBe(
+      'After Completion Review'
+    );
   });
 
   it('parses trigger configuration into form fields', () => {

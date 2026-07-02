@@ -36,8 +36,14 @@ export default function KpiOverviewWidget({ kpis }) {
           <article className="dashboard-card">
             <h3>Assets</h3>
             <DashboardMetricRow label="Total assets" value={kpis.assets?.totalAssets} />
-            <DashboardMetricRow label="Without category" value={kpis.assets?.assetsWithoutCategory} />
-            <DashboardMetricRow label="Without department" value={kpis.assets?.assetsWithoutDepartment} />
+            <DashboardMetricRow
+              label="Without category"
+              value={kpis.assets?.assetsWithoutCategory}
+            />
+            <DashboardMetricRow
+              label="Without department"
+              value={kpis.assets?.assetsWithoutDepartment}
+            />
           </article>
 
           <article className="dashboard-card">
@@ -63,17 +69,38 @@ export default function KpiOverviewWidget({ kpis }) {
 
           <article className="dashboard-card">
             <h3>Preventive</h3>
-            <DashboardMetricRow label="Active plans" value={kpis.preventive?.activePreventivePlans} />
-            <DashboardMetricRow label="Pending candidates" value={kpis.preventive?.pendingExecutionCandidates} />
-            <DashboardMetricRow label="Approved candidates" value={kpis.preventive?.approvedExecutionCandidates} />
-            <DashboardMetricRow label="Scheduler runs today" value={kpis.preventive?.schedulerRunsToday} />
+            <DashboardMetricRow
+              label="Active plans"
+              value={kpis.preventive?.activePreventivePlans}
+            />
+            <DashboardMetricRow
+              label="Pending candidates"
+              value={kpis.preventive?.pendingExecutionCandidates}
+            />
+            <DashboardMetricRow
+              label="Approved candidates"
+              value={kpis.preventive?.approvedExecutionCandidates}
+            />
+            <DashboardMetricRow
+              label="Scheduler runs today"
+              value={kpis.preventive?.schedulerRunsToday}
+            />
           </article>
 
           <article className="dashboard-card">
             <h3>Decision Engine</h3>
-            <DashboardMetricRow label="Rule evaluation reports" value={kpis.decisionEngine?.ruleEvaluationReports} />
-            <DashboardMetricRow label="Pending suggestions" value={kpis.decisionEngine?.suggestedActionsPending} />
-            <DashboardMetricRow label="Accepted suggestions" value={kpis.decisionEngine?.suggestedActionsAccepted} />
+            <DashboardMetricRow
+              label="Rule evaluation reports"
+              value={kpis.decisionEngine?.ruleEvaluationReports}
+            />
+            <DashboardMetricRow
+              label="Pending suggestions"
+              value={kpis.decisionEngine?.suggestedActionsPending}
+            />
+            <DashboardMetricRow
+              label="Accepted suggestions"
+              value={kpis.decisionEngine?.suggestedActionsAccepted}
+            />
           </article>
         </div>
       </section>
@@ -82,17 +109,38 @@ export default function KpiOverviewWidget({ kpis }) {
         <h2>Recent intelligence</h2>
         <div className="dashboard-intelligence-grid">
           <article className="dashboard-card">
-            <DashboardMetricRow label="Rule evaluation reports" value={kpis.decisionEngine?.ruleEvaluationReports} />
+            <DashboardMetricRow
+              label="Rule evaluation reports"
+              value={kpis.decisionEngine?.ruleEvaluationReports}
+            />
           </article>
           <article className="dashboard-card">
-            <DashboardMetricRow label="Pending suggestions" value={kpis.decisionEngine?.suggestedActionsPending} />
-            <DashboardMetricRow label="Accepted suggestions" value={kpis.decisionEngine?.suggestedActionsAccepted} />
-            <DashboardMetricRow label="Rejected suggestions" value={kpis.decisionEngine?.suggestedActionsRejected} />
-            <DashboardMetricRow label="Dismissed suggestions" value={kpis.decisionEngine?.suggestedActionsDismissed} />
+            <DashboardMetricRow
+              label="Pending suggestions"
+              value={kpis.decisionEngine?.suggestedActionsPending}
+            />
+            <DashboardMetricRow
+              label="Accepted suggestions"
+              value={kpis.decisionEngine?.suggestedActionsAccepted}
+            />
+            <DashboardMetricRow
+              label="Rejected suggestions"
+              value={kpis.decisionEngine?.suggestedActionsRejected}
+            />
+            <DashboardMetricRow
+              label="Dismissed suggestions"
+              value={kpis.decisionEngine?.suggestedActionsDismissed}
+            />
           </article>
           <article className="dashboard-card">
-            <DashboardMetricRow label="Scheduler runs today" value={kpis.preventive?.schedulerRunsToday} />
-            <DashboardMetricRow label="Eligible plans now" value={kpis.preventive?.eligiblePlansNow} />
+            <DashboardMetricRow
+              label="Scheduler runs today"
+              value={kpis.preventive?.schedulerRunsToday}
+            />
+            <DashboardMetricRow
+              label="Eligible plans now"
+              value={kpis.preventive?.eligiblePlansNow}
+            />
           </article>
         </div>
       </section>

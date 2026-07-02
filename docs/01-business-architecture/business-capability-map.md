@@ -432,7 +432,7 @@ Spans the entire lifecycle — consumes data from inspections, issues, work orde
 ### Related Documentation
 
 - [Domain Engine — Operations Intelligence](../07-business-architecture/domain-engine.md)
-- [Product Roadmap — Version 2.1.0](../06-release-notes/v2-roadmap.md)
+- [Product Roadmap — Version 2.1.0](../06-release-notes/platform-version-history.md#version-210)
 - [V2 Domain Engine API](../04-api/v2-domain-engine-api.md) *(endpoint reference only)*
 
 ---
@@ -476,7 +476,7 @@ Reads from all operational capabilities; does not alter workflows
 ### Related Documentation
 
 - [Reporting API](../04-api/reporting-api.md)
-- [Product Roadmap — Version 2.2.0](../06-release-notes/v2-roadmap.md)
+- [Product Roadmap — Version 2.2.x](../06-release-notes/platform-version-history.md#version-22x-foundation)
 
 ---
 

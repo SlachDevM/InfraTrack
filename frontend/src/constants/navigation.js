@@ -85,8 +85,10 @@ export function canAccessRoute(role, path) {
     return canViewOperationsDashboard(normalizedRole);
   }
 
-  if (normalizedPath === INSPECTION_TEMPLATES_ROUTE
-      || normalizedPath.startsWith(INSPECTION_TEMPLATE_ROUTE_PREFIX)) {
+  if (
+    normalizedPath === INSPECTION_TEMPLATES_ROUTE ||
+    normalizedPath.startsWith(INSPECTION_TEMPLATE_ROUTE_PREFIX)
+  ) {
     return INSPECTION_TEMPLATE_VIEWER_ROLES.has(normalizedRole);
   }
 
@@ -110,19 +112,16 @@ export function canAccessRoute(role, path) {
 }
 
 export function getNavigationItems(role) {
-  return APP_NAVIGATION_ITEMS
-    .filter((item) => {
-      if (item.dashboardOnly && !canViewOperationsDashboard(role)) {
-        return false;
-      }
-      return canAccessRoute(role, item.path);
-    })
-    .map((item) => ({
-      path: item.path,
-      label: isFieldEmployeeRole(role) && item.fieldEmployeeLabel
-        ? item.fieldEmployeeLabel
-        : item.label,
-    }));
+  return APP_NAVIGATION_ITEMS.filter((item) => {
+    if (item.dashboardOnly && !canViewOperationsDashboard(role)) {
+      return false;
+    }
+    return canAccessRoute(role, item.path);
+  }).map((item) => ({
+    path: item.path,
+    label:
+      isFieldEmployeeRole(role) && item.fieldEmployeeLabel ? item.fieldEmployeeLabel : item.label,
+  }));
 }
 
 export function getPrimaryNavigationItems(role) {

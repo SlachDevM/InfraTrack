@@ -37,12 +37,7 @@ describe('OperationalDocumentsPanel', () => {
   afterEach(cleanup);
 
   it('renders upload controls when upload is allowed', () => {
-    render(
-      <OperationalDocumentsPanel
-        {...defaultProps}
-        canUploadDocuments
-      />
-    );
+    render(<OperationalDocumentsPanel {...defaultProps} canUploadDocuments />);
 
     expect(screen.getByLabelText('Document Type')).toBeInTheDocument();
     expect(screen.getByLabelText('File')).toBeInTheDocument();
@@ -63,12 +58,7 @@ describe('OperationalDocumentsPanel', () => {
   });
 
   it('accepts DOCX and XLSX in file input', () => {
-    render(
-      <OperationalDocumentsPanel
-        {...defaultProps}
-        canUploadDocuments
-      />
-    );
+    render(<OperationalDocumentsPanel {...defaultProps} canUploadDocuments />);
 
     const fileInput = screen.getByLabelText('File');
     expect(fileInput).toHaveAttribute('accept', expect.stringContaining('.docx'));
@@ -94,18 +84,15 @@ describe('OperationalDocumentsPanel', () => {
     );
 
     expect(screen.getByLabelText('Owner')).toBeInTheDocument();
-    expect(screen.getByRole('option', {
-      name: 'Inspection #100 — COMPLETED — 2026-06-01 — NORMAL',
-    })).toBeInTheDocument();
+    expect(
+      screen.getByRole('option', {
+        name: 'Inspection #100 — COMPLETED — 2026-06-01 — NORMAL',
+      })
+    ).toBeInTheDocument();
   });
 
   it('hides owner dropdown when owner type is empty', () => {
-    render(
-      <OperationalDocumentsPanel
-        {...defaultProps}
-        canUploadDocuments
-      />
-    );
+    render(<OperationalDocumentsPanel {...defaultProps} canUploadDocuments />);
 
     expect(screen.queryByLabelText('Owner')).not.toBeInTheDocument();
   });
@@ -120,8 +107,7 @@ describe('OperationalDocumentsPanel', () => {
       />
     );
 
-    expect(screen.getByText('No eligible records found for this owner type.'))
-      .toBeInTheDocument();
+    expect(screen.getByText('No eligible records found for this owner type.')).toBeInTheDocument();
   });
 
   it('calls onOwnerSelect when owner is chosen', async () => {
@@ -173,12 +159,7 @@ describe('OperationalDocumentsPanel', () => {
   });
 
   it('allows upload for asset-level document without owner', () => {
-    render(
-      <OperationalDocumentsPanel
-        {...defaultProps}
-        canUploadDocuments
-      />
-    );
+    render(<OperationalDocumentsPanel {...defaultProps} canUploadDocuments />);
 
     expect(screen.getByRole('button', { name: 'Upload Document' })).toBeEnabled();
   });

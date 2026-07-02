@@ -111,7 +111,9 @@ describe('other role helpers', () => {
   it('allows execution candidate generation for admin and manager only', () => {
     expect(canGeneratePreventiveExecutionCandidates(USER_ROLES.ADMINISTRATOR)).toBe(true);
     expect(canGeneratePreventiveExecutionCandidates(USER_ROLES.MANAGER)).toBe(true);
-    expect(canGeneratePreventiveExecutionCandidates(USER_ROLES.OPERATIONAL_COORDINATOR)).toBe(false);
+    expect(canGeneratePreventiveExecutionCandidates(USER_ROLES.OPERATIONAL_COORDINATOR)).toBe(
+      false
+    );
     expect(canGeneratePreventiveExecutionCandidates(USER_ROLES.FIELD_EMPLOYEE)).toBe(false);
   });
 

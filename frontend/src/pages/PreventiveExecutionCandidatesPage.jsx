@@ -128,12 +128,7 @@ export default function PreventiveExecutionCandidatesPage() {
     planId: filterPlanId ? Number(filterPlanId) : undefined,
   });
 
-  const loadCandidatesWithFilters = async (
-    page,
-    statusFilter,
-    assetFilter,
-    planFilter
-  ) => {
+  const loadCandidatesWithFilters = async (page, statusFilter, assetFilter, planFilter) => {
     try {
       setListLoading(true);
       setError(null);
@@ -203,15 +198,10 @@ export default function PreventiveExecutionCandidatesPage() {
       const created = results.filter((result) => result.outcome === 'CREATED').length;
       const skipped = results.filter((result) => result.outcome === 'SKIPPED_DUPLICATE').length;
       setSuccess(
-        `Generation complete: ${created} created, ${skipped} skipped (existing pending), `
-        + `${results.length - created - skipped} not eligible.`
+        `Generation complete: ${created} created, ${skipped} skipped (existing pending), ` +
+          `${results.length - created - skipped} not eligible.`
       );
-      await loadCandidatesWithFilters(
-        DEFAULT_PAGE,
-        filterStatus,
-        filterAssetId,
-        filterPlanId
-      );
+      await loadCandidatesWithFilters(DEFAULT_PAGE, filterStatus, filterAssetId, filterPlanId);
     } catch (err) {
       if (isForbidden(err)) {
         setError('You do not have permission to generate preventive execution candidates.');
@@ -259,7 +249,9 @@ export default function PreventiveExecutionCandidatesPage() {
         const profile = await userApi.getCurrentUser();
         const asset = assets.find((item) => item.id === candidate.assetId);
         const workerData = await inspectionApi.listWorkers();
-        setWorkers(filterInspectionAssignees(workerData, asset?.departmentId ?? profile?.departmentId));
+        setWorkers(
+          filterInspectionAssignees(workerData, asset?.departmentId ?? profile?.departmentId)
+        );
       } catch {
         setWorkers([]);
       }
@@ -349,14 +341,9 @@ export default function PreventiveExecutionCandidatesPage() {
     return (
       <>
         {' '}
-        <button
-          type="button"
-          className="btn-link"
-          onClick={() => openApproveDialog(candidate)}
-        >
+        <button type="button" className="btn-link" onClick={() => openApproveDialog(candidate)}>
           Approve
-        </button>
-        {' '}
+        </button>{' '}
         <button
           type="button"
           className="btn-link"
@@ -366,8 +353,7 @@ export default function PreventiveExecutionCandidatesPage() {
           }}
         >
           Reject
-        </button>
-        {' '}
+        </button>{' '}
         <button
           type="button"
           className="btn-link"
@@ -389,12 +375,19 @@ export default function PreventiveExecutionCandidatesPage() {
   return (
     <ReferenceDataLayout
       title="Preventive Execution Candidates"
-      headerActions={canExport ? <ExportCsvButton exportType={REPORTING_EXPORT_TYPES.PREVENTIVE_CANDIDATES} onError={setError} /> : null}
+      headerActions={
+        canExport ? (
+          <ExportCsvButton
+            exportType={REPORTING_EXPORT_TYPES.PREVENTIVE_CANDIDATES}
+            onError={setError}
+          />
+        ) : null
+      }
     >
-        {error && <div className="error-message">{error}</div>}
-        {success && <div className="success-message">{success}</div>}
+      {error && <div className="error-message">{error}</div>}
+      {success && <div className="success-message">{success}</div>}
 
-        <section className="reference-form-section">
+      <section className="reference-form-section">
         <div className="section-header">
           <h2>Candidate Queue</h2>
           {canGenerate && (
@@ -457,10 +450,7 @@ export default function PreventiveExecutionCandidatesPage() {
               <option value="">All plans</option>
               {plans.map((plan) => (
                 <option key={plan.id} value={plan.id}>
-                  {plan.planCode}
-                  {' '}
-                  —
-                  {plan.name}
+                  {plan.planCode} —{plan.name}
                 </option>
               ))}
             </select>
@@ -522,18 +512,12 @@ export default function PreventiveExecutionCandidatesPage() {
         page={candidatesPage}
         totalPages={candidatesTotalPages}
         loading={listLoading}
-        onPrevious={() => loadCandidatesWithFilters(
-          candidatesPage - 1,
-          filterStatus,
-          filterAssetId,
-          filterPlanId
-        )}
-        onNext={() => loadCandidatesWithFilters(
-          candidatesPage + 1,
-          filterStatus,
-          filterAssetId,
-          filterPlanId
-        )}
+        onPrevious={() =>
+          loadCandidatesWithFilters(candidatesPage - 1, filterStatus, filterAssetId, filterPlanId)
+        }
+        onNext={() =>
+          loadCandidatesWithFilters(candidatesPage + 1, filterStatus, filterAssetId, filterPlanId)
+        }
       />
 
       {selectedCandidate && (
@@ -601,8 +585,7 @@ export default function PreventiveExecutionCandidatesPage() {
                   <dt>Created Inspection</dt>
                   <dd>
                     <Link to={ROUTES.INSPECTIONS}>
-                      Inspection #
-                      {selectedCandidate.createdInspectionId}
+                      Inspection #{selectedCandidate.createdInspectionId}
                     </Link>
                   </dd>
                 </>
@@ -653,8 +636,7 @@ export default function PreventiveExecutionCandidatesPage() {
                   <dt>Created Inspection</dt>
                   <dd>
                     <Link to={ROUTES.INSPECTIONS}>
-                      Inspection #
-                      {selectedReport.createdInspectionId}
+                      Inspection #{selectedReport.createdInspectionId}
                     </Link>
                   </dd>
                 </>
@@ -673,35 +655,39 @@ export default function PreventiveExecutionCandidatesPage() {
           ) : (
             <p>No execution report available.</p>
           )}
-          {!detailLoading && canReview && selectedCandidate.candidateStatus === PREVENTIVE_CANDIDATE_STATUS.PENDING && (
-            <div className="review-actions">
-              <button type="button" className="btn-primary" onClick={() => openApproveDialog(selectedCandidate)}>
-                Approve
-              </button>
-              {' '}
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => {
-                  setRejectCandidate(selectedCandidate);
-                  setRejectReason('');
-                }}
-              >
-                Reject
-              </button>
-              {' '}
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => {
-                  setDismissCandidate(selectedCandidate);
-                  setDismissComment('');
-                }}
-              >
-                Dismiss
-              </button>
-            </div>
-          )}
+          {!detailLoading &&
+            canReview &&
+            selectedCandidate.candidateStatus === PREVENTIVE_CANDIDATE_STATUS.PENDING && (
+              <div className="review-actions">
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => openApproveDialog(selectedCandidate)}
+                >
+                  Approve
+                </button>{' '}
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => {
+                    setRejectCandidate(selectedCandidate);
+                    setRejectReason('');
+                  }}
+                >
+                  Reject
+                </button>{' '}
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => {
+                    setDismissCandidate(selectedCandidate);
+                    setDismissComment('');
+                  }}
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
         </section>
       )}
 
@@ -709,12 +695,7 @@ export default function PreventiveExecutionCandidatesPage() {
         <section className="reference-form-section dialog-panel">
           <h2>Approve Candidate</h2>
           <p>
-            Plan:
-            {' '}
-            <strong>{approveCandidate.planCodeSnapshot}</strong>
-            {' '}
-            —
-            {approveCandidate.assetName}
+            Plan: <strong>{approveCandidate.planCodeSnapshot}</strong> —{approveCandidate.assetName}
           </p>
           <p>{approveCandidate.eligibilityReason}</p>
           <form onSubmit={handleApproveSubmit}>
@@ -723,10 +704,12 @@ export default function PreventiveExecutionCandidatesPage() {
               <select
                 id="approveAssigneeId"
                 value={approveForm.assigneeId}
-                onChange={(e) => setApproveForm((prev) => ({
-                  ...prev,
-                  assigneeId: e.target.value,
-                }))}
+                onChange={(e) =>
+                  setApproveForm((prev) => ({
+                    ...prev,
+                    assigneeId: e.target.value,
+                  }))
+                }
                 required
               >
                 <option value="">Select field employee</option>
@@ -743,10 +726,12 @@ export default function PreventiveExecutionCandidatesPage() {
                 id="approvePlannedAt"
                 type="date"
                 value={approveForm.plannedAt}
-                onChange={(e) => setApproveForm((prev) => ({
-                  ...prev,
-                  plannedAt: e.target.value,
-                }))}
+                onChange={(e) =>
+                  setApproveForm((prev) => ({
+                    ...prev,
+                    plannedAt: e.target.value,
+                  }))
+                }
               />
             </label>
             <label htmlFor="approveNotes">
@@ -754,10 +739,12 @@ export default function PreventiveExecutionCandidatesPage() {
               <textarea
                 id="approveNotes"
                 value={approveForm.notes}
-                onChange={(e) => setApproveForm((prev) => ({
-                  ...prev,
-                  notes: e.target.value,
-                }))}
+                onChange={(e) =>
+                  setApproveForm((prev) => ({
+                    ...prev,
+                    notes: e.target.value,
+                  }))
+                }
                 rows={3}
               />
             </label>
@@ -768,8 +755,7 @@ export default function PreventiveExecutionCandidatesPage() {
                 disabled={reviewing || selectedAssigneeId == null}
               >
                 {reviewing ? 'Approving...' : 'Approve and Create Inspection'}
-              </button>
-              {' '}
+              </button>{' '}
               <button
                 type="button"
                 className="btn-secondary"
@@ -781,12 +767,7 @@ export default function PreventiveExecutionCandidatesPage() {
           </form>
           {createdInspectionId && (
             <p>
-              Inspection created:
-              {' '}
-              <Link to={ROUTES.INSPECTIONS}>
-                #
-                {createdInspectionId}
-              </Link>
+              Inspection created: <Link to={ROUTES.INSPECTIONS}>#{createdInspectionId}</Link>
             </p>
           )}
         </section>
@@ -796,9 +777,7 @@ export default function PreventiveExecutionCandidatesPage() {
         <section className="reference-form-section dialog-panel">
           <h2>Reject Candidate</h2>
           <p>
-            Plan:
-            {' '}
-            <strong>{rejectCandidate.planCodeSnapshot}</strong>
+            Plan: <strong>{rejectCandidate.planCodeSnapshot}</strong>
           </p>
           <form onSubmit={handleRejectSubmit}>
             <label htmlFor="rejectReason">
@@ -813,8 +792,7 @@ export default function PreventiveExecutionCandidatesPage() {
             <div className="form-actions">
               <button type="submit" className="btn-primary" disabled={reviewing}>
                 {reviewing ? 'Rejecting...' : 'Reject Candidate'}
-              </button>
-              {' '}
+              </button>{' '}
               <button
                 type="button"
                 className="btn-secondary"
@@ -831,9 +809,7 @@ export default function PreventiveExecutionCandidatesPage() {
         <section className="reference-form-section dialog-panel">
           <h2>Dismiss Candidate</h2>
           <p>
-            Plan:
-            {' '}
-            <strong>{dismissCandidate.planCodeSnapshot}</strong>
+            Plan: <strong>{dismissCandidate.planCodeSnapshot}</strong>
           </p>
           <form onSubmit={handleDismissSubmit}>
             <label htmlFor="dismissComment">
@@ -848,8 +824,7 @@ export default function PreventiveExecutionCandidatesPage() {
             <div className="form-actions">
               <button type="submit" className="btn-primary" disabled={reviewing}>
                 {reviewing ? 'Dismissing...' : 'Dismiss Candidate'}
-              </button>
-              {' '}
+              </button>{' '}
               <button
                 type="button"
                 className="btn-secondary"

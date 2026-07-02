@@ -2,9 +2,9 @@
 
 Operational asset and field operations management platform for Australian Local Governments.
 
-**Current validated version: v2.0.1**
+**Current validated product version: v2.0.1** (artifact version aligned — see [ADR-004](docs/03-architecture/adr-004-platform-versioning-strategy.md))
 
-This is an **internally validated baseline** for development and regression tracking — not a production release. Production deployment is planned for a later major version (see [Product Roadmap](docs/06-release-notes/v2-roadmap.md)). No GitHub Release is required at this stage.
+Validated foundations through **Version 2.2.x** (Operations Intelligence, Mobile API, CSV Reporting) are documented in [Platform Version History](docs/06-release-notes/platform-version-history.md). This is an **internally validated baseline** — not a production release.
 
 ![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)
 ![React](https://img.shields.io/badge/React-Frontend-61DAFB?logo=react)
@@ -29,7 +29,11 @@ InfraTrack is an enterprise software product for managing public infrastructure 
 | **1.0.0** | Core CMMS — complete V1 operational workflow |
 | **1.0.1** | Platform hardening |
 | **2.0.0** | Inspection Intelligence & Preventive Maintenance (Domain Engine) |
-| **2.0.1** | Security & quality hardening + V2 validation baseline (current validated) |
+| **2.0.1** | Security & quality hardening + V2 validation baseline |
+| **2.1.0** | Operations Intelligence & dashboard (validated) |
+| **2.2.x** | Mobile API & CSV reporting foundations (validated) |
+
+See [Platform Version History](docs/06-release-notes/platform-version-history.md) and [Product Roadmap](docs/06-release-notes/v2-roadmap.md) for delivery status.
 
 **Version 2.0.0** adds the **Domain Engine**: structured inspection intelligence (Decision Engine) and preventive maintenance orchestration (Preventive Maintenance Engine), both following a **human-in-the-loop** principle — the system proposes; the Manager decides.
 
@@ -40,66 +44,39 @@ The backend is the single source of truth for all business rules. Clients consum
 
 ---
 
-## V1.0.1 Capabilities
+## V1 Capabilities
 
-| Use Case | Capability |
-|----------|------------|
-| UC-001 | Asset registration |
-| UC-002 | Asset lifecycle status |
-| UC-003 | Inspection assignment |
-| UC-004 | Inspection completion |
-| UC-005 | Issue recording |
-| UC-006 | Business trigger recording |
-| UC-007 | Operational decisions and work order creation |
-| UC-008 | Work order assignment; delegated authority |
-| UC-009 | Maintenance activity completion |
-| UC-010 | Completion review |
-| UC-011 | Asset operational history |
-| UC-012 | Operational document upload and download |
-| UC-013 | In-app notifications |
+Complete V1 operational workflow (UC-001 through UC-013): assets, inspections, issues, decisions, work orders, maintenance, completion reviews, operational documents, notifications, and reference data.
 
-**Platform:** JWT authentication, user lifecycle (invitation, activation, deactivation), role-based access control, email (dev Mailpit / prod SMTP), Firebase push notifications, PostgreSQL, Flyway migrations, OpenAPI/Swagger, Spring Actuator health and info.
-
-**Reference data:** Departments, asset categories, user directories by role.
+See [Functional Use Cases](docs/01-business-architecture/functional-use-cases.md) for the authoritative catalogue.
 
 ---
 
-## V2 Domain Engine (Version 2.0.0)
+## V2 Domain Engine & Validated Foundations
 
-| Engine | Capabilities |
-|--------|----------------|
-| **Decision Engine** v1.0 | Inspection Templates, Questions, Answers, Decision Rules, Rule Evaluation Reports, Suggested Actions, Decision Assistant |
-| **Preventive Maintenance Engine** v1.0 | Plans, Trigger Evaluation, Execution Candidates, Preventive Decision Assistant, Execution Reports, Controlled Scheduler v1.0 |
-
-**Human-in-the-loop:** Rules produce suggestions, not automatic Issues. The scheduler generates candidates, not automatic Inspections.
+| Area | Summary |
+|------|---------|
+| **Decision Engine** v1.0 | Templates, rules, suggested actions, Decision Assistant |
+| **Preventive Engine** v1.0 | Plans, candidates, scheduler, execution reports |
+| **Operations Intelligence** | KPIs, trends, dashboard, personalisation ([2.1.0](docs/06-release-notes/platform-version-history.md#version-210)) |
+| **Mobile API** | Compact `/api/mobile/*` foundation ([2.2.x](docs/06-release-notes/platform-version-history.md#version-22x-foundation)) |
+| **CSV Reporting** | `/api/reporting/exports/*.csv` ([2.2.x](docs/06-release-notes/platform-version-history.md#version-22x-foundation)) |
 
 | Document | Description |
 |----------|-------------|
 | [Platform Version History](docs/06-release-notes/platform-version-history.md) | Product versions (authoritative) |
-| [Domain Engine](docs/07-business-architecture/domain-engine.md) | Authoritative V2 business architecture |
-| [Version 2.0.0 sprint report](docs/06-release-notes/v2-phase-a-b.md) | Historical delivery record |
-| [Version 2.0.1 hardening](docs/06-release-notes/v2-0-1-security-hardening.md) | Security & quality release |
-| [V2 API endpoint groups](docs/04-api/v2-domain-engine-api.md) | Major V2 REST paths |
-| [ADR-004 Versioning strategy](docs/03-architecture/adr-004-platform-versioning-strategy.md) | Product semver rules |
-| [BDR-001 Human-in-the-loop](docs/03-architecture/bdr-001-human-in-the-loop-decision-engine.md) | Why rules suggest, not execute |
-| [BDR-002 Preventive candidates](docs/03-architecture/bdr-002-preventive-candidates-before-automation.md) | Why scheduler generates candidates only |
-| [ADR-003 V2 workflow](docs/03-architecture/adr-003-v2-domain-driven-workflow.md) | How V2 business domains interact |
-| [BDR-003 Bearer tokens](docs/03-architecture/bdr-003-bearer-token-architecture.md) | Why JWT Bearer tokens are used |
-| [**ADR Index**](docs/03-architecture/ADR-INDEX.md) | Entry point for all ADRs and BDRs |
-| [Business Glossary](docs/01-business-architecture/glossary.md) | Stakeholder terminology |
+| [Domain Engine](docs/07-business-architecture/domain-engine.md) | V2 business architecture |
+| [Business Capability Map](docs/01-business-architecture/business-capability-map.md) | What the platform can do today |
 | [Product Roadmap](docs/06-release-notes/v2-roadmap.md) | Planned versions |
+| [ADR Index](docs/03-architecture/ADR-INDEX.md) | Architecture decisions |
 
 ---
 
-## Roadmap (post Version 2.0.1)
+## Roadmap
 
-- Native Android field application (same REST API)
-- METER and EVENT preventive trigger evaluation
-- Optional automation of accepted suggestions (A3.6)
-- Preventive and decision-engine KPI dashboards
-- Expanded pagination on remaining list endpoints
+Next planned milestones: native Android field application (2.3.0), offline sync (2.4.0), and extended reporting formats.
 
-See [Functional Use Cases](docs/01-business-architecture/functional-use-cases.md) for the authoritative V1 business scope, [Domain Engine](docs/07-business-architecture/domain-engine.md) for Version 2.0.0, and [Product Roadmap](docs/06-release-notes/v2-roadmap.md) for planned versions.
+See [Product Roadmap](docs/06-release-notes/v2-roadmap.md) and [Functional Use Cases](docs/01-business-architecture/functional-use-cases.md) for scope detail.
 
 ---
 
@@ -120,24 +97,7 @@ See [docs/README.md](docs/README.md) for the full structure and reading order.
 | Release Notes | [`docs/06-release-notes/`](docs/06-release-notes/) | Sprint and milestone release notes |
 | V2 Business Architecture | [`docs/07-business-architecture/`](docs/07-business-architecture/) | Domain Engine, Decision Engine, Preventive Maintenance Engine |
 
-Key entry points:
-
-- [**Product Vision**](docs/00-product-vision.md)
-- [**API Consumer Guide**](docs/04-api/api-consumer-guide.md)
-- [**Business Capability Map**](docs/01-business-architecture/business-capability-map.md)
-- [Development Philosophy](docs/00-business-discovery/00-development-philosophy.md)
-- [Domain Overview](docs/00-business-discovery/02-domain-overview.md)
-- [Functional Use Cases](docs/01-business-architecture/functional-use-cases.md)
-- [System Blueprint](docs/02-system-blueprint/INFRATRACK_SYSTEM_BLUEPRINT_V1_SKELETON.md)
-- [**Workflow Sequence Diagrams**](docs/02-system-blueprint/workflow-sequence-diagrams.md)
-- [Platform Version History](docs/06-release-notes/platform-version-history.md)
-- [Domain Engine (V2)](docs/07-business-architecture/domain-engine.md)
-- [Business Glossary](docs/01-business-architecture/glossary.md)
-- [Version 2.0.0 sprint report](docs/06-release-notes/v2-phase-a-b.md)
-- [Version 2.0.1 Security Hardening](docs/06-release-notes/v2-0-1-security-hardening.md)
-- [Product Roadmap](docs/06-release-notes/v2-roadmap.md)
-- [ADR-004 Versioning strategy](docs/03-architecture/adr-004-platform-versioning-strategy.md)
-- [**ADR Index**](docs/03-architecture/ADR-INDEX.md)
+Key entry points: [Product Vision](docs/00-product-vision.md) · [Capability Map](docs/01-business-architecture/business-capability-map.md) · [API Consumer Guide](docs/04-api/api-consumer-guide.md) · [Platform Version History](docs/06-release-notes/platform-version-history.md) · [ADR Index](docs/03-architecture/ADR-INDEX.md)
 
 ---
 
@@ -264,7 +224,7 @@ See [Authentication Flow](#authentication-flow) below for activation and lifecyc
 
 **Pagination:** Paginated endpoints accept optional `page` (zero-based, default `0`) and `size` (default `20`, maximum `100`) query parameters. Responses use Spring Data `Page` JSON (`content`, `totalElements`, `totalPages`, etc.). Non-paginated list endpoints return a plain JSON array.
 
-**Versioning:** V1 REST paths are stable under `/api/...`. The API description version in OpenAPI is `1.0.1`. Breaking changes require a new major version; additive DTO fields may be introduced without a path change.
+**Versioning:** REST paths are stable under `/api/...`. The OpenAPI `info.version` matches the current validated product version (`2.0.1`). Breaking changes require a new major version; additive DTO fields may be introduced without a path change.
 
 **Errors:** Business and validation failures return plain-text bodies with appropriate HTTP status codes. Swagger documents the common responses on each controller via `@StandardApiResponses`.
 
@@ -467,11 +427,7 @@ See [docs/README.md](docs/README.md) and [docs/05-deployment/README.md](docs/05-
 
 ## Version History
 
-| Version | Summary |
-|---------|---------|
-| **V2 Phase A+B** | Domain Engine — Decision Engine, Preventive Maintenance Engine, Controlled Scheduler (human-in-the-loop) |
-| **1.0.1** | V1 release freeze — complete operational workflow (UC-001–UC-013), OpenAPI documentation, observability, security hardening, frontend test suite |
-| 1.0.0 | Initial React frontend release label (superseded by unified 1.0.1 versioning) |
+Authoritative product versions: [Platform Version History](docs/06-release-notes/platform-version-history.md).
 
 ---
 

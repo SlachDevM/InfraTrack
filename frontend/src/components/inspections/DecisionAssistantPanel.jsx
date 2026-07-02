@@ -59,12 +59,7 @@ function SuggestionWhyPanel({ explanation }) {
   );
 }
 
-function ApproveSuggestionDialog({
-  suggestion,
-  onClose,
-  onApproved,
-  onError,
-}) {
+function ApproveSuggestionDialog({ suggestion, onClose, onApproved, onError }) {
   const [formData, setFormData] = useState({
     title: suggestion.title || '',
     description: suggestion.message || '',
@@ -119,7 +114,9 @@ function ApproveSuggestionDialog({
           Severity
           <select name="severity" value={formData.severity} onChange={handleChange}>
             {Object.values(ISSUE_SEVERITIES).map((severity) => (
-              <option key={severity} value={severity}>{severity}</option>
+              <option key={severity} value={severity}>
+                {severity}
+              </option>
             ))}
           </select>
         </label>
@@ -156,7 +153,9 @@ function ApproveSuggestionDialog({
           />
         </label>
         <div className="decision-assistant-dialog-actions">
-          <button type="button" onClick={onClose} disabled={submitting}>Cancel</button>
+          <button type="button" onClick={onClose} disabled={submitting}>
+            Cancel
+          </button>
           <button type="submit" disabled={submitting}>
             {submitting ? 'Creating Issue...' : 'Create Issue'}
           </button>
@@ -166,12 +165,7 @@ function ApproveSuggestionDialog({
   );
 }
 
-function SuggestionReviewCard({
-  summary,
-  canReview,
-  onRefresh,
-  onError,
-}) {
+function SuggestionReviewCard({ summary, canReview, onRefresh, onError }) {
   const [detail, setDetail] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -181,7 +175,7 @@ function SuggestionReviewCard({
   const [acting, setActing] = useState(false);
 
   const display = detail || summary;
-    const isPending = (detail?.status ?? summary.status) === SUGGESTED_ACTION_STATUS.PENDING;
+  const isPending = (detail?.status ?? summary.status) === SUGGESTED_ACTION_STATUS.PENDING;
 
   useEffect(() => {
     if (!expanded || detail || !canReview) {
@@ -278,7 +272,10 @@ function SuggestionReviewCard({
             {expanded ? 'Hide Decision Assistant' : 'Open Decision Assistant'}
           </button>
           {expanded && (
-            <div className="decision-assistant-review" data-testid={`decision-assistant-${summary.id}`}>
+            <div
+              className="decision-assistant-review"
+              data-testid={`decision-assistant-${summary.id}`}
+            >
               {loadingDetail && <p>Loading explanation...</p>}
               {!loadingDetail && detail?.explanation && (
                 <SuggestionWhyPanel explanation={detail.explanation} />
@@ -390,7 +387,10 @@ export default function DecisionAssistantPanel({ inspectionId }) {
 
   if (loading) {
     return (
-      <div className="suggested-actions-panel loading" data-testid={`suggested-actions-loading-${inspectionId}`}>
+      <div
+        className="suggested-actions-panel loading"
+        data-testid={`suggested-actions-loading-${inspectionId}`}
+      >
         Loading suggested actions...
       </div>
     );
@@ -398,7 +398,10 @@ export default function DecisionAssistantPanel({ inspectionId }) {
 
   if (error) {
     return (
-      <div className="suggested-actions-panel error" data-testid={`suggested-actions-error-${inspectionId}`}>
+      <div
+        className="suggested-actions-panel error"
+        data-testid={`suggested-actions-error-${inspectionId}`}
+      >
         {error}
       </div>
     );

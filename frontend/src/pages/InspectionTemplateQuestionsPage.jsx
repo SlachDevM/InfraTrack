@@ -8,10 +8,7 @@ import inspectionTemplateQuestionChoiceApi from '../services/inspectionTemplateQ
 import inspectionTemplateQuestionRuleApi from '../services/inspectionTemplateQuestionRuleApi';
 import unitOfMeasureApi from '../services/unitOfMeasureApi';
 import ReferenceDataLayout from '../components/layout/ReferenceDataLayout';
-import {
-  canManageInspectionTemplates,
-  canViewInspectionTemplates,
-} from '../constants/userRoles';
+import { canManageInspectionTemplates, canViewInspectionTemplates } from '../constants/userRoles';
 import { ROUTES } from '../constants/routes';
 import {
   INSPECTION_TEMPLATE_QUESTION_TYPE_OPTIONS,
@@ -177,7 +174,8 @@ export default function InspectionTemplateQuestionsPage() {
           : undefined;
         payload.minValue = formData.minValue === '' ? undefined : Number(formData.minValue);
         payload.maxValue = formData.maxValue === '' ? undefined : Number(formData.maxValue);
-        payload.decimalPlaces = formData.decimalPlaces === '' ? undefined : Number(formData.decimalPlaces);
+        payload.decimalPlaces =
+          formData.decimalPlaces === '' ? undefined : Number(formData.decimalPlaces);
       }
       if (editingId) {
         await inspectionTemplateQuestionApi.update(templateId, editingId, payload);
@@ -237,7 +235,9 @@ export default function InspectionTemplateQuestionsPage() {
 
     const normalizedCode = choiceForm.code.trim().toUpperCase();
     if (!editingChoiceId && !isValidQuestionCode(normalizedCode)) {
-      setError('Choice code must be uppercase, start with a letter, and contain only letters, digits, and underscores.');
+      setError(
+        'Choice code must be uppercase, start with a letter, and contain only letters, digits, and underscores.'
+      );
       return;
     }
 
@@ -488,7 +488,9 @@ export default function InspectionTemplateQuestionsPage() {
         setSuccess('Decision rule created successfully.');
       }
       const managingQuestion = questions.find((item) => item.id === managingRulesQuestionId);
-      setRuleForm(managingQuestion ? defaultRuleFormForQuestion(managingQuestion) : EMPTY_RULE_FORM);
+      setRuleForm(
+        managingQuestion ? defaultRuleFormForQuestion(managingQuestion) : EMPTY_RULE_FORM
+      );
       setEditingRuleId(null);
       setRulePayloadError(null);
       await loadRulesForQuestion(managingRulesQuestionId);
@@ -535,7 +537,9 @@ export default function InspectionTemplateQuestionsPage() {
       if (editingRuleId === ruleId) {
         setEditingRuleId(null);
         const managingQuestion = questions.find((item) => item.id === managingRulesQuestionId);
-        setRuleForm(managingQuestion ? defaultRuleFormForQuestion(managingQuestion) : EMPTY_RULE_FORM);
+        setRuleForm(
+          managingQuestion ? defaultRuleFormForQuestion(managingQuestion) : EMPTY_RULE_FORM
+        );
         setRulePayloadError(null);
       }
       await loadRulesForQuestion(managingRulesQuestionId);
@@ -547,9 +551,7 @@ export default function InspectionTemplateQuestionsPage() {
   const managingRulesQuestion = questions.find((item) => item.id === managingRulesQuestionId);
   const ruleOperatorOptions = getOperatorsForConditionType(ruleForm.conditionType);
   const showComparisonValue = comparisonValueRequired(ruleForm.conditionType);
-  const ruleChoiceOptions = managingRulesQuestion
-    ? getActiveChoices(managingRulesQuestion)
-    : [];
+  const ruleChoiceOptions = managingRulesQuestion ? getActiveChoices(managingRulesQuestion) : [];
 
   if (loading) {
     return <div className="loading">Loading checklist questions...</div>;
@@ -561,303 +563,286 @@ export default function InspectionTemplateQuestionsPage() {
       backLabel="← Back to Templates"
       onBack={() => navigate(ROUTES.INSPECTION_TEMPLATES)}
     >
-        {error && <div className="error-message">{error}</div>}
-        {success && <div className="success-message">{success}</div>}
+      {error && <div className="error-message">{error}</div>}
+      {success && <div className="success-message">{success}</div>}
 
-        {template && (
-          <section className="reference-form-section">
-            <h2>{template.name}</h2>
-            <p>
-              Asset Category: {template.assetCategoryName}
-              {' · '}
-              Version: {template.version}
-              {' · '}
-              Status: {getInspectionTemplateStatusLabel(template.status)}
+      {template && (
+        <section className="reference-form-section">
+          <h2>{template.name}</h2>
+          <p>
+            Asset Category: {template.assetCategoryName}
+            {' · '}
+            Version: {template.version}
+            {' · '}
+            Status: {getInspectionTemplateStatusLabel(template.status)}
+          </p>
+          {!canManage && (
+            <p className="read-only-note">
+              Checklist questions are read-only. Administrators can create, edit, deactivate, and
+              reorder questions on draft templates.
             </p>
-            {!canManage && (
-              <p className="read-only-note">
-                Checklist questions are read-only. Administrators can create, edit, deactivate, and reorder questions on draft templates.
-              </p>
-            )}
-            {canManage && !isDraftTemplate(template) && (
-              <p className="read-only-note">
-                This template is {getInspectionTemplateStatusLabel(template.status).toLowerCase()}.
-                Checklist questions cannot be modified. Create a new template version in a future release to change published templates.
-              </p>
-            )}
-          </section>
-        )}
+          )}
+          {canManage && !isDraftTemplate(template) && (
+            <p className="read-only-note">
+              This template is {getInspectionTemplateStatusLabel(template.status).toLowerCase()}.
+              Checklist questions cannot be modified. Create a new template version in a future
+              release to change published templates.
+            </p>
+          )}
+        </section>
+      )}
 
-        {canMutate && (
-          <section className="reference-form-section">
-            <h2>{editingId ? 'Edit Question' : 'Create Question'}</h2>
-            <form className="reference-form" onSubmit={handleSubmit}>
-              <div className="form-row">
-                <label htmlFor="code">Question Code</label>
+      {canMutate && (
+        <section className="reference-form-section">
+          <h2>{editingId ? 'Edit Question' : 'Create Question'}</h2>
+          <form className="reference-form" onSubmit={handleSubmit}>
+            <div className="form-row">
+              <label htmlFor="code">Question Code</label>
+              <input
+                id="code"
+                name="code"
+                type="text"
+                value={formData.code}
+                onChange={handleFormChange}
+                required={!editingId}
+                disabled={submitting || Boolean(editingId)}
+                readOnly={Boolean(editingId)}
+              />
+              {!editingId && (
+                <p className="field-hint">
+                  Suggested automatically from question text. You can edit it before saving.
+                </p>
+              )}
+              {editingId && (
+                <p className="field-hint">
+                  Business codes are read-only after creation to protect downstream integrations.
+                </p>
+              )}
+            </div>
+            <div className="form-row">
+              <label htmlFor="questionText">Question Text</label>
+              <input
+                id="questionText"
+                name="questionText"
+                type="text"
+                value={formData.questionText}
+                onChange={handleFormChange}
+                required
+                disabled={submitting}
+              />
+            </div>
+            <div className="form-row">
+              <label htmlFor="helpText">Help Text</label>
+              <textarea
+                id="helpText"
+                name="helpText"
+                value={formData.helpText}
+                onChange={handleFormChange}
+                disabled={submitting}
+                rows={2}
+              />
+            </div>
+            <div className="form-row">
+              <label htmlFor="questionType">Question Type</label>
+              <select
+                id="questionType"
+                name="questionType"
+                value={formData.questionType}
+                onChange={handleFormChange}
+                required
+                disabled={submitting}
+              >
+                {INSPECTION_TEMPLATE_QUESTION_TYPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="form-row">
+              <label htmlFor="required">
                 <input
-                  id="code"
-                  name="code"
-                  type="text"
-                  value={formData.code}
-                  onChange={handleFormChange}
-                  required={!editingId}
-                  disabled={submitting || Boolean(editingId)}
-                  readOnly={Boolean(editingId)}
-                />
-                {!editingId && (
-                  <p className="field-hint">
-                    Suggested automatically from question text. You can edit it before saving.
-                  </p>
-                )}
-                {editingId && (
-                  <p className="field-hint">
-                    Business codes are read-only after creation to protect downstream integrations.
-                  </p>
-                )}
-              </div>
-              <div className="form-row">
-                <label htmlFor="questionText">Question Text</label>
-                <input
-                  id="questionText"
-                  name="questionText"
-                  type="text"
-                  value={formData.questionText}
-                  onChange={handleFormChange}
-                  required
-                  disabled={submitting}
-                />
-              </div>
-              <div className="form-row">
-                <label htmlFor="helpText">Help Text</label>
-                <textarea
-                  id="helpText"
-                  name="helpText"
-                  value={formData.helpText}
+                  id="required"
+                  name="required"
+                  type="checkbox"
+                  checked={formData.required}
                   onChange={handleFormChange}
                   disabled={submitting}
-                  rows={2}
-                />
-              </div>
-              <div className="form-row">
-                <label htmlFor="questionType">Question Type</label>
-                <select
-                  id="questionType"
-                  name="questionType"
-                  value={formData.questionType}
-                  onChange={handleFormChange}
-                  required
-                  disabled={submitting}
-                >
-                  {INSPECTION_TEMPLATE_QUESTION_TYPE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-row">
-                <label htmlFor="required">
+                />{' '}
+                Required
+              </label>
+            </div>
+            {formData.questionType === 'NUMBER' && (
+              <>
+                <div className="form-row">
+                  <label htmlFor="unitOfMeasureId">Unit of Measure</label>
+                  <select
+                    id="unitOfMeasureId"
+                    name="unitOfMeasureId"
+                    value={formData.unitOfMeasureId}
+                    onChange={handleFormChange}
+                    disabled={submitting}
+                  >
+                    <option value="">No unit</option>
+                    {unitsOfMeasure.map((unit) => (
+                      <option key={unit.id} value={unit.id}>
+                        {unit.symbol} — {unit.name} ({unit.quantityType})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-row">
+                  <label htmlFor="minValue">Minimum Value</label>
                   <input
-                    id="required"
-                    name="required"
-                    type="checkbox"
-                    checked={formData.required}
+                    id="minValue"
+                    name="minValue"
+                    type="number"
+                    step="any"
+                    value={formData.minValue}
                     onChange={handleFormChange}
                     disabled={submitting}
                   />
-                  {' '}
-                  Required
-                </label>
-              </div>
-              {formData.questionType === 'NUMBER' && (
-                <>
-                  <div className="form-row">
-                    <label htmlFor="unitOfMeasureId">Unit of Measure</label>
-                    <select
-                      id="unitOfMeasureId"
-                      name="unitOfMeasureId"
-                      value={formData.unitOfMeasureId}
-                      onChange={handleFormChange}
-                      disabled={submitting}
-                    >
-                      <option value="">No unit</option>
-                      {unitsOfMeasure.map((unit) => (
-                        <option key={unit.id} value={unit.id}>
-                          {unit.symbol} — {unit.name} ({unit.quantityType})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-row">
-                    <label htmlFor="minValue">Minimum Value</label>
-                    <input
-                      id="minValue"
-                      name="minValue"
-                      type="number"
-                      step="any"
-                      value={formData.minValue}
-                      onChange={handleFormChange}
-                      disabled={submitting}
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label htmlFor="maxValue">Maximum Value</label>
-                    <input
-                      id="maxValue"
-                      name="maxValue"
-                      type="number"
-                      step="any"
-                      value={formData.maxValue}
-                      onChange={handleFormChange}
-                      disabled={submitting}
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label htmlFor="decimalPlaces">Decimal Places</label>
-                    <input
-                      id="decimalPlaces"
-                      name="decimalPlaces"
-                      type="number"
-                      min="0"
-                      max="6"
-                      value={formData.decimalPlaces}
-                      onChange={handleFormChange}
-                      disabled={submitting}
-                    />
-                  </div>
-                </>
-              )}
-              <div className="form-actions">
-                <button type="submit" className="btn-primary" disabled={submitting}>
-                  {submitting ? 'Saving...' : editingId ? 'Update Question' : 'Create Question'}
-                </button>
-                {editingId && (
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={resetForm}
+                </div>
+                <div className="form-row">
+                  <label htmlFor="maxValue">Maximum Value</label>
+                  <input
+                    id="maxValue"
+                    name="maxValue"
+                    type="number"
+                    step="any"
+                    value={formData.maxValue}
+                    onChange={handleFormChange}
                     disabled={submitting}
-                  >
-                    Cancel Edit
-                  </button>
-                )}
-              </div>
-            </form>
-          </section>
-        )}
+                  />
+                </div>
+                <div className="form-row">
+                  <label htmlFor="decimalPlaces">Decimal Places</label>
+                  <input
+                    id="decimalPlaces"
+                    name="decimalPlaces"
+                    type="number"
+                    min="0"
+                    max="6"
+                    value={formData.decimalPlaces}
+                    onChange={handleFormChange}
+                    disabled={submitting}
+                  />
+                </div>
+              </>
+            )}
+            <div className="form-actions">
+              <button type="submit" className="btn-primary" disabled={submitting}>
+                {submitting ? 'Saving...' : editingId ? 'Update Question' : 'Create Question'}
+              </button>
+              {editingId && (
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={resetForm}
+                  disabled={submitting}
+                >
+                  Cancel Edit
+                </button>
+              )}
+            </div>
+          </form>
+        </section>
+      )}
 
-        <section>
-          <h2>Questions</h2>
-          {questions.length === 0 ? (
-            <p className="no-items">No checklist questions defined yet.</p>
-          ) : (
-            <table className="reference-table">
-              <thead>
-                <tr>
-                  <th>Order</th>
-                  <th>Code</th>
-                  <th>Question</th>
-                  <th>Type</th>
-                  <th>Required</th>
-                  <th>Status</th>
-                  {(canMutate || canView) && <th>Actions</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {questions.map((question) => (
-                  <tr key={question.id}>
-                    <td>{question.displayOrder}</td>
-                    <td>{question.code}</td>
+      <section>
+        <h2>Questions</h2>
+        {questions.length === 0 ? (
+          <p className="no-items">No checklist questions defined yet.</p>
+        ) : (
+          <table className="reference-table">
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Code</th>
+                <th>Question</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Status</th>
+                {(canMutate || canView) && <th>Actions</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {questions.map((question) => (
+                <tr key={question.id}>
+                  <td>{question.displayOrder}</td>
+                  <td>{question.code}</td>
+                  <td>
+                    {question.questionText}
+                    {question.helpText && <div className="help-text">{question.helpText}</div>}
+                    {question.questionType === 'NUMBER' && (
+                      <div className="help-text">
+                        {question.unitSymbol || question.unit
+                          ? `Unit: ${question.unitSymbol || question.unit}`
+                          : 'No unit'}
+                        {question.minValue != null || question.maxValue != null
+                          ? ` · Range: ${question.minValue ?? '—'} to ${question.maxValue ?? '—'}`
+                          : ''}
+                        {question.decimalPlaces != null
+                          ? ` · Decimals: ${question.decimalPlaces}`
+                          : ''}
+                      </div>
+                    )}
+                  </td>
+                  <td>{getInspectionTemplateQuestionTypeLabel(question.questionType)}</td>
+                  <td>{question.required ? 'Yes' : 'No'}</td>
+                  <td>{question.active ? 'Active' : 'Inactive'}</td>
+                  {(canMutate || canView) && (
                     <td>
-                      {question.questionText}
-                      {question.helpText && (
-                        <div className="help-text">{question.helpText}</div>
-                      )}
-                      {question.questionType === 'NUMBER' && (
-                        <div className="help-text">
-                          {question.unitSymbol || question.unit
-                            ? `Unit: ${question.unitSymbol || question.unit}`
-                            : 'No unit'}
-                          {question.minValue != null || question.maxValue != null
-                            ? ` · Range: ${question.minValue ?? '—'} to ${question.maxValue ?? '—'}`
-                            : ''}
-                          {question.decimalPlaces != null
-                            ? ` · Decimals: ${question.decimalPlaces}`
-                            : ''}
-                        </div>
-                      )}
-                    </td>
-                    <td>{getInspectionTemplateQuestionTypeLabel(question.questionType)}</td>
-                    <td>{question.required ? 'Yes' : 'No'}</td>
-                    <td>{question.active ? 'Active' : 'Inactive'}</td>
-                    {(canMutate || canView) && (
-                      <td>
-                        {canMutate && question.active ? (
-                          <>
-                            <button
-                              type="button"
-                              className="btn-link"
-                              onClick={() => handleEdit(question)}
-                            >
-                              Edit
-                            </button>
-                            {' '}
-                            <button
-                              type="button"
-                              className="btn-link"
-                              onClick={() => handleDeactivate(question.id)}
-                            >
-                              Deactivate
-                            </button>
-                            {' '}
-                            <button
-                              type="button"
-                              className="btn-link"
-                              disabled={reordering || activeQuestions[0]?.id === question.id}
-                              onClick={() => handleMove(question.id, 'up')}
-                            >
-                              Move Up
-                            </button>
-                            {' '}
-                            <button
-                              type="button"
-                              className="btn-link"
-                              disabled={
-                                reordering
-                                || activeQuestions[activeQuestions.length - 1]?.id === question.id
-                              }
-                              onClick={() => handleMove(question.id, 'down')}
-                            >
-                              Move Down
-                            </button>
-                            {question.questionType === 'CHOICE' && (
-                              <>
-                                {' '}
-                                <button
-                                  type="button"
-                                  className="btn-link"
-                                  onClick={() => handleManageChoices(question)}
-                                >
-                                  Manage Choices
-                                </button>
-                              </>
-                            )}
-                            {RULE_SUPPORTED_QUESTION_TYPES.has(question.questionType) && (
-                              <>
-                                {' '}
-                                <button
-                                  type="button"
-                                  className="btn-link"
-                                  onClick={() => handleManageRules(question)}
-                                >
-                                  Manage Rules
-                                </button>
-                              </>
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            {RULE_SUPPORTED_QUESTION_TYPES.has(question.questionType) ? (
+                      {canMutate && question.active ? (
+                        <>
+                          <button
+                            type="button"
+                            className="btn-link"
+                            onClick={() => handleEdit(question)}
+                          >
+                            Edit
+                          </button>{' '}
+                          <button
+                            type="button"
+                            className="btn-link"
+                            onClick={() => handleDeactivate(question.id)}
+                          >
+                            Deactivate
+                          </button>{' '}
+                          <button
+                            type="button"
+                            className="btn-link"
+                            disabled={reordering || activeQuestions[0]?.id === question.id}
+                            onClick={() => handleMove(question.id, 'up')}
+                          >
+                            Move Up
+                          </button>{' '}
+                          <button
+                            type="button"
+                            className="btn-link"
+                            disabled={
+                              reordering ||
+                              activeQuestions[activeQuestions.length - 1]?.id === question.id
+                            }
+                            onClick={() => handleMove(question.id, 'down')}
+                          >
+                            Move Down
+                          </button>
+                          {question.questionType === 'CHOICE' && (
+                            <>
+                              {' '}
+                              <button
+                                type="button"
+                                className="btn-link"
+                                onClick={() => handleManageChoices(question)}
+                              >
+                                Manage Choices
+                              </button>
+                            </>
+                          )}
+                          {RULE_SUPPORTED_QUESTION_TYPES.has(question.questionType) && (
+                            <>
+                              {' '}
                               <button
                                 type="button"
                                 className="btn-link"
@@ -865,398 +850,395 @@ export default function InspectionTemplateQuestionsPage() {
                               >
                                 Manage Rules
                               </button>
-                            ) : (
-                              '-'
-                            )}
-                          </>
-                        )}
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </section>
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {RULE_SUPPORTED_QUESTION_TYPES.has(question.questionType) ? (
+                            <button
+                              type="button"
+                              className="btn-link"
+                              onClick={() => handleManageRules(question)}
+                            >
+                              Manage Rules
+                            </button>
+                          ) : (
+                            '-'
+                          )}
+                        </>
+                      )}
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
 
-        {canMutate && managingChoicesQuestionId != null && (
-          <section className="reference-form-section">
-            <h2>
-              Manage Choices —
-              {' '}
-              {questions.find((question) => question.id === managingChoicesQuestionId)?.code}
-            </h2>
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => {
-                setManagingChoicesQuestionId(null);
-                setChoiceForm(EMPTY_CHOICE_FORM);
-                setEditingChoiceId(null);
-              }}
-            >
-              Close
-            </button>
-            <form className="reference-form" onSubmit={handleChoiceSubmit}>
+      {canMutate && managingChoicesQuestionId != null && (
+        <section className="reference-form-section">
+          <h2>
+            Manage Choices —{' '}
+            {questions.find((question) => question.id === managingChoicesQuestionId)?.code}
+          </h2>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => {
+              setManagingChoicesQuestionId(null);
+              setChoiceForm(EMPTY_CHOICE_FORM);
+              setEditingChoiceId(null);
+            }}
+          >
+            Close
+          </button>
+          <form className="reference-form" onSubmit={handleChoiceSubmit}>
+            <div className="form-row">
+              <label htmlFor="choiceCode">Choice Code</label>
+              <input
+                id="choiceCode"
+                name="code"
+                type="text"
+                value={choiceForm.code}
+                onChange={handleChoiceFormChange}
+                required={!editingChoiceId}
+                disabled={choiceSubmitting || Boolean(editingChoiceId)}
+                readOnly={Boolean(editingChoiceId)}
+              />
+            </div>
+            <div className="form-row">
+              <label htmlFor="choiceLabel">Label</label>
+              <input
+                id="choiceLabel"
+                name="label"
+                type="text"
+                value={choiceForm.label}
+                onChange={handleChoiceFormChange}
+                required
+                disabled={choiceSubmitting}
+              />
+            </div>
+            <div className="form-actions">
+              <button type="submit" className="btn-primary" disabled={choiceSubmitting}>
+                {choiceSubmitting ? 'Saving...' : editingChoiceId ? 'Update Choice' : 'Add Choice'}
+              </button>
+              {editingChoiceId && (
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => {
+                    setEditingChoiceId(null);
+                    setChoiceForm(EMPTY_CHOICE_FORM);
+                  }}
+                  disabled={choiceSubmitting}
+                >
+                  Cancel Edit
+                </button>
+              )}
+            </div>
+          </form>
+          <table className="reference-table">
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Code</th>
+                <th>Label</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(
+                questions.find((question) => question.id === managingChoicesQuestionId)?.choices ||
+                []
+              ).map((choice) => (
+                <tr key={choice.id}>
+                  <td>{choice.displayOrder}</td>
+                  <td>{choice.code}</td>
+                  <td>{choice.label}</td>
+                  <td>{choice.active ? 'Active' : 'Inactive'}</td>
+                  <td>
+                    {choice.active ? (
+                      <>
+                        <button
+                          type="button"
+                          className="btn-link"
+                          onClick={() => handleEditChoice(choice)}
+                        >
+                          Edit
+                        </button>{' '}
+                        <button
+                          type="button"
+                          className="btn-link"
+                          onClick={() => handleDeactivateChoice(choice.id)}
+                        >
+                          Deactivate
+                        </button>{' '}
+                        <button
+                          type="button"
+                          className="btn-link"
+                          disabled={choiceSubmitting}
+                          onClick={() => handleMoveChoice(choice.id, 'up')}
+                        >
+                          Move Up
+                        </button>{' '}
+                        <button
+                          type="button"
+                          className="btn-link"
+                          disabled={choiceSubmitting}
+                          onClick={() => handleMoveChoice(choice.id, 'down')}
+                        >
+                          Move Down
+                        </button>
+                      </>
+                    ) : (
+                      '-'
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+
+      {managingRulesQuestionId != null && (
+        <section className="reference-form-section">
+          <h2>Manage Decision Rules — {managingRulesQuestion?.code}</h2>
+          {!canMutate && (
+            <p className="read-only-note">
+              Decision rules are read-only. Administrators can create, edit, and deactivate rules on
+              draft templates.
+            </p>
+          )}
+          <button type="button" className="btn-secondary" onClick={handleCloseRules}>
+            Close
+          </button>
+          {canMutate && (
+            <form className="reference-form" onSubmit={handleRuleSubmit}>
               <div className="form-row">
-                <label htmlFor="choiceCode">Choice Code</label>
+                <label htmlFor="ruleCode">Rule Code</label>
                 <input
-                  id="choiceCode"
-                  name="code"
+                  id="ruleCode"
+                  name="ruleCode"
                   type="text"
-                  value={choiceForm.code}
-                  onChange={handleChoiceFormChange}
-                  required={!editingChoiceId}
-                  disabled={choiceSubmitting || Boolean(editingChoiceId)}
-                  readOnly={Boolean(editingChoiceId)}
+                  value={ruleForm.ruleCode}
+                  onChange={handleRuleFormChange}
+                  required={!editingRuleId}
+                  disabled={ruleSubmitting || Boolean(editingRuleId)}
+                  readOnly={Boolean(editingRuleId)}
+                />
+                {editingRuleId && (
+                  <p className="field-hint">Rule codes are read-only after creation.</p>
+                )}
+              </div>
+              <div className="form-row">
+                <label htmlFor="ruleName">Rule Name</label>
+                <input
+                  id="ruleName"
+                  name="ruleName"
+                  type="text"
+                  value={ruleForm.ruleName}
+                  onChange={handleRuleFormChange}
+                  required
+                  disabled={ruleSubmitting}
                 />
               </div>
               <div className="form-row">
-                <label htmlFor="choiceLabel">Label</label>
-                <input
-                  id="choiceLabel"
-                  name="label"
-                  type="text"
-                  value={choiceForm.label}
-                  onChange={handleChoiceFormChange}
-                  required
-                  disabled={choiceSubmitting}
+                <label htmlFor="ruleDescription">Description</label>
+                <textarea
+                  id="ruleDescription"
+                  name="description"
+                  value={ruleForm.description}
+                  onChange={handleRuleFormChange}
+                  disabled={ruleSubmitting}
+                  rows={2}
                 />
+              </div>
+              <div className="form-row">
+                <label htmlFor="conditionType">Condition Type</label>
+                <input
+                  id="conditionType"
+                  type="text"
+                  value={ruleForm.conditionType}
+                  readOnly
+                  disabled
+                />
+                <p className="field-hint">
+                  Condition type matches the question type and cannot be changed separately.
+                </p>
+              </div>
+              <div className="form-row">
+                <label htmlFor="operator">Operator</label>
+                <select
+                  id="operator"
+                  name="operator"
+                  value={ruleForm.operator}
+                  onChange={handleRuleFormChange}
+                  required
+                  disabled={ruleSubmitting}
+                >
+                  {ruleOperatorOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {showComparisonValue && (
+                <div className="form-row">
+                  <label htmlFor="comparisonValue">Comparison Value</label>
+                  {ruleForm.conditionType === 'CHOICE' ? (
+                    <select
+                      id="comparisonValue"
+                      name="comparisonValue"
+                      value={ruleForm.comparisonValue}
+                      onChange={handleRuleFormChange}
+                      required
+                      disabled={ruleSubmitting}
+                    >
+                      <option value="">Select choice code</option>
+                      {ruleChoiceOptions.map((choice) => (
+                        <option key={choice.id} value={choice.code}>
+                          {choice.code}
+                          {' — '}
+                          {choice.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      id="comparisonValue"
+                      name="comparisonValue"
+                      type={ruleForm.conditionType === 'NUMBER' ? 'number' : 'text'}
+                      step={ruleForm.conditionType === 'NUMBER' ? 'any' : undefined}
+                      value={ruleForm.comparisonValue}
+                      onChange={handleRuleFormChange}
+                      required
+                      disabled={ruleSubmitting}
+                    />
+                  )}
+                </div>
+              )}
+              <div className="form-row">
+                <label htmlFor="actionType">Action Type</label>
+                <select
+                  id="actionType"
+                  name="actionType"
+                  value={ruleForm.actionType}
+                  onChange={handleRuleFormChange}
+                  required
+                  disabled={ruleSubmitting}
+                >
+                  {DECISION_RULE_ACTION_TYPES.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-row">
+                <label htmlFor="actionPayload">Action Payload (JSON)</label>
+                <textarea
+                  id="actionPayload"
+                  name="actionPayload"
+                  value={ruleForm.actionPayload}
+                  onChange={handleRuleFormChange}
+                  disabled={ruleSubmitting}
+                  rows={4}
+                  placeholder='{"severity":"HIGH","message":"Temperature exceeds safe operating range."}'
+                />
+                {rulePayloadError && <p className="field-error">{rulePayloadError}</p>}
               </div>
               <div className="form-actions">
-                <button type="submit" className="btn-primary" disabled={choiceSubmitting}>
-                  {choiceSubmitting ? 'Saving...' : editingChoiceId ? 'Update Choice' : 'Add Choice'}
+                <button type="submit" className="btn-primary" disabled={ruleSubmitting}>
+                  {ruleSubmitting ? 'Saving...' : editingRuleId ? 'Update Rule' : 'Add Rule'}
                 </button>
-                {editingChoiceId && (
+                {editingRuleId && (
                   <button
                     type="button"
                     className="btn-secondary"
                     onClick={() => {
-                      setEditingChoiceId(null);
-                      setChoiceForm(EMPTY_CHOICE_FORM);
+                      setEditingRuleId(null);
+                      setRuleForm(
+                        managingRulesQuestion
+                          ? defaultRuleFormForQuestion(managingRulesQuestion)
+                          : EMPTY_RULE_FORM
+                      );
+                      setRulePayloadError(null);
                     }}
-                    disabled={choiceSubmitting}
+                    disabled={ruleSubmitting}
                   >
                     Cancel Edit
                   </button>
                 )}
               </div>
             </form>
-            <table className="reference-table">
-              <thead>
+          )}
+          <table className="reference-table">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Condition</th>
+                <th>Operator</th>
+                <th>Comparison</th>
+                <th>Action</th>
+                <th>Status</th>
+                {canMutate && <th>Actions</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {rules.length === 0 ? (
                 <tr>
-                  <th>Order</th>
-                  <th>Code</th>
-                  <th>Label</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <td colSpan={canMutate ? 8 : 7}>No decision rules defined yet.</td>
                 </tr>
-              </thead>
-              <tbody>
-                {(questions.find((question) => question.id === managingChoicesQuestionId)?.choices || [])
-                  .map((choice) => (
-                    <tr key={choice.id}>
-                      <td>{choice.displayOrder}</td>
-                      <td>{choice.code}</td>
-                      <td>{choice.label}</td>
-                      <td>{choice.active ? 'Active' : 'Inactive'}</td>
+              ) : (
+                rules.map((rule) => (
+                  <tr key={rule.id}>
+                    <td>{rule.ruleCode}</td>
+                    <td>
+                      {rule.ruleName}
+                      {rule.description && <div className="help-text">{rule.description}</div>}
+                    </td>
+                    <td>{rule.conditionType}</td>
+                    <td>{getOperatorLabel(rule.conditionType, rule.operator)}</td>
+                    <td>{rule.comparisonValue ?? '—'}</td>
+                    <td>{getActionTypeLabel(rule.actionType)}</td>
+                    <td>{rule.active ? 'Active' : 'Inactive'}</td>
+                    {canMutate && (
                       <td>
-                        {choice.active ? (
+                        {rule.active ? (
                           <>
                             <button
                               type="button"
                               className="btn-link"
-                              onClick={() => handleEditChoice(choice)}
+                              onClick={() => handleEditRule(rule)}
                             >
                               Edit
-                            </button>
-                            {' '}
+                            </button>{' '}
                             <button
                               type="button"
                               className="btn-link"
-                              onClick={() => handleDeactivateChoice(choice.id)}
+                              onClick={() => handleDeactivateRule(rule.id)}
                             >
                               Deactivate
-                            </button>
-                            {' '}
-                            <button
-                              type="button"
-                              className="btn-link"
-                              disabled={choiceSubmitting}
-                              onClick={() => handleMoveChoice(choice.id, 'up')}
-                            >
-                              Move Up
-                            </button>
-                            {' '}
-                            <button
-                              type="button"
-                              className="btn-link"
-                              disabled={choiceSubmitting}
-                              onClick={() => handleMoveChoice(choice.id, 'down')}
-                            >
-                              Move Down
                             </button>
                           </>
                         ) : (
                           '-'
                         )}
                       </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </section>
-        )}
-
-        {managingRulesQuestionId != null && (
-          <section className="reference-form-section">
-            <h2>
-              Manage Decision Rules —
-              {' '}
-              {managingRulesQuestion?.code}
-            </h2>
-            {!canMutate && (
-              <p className="read-only-note">
-                Decision rules are read-only. Administrators can create, edit, and deactivate rules on draft templates.
-              </p>
-            )}
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={handleCloseRules}
-            >
-              Close
-            </button>
-            {canMutate && (
-              <form className="reference-form" onSubmit={handleRuleSubmit}>
-                <div className="form-row">
-                  <label htmlFor="ruleCode">Rule Code</label>
-                  <input
-                    id="ruleCode"
-                    name="ruleCode"
-                    type="text"
-                    value={ruleForm.ruleCode}
-                    onChange={handleRuleFormChange}
-                    required={!editingRuleId}
-                    disabled={ruleSubmitting || Boolean(editingRuleId)}
-                    readOnly={Boolean(editingRuleId)}
-                  />
-                  {editingRuleId && (
-                    <p className="field-hint">
-                      Rule codes are read-only after creation.
-                    </p>
-                  )}
-                </div>
-                <div className="form-row">
-                  <label htmlFor="ruleName">Rule Name</label>
-                  <input
-                    id="ruleName"
-                    name="ruleName"
-                    type="text"
-                    value={ruleForm.ruleName}
-                    onChange={handleRuleFormChange}
-                    required
-                    disabled={ruleSubmitting}
-                  />
-                </div>
-                <div className="form-row">
-                  <label htmlFor="ruleDescription">Description</label>
-                  <textarea
-                    id="ruleDescription"
-                    name="description"
-                    value={ruleForm.description}
-                    onChange={handleRuleFormChange}
-                    disabled={ruleSubmitting}
-                    rows={2}
-                  />
-                </div>
-                <div className="form-row">
-                  <label htmlFor="conditionType">Condition Type</label>
-                  <input
-                    id="conditionType"
-                    type="text"
-                    value={ruleForm.conditionType}
-                    readOnly
-                    disabled
-                  />
-                  <p className="field-hint">
-                    Condition type matches the question type and cannot be changed separately.
-                  </p>
-                </div>
-                <div className="form-row">
-                  <label htmlFor="operator">Operator</label>
-                  <select
-                    id="operator"
-                    name="operator"
-                    value={ruleForm.operator}
-                    onChange={handleRuleFormChange}
-                    required
-                    disabled={ruleSubmitting}
-                  >
-                    {ruleOperatorOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {showComparisonValue && (
-                  <div className="form-row">
-                    <label htmlFor="comparisonValue">Comparison Value</label>
-                    {ruleForm.conditionType === 'CHOICE' ? (
-                      <select
-                        id="comparisonValue"
-                        name="comparisonValue"
-                        value={ruleForm.comparisonValue}
-                        onChange={handleRuleFormChange}
-                        required
-                        disabled={ruleSubmitting}
-                      >
-                        <option value="">Select choice code</option>
-                        {ruleChoiceOptions.map((choice) => (
-                          <option key={choice.id} value={choice.code}>
-                            {choice.code}
-                            {' — '}
-                            {choice.label}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        id="comparisonValue"
-                        name="comparisonValue"
-                        type={ruleForm.conditionType === 'NUMBER' ? 'number' : 'text'}
-                        step={ruleForm.conditionType === 'NUMBER' ? 'any' : undefined}
-                        value={ruleForm.comparisonValue}
-                        onChange={handleRuleFormChange}
-                        required
-                        disabled={ruleSubmitting}
-                      />
                     )}
-                  </div>
-                )}
-                <div className="form-row">
-                  <label htmlFor="actionType">Action Type</label>
-                  <select
-                    id="actionType"
-                    name="actionType"
-                    value={ruleForm.actionType}
-                    onChange={handleRuleFormChange}
-                    required
-                    disabled={ruleSubmitting}
-                  >
-                    {DECISION_RULE_ACTION_TYPES.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-row">
-                  <label htmlFor="actionPayload">Action Payload (JSON)</label>
-                  <textarea
-                    id="actionPayload"
-                    name="actionPayload"
-                    value={ruleForm.actionPayload}
-                    onChange={handleRuleFormChange}
-                    disabled={ruleSubmitting}
-                    rows={4}
-                    placeholder='{"severity":"HIGH","message":"Temperature exceeds safe operating range."}'
-                  />
-                  {rulePayloadError && (
-                    <p className="field-error">{rulePayloadError}</p>
-                  )}
-                </div>
-                <div className="form-actions">
-                  <button type="submit" className="btn-primary" disabled={ruleSubmitting}>
-                    {ruleSubmitting ? 'Saving...' : editingRuleId ? 'Update Rule' : 'Add Rule'}
-                  </button>
-                  {editingRuleId && (
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={() => {
-                        setEditingRuleId(null);
-                        setRuleForm(
-                          managingRulesQuestion
-                            ? defaultRuleFormForQuestion(managingRulesQuestion)
-                            : EMPTY_RULE_FORM
-                        );
-                        setRulePayloadError(null);
-                      }}
-                      disabled={ruleSubmitting}
-                    >
-                      Cancel Edit
-                    </button>
-                  )}
-                </div>
-              </form>
-            )}
-            <table className="reference-table">
-              <thead>
-                <tr>
-                  <th>Code</th>
-                  <th>Name</th>
-                  <th>Condition</th>
-                  <th>Operator</th>
-                  <th>Comparison</th>
-                  <th>Action</th>
-                  <th>Status</th>
-                  {canMutate && <th>Actions</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {rules.length === 0 ? (
-                  <tr>
-                    <td colSpan={canMutate ? 8 : 7}>No decision rules defined yet.</td>
                   </tr>
-                ) : (
-                  rules.map((rule) => (
-                    <tr key={rule.id}>
-                      <td>{rule.ruleCode}</td>
-                      <td>
-                        {rule.ruleName}
-                        {rule.description && (
-                          <div className="help-text">{rule.description}</div>
-                        )}
-                      </td>
-                      <td>{rule.conditionType}</td>
-                      <td>{getOperatorLabel(rule.conditionType, rule.operator)}</td>
-                      <td>{rule.comparisonValue ?? '—'}</td>
-                      <td>{getActionTypeLabel(rule.actionType)}</td>
-                      <td>{rule.active ? 'Active' : 'Inactive'}</td>
-                      {canMutate && (
-                        <td>
-                          {rule.active ? (
-                            <>
-                              <button
-                                type="button"
-                                className="btn-link"
-                                onClick={() => handleEditRule(rule)}
-                              >
-                                Edit
-                              </button>
-                              {' '}
-                              <button
-                                type="button"
-                                className="btn-link"
-                                onClick={() => handleDeactivateRule(rule.id)}
-                              >
-                                Deactivate
-                              </button>
-                            </>
-                          ) : (
-                            '-'
-                          )}
-                        </td>
-                      )}
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </section>
-        )}
+                ))
+              )}
+            </tbody>
+          </table>
+        </section>
+      )}
     </ReferenceDataLayout>
   );
 }

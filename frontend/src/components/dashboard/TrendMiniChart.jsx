@@ -14,7 +14,11 @@ export default function TrendMiniChart({ title, dataPoints }) {
           {dataPoints.map((point) => {
             const heightPercent = maxCount > 0 ? (point.count / maxCount) * 100 : 0;
             return (
-              <div key={point.period} className="dashboard-trend-bar-wrapper" title={`${point.period}: ${point.count}`}>
+              <div
+                key={point.period}
+                className="dashboard-trend-bar-wrapper"
+                title={`${point.period}: ${point.count}`}
+              >
                 <div
                   className="dashboard-trend-bar"
                   style={{ height: `${Math.max(heightPercent, point.count > 0 ? 8 : 0)}%` }}
@@ -27,9 +31,7 @@ export default function TrendMiniChart({ title, dataPoints }) {
       )}
       {!empty && (
         <p className="dashboard-trend-total">
-          Total:
-          {' '}
-          <strong>{dataPoints.reduce((sum, point) => sum + (point.count ?? 0), 0)}</strong>
+          Total: <strong>{dataPoints.reduce((sum, point) => sum + (point.count ?? 0), 0)}</strong>
         </p>
       )}
     </article>

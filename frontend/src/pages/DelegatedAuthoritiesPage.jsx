@@ -12,12 +12,7 @@ import { ROUTES } from '../constants/routes';
 import { FIELD_LIMITS } from '../constants/limits';
 import { TIME } from '../constants/time';
 import { getApiErrorMessage } from '../utils/apiError';
-import {
-  DEFAULT_PAGE,
-  getPageNumber,
-  getTotalPages,
-  unwrapPageContent,
-} from '../utils/pagination';
+import { DEFAULT_PAGE, getPageNumber, getTotalPages, unwrapPageContent } from '../utils/pagination';
 import '../styles/ReferenceDataPage.css';
 
 function toDateTimeLocalValue(date = new Date()) {
@@ -290,7 +285,9 @@ export default function DelegatedAuthoritiesPage() {
             </form>
           </section>
         ) : (
-          <p className="read-only-note">Delegated authority management is available to managers only.</p>
+          <p className="read-only-note">
+            Delegated authority management is available to managers only.
+          </p>
         )}
 
         <section className="reference-list-section">

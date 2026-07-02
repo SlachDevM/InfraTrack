@@ -79,16 +79,18 @@ describe('IssuesPage', () => {
   });
 
   it('renders issues from mocked API', async () => {
-    issueApi.list.mockResolvedValue(pageResponse([
-      {
-        id: 1,
-        assetName: 'Central Playground',
-        inspectionId: 10,
-        description: 'Broken swing',
-        severity: 'HIGH',
-        recordedAt: '2026-06-01T09:00:00',
-      },
-    ]));
+    issueApi.list.mockResolvedValue(
+      pageResponse([
+        {
+          id: 1,
+          assetName: 'Central Playground',
+          inspectionId: 10,
+          description: 'Broken swing',
+          severity: 'HIGH',
+          recordedAt: '2026-06-01T09:00:00',
+        },
+      ])
+    );
 
     render(
       <MemoryRouter>
@@ -112,10 +114,15 @@ describe('IssuesPage', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByRole('option', {
-      name: '#10 — Central Playground (Customer Request)',
-    })).toBeInTheDocument();
-    expect(inspectionApi.listEligibleForIssueRecording).toHaveBeenCalledWith(DEFAULT_PAGE, MAX_PAGE_SIZE);
+    expect(
+      await screen.findByRole('option', {
+        name: '#10 — Central Playground (Customer Request)',
+      })
+    ).toBeInTheDocument();
+    expect(inspectionApi.listEligibleForIssueRecording).toHaveBeenCalledWith(
+      DEFAULT_PAGE,
+      MAX_PAGE_SIZE
+    );
     expect(inspectionApi.list).not.toHaveBeenCalled();
   });
 
@@ -126,7 +133,9 @@ describe('IssuesPage', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByText(/no completed inspections with identified issues/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/no completed inspections with identified issues/i)
+    ).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Select inspection' })).toBeInTheDocument();
   });
 
@@ -143,21 +152,20 @@ describe('IssuesPage', () => {
       </MemoryRouter>
     );
 
-    await user.selectOptions(
-      await screen.findByLabelText('Completed Inspection'),
-      '10'
-    );
+    await user.selectOptions(await screen.findByLabelText('Completed Inspection'), '10');
     await user.type(screen.getByLabelText('Description'), 'Broken swing chain');
     await user.type(screen.getByLabelText('Lessons Learned'), 'Update installation procedure');
     await user.click(screen.getByRole('button', { name: 'Record Issue' }));
 
     await waitFor(() => {
-      expect(issueApi.record).toHaveBeenCalledWith(expect.objectContaining({
-        inspectionId: 10,
-        description: 'Broken swing chain',
-        severity: 'MEDIUM',
-        lessonsLearned: 'Update installation procedure',
-      }));
+      expect(issueApi.record).toHaveBeenCalledWith(
+        expect.objectContaining({
+          inspectionId: 10,
+          description: 'Broken swing chain',
+          severity: 'MEDIUM',
+          lessonsLearned: 'Update installation procedure',
+        })
+      );
     });
   });
 
@@ -179,18 +187,20 @@ describe('IssuesPage', () => {
   });
 
   it('renders lessons learned from API response in issue list', async () => {
-    issueApi.list.mockResolvedValue(pageResponse([
-      {
-        id: 1,
-        assetName: 'Central Playground',
-        inspectionId: 10,
-        description: 'Broken swing',
-        severity: 'HIGH',
-        rootCause: 'Component fatigue',
-        lessonsLearned: 'Review supplier quality',
-        recordedAt: '2026-06-01T09:00:00',
-      },
-    ]));
+    issueApi.list.mockResolvedValue(
+      pageResponse([
+        {
+          id: 1,
+          assetName: 'Central Playground',
+          inspectionId: 10,
+          description: 'Broken swing',
+          severity: 'HIGH',
+          rootCause: 'Component fatigue',
+          lessonsLearned: 'Review supplier quality',
+          recordedAt: '2026-06-01T09:00:00',
+        },
+      ])
+    );
 
     render(
       <MemoryRouter>
@@ -235,29 +245,34 @@ describe('IssuesPage', () => {
       </MemoryRouter>
     );
 
-    await user.selectOptions(
-      await screen.findByLabelText('Completed Inspection'),
-      '10'
-    );
+    await user.selectOptions(await screen.findByLabelText('Completed Inspection'), '10');
     await user.type(screen.getByLabelText('Description'), 'Duplicate attempt');
     await user.click(screen.getByRole('button', { name: 'Record Issue' }));
 
     await waitFor(() => {
-      expect(screen.getByText('An issue has already been recorded for this inspection')).toBeInTheDocument();
+      expect(
+        screen.getByText('An issue has already been recorded for this inspection')
+      ).toBeInTheDocument();
     });
   });
 
   it('loads the first page on initial render', async () => {
-    issueApi.list.mockResolvedValue(pageResponse([
-      {
-        id: 1,
-        assetName: 'First Page Asset',
-        inspectionId: 10,
-        description: 'First page issue',
-        severity: 'HIGH',
-        recordedAt: '2026-06-01T09:00:00',
-      },
-    ], 0, 2));
+    issueApi.list.mockResolvedValue(
+      pageResponse(
+        [
+          {
+            id: 1,
+            assetName: 'First Page Asset',
+            inspectionId: 10,
+            description: 'First page issue',
+            severity: 'HIGH',
+            recordedAt: '2026-06-01T09:00:00',
+          },
+        ],
+        0,
+        2
+      )
+    );
 
     render(
       <MemoryRouter>
@@ -273,27 +288,39 @@ describe('IssuesPage', () => {
     const user = userEvent.setup();
     issueApi.list.mockImplementation((page = 0) => {
       if (page === 0) {
-        return Promise.resolve(pageResponse([
-          {
-            id: 1,
-            assetName: 'First Page Asset',
-            inspectionId: 10,
-            description: 'First page issue',
-            severity: 'HIGH',
-            recordedAt: '2026-06-01T09:00:00',
-          },
-        ], 0, 2));
+        return Promise.resolve(
+          pageResponse(
+            [
+              {
+                id: 1,
+                assetName: 'First Page Asset',
+                inspectionId: 10,
+                description: 'First page issue',
+                severity: 'HIGH',
+                recordedAt: '2026-06-01T09:00:00',
+              },
+            ],
+            0,
+            2
+          )
+        );
       }
-      return Promise.resolve(pageResponse([
-        {
-          id: 2,
-          assetName: 'Second Page Asset',
-          inspectionId: 11,
-          description: 'Second page issue',
-          severity: 'MEDIUM',
-          recordedAt: '2026-06-02T09:00:00',
-        },
-      ], 1, 2));
+      return Promise.resolve(
+        pageResponse(
+          [
+            {
+              id: 2,
+              assetName: 'Second Page Asset',
+              inspectionId: 11,
+              description: 'Second page issue',
+              severity: 'MEDIUM',
+              recordedAt: '2026-06-02T09:00:00',
+            },
+          ],
+          1,
+          2
+        )
+      );
     });
 
     render(

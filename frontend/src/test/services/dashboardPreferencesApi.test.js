@@ -25,10 +25,9 @@ describe('dashboardPreferencesApi', () => {
 
     await dashboardPreferencesApi.savePreferences({ defaultTrendRange: 'LAST_90_DAYS' });
 
-    expect(apiClient.put).toHaveBeenCalledWith(
-      '/api/dashboard/preferences',
-      { defaultTrendRange: 'LAST_90_DAYS' },
-    );
+    expect(apiClient.put).toHaveBeenCalledWith('/api/dashboard/preferences', {
+      defaultTrendRange: 'LAST_90_DAYS',
+    });
   });
 
   it('resets preferences', async () => {

@@ -91,16 +91,20 @@ describe('isUploadAuthorizationError', () => {
   });
 
   it('returns false for multipart or media type errors', () => {
-    expect(isUploadAuthorizationError({
-      status: 403,
-      message: 'Unsupported media type',
-    })).toBe(false);
+    expect(
+      isUploadAuthorizationError({
+        status: 403,
+        message: 'Unsupported media type',
+      })
+    ).toBe(false);
   });
 
   it('detects upload permission errors', () => {
-    expect(isUploadAuthorizationError({
-      status: 403,
-      message: 'Administrator cannot upload operational documents',
-    })).toBe(true);
+    expect(
+      isUploadAuthorizationError({
+        status: 403,
+        message: 'Administrator cannot upload operational documents',
+      })
+    ).toBe(true);
   });
 });

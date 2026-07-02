@@ -22,7 +22,8 @@ export const operationsIntelligenceApi = {
 
   getTrends: (params = {}) => apiClient.get(`${ENDPOINTS.TRENDS}${buildQuery(params)}`),
 
-  getRecentActivity: (params = {}) => apiClient.get(`${ENDPOINTS.RECENT_ACTIVITY}${buildQuery(params)}`),
+  getRecentActivity: (params = {}) =>
+    apiClient.get(`${ENDPOINTS.RECENT_ACTIVITY}${buildQuery(params)}`),
 };
 
 export default operationsIntelligenceApi;

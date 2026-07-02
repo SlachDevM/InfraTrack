@@ -48,7 +48,9 @@ describe('ReferenceDataLayout', () => {
     expect(screen.getByText('Page body')).toBeInTheDocument();
     expect(container.querySelector('.reference-data-page')).toBeInTheDocument();
     expect(container.querySelector('.reference-header')).toBeInTheDocument();
-    expect(container.querySelector('.reference-content')).toContainElement(screen.getByText('Page body'));
+    expect(container.querySelector('.reference-content')).toContainElement(
+      screen.getByText('Page body')
+    );
   });
 
   it('navigates home on back and to login on logout by default', async () => {

@@ -126,6 +126,12 @@ jobs:
       - name: Audit production dependencies
         run: npm audit --audit-level=high --omit=dev
 
+      - name: Lint
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run format:check
+
       - name: Run tests
         run: npm test -- --run
 

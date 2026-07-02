@@ -18,11 +18,7 @@ export default function NotificationButton() {
       type="button"
       className="notification-btn"
       onClick={() => navigate(ROUTES.NOTIFICATIONS)}
-      aria-label={
-        unreadCount > 0
-          ? `Notifications, ${unreadCount} unread`
-          : 'Notifications'
-      }
+      aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
     >
       🔔 Notifications
       {unreadCount > 0 && (

@@ -31,7 +31,9 @@ describe('operationsIntelligenceApi', () => {
 
     await operationsIntelligenceApi.getTrends({ from: 1000, to: 2000, bucket: 'WEEK' });
 
-    expect(apiClient.get).toHaveBeenCalledWith('/api/operations-intelligence/trends?from=1000&to=2000&bucket=WEEK');
+    expect(apiClient.get).toHaveBeenCalledWith(
+      '/api/operations-intelligence/trends?from=1000&to=2000&bucket=WEEK'
+    );
   });
 
   it('calls recent activity endpoint with query parameters', async () => {
@@ -39,6 +41,8 @@ describe('operationsIntelligenceApi', () => {
 
     await operationsIntelligenceApi.getRecentActivity({ limit: 50 });
 
-    expect(apiClient.get).toHaveBeenCalledWith('/api/operations-intelligence/recent-activity?limit=50');
+    expect(apiClient.get).toHaveBeenCalledWith(
+      '/api/operations-intelligence/recent-activity?limit=50'
+    );
   });
 });

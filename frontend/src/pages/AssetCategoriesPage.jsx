@@ -87,79 +87,79 @@ export default function AssetCategoriesPage() {
 
   return (
     <ReferenceDataLayout title="Asset Categories">
-        {error && <div className="error-message">{error}</div>}
+      {error && <div className="error-message">{error}</div>}
 
-        {!isAdministrator && (
-          <p className="read-only-note">
-            Reference data is read-only. Administrators can create and manage asset categories.
-          </p>
-        )}
+      {!isAdministrator && (
+        <p className="read-only-note">
+          Reference data is read-only. Administrators can create and manage asset categories.
+        </p>
+      )}
 
-        {isAdministrator && (
-          <form className="reference-form" onSubmit={handleSubmit}>
-            <input
-              type="text"
-              placeholder={editingId ? 'Edit category name' : 'New category name'}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              disabled={submitting}
-            />
-            <button type="submit" className="btn-primary" disabled={submitting}>
-              {editingId ? 'Update' : 'Add'}
+      {isAdministrator && (
+        <form className="reference-form" onSubmit={handleSubmit}>
+          <input
+            type="text"
+            placeholder={editingId ? 'Edit category name' : 'New category name'}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            disabled={submitting}
+          />
+          <button type="submit" className="btn-primary" disabled={submitting}>
+            {editingId ? 'Update' : 'Add'}
+          </button>
+          {editingId && (
+            <button
+              type="button"
+              className="btn-cancel"
+              onClick={() => {
+                setEditingId(null);
+                setName('');
+              }}
+            >
+              Cancel
             </button>
-            {editingId && (
-              <button
-                type="button"
-                className="btn-cancel"
-                onClick={() => {
-                  setEditingId(null);
-                  setName('');
-                }}
-              >
-                Cancel
-              </button>
-            )}
-          </form>
-        )}
+          )}
+        </form>
+      )}
 
-        {categories.length === 0 ? (
-          <p className="no-items">No asset categories yet.</p>
-        ) : (
-          <table className="reference-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                {isAdministrator && <th>Actions</th>}
+      {categories.length === 0 ? (
+        <p className="no-items">No asset categories yet.</p>
+      ) : (
+        <table className="reference-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              {isAdministrator && <th>Actions</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {categories.map((category) => (
+              <tr key={category.id}>
+                <td>{category.name}</td>
+                {isAdministrator && (
+                  <td className="actions-cell">
+                    <button
+                      type="button"
+                      className="action-btn edit-btn"
+                      onClick={() => handleEdit(category)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className="action-btn delete-btn"
+                      onClick={() => handleDelete(category.id)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                )}
               </tr>
-            </thead>
-            <tbody>
-              {categories.map((category) => (
-                <tr key={category.id}>
-                  <td>{category.name}</td>
-                  {isAdministrator && (
-                    <td className="actions-cell">
-                      <button
-                        type="button"
-                        className="action-btn edit-btn"
-                        onClick={() => handleEdit(category)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="action-btn delete-btn"
-                        onClick={() => handleDelete(category.id)}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+            ))}
+          </tbody>
+        </table>
+      )}
     </ReferenceDataLayout>
   );
 }

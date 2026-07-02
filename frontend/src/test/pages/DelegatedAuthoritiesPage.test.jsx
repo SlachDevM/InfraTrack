@@ -74,19 +74,21 @@ describe('DelegatedAuthoritiesPage', () => {
   });
 
   it('renders authorities from mocked API', async () => {
-    delegatedAuthorityApi.list.mockResolvedValue(pageResponse([
-      {
-        id: 1,
-        delegatingManagerName: 'Alice Manager',
-        delegateManagerName: 'Bob Manager',
-        sourceDepartmentName: 'Parks',
-        targetDepartmentName: 'Roads',
-        reason: 'Annual leave cover',
-        validFrom: '2026-06-01T09:00:00',
-        validUntil: '2026-06-08T09:00:00',
-        revoked: false,
-      },
-    ]));
+    delegatedAuthorityApi.list.mockResolvedValue(
+      pageResponse([
+        {
+          id: 1,
+          delegatingManagerName: 'Alice Manager',
+          delegateManagerName: 'Bob Manager',
+          sourceDepartmentName: 'Parks',
+          targetDepartmentName: 'Roads',
+          reason: 'Annual leave cover',
+          validFrom: '2026-06-01T09:00:00',
+          validUntil: '2026-06-08T09:00:00',
+          revoked: false,
+        },
+      ])
+    );
 
     render(
       <MemoryRouter>
@@ -102,33 +104,45 @@ describe('DelegatedAuthoritiesPage', () => {
     const user = userEvent.setup();
     delegatedAuthorityApi.list.mockImplementation((page = 0) => {
       if (page === 0) {
-        return Promise.resolve(pageResponse([
-          {
-            id: 1,
-            delegatingManagerName: 'Alice Manager',
-            delegateManagerName: 'Bob Manager',
-            sourceDepartmentName: 'Parks',
-            targetDepartmentName: 'Roads',
-            reason: 'First page delegation',
-            validFrom: '2026-06-01T09:00:00',
-            validUntil: '2026-06-08T09:00:00',
-            revoked: false,
-          },
-        ], 0, 2));
+        return Promise.resolve(
+          pageResponse(
+            [
+              {
+                id: 1,
+                delegatingManagerName: 'Alice Manager',
+                delegateManagerName: 'Bob Manager',
+                sourceDepartmentName: 'Parks',
+                targetDepartmentName: 'Roads',
+                reason: 'First page delegation',
+                validFrom: '2026-06-01T09:00:00',
+                validUntil: '2026-06-08T09:00:00',
+                revoked: false,
+              },
+            ],
+            0,
+            2
+          )
+        );
       }
-      return Promise.resolve(pageResponse([
-        {
-          id: 2,
-          delegatingManagerName: 'Carol Manager',
-          delegateManagerName: 'Dan Manager',
-          sourceDepartmentName: 'Water',
-          targetDepartmentName: 'Parks',
-          reason: 'Second page delegation',
-          validFrom: '2026-06-02T09:00:00',
-          validUntil: '2026-06-09T09:00:00',
-          revoked: false,
-        },
-      ], 1, 2));
+      return Promise.resolve(
+        pageResponse(
+          [
+            {
+              id: 2,
+              delegatingManagerName: 'Carol Manager',
+              delegateManagerName: 'Dan Manager',
+              sourceDepartmentName: 'Water',
+              targetDepartmentName: 'Parks',
+              reason: 'Second page delegation',
+              validFrom: '2026-06-02T09:00:00',
+              validUntil: '2026-06-09T09:00:00',
+              revoked: false,
+            },
+          ],
+          1,
+          2
+        )
+      );
     });
 
     render(

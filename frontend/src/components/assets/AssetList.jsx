@@ -8,30 +8,30 @@ export default function AssetList({ assets }) {
         <p className="empty-state no-items">No assets registered yet.</p>
       ) : (
         <div className="table-scroll">
-        <table className="reference-table assets-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Department</th>
-              <th>Category</th>
-              <th>Location</th>
-              <th>Status</th>
-              <th>Registered</th>
-            </tr>
-          </thead>
-          <tbody>
-            {assets.map((asset) => (
-              <tr key={asset.id}>
-                <td>{asset.name}</td>
-                <td>{asset.departmentName}</td>
-                <td>{asset.assetCategoryName}</td>
-                <td>{asset.location}</td>
-                <td>{getAssetStatusLabel(asset.status)}</td>
-                <td>{asset.registrationDate}</td>
+          <table className="reference-table assets-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Department</th>
+                <th>Category</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Registered</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {assets.map((asset) => (
+                <tr key={asset.id}>
+                  <td>{asset.name}</td>
+                  <td>{asset.departmentName}</td>
+                  <td>{asset.assetCategoryName}</td>
+                  <td>{asset.location}</td>
+                  <td>{getAssetStatusLabel(asset.status)}</td>
+                  <td>{asset.registrationDate}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </section>

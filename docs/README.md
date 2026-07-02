@@ -41,7 +41,7 @@ Navigate product releases and planning:
 | **API Consumer Guide** | [api-consumer-guide.md](04-api/api-consumer-guide.md) — how clients should consume the API |
 | **Workflow Sequence Diagrams** | [workflow-sequence-diagrams.md](02-system-blueprint/workflow-sequence-diagrams.md) — visual workflow guides |
 | **Platform Version History** | [platform-version-history.md](06-release-notes/platform-version-history.md) — authoritative product versions |
-| **Current release** | Version **2.0.1** — [v2-0-1-security-hardening.md](06-release-notes/v2-0-1-security-hardening.md) |
+| **Validated baseline** | Version **2.0.1** artifact; foundations through **2.1.0** and **2.2.x** documented in version history |
 | **Roadmap** | [v2-roadmap.md](06-release-notes/v2-roadmap.md) — planned versions |
 | **Release notes** | [06-release-notes/](06-release-notes/) — sprint and version reports |
 | **Architecture decisions** | [**ADR Index**](03-architecture/ADR-INDEX.md) · [ADR-004 Versioning](03-architecture/adr-004-platform-versioning-strategy.md) · [ADR-003 V2 workflow](03-architecture/adr-003-v2-domain-driven-workflow.md) · [all ADRs/BDRs](03-architecture/) |

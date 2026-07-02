@@ -5,7 +5,11 @@ import { PLAN_EVENT_TYPES } from '../constants/planEventTypes';
 const PLAN_CODE_PATTERN = /^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$/;
 
 export function normalizePlanCode(planCode) {
-  return String(planCode || '').trim().toUpperCase().replace(/-/g, '_').replace(/\s+/g, '_');
+  return String(planCode || '')
+    .trim()
+    .toUpperCase()
+    .replace(/-/g, '_')
+    .replace(/\s+/g, '_');
 }
 
 export function isValidPlanCode(planCode) {

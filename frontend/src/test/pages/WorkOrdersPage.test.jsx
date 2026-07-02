@@ -110,16 +110,19 @@ describe('WorkOrdersPage', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByRole('option', {
-      name: /#1 — Central Playground \(Internal Maintenance\)/i,
-    })).toBeInTheDocument();
-    expect(operationalDecisionApi.listEligibleForWorkOrderCreation).toHaveBeenCalledWith(DEFAULT_PAGE, MAX_PAGE_SIZE);
+    expect(
+      await screen.findByRole('option', {
+        name: /#1 — Central Playground \(Internal Maintenance\)/i,
+      })
+    ).toBeInTheDocument();
+    expect(operationalDecisionApi.listEligibleForWorkOrderCreation).toHaveBeenCalledWith(
+      DEFAULT_PAGE,
+      MAX_PAGE_SIZE
+    );
   });
 
   it('shows only assignable work orders from backend in assignment selector', async () => {
-    workOrderApi.listEligibleForAssignment.mockResolvedValue(
-      pageResponse([assignableWorkOrder])
-    );
+    workOrderApi.listEligibleForAssignment.mockResolvedValue(pageResponse([assignableWorkOrder]));
 
     render(
       <MemoryRouter>
@@ -127,18 +130,23 @@ describe('WorkOrdersPage', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByRole('option', {
-      name: /#100 — Central Playground/i,
-    })).toBeInTheDocument();
-    expect(workOrderApi.listEligibleForAssignment).toHaveBeenCalledWith(DEFAULT_PAGE, MAX_PAGE_SIZE);
-    expect(screen.queryByRole('option', { name: /Other Department Asset/i })).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole('option', {
+        name: /#100 — Central Playground/i,
+      })
+    ).toBeInTheDocument();
+    expect(workOrderApi.listEligibleForAssignment).toHaveBeenCalledWith(
+      DEFAULT_PAGE,
+      MAX_PAGE_SIZE
+    );
+    expect(
+      screen.queryByRole('option', { name: /Other Department Asset/i })
+    ).not.toBeInTheDocument();
   });
 
   it('loads eligible assignees when work order is selected', async () => {
     const user = userEvent.setup();
-    workOrderApi.listEligibleForAssignment.mockResolvedValue(
-      pageResponse([assignableWorkOrder])
-    );
+    workOrderApi.listEligibleForAssignment.mockResolvedValue(pageResponse([assignableWorkOrder]));
     workOrderApi.listEligibleWorkers.mockResolvedValue([
       { id: 20, name: 'Alex Field', role: 'FIELD_EMPLOYEE', status: 'ACTIVE', departmentId: 1 },
     ]);
@@ -159,9 +167,7 @@ describe('WorkOrdersPage', () => {
 
   it('does not show disabled or incompatible assignees from backend response', async () => {
     const user = userEvent.setup();
-    workOrderApi.listEligibleForAssignment.mockResolvedValue(
-      pageResponse([assignableWorkOrder])
-    );
+    workOrderApi.listEligibleForAssignment.mockResolvedValue(pageResponse([assignableWorkOrder]));
     workOrderApi.listEligibleWorkers.mockResolvedValue([
       { id: 20, name: 'Alex Field', role: 'FIELD_EMPLOYEE', status: 'ACTIVE', departmentId: 1 },
     ]);
@@ -201,15 +207,15 @@ describe('WorkOrdersPage', () => {
     await user.click(screen.getByRole('button', { name: 'Create Work Order' }));
 
     await waitFor(() => {
-      expect(screen.getByText('You do not have permission to create work orders.')).toBeInTheDocument();
+      expect(
+        screen.getByText('You do not have permission to create work orders.')
+      ).toBeInTheDocument();
     });
   });
 
   it('displays forbidden message when assignment is rejected', async () => {
     const user = userEvent.setup();
-    workOrderApi.listEligibleForAssignment.mockResolvedValue(
-      pageResponse([assignableWorkOrder])
-    );
+    workOrderApi.listEligibleForAssignment.mockResolvedValue(pageResponse([assignableWorkOrder]));
     workOrderApi.listEligibleWorkers.mockResolvedValue([
       { id: 20, name: 'Alex Field', role: 'FIELD_EMPLOYEE', status: 'ACTIVE', departmentId: 1 },
     ]);
@@ -226,7 +232,9 @@ describe('WorkOrdersPage', () => {
     await user.click(screen.getByRole('button', { name: 'Assign Work Order' }));
 
     await waitFor(() => {
-      expect(screen.getByText('You do not have permission to assign work orders.')).toBeInTheDocument();
+      expect(
+        screen.getByText('You do not have permission to assign work orders.')
+      ).toBeInTheDocument();
     });
   });
 });
@@ -259,11 +267,15 @@ describe('WorkOrdersPage completion review', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByRole('option', {
-      name: /#500 — WO #100 — Central Playground/i,
-    })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('option', {
+        name: /#500 — WO #100 — Central Playground/i,
+      })
+    ).toBeInTheDocument();
     expect(maintenanceActivityApi.listEligibleForCompletionReview).toHaveBeenCalled();
-    expect(screen.queryByRole('option', { name: /Other Department Asset/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('option', { name: /Other Department Asset/i })
+    ).not.toBeInTheDocument();
   });
 
   it('hides already reviewed maintenance activities from backend response', async () => {
@@ -284,7 +296,9 @@ describe('WorkOrdersPage completion review', () => {
     );
 
     await screen.findByRole('option', { name: /#500 — WO #100 — Central Playground/i });
-    expect(screen.queryByRole('option', { name: /Already Reviewed Asset/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('option', { name: /Already Reviewed Asset/i })
+    ).not.toBeInTheDocument();
   });
 
   it('displays forbidden message when completion review is rejected', async () => {
@@ -311,9 +325,11 @@ describe('WorkOrdersPage completion review', () => {
     await user.click(screen.getByRole('button', { name: 'Record Completion Review' }));
 
     await waitFor(() => {
-      expect(screen.getByText(
-        'You do not have permission to record completion reviews for this maintenance activity.'
-      )).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'You do not have permission to record completion reviews for this maintenance activity.'
+        )
+      ).toBeInTheDocument();
     });
   });
 
@@ -354,11 +370,15 @@ describe('WorkOrdersPage completion review', () => {
         reworkSeverity: 'HIGH',
         rootCause: 'Missing lubrication',
       });
-      expect(screen.getByText(
-        'Completion Review recorded. A rework Issue has been created for managerial decision.'
-      )).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'Go to Operational Decisions' }))
-        .toHaveAttribute('href', '/operational-decisions');
+      expect(
+        screen.getByText(
+          'Completion Review recorded. A rework Issue has been created for managerial decision.'
+        )
+      ).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Go to Operational Decisions' })).toHaveAttribute(
+        'href',
+        '/operational-decisions'
+      );
     });
   });
 
@@ -425,7 +445,9 @@ describe('WorkOrdersPage completion review', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Completion review recorded successfully.')).toBeInTheDocument();
-      expect(screen.queryByRole('link', { name: 'Go to Operational Decisions' })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('link', { name: 'Go to Operational Decisions' })
+      ).not.toBeInTheDocument();
     });
   });
 });

@@ -25,7 +25,8 @@ export default function CompleteMaintenanceForm({
             <option value="">Select assigned work order</option>
             {assignedWorkOrdersForCurrentUser.map((workOrder) => (
               <option key={workOrder.id} value={workOrder.id}>
-                #{workOrder.id} — {workOrder.assetName} ({getOperationalDecisionOutcomeLabel(workOrder.workType)})
+                #{workOrder.id} — {workOrder.assetName} (
+                {getOperationalDecisionOutcomeLabel(workOrder.workType)})
               </option>
             ))}
           </select>

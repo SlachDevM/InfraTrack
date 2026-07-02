@@ -25,8 +25,13 @@ export default function RecentActivityWidget({ items, loading, error, onNavigate
               disabled={!item.route}
             >
               <div className="dashboard-activity-item-header">
-                <span className="dashboard-activity-type">{formatActivityTypeLabel(item.type)}</span>
-                <time className="dashboard-activity-time" dateTime={new Date(item.occurredAt).toISOString()}>
+                <span className="dashboard-activity-type">
+                  {formatActivityTypeLabel(item.type)}
+                </span>
+                <time
+                  className="dashboard-activity-time"
+                  dateTime={new Date(item.occurredAt).toISOString()}
+                >
                   {formatActivityTime(item.occurredAt)}
                 </time>
               </div>

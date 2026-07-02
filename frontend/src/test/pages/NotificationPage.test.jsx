@@ -60,16 +60,18 @@ describe('NotificationPage', () => {
   });
 
   it('renders notifications from notificationApi', async () => {
-    notificationApi.list.mockResolvedValue(pageResponse([
-      {
-        id: 1,
-        title: 'Inspection Assigned',
-        message: 'You have a new inspection.',
-        createdAt: '2026-06-01T09:00:00',
-        isRead: false,
-        targetRoute: null,
-      },
-    ]));
+    notificationApi.list.mockResolvedValue(
+      pageResponse([
+        {
+          id: 1,
+          title: 'Inspection Assigned',
+          message: 'You have a new inspection.',
+          createdAt: '2026-06-01T09:00:00',
+          isRead: false,
+          targetRoute: null,
+        },
+      ])
+    );
 
     render(
       <MemoryRouter>
@@ -83,16 +85,18 @@ describe('NotificationPage', () => {
 
   it('marks unread notification as read and navigates when targetRoute is present', async () => {
     const user = userEvent.setup();
-    notificationApi.list.mockResolvedValue(pageResponse([
-      {
-        id: 2,
-        title: 'Work Order Assigned',
-        message: 'Work order #100 assigned.',
-        createdAt: '2026-06-01T10:00:00',
-        isRead: false,
-        targetRoute: '/work-orders',
-      },
-    ]));
+    notificationApi.list.mockResolvedValue(
+      pageResponse([
+        {
+          id: 2,
+          title: 'Work Order Assigned',
+          message: 'Work order #100 assigned.',
+          createdAt: '2026-06-01T10:00:00',
+          isRead: false,
+          targetRoute: '/work-orders',
+        },
+      ])
+    );
 
     render(
       <MemoryRouter>
@@ -111,16 +115,18 @@ describe('NotificationPage', () => {
 
   it('does not crash when notification has no targetRoute', async () => {
     const user = userEvent.setup();
-    notificationApi.list.mockResolvedValue(pageResponse([
-      {
-        id: 3,
-        title: 'General Notice',
-        message: 'System maintenance tonight.',
-        createdAt: '2026-06-01T11:00:00',
-        isRead: true,
-        targetRoute: null,
-      },
-    ]));
+    notificationApi.list.mockResolvedValue(
+      pageResponse([
+        {
+          id: 3,
+          title: 'General Notice',
+          message: 'System maintenance tonight.',
+          createdAt: '2026-06-01T11:00:00',
+          isRead: true,
+          targetRoute: null,
+        },
+      ])
+    );
 
     render(
       <MemoryRouter>
@@ -138,8 +144,36 @@ describe('NotificationPage', () => {
   it('loads the next page when Next is clicked', async () => {
     const user = userEvent.setup();
     notificationApi.list
-      .mockResolvedValueOnce(pageResponse([{ id: 1, title: 'Page 1', message: 'First', createdAt: '2026-06-01T09:00:00', isRead: true }], 0, 2))
-      .mockResolvedValueOnce(pageResponse([{ id: 2, title: 'Page 2', message: 'Second', createdAt: '2026-06-01T10:00:00', isRead: true }], 1, 2));
+      .mockResolvedValueOnce(
+        pageResponse(
+          [
+            {
+              id: 1,
+              title: 'Page 1',
+              message: 'First',
+              createdAt: '2026-06-01T09:00:00',
+              isRead: true,
+            },
+          ],
+          0,
+          2
+        )
+      )
+      .mockResolvedValueOnce(
+        pageResponse(
+          [
+            {
+              id: 2,
+              title: 'Page 2',
+              message: 'Second',
+              createdAt: '2026-06-01T10:00:00',
+              isRead: true,
+            },
+          ],
+          1,
+          2
+        )
+      );
 
     render(
       <MemoryRouter>

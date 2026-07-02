@@ -26,7 +26,8 @@ export default function AssignWorkOrderForm({
             <option value="">Select work order</option>
             {createdWorkOrders.map((workOrder) => (
               <option key={workOrder.id} value={workOrder.id}>
-                #{workOrder.id} — {workOrder.assetName} ({getOperationalDecisionOutcomeLabel(workOrder.workType)})
+                #{workOrder.id} — {workOrder.assetName} (
+                {getOperationalDecisionOutcomeLabel(workOrder.workType)})
               </option>
             ))}
           </select>
@@ -34,7 +35,8 @@ export default function AssignWorkOrderForm({
 
         {selectedAssignWorkOrder && (
           <div className="linked-decision-info">
-            <strong>Work Type:</strong> {getOperationalDecisionOutcomeLabel(selectedAssignWorkOrder.workType)}
+            <strong>Work Type:</strong>{' '}
+            {getOperationalDecisionOutcomeLabel(selectedAssignWorkOrder.workType)}
             <br />
             <strong>Description:</strong> {selectedAssignWorkOrder.description}
           </div>

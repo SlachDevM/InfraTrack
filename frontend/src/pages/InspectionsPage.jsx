@@ -17,13 +17,13 @@ import ExportCsvButton from '../components/ExportCsvButton';
 import { INSPECTION_STATUS } from '../constants/statuses';
 import { REPORTING_EXPORT_TYPES } from '../constants/reportingExports';
 import { ROUTES } from '../constants/routes';
-import { canAssignInspections, canPerformInspections, canExportReporting } from '../constants/userRoles';
 import {
-  INSPECTION_PRIORITIES,
-} from '../constants/inspectionPriorities';
-import {
-  PHYSICAL_CONDITIONS,
-} from '../constants/physicalConditions';
+  canAssignInspections,
+  canPerformInspections,
+  canExportReporting,
+} from '../constants/userRoles';
+import { INSPECTION_PRIORITIES } from '../constants/inspectionPriorities';
+import { PHYSICAL_CONDITIONS } from '../constants/physicalConditions';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
 import { filterInspectionAssignees } from '../utils/inspectionAssignees';
 import {
@@ -85,11 +85,12 @@ export default function InspectionsPage() {
   const currentUserId = auth?.user?.userId;
 
   const myAssignedInspections = useMemo(
-    () => inspections.filter(
-      (inspection) =>
-        inspection.status === INSPECTION_STATUS.ASSIGNED
-        && String(inspection.assignedToUserId) === String(currentUserId)
-    ),
+    () =>
+      inspections.filter(
+        (inspection) =>
+          inspection.status === INSPECTION_STATUS.ASSIGNED &&
+          String(inspection.assignedToUserId) === String(currentUserId)
+      ),
     [inspections, currentUserId]
   );
 
@@ -107,11 +108,13 @@ export default function InspectionsPage() {
   }, [assets, selectedTrigger]);
 
   const eligiblePublishedTemplates = useMemo(
-    () => publishedTemplates.filter(
-      (template) => template.status === 'PUBLISHED'
-        && selectedAssetCategoryId != null
-        && template.assetCategoryId === selectedAssetCategoryId
-    ),
+    () =>
+      publishedTemplates.filter(
+        (template) =>
+          template.status === 'PUBLISHED' &&
+          selectedAssetCategoryId != null &&
+          template.assetCategoryId === selectedAssetCategoryId
+      ),
     [publishedTemplates, selectedAssetCategoryId]
   );
 
@@ -130,7 +133,10 @@ export default function InspectionsPage() {
       return;
     }
     inspectionTemplateApi
-      .list(DEFAULT_PAGE, MAX_PAGE_SIZE, { assetCategoryId: selectedAssetCategoryId, status: 'PUBLISHED' })
+      .list(DEFAULT_PAGE, MAX_PAGE_SIZE, {
+        assetCategoryId: selectedAssetCategoryId,
+        status: 'PUBLISHED',
+      })
       .then((page) => setPublishedTemplates(unwrapPageContent(page)))
       .catch(() => setPublishedTemplates([]));
   }, [canAssign, selectedAssetCategoryId]);
@@ -143,7 +149,8 @@ export default function InspectionsPage() {
         if (Object.prototype.hasOwnProperty.call(templateQuestionsByTemplateId, templateId)) {
           return;
         }
-        inspectionTemplateQuestionApi.list(templateId)
+        inspectionTemplateQuestionApi
+          .list(templateId)
           .then((questions) => {
             const questionList = Array.isArray(questions) ? questions : [];
             setTemplateQuestionsByTemplateId((prev) => ({
@@ -197,8 +204,8 @@ export default function InspectionsPage() {
               .filter((asset) => asset.departmentId === profile.departmentId)
               .map((asset) => asset.id)
           );
-          loadedTriggers = loadedTriggers.filter(
-            (trigger) => departmentAssetIds.has(trigger.assetId)
+          loadedTriggers = loadedTriggers.filter((trigger) =>
+            departmentAssetIds.has(trigger.assetId)
           );
         }
       } else {
@@ -378,7 +385,9 @@ export default function InspectionsPage() {
         <h1>Inspections</h1>
         <div className="user-header-actions">
           <NotificationButton />
-          {canExport && <ExportCsvButton exportType={REPORTING_EXPORT_TYPES.INSPECTIONS} onError={setError} />}
+          {canExport && (
+            <ExportCsvButton exportType={REPORTING_EXPORT_TYPES.INSPECTIONS} onError={setError} />
+          )}
           <button type="button" className="logout-btn" onClick={handleLogout}>
             Logout
           </button>

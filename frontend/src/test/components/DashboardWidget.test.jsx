@@ -14,7 +14,7 @@ describe('DashboardWidget', () => {
         loadingMessage="Loading operational KPIs..."
       >
         <p>Content</p>
-      </DashboardWidget>,
+      </DashboardWidget>
     );
 
     const message = screen.getByText('Loading operational KPIs...');
@@ -25,12 +25,9 @@ describe('DashboardWidget', () => {
 
   it('renders error state with alert role', () => {
     render(
-      <DashboardWidget
-        ariaLabel="Recent activity"
-        error="Unable to load dashboard data."
-      >
+      <DashboardWidget ariaLabel="Recent activity" error="Unable to load dashboard data.">
         <p>Content</p>
-      </DashboardWidget>,
+      </DashboardWidget>
     );
 
     const message = screen.getByRole('alert');
@@ -40,13 +37,9 @@ describe('DashboardWidget', () => {
 
   it('renders empty state consistently', () => {
     render(
-      <DashboardWidget
-        ariaLabel="Recent activity"
-        empty
-        emptyMessage="No recent activity yet."
-      >
+      <DashboardWidget ariaLabel="Recent activity" empty emptyMessage="No recent activity yet.">
         <p>Content</p>
-      </DashboardWidget>,
+      </DashboardWidget>
     );
 
     expect(screen.getByText('No recent activity yet.')).toHaveClass('empty-state');

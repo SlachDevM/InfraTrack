@@ -20,12 +20,12 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title(applicationName + " API")
                         .description("""
-                                REST API for InfraTrack operational asset management (V1).
+                                REST API for InfraTrack operational asset management.
                                 Authenticated endpoints require a JWT bearer token from POST /api/auth/login.
                                 Paginated collections accept optional page and size query parameters (defaults: page=0, size=20, max size=100).
                                 Business errors are returned as plain-text response bodies with appropriate HTTP status codes.
                                 """)
-                        .version("1.0.1")
+                        .version("2.0.1")
                         .contact(new Contact().name("InfraTrack"))
                         .license(new License().name("Proprietary")))
                 .components(new Components().addSecuritySchemes("bearerAuth",

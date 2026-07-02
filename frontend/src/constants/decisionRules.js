@@ -68,6 +68,8 @@ export function getActionTypeLabel(actionType) {
 }
 
 export function getOperatorLabel(conditionType, operator) {
-  const option = getOperatorsForConditionType(conditionType).find((item) => item.value === operator);
+  const option = getOperatorsForConditionType(conditionType).find(
+    (item) => item.value === operator
+  );
   return option ? option.label : operator;
 }

@@ -7,12 +7,7 @@ import notificationApi from '../services/notificationApi';
 import PaginationControls from '../components/PaginationControls';
 import { getApiErrorMessage } from '../utils/apiError';
 import { ROUTES } from '../constants/routes';
-import {
-  DEFAULT_PAGE,
-  getPageNumber,
-  getTotalPages,
-  unwrapPageContent,
-} from '../utils/pagination';
+import { DEFAULT_PAGE, getPageNumber, getTotalPages, unwrapPageContent } from '../utils/pagination';
 import '../styles/NotificationPage.css';
 
 export default function NotificationPage() {
@@ -140,9 +135,7 @@ export default function NotificationPage() {
               >
                 <div className="notification-content">
                   <div className="notification-header-row">
-                    {notif.title && (
-                      <span className="notification-title">{notif.title}</span>
-                    )}
+                    {notif.title && <span className="notification-title">{notif.title}</span>}
                     <span className="notification-time">
                       {new Date(notif.createdAt).toLocaleString()}
                     </span>

@@ -263,13 +263,13 @@ export default function OperationalDecisionsPage() {
               </button>
             </form>
             {issues.length === 0 && (
-              <p className="read-only-note">No issues are currently awaiting an operational decision.</p>
+              <p className="read-only-note">
+                No issues are currently awaiting an operational decision.
+              </p>
             )}
           </section>
         ) : (
-          <p className="read-only-note">
-            Operational decisions are available to Managers.
-          </p>
+          <p className="read-only-note">Operational decisions are available to Managers.</p>
         )}
 
         <section className="decision-list-section">
@@ -295,9 +295,7 @@ export default function OperationalDecisionsPage() {
                     <td>{getOperationalDecisionOutcomeLabel(decision.outcome)}</td>
                     <td>{decision.rationale}</td>
                     <td>
-                      {decision.decidedAt
-                        ? new Date(decision.decidedAt).toLocaleString()
-                        : '-'}
+                      {decision.decidedAt ? new Date(decision.decidedAt).toLocaleString() : '-'}
                     </td>
                   </tr>
                 ))}

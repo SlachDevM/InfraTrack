@@ -44,7 +44,10 @@ export default function SuggestedActionsPanel({ inspectionId }) {
 
   if (loading) {
     return (
-      <div className="suggested-actions-panel loading" data-testid={`suggested-actions-loading-${inspectionId}`}>
+      <div
+        className="suggested-actions-panel loading"
+        data-testid={`suggested-actions-loading-${inspectionId}`}
+      >
         Loading suggested actions...
       </div>
     );
@@ -52,7 +55,10 @@ export default function SuggestedActionsPanel({ inspectionId }) {
 
   if (error) {
     return (
-      <div className="suggested-actions-panel error" data-testid={`suggested-actions-error-${inspectionId}`}>
+      <div
+        className="suggested-actions-panel error"
+        data-testid={`suggested-actions-error-${inspectionId}`}
+      >
         {error}
       </div>
     );

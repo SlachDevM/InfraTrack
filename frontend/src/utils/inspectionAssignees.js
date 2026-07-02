@@ -8,9 +8,9 @@ export function filterInspectionAssignees(workers, departmentId) {
   }
   return workers.filter(
     (worker) =>
-      worker.role === 'FIELD_EMPLOYEE'
-      && worker.status === 'ACTIVE'
-      && departmentId != null
-      && worker.departmentId === departmentId
+      worker.role === 'FIELD_EMPLOYEE' &&
+      worker.status === 'ACTIVE' &&
+      departmentId != null &&
+      worker.departmentId === departmentId
   );
 }

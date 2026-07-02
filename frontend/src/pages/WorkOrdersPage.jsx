@@ -15,14 +15,17 @@ import ExportCsvButton from '../components/ExportCsvButton';
 import { WORK_ORDER_STATUS } from '../constants/statuses';
 import { REPORTING_EXPORT_TYPES } from '../constants/reportingExports';
 import { ROUTES } from '../constants/routes';
-import { canAssignWorkOrders, canCompleteMaintenance, canCreateWorkOrders, canRecordCompletionReview, canExportReporting, USER_ROLES } from '../constants/userRoles';
 import {
-  COMPLETION_REVIEW_DECISION_OPTIONS,
-} from '../constants/completionReviewDecisions';
+  canAssignWorkOrders,
+  canCompleteMaintenance,
+  canCreateWorkOrders,
+  canRecordCompletionReview,
+  canExportReporting,
+  USER_ROLES,
+} from '../constants/userRoles';
+import { COMPLETION_REVIEW_DECISION_OPTIONS } from '../constants/completionReviewDecisions';
 import { ISSUE_SEVERITY_OPTIONS } from '../constants/issueSeverities';
-import {
-  WORK_ORDER_PRIORITIES,
-} from '../constants/workOrderPriorities';
+import { WORK_ORDER_PRIORITIES } from '../constants/workOrderPriorities';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
 import {
   DEFAULT_PAGE,
@@ -95,12 +98,14 @@ export default function WorkOrdersPage() {
   const currentUserId = auth?.user?.userId;
 
   const selectedDecision = useMemo(
-    () => decisions.find((decision) => String(decision.id) === String(formData.operationalDecisionId)),
+    () =>
+      decisions.find((decision) => String(decision.id) === String(formData.operationalDecisionId)),
     [decisions, formData.operationalDecisionId]
   );
 
   const selectedAssignWorkOrder = useMemo(
-    () => assignableWorkOrders.find((order) => String(order.id) === String(assignFormData.workOrderId)),
+    () =>
+      assignableWorkOrders.find((order) => String(order.id) === String(assignFormData.workOrderId)),
     [assignableWorkOrders, assignFormData.workOrderId]
   );
 
@@ -109,10 +114,12 @@ export default function WorkOrdersPage() {
       setEligibleAssignees([]);
       return;
     }
-    const requiredRole = selectedAssignWorkOrder.workType === 'INTERNAL_MAINTENANCE'
-      ? USER_ROLES.FIELD_EMPLOYEE
-      : USER_ROLES.CONTRACTOR;
-    workOrderApi.listEligibleWorkers(selectedAssignWorkOrder.assetDepartmentId, requiredRole)
+    const requiredRole =
+      selectedAssignWorkOrder.workType === 'INTERNAL_MAINTENANCE'
+        ? USER_ROLES.FIELD_EMPLOYEE
+        : USER_ROLES.CONTRACTOR;
+    workOrderApi
+      .listEligibleWorkers(selectedAssignWorkOrder.assetDepartmentId, requiredRole)
       .then(setEligibleAssignees)
       .catch((err) => {
         setEligibleAssignees([]);
@@ -121,11 +128,13 @@ export default function WorkOrdersPage() {
   }, [selectedAssignWorkOrder]);
 
   const assignedWorkOrdersForCurrentUser = useMemo(
-    () => workOrders.filter(
-      (order) => order.status === WORK_ORDER_STATUS.ASSIGNED
-        && currentUserId
-        && order.assignedToUserId === currentUserId
-    ),
+    () =>
+      workOrders.filter(
+        (order) =>
+          order.status === WORK_ORDER_STATUS.ASSIGNED &&
+          currentUserId &&
+          order.assignedToUserId === currentUserId
+      ),
     [workOrders, currentUserId]
   );
 
@@ -135,9 +144,10 @@ export default function WorkOrdersPage() {
   );
 
   const selectedReviewActivity = useMemo(
-    () => reviewableMaintenanceActivities.find(
-      (activity) => String(activity.id) === String(reviewFormData.maintenanceActivityId)
-    ),
+    () =>
+      reviewableMaintenanceActivities.find(
+        (activity) => String(activity.id) === String(reviewFormData.maintenanceActivityId)
+      ),
     [reviewableMaintenanceActivities, reviewFormData.maintenanceActivityId]
   );
 
@@ -168,7 +178,13 @@ export default function WorkOrdersPage() {
     try {
       setLoading(true);
       setError(null);
-      const [workOrderPage, decisionData, maintenanceActivityData, assignablePage, reviewableActivityData] = await Promise.all([
+      const [
+        workOrderPage,
+        decisionData,
+        maintenanceActivityData,
+        assignablePage,
+        reviewableActivityData,
+      ] = await Promise.all([
         workOrderApi.list(page),
         canCreate
           ? operationalDecisionApi.listEligibleForWorkOrderCreation(DEFAULT_PAGE, MAX_PAGE_SIZE)
@@ -177,9 +193,7 @@ export default function WorkOrdersPage() {
         canAssign
           ? workOrderApi.listEligibleForAssignment(DEFAULT_PAGE, MAX_PAGE_SIZE)
           : Promise.resolve(null),
-        canReview
-          ? maintenanceActivityApi.listEligibleForCompletionReview()
-          : Promise.resolve([]),
+        canReview ? maintenanceActivityApi.listEligibleForCompletionReview() : Promise.resolve([]),
       ]);
       setWorkOrders(unwrapPageContent(workOrderPage));
       setWorkOrdersPage(getPageNumber(workOrderPage, page));
@@ -364,7 +378,9 @@ export default function WorkOrdersPage() {
       await loadPageData(workOrdersPage);
     } catch (err) {
       if (isForbidden(err)) {
-        setError('You do not have permission to record completion reviews for this maintenance activity.');
+        setError(
+          'You do not have permission to record completion reviews for this maintenance activity.'
+        );
       } else {
         setError(getApiErrorMessage(err, 'Failed to record completion review.'));
       }
@@ -397,7 +413,9 @@ export default function WorkOrdersPage() {
         <h1>Work Orders</h1>
         <div className="user-header-actions">
           <NotificationButton />
-          {canExport && <ExportCsvButton exportType={REPORTING_EXPORT_TYPES.WORK_ORDERS} onError={setError} />}
+          {canExport && (
+            <ExportCsvButton exportType={REPORTING_EXPORT_TYPES.WORK_ORDERS} onError={setError} />
+          )}
           <button type="button" className="logout-btn" onClick={handleLogout}>
             Logout
           </button>
@@ -617,15 +635,10 @@ export default function WorkOrdersPage() {
             )}
           </section>
         ) : (
-          <p className="read-only-note">
-            Completion review is available to Managers.
-          </p>
+          <p className="read-only-note">Completion review is available to Managers.</p>
         )}
 
-        <WorkOrderList
-          workOrders={workOrders}
-          maintenanceActivities={maintenanceActivities}
-        />
+        <WorkOrderList workOrders={workOrders} maintenanceActivities={maintenanceActivities} />
         <PaginationControls
           page={workOrdersPage}
           totalPages={workOrdersTotalPages}

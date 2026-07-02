@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { DEFAULT_DASHBOARD_PREFERENCES, DASHBOARD_WIDGET_TYPES } from '../../constants/dashboardPreferences';
+import {
+  DEFAULT_DASHBOARD_PREFERENCES,
+  DASHBOARD_WIDGET_TYPES,
+} from '../../constants/dashboardPreferences';
 import { DASHBOARD } from '../../constants/dashboard';
 import {
   buildTrendQueryFromRange,

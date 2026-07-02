@@ -44,8 +44,8 @@ export default function OperationalDocumentsPanel({
   onDocumentsNext,
 }) {
   const requiresOwnerSelection = Boolean(documentForm.ownerType);
-  const canSubmitWithOwner = !requiresOwnerSelection
-    || (selectedOwnerId && eligibleOwners.length > 0);
+  const canSubmitWithOwner =
+    !requiresOwnerSelection || (selectedOwnerId && eligibleOwners.length > 0);
 
   return (
     <section className="asset-documents-section">
@@ -116,13 +116,9 @@ export default function OperationalDocumentsPanel({
               {eligibleOwnersLoading && (
                 <p className="read-only-note">Loading eligible owners...</p>
               )}
-              {eligibleOwnersError && (
-                <p className="read-only-note">{eligibleOwnersError}</p>
-              )}
+              {eligibleOwnersError && <p className="read-only-note">{eligibleOwnersError}</p>}
               {!eligibleOwnersLoading && !eligibleOwnersError && eligibleOwners.length === 0 && (
-                <p className="read-only-note">
-                  No eligible records found for this owner type.
-                </p>
+                <p className="read-only-note">No eligible records found for this owner type.</p>
               )}
             </div>
           )}
@@ -164,7 +160,8 @@ export default function OperationalDocumentsPanel({
 
       {!canUploadDocuments && (
         <p className="read-only-note">
-          Document upload is available to Managers, Operational Coordinators, Field Employees and Contractors.
+          Document upload is available to Managers, Operational Coordinators, Field Employees and
+          Contractors.
         </p>
       )}
 

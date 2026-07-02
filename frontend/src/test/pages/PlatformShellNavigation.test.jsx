@@ -130,7 +130,12 @@ describe('Dashboard navigation', () => {
       assets: { totalAssets: 1, assetsWithoutCategory: 0, assetsWithoutDepartment: 0 },
       inspections: { assignedInspections: 0, completedInspections: 0, overdueInspections: 0 },
       issues: { openIssues: 0, resolvedIssues: 0, reworkIssues: 0, issuesBySeverity: {} },
-      workOrders: { openWorkOrders: 0, inProgressWorkOrders: 0, completedWorkOrders: 0, overdueWorkOrders: 0 },
+      workOrders: {
+        openWorkOrders: 0,
+        inProgressWorkOrders: 0,
+        completedWorkOrders: 0,
+        overdueWorkOrders: 0,
+      },
       preventive: {
         activePreventivePlans: 0,
         pendingExecutionCandidates: 0,

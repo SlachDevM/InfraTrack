@@ -132,9 +132,9 @@ describe('InspectionTemplatesPage', () => {
   });
 
   it('shows Archive and View Questions only for published templates', async () => {
-    inspectionTemplateApi.list.mockResolvedValue(pageResponse([
-      { ...template, status: 'PUBLISHED' },
-    ]));
+    inspectionTemplateApi.list.mockResolvedValue(
+      pageResponse([{ ...template, status: 'PUBLISHED' }])
+    );
 
     render(
       <MemoryRouter>
@@ -150,9 +150,9 @@ describe('InspectionTemplatesPage', () => {
   });
 
   it('shows View Questions only for archived templates', async () => {
-    inspectionTemplateApi.list.mockResolvedValue(pageResponse([
-      { ...template, status: 'ARCHIVED' },
-    ]));
+    inspectionTemplateApi.list.mockResolvedValue(
+      pageResponse([{ ...template, status: 'ARCHIVED' }])
+    );
 
     render(
       <MemoryRouter>
@@ -243,9 +243,9 @@ describe('InspectionTemplatesPage', () => {
       if (page === 0) {
         return Promise.resolve(pageResponse([template], 0, 2));
       }
-      return Promise.resolve(pageResponse([
-        { ...template, id: 101, name: 'Second Template' },
-      ], 1, 2));
+      return Promise.resolve(
+        pageResponse([{ ...template, id: 101, name: 'Second Template' }], 1, 2)
+      );
     });
 
     render(
@@ -273,7 +273,10 @@ describe('InspectionTemplatesPage', () => {
     );
 
     await screen.findByText('Pump Inspection Template');
-    await user.selectOptions(screen.getByLabelText('Asset Category', { selector: '#filterAssetCategoryId' }), '10');
+    await user.selectOptions(
+      screen.getByLabelText('Asset Category', { selector: '#filterAssetCategoryId' }),
+      '10'
+    );
 
     await waitFor(() => {
       expect(inspectionTemplateApi.list).toHaveBeenCalledWith(
@@ -294,7 +297,10 @@ describe('InspectionTemplatesPage', () => {
     );
 
     await screen.findByText('Pump Inspection Template');
-    await user.selectOptions(screen.getByLabelText('Status', { selector: '#filterStatus' }), 'DRAFT');
+    await user.selectOptions(
+      screen.getByLabelText('Status', { selector: '#filterStatus' }),
+      'DRAFT'
+    );
 
     await waitFor(() => {
       expect(inspectionTemplateApi.list).toHaveBeenCalledWith(
@@ -307,9 +313,9 @@ describe('InspectionTemplatesPage', () => {
 
   it('archives published template when archive action is confirmed', async () => {
     const user = userEvent.setup();
-    inspectionTemplateApi.list.mockResolvedValue(pageResponse([
-      { ...template, status: 'PUBLISHED' },
-    ]));
+    inspectionTemplateApi.list.mockResolvedValue(
+      pageResponse([{ ...template, status: 'PUBLISHED' }])
+    );
     inspectionTemplateApi.archive.mockResolvedValue({ ...template, status: 'ARCHIVED' });
 
     render(

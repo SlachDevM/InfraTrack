@@ -71,7 +71,7 @@ export default function DashboardPage() {
   const role = auth?.user?.role;
   const normalizedPreferences = useMemo(
     () => normalizeDashboardPreferences(preferences),
-    [preferences],
+    [preferences]
   );
 
   const loadTrends = useCallback(async (trendRange) => {
@@ -87,43 +87,42 @@ export default function DashboardPage() {
     }
   }, []);
 
-  const loadDashboardData = useCallback(async (loadedPreferences) => {
-    const prefs = normalizeDashboardPreferences(loadedPreferences);
+  const loadDashboardData = useCallback(
+    async (loadedPreferences) => {
+      const prefs = normalizeDashboardPreferences(loadedPreferences);
 
-    const loadKpis = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await operationsIntelligenceApi.getKpis();
-        setKpis(data);
-      } catch (err) {
-        setError(getApiErrorMessage(err, 'Failed to load operational KPIs.'));
-      } finally {
-        setLoading(false);
-      }
-    };
+      const loadKpis = async () => {
+        try {
+          setLoading(true);
+          setError(null);
+          const data = await operationsIntelligenceApi.getKpis();
+          setKpis(data);
+        } catch (err) {
+          setError(getApiErrorMessage(err, 'Failed to load operational KPIs.'));
+        } finally {
+          setLoading(false);
+        }
+      };
 
-    const loadRecentActivity = async () => {
-      try {
-        setActivityLoading(true);
-        setActivityError(null);
-        const data = await operationsIntelligenceApi.getRecentActivity({
-          limit: DASHBOARD.DEFAULT_ACTIVITY_LIMIT,
-        });
-        setRecentActivity(data);
-      } catch (err) {
-        setActivityError(getApiErrorMessage(err, 'Failed to load recent activity.'));
-      } finally {
-        setActivityLoading(false);
-      }
-    };
+      const loadRecentActivity = async () => {
+        try {
+          setActivityLoading(true);
+          setActivityError(null);
+          const data = await operationsIntelligenceApi.getRecentActivity({
+            limit: DASHBOARD.DEFAULT_ACTIVITY_LIMIT,
+          });
+          setRecentActivity(data);
+        } catch (err) {
+          setActivityError(getApiErrorMessage(err, 'Failed to load recent activity.'));
+        } finally {
+          setActivityLoading(false);
+        }
+      };
 
-    await Promise.all([
-      loadKpis(),
-      loadTrends(prefs.defaultTrendRange),
-      loadRecentActivity(),
-    ]);
-  }, [loadTrends]);
+      await Promise.all([loadKpis(), loadTrends(prefs.defaultTrendRange), loadRecentActivity()]);
+    },
+    [loadTrends]
+  );
 
   useEffect(() => {
     if (!auth) {
@@ -163,7 +162,7 @@ export default function DashboardPage() {
 
   const quickLinks = useMemo(
     () => QUICK_NAVIGATION_LINKS.filter((link) => canAccessRoute(role, link.path)),
-    [role],
+    [role]
   );
 
   const handleSavePreferences = async (request) => {
@@ -216,13 +215,7 @@ export default function DashboardPage() {
         if (loading || error || !kpis) {
           return null;
         }
-        return (
-          <QuickNavigationWidget
-            key={widgetType}
-            links={quickLinks}
-            onNavigate={navigate}
-          />
-        );
+        return <QuickNavigationWidget key={widgetType} links={quickLinks} onNavigate={navigate} />;
       case DASHBOARD_WIDGET_TYPES.TRENDS:
         return (
           <TrendWidget
@@ -264,11 +257,7 @@ export default function DashboardPage() {
         <header className="dashboard-greeting">
           <div className="dashboard-greeting-row">
             <div>
-              <h1>
-                Good morning,
-                {' '}
-                {getDisplayName(auth.user)}
-              </h1>
+              <h1>Good morning, {getDisplayName(auth.user)}</h1>
               <p>Operational overview</p>
             </div>
             <button
@@ -319,10 +308,7 @@ export default function DashboardPage() {
         resetting={resettingPreferences}
       />
 
-      <footer className="platform-footer">
-        InfraTrack v
-        {APP_VERSION}
-      </footer>
+      <footer className="platform-footer">InfraTrack v{APP_VERSION}</footer>
     </div>
   );
 }

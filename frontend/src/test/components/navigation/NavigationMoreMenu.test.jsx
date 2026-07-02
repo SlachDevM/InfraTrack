@@ -7,9 +7,7 @@ describe('NavigationMoreMenu', () => {
   afterEach(cleanup);
 
   it('renders nothing when there are no overflow items', () => {
-    const { container } = render(
-      <NavigationMoreMenu items={[]} onNavigate={vi.fn()} />
-    );
+    const { container } = render(<NavigationMoreMenu items={[]} onNavigate={vi.fn()} />);
 
     expect(container).toBeEmptyDOMElement();
   });

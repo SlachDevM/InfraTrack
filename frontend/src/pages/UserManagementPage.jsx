@@ -71,9 +71,7 @@ export default function UserManagementPage() {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       result = result.filter(
-        (u) =>
-          u.name.toLowerCase().includes(query) ||
-          u.email.toLowerCase().includes(query)
+        (u) => u.name.toLowerCase().includes(query) || u.email.toLowerCase().includes(query)
       );
     }
 
@@ -105,9 +103,7 @@ export default function UserManagementPage() {
   };
 
   const handleEditSuccess = (updatedUser) => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === updatedUser.id ? updatedUser : u))
-    );
+    setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
     setShowEditModal(false);
     setSelectedUser(null);
   };
@@ -134,23 +130,17 @@ export default function UserManagementPage() {
       if (confirmAction === 'deactivate') {
         await userApi.deactivateUser(confirmingUserId);
         setUsers((prev) =>
-          prev.map((u) =>
-            u.id === confirmingUserId ? { ...u, status: 'DISABLED' } : u
-          )
+          prev.map((u) => (u.id === confirmingUserId ? { ...u, status: 'DISABLED' } : u))
         );
       } else if (confirmAction === 'reactivate') {
         await userApi.reactivateUser(confirmingUserId);
         setUsers((prev) =>
-          prev.map((u) =>
-            u.id === confirmingUserId ? { ...u, status: 'ACTIVE' } : u
-          )
+          prev.map((u) => (u.id === confirmingUserId ? { ...u, status: 'ACTIVE' } : u))
         );
       } else if (confirmAction === 'resend') {
         await userApi.resendActivation(confirmingUserId);
         setUsers((prev) =>
-          prev.map((u) =>
-            u.id === confirmingUserId ? { ...u, status: 'PENDING_ACTIVATION' } : u
-          )
+          prev.map((u) => (u.id === confirmingUserId ? { ...u, status: 'PENDING_ACTIVATION' } : u))
         );
         setError(null);
       }
@@ -193,18 +183,14 @@ export default function UserManagementPage() {
 
   return (
     <div className="user-management-page">
-      <header 
+      <header
         className="user-header"
         style={{
           background: 'linear-gradient(135deg, #1a472a 0%, #2d6b4d 100%)',
-          color: 'white'
+          color: 'white',
         }}
       >
-        <button
-          type="button"
-          className="back-btn"
-          onClick={() => navigate(ROUTES.HOME)}
-        >
+        <button type="button" className="back-btn" onClick={() => navigate(ROUTES.HOME)}>
           ← Back to Dashboard
         </button>
 
@@ -214,11 +200,7 @@ export default function UserManagementPage() {
           <NotificationButton />
 
           {isAdministrator && (
-            <button
-              type="button"
-              className="invite-btn"
-              onClick={() => setShowInviteModal(true)}
-            >
+            <button type="button" className="invite-btn" onClick={() => setShowInviteModal(true)}>
               + Invite User
             </button>
           )}
@@ -256,9 +238,7 @@ export default function UserManagementPage() {
         <div className="users-table-container">
           {filteredUsers.length === 0 ? (
             <p className="no-users">
-              {users.length === 0
-                ? 'No users yet.'
-                : 'No users matching your search.'}
+              {users.length === 0 ? 'No users yet.' : 'No users matching your search.'}
             </p>
           ) : (
             <table className="users-table">
@@ -279,23 +259,15 @@ export default function UserManagementPage() {
                     <td>{user.name}</td>
                     <td>{user.email}</td>
                     <td>
-                      <span className="role-badge">
-                        {getRoleLabel(user.role)}
-                      </span>
+                      <span className="role-badge">{getRoleLabel(user.role)}</span>
                     </td>
                     <td>{user.departmentName || '-'}</td>
                     <td>
-                      <span
-                        className={`status-badge ${STATUS_COLORS[user.status]}`}
-                      >
+                      <span className={`status-badge ${STATUS_COLORS[user.status]}`}>
                         {STATUS_LABELS[user.status]}
                       </span>
                     </td>
-                    <td>
-                      {user.createdAt
-                        ? new Date(user.createdAt).toLocaleDateString()
-                        : '-'}
-                    </td>
+                    <td>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-'}</td>
                     {isAdministrator && (
                       <td className="actions-cell">
                         <button
@@ -385,16 +357,16 @@ export default function UserManagementPage() {
             confirmAction === 'deactivate'
               ? 'Deactivate User'
               : confirmAction === 'reactivate'
-              ? 'Reactivate User'
-              : 'Resend Activation'
+                ? 'Reactivate User'
+                : 'Resend Activation'
           }
           message={getConfirmMessage()}
           confirmLabel={
             confirmAction === 'deactivate'
               ? 'Deactivate'
               : confirmAction === 'reactivate'
-              ? 'Reactivate'
-              : 'Resend'
+                ? 'Reactivate'
+                : 'Resend'
           }
           onConfirm={executeConfirmAction}
           onCancel={cancelConfirm}

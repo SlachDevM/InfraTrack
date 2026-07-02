@@ -4,10 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import AppNavbar from '../components/navigation/AppNavbar';
 import { canViewOperationsDashboard, getRoleLabel } from '../constants/userRoles';
 import { ROUTES } from '../constants/routes';
-import {
-  FIELD_EMPLOYEE_SHORTCUTS,
-  isFieldEmployeeRole,
-} from '../constants/navigation';
+import { FIELD_EMPLOYEE_SHORTCUTS, isFieldEmployeeRole } from '../constants/navigation';
 import { APP_VERSION } from '../config/appVersion';
 import '../styles/PlatformShell.css';
 
@@ -59,13 +56,8 @@ export default function PlatformShell() {
               </ul>
               <div className="user-info">
                 <p>
-                  Logged in as:
-                  {' '}
-                  <strong>{auth?.user?.email}</strong>
-                  {' '}
-                  (
-                  {getRoleLabel(auth?.user?.role)}
-                  )
+                  Logged in as: <strong>{auth?.user?.email}</strong> (
+                  {getRoleLabel(auth?.user?.role)})
                 </p>
               </div>
             </div>
@@ -74,7 +66,8 @@ export default function PlatformShell() {
               <h2>Getting Started</h2>
               <p>
                 The platform provides infrastructure for authentication, user management,
-                notifications, and deployment while business domain features are implemented incrementally.
+                notifications, and deployment while business domain features are implemented
+                incrementally.
               </p>
 
               <div className="feature-section">
@@ -92,12 +85,19 @@ export default function PlatformShell() {
               <div className="feature-section">
                 <h3>Next Steps</h3>
                 <p>
-                  Business capabilities are implemented one use case at a time. See the documentation for the current development roadmap.
+                  Business capabilities are implemented one use case at a time. See the
+                  documentation for the current development roadmap.
                 </p>
                 <ul>
-                  <li>Backend domain code in <code>backend/src/main/java/com/infratrack/</code></li>
-                  <li>React pages in <code>frontend/src/pages/</code></li>
-                  <li>API services in <code>frontend/src/services/</code></li>
+                  <li>
+                    Backend domain code in <code>backend/src/main/java/com/infratrack/</code>
+                  </li>
+                  <li>
+                    React pages in <code>frontend/src/pages/</code>
+                  </li>
+                  <li>
+                    API services in <code>frontend/src/services/</code>
+                  </li>
                 </ul>
               </div>
 
@@ -115,13 +115,8 @@ export default function PlatformShell() {
 
               <div className="user-info">
                 <p>
-                  Logged in as:
-                  {' '}
-                  <strong>{auth?.user?.email}</strong>
-                  {' '}
-                  (
-                  {getRoleLabel(auth?.user?.role)}
-                  )
+                  Logged in as: <strong>{auth?.user?.email}</strong> (
+                  {getRoleLabel(auth?.user?.role)})
                 </p>
               </div>
             </div>
@@ -129,10 +124,7 @@ export default function PlatformShell() {
         </div>
       </div>
 
-      <footer className="platform-footer">
-        InfraTrack v
-        {APP_VERSION}
-      </footer>
+      <footer className="platform-footer">InfraTrack v{APP_VERSION}</footer>
     </div>
   );
 }

@@ -123,19 +123,57 @@ Main improvements:
 
 **Reference:** [v2-0-1-security-hardening.md](v2-0-1-security-hardening.md)
 
+**Artifact version:** Maven and npm packages align with this validated release (`2.0.1`). See [ADR-004](../03-architecture/adr-004-platform-versioning-strategy.md).
+
+---
+
+## Version 2.1.0
+
+**Dashboard & Operations Intelligence (Validated)**
+
+Internally validated — **not** a production release.
+
+Main capabilities:
+
+- Operations KPI summary API (`GET /api/operations-intelligence/kpis`)
+- Web dashboard at `/dashboard` (read-only)
+- Trend time-series API (`GET /api/operations-intelligence/trends`)
+- Recent activity feed (`GET /api/operations-intelligence/recent-activity`)
+- User-scoped dashboard personalisation (`GET/PUT /api/dashboard/preferences`)
+
+**Reference:** [v2-roadmap.md](v2-roadmap.md) (Sprints C1–C5)
+
+---
+
+## Version 2.2.x (foundation)
+
+**Mobile API & CSV Reporting Foundation (Validated)**
+
+Internally validated foundation — **not** a production release. Native Android client remains planned for Version 2.3.0.
+
+Main capabilities:
+
+### Mobile API (Sprint M1)
+
+- Compact read and bundle endpoints under `/api/mobile/*`
+- Identity, dashboard summary, assigned inspections and work orders
+- Screen-oriented bundles for future field clients
+
+### CSV Reporting (Sprint R1)
+
+- Read-only exports under `/api/reporting/exports/*.csv`
+- Assets, Inspections, Issues, Work Orders, Preventive Execution Candidates
+- Department scoping consistent with Operations Intelligence
+
+**Deferred:** scheduled reports, PDF/XLSX exports, analytics summaries (see roadmap).
+
+**Reference:** [Mobile API](../04-api/mobile-api.md), [Reporting API](../04-api/reporting-api.md), [v2-roadmap.md](v2-roadmap.md)
+
 ---
 
 ## Future versions
 
-The following are **roadmap milestones**. Scope and numbering may evolve. See [v2-roadmap.md](v2-roadmap.md).
-
-### Version 2.1.0 — Dashboard & KPI
-
-Operational visibility over inspection, decision, and preventive data.
-
-### Version 2.2.0 — Reporting & Export
-
-Council-ready operational and compliance reporting.
+The following are **roadmap milestones** not yet delivered. Scope and numbering may evolve. See [v2-roadmap.md](v2-roadmap.md).
 
 ### Version 2.3.0 — Android Field Application
 

@@ -27,7 +27,9 @@ describe('inspectionAnswers utils', () => {
   });
 
   it('builds text, number, and choice payloads', () => {
-    expect(buildInspectionAnswerPayload({ id: 2, questionType: 'TEXT' }, 'Minor corrosion')).toEqual({
+    expect(
+      buildInspectionAnswerPayload({ id: 2, questionType: 'TEXT' }, 'Minor corrosion')
+    ).toEqual({
       questionId: 2,
       textValue: 'Minor corrosion',
     });
@@ -52,9 +54,7 @@ describe('inspectionAnswers utils', () => {
   });
 
   it('flags missing required supported answers', () => {
-    const questions = [
-      { id: 1, active: true, required: true, questionType: 'BOOLEAN' },
-    ];
+    const questions = [{ id: 1, active: true, required: true, questionType: 'BOOLEAN' }];
     const missing = validateRequiredTemplateAnswers(questions, {});
     expect(missing).toHaveLength(1);
   });
@@ -104,6 +104,8 @@ describe('inspectionAnswers utils', () => {
   it('resolves unit symbol from structured or legacy question fields', () => {
     expect(getQuestionUnitSymbol({ unitSymbol: '°C', unit: 'legacy' })).toBe('°C');
     expect(getQuestionUnitSymbol({ unit: 'bar' })).toBe('bar');
-    expect(getAnswerUnitSymbol({ unitSymbolSnapshot: '°C', numberUnitSnapshot: 'legacy' })).toBe('°C');
+    expect(getAnswerUnitSymbol({ unitSymbolSnapshot: '°C', numberUnitSnapshot: 'legacy' })).toBe(
+      '°C'
+    );
   });
 });

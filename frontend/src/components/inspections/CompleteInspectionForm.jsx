@@ -23,14 +23,12 @@ export default function CompleteInspectionForm({
   const hasTemplate = Boolean(inspection.inspectionTemplateId);
 
   return (
-    <form
-      className="inspection-form complete-form"
-      onSubmit={onSubmit}
-    >
+    <form className="inspection-form complete-form" onSubmit={onSubmit}>
       <div className="linked-asset-info">
         <strong>Asset:</strong> {inspection.assetName}
         <br />
-        <strong>Trigger:</strong> #{inspection.businessTriggerId} — {getBusinessTriggerTypeLabel(inspection.businessTriggerType)}
+        <strong>Trigger:</strong> #{inspection.businessTriggerId} —{' '}
+        {getBusinessTriggerTypeLabel(inspection.businessTriggerType)}
         <br />
         <strong>Reason:</strong> {inspection.businessTriggerReason}
         {hasTemplate && (
@@ -45,7 +43,9 @@ export default function CompleteInspectionForm({
         <section className="inspection-checklist-section">
           <h3>Checklist Questions</h3>
           {templateQuestions.length === 0 ? (
-            <p className="read-only-note">No active checklist questions are defined for this template.</p>
+            <p className="read-only-note">
+              No active checklist questions are defined for this template.
+            </p>
           ) : (
             templateQuestions.map((question) => (
               <div key={question.id} className="form-row checklist-question-row">
@@ -179,11 +179,7 @@ export default function CompleteInspectionForm({
         />
       </div>
 
-      <button
-        type="submit"
-        className="btn-primary"
-        disabled={completingId === inspection.id}
-      >
+      <button type="submit" className="btn-primary" disabled={completingId === inspection.id}>
         {completingId === inspection.id ? 'Completing...' : 'Complete Inspection'}
       </button>
     </form>

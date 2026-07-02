@@ -177,9 +177,11 @@ describe('AssetsPage operational document owner selection', () => {
 
     await waitFor(() => {
       expect(operationalDocumentApi.listEligibleOwners).toHaveBeenCalledWith(5, 'INSPECTION');
-      expect(screen.getByRole('option', {
-        name: 'Inspection #100 — COMPLETED — 2026-06-01 — NORMAL',
-      })).toBeInTheDocument();
+      expect(
+        screen.getByRole('option', {
+          name: 'Inspection #100 — COMPLETED — 2026-06-01 — NORMAL',
+        })
+      ).toBeInTheDocument();
     });
   });
 
@@ -220,9 +222,11 @@ describe('AssetsPage operational document owner selection', () => {
     await user.selectOptions(screen.getByLabelText('Owner Type (optional)'), 'ISSUE');
 
     await waitFor(() => {
-      expect(screen.getByRole('option', {
-        name: 'Issue #200 — HIGH — 2026-06-02 — Broken chain',
-      })).toBeInTheDocument();
+      expect(
+        screen.getByRole('option', {
+          name: 'Issue #200 — HIGH — 2026-06-02 — Broken chain',
+        })
+      ).toBeInTheDocument();
     });
     expect(screen.getByLabelText('Owner')).toHaveValue('');
   });
@@ -293,9 +297,11 @@ describe('AssetsPage operational document owner selection', () => {
     await user.selectOptions(screen.getByLabelText('Owner Type (optional)'), 'INSPECTION');
     await waitFor(() => {
       expect(screen.getByLabelText('Owner')).not.toBeDisabled();
-      expect(screen.getByRole('option', {
-        name: 'Inspection #100 — COMPLETED — 2026-06-01 — NORMAL',
-      })).toBeInTheDocument();
+      expect(
+        screen.getByRole('option', {
+          name: 'Inspection #100 — COMPLETED — 2026-06-01 — NORMAL',
+        })
+      ).toBeInTheDocument();
     });
     await user.selectOptions(screen.getByLabelText('Owner'), '100');
 
@@ -341,27 +347,33 @@ describe('AssetsPage operational document owner selection', () => {
 
   it('shows delete confirmation and removes document after confirm', async () => {
     const user = userEvent.setup();
-    operationalDocumentApi.list.mockResolvedValue(pageResponse([
-      {
-        id: 10,
-        originalFileName: 'manual.pdf',
-        documentType: 'MANUAL',
-        ownerType: 'ASSET',
-        ownerId: null,
-        uploadedAt: '2026-06-01T10:00:00',
-      },
-    ]));
+    operationalDocumentApi.list.mockResolvedValue(
+      pageResponse([
+        {
+          id: 10,
+          originalFileName: 'manual.pdf',
+          documentType: 'MANUAL',
+          ownerType: 'ASSET',
+          ownerId: null,
+          uploadedAt: '2026-06-01T10:00:00',
+        },
+      ])
+    );
     operationalDocumentApi.delete.mockResolvedValue(undefined);
-    operationalDocumentApi.list.mockResolvedValueOnce(pageResponse([
-      {
-        id: 10,
-        originalFileName: 'manual.pdf',
-        documentType: 'MANUAL',
-        ownerType: 'ASSET',
-        ownerId: null,
-        uploadedAt: '2026-06-01T10:00:00',
-      },
-    ])).mockResolvedValueOnce(pageResponse([]));
+    operationalDocumentApi.list
+      .mockResolvedValueOnce(
+        pageResponse([
+          {
+            id: 10,
+            originalFileName: 'manual.pdf',
+            documentType: 'MANUAL',
+            ownerType: 'ASSET',
+            ownerId: null,
+            uploadedAt: '2026-06-01T10:00:00',
+          },
+        ])
+      )
+      .mockResolvedValueOnce(pageResponse([]));
 
     render(
       <MemoryRouter>
@@ -375,17 +387,23 @@ describe('AssetsPage operational document owner selection', () => {
     });
 
     await user.click(screen.getByRole('button', { name: 'Delete' }));
-    expect(screen.getByRole('heading', { name: 'Delete Operational Document' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Delete Operational Document' })
+    ).toBeInTheDocument();
     expect(screen.getByText(/Delete document "manual.pdf"/)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
-    expect(screen.queryByRole('heading', { name: 'Delete Operational Document' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'Delete Operational Document' })
+    ).not.toBeInTheDocument();
     expect(screen.getByText('manual.pdf')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Delete' }));
-    await user.click(screen.getAllByRole('button', { name: 'Delete' }).find(
-      (button) => button.classList.contains('btn-confirm')
-    ));
+    await user.click(
+      screen
+        .getAllByRole('button', { name: 'Delete' })
+        .find((button) => button.classList.contains('btn-confirm'))
+    );
 
     await waitFor(() => {
       expect(operationalDocumentApi.delete).toHaveBeenCalledWith(10);
@@ -396,16 +414,18 @@ describe('AssetsPage operational document owner selection', () => {
 
   it('displays backend error when delete fails', async () => {
     const user = userEvent.setup();
-    operationalDocumentApi.list.mockResolvedValue(pageResponse([
-      {
-        id: 10,
-        originalFileName: 'manual.pdf',
-        documentType: 'MANUAL',
-        ownerType: 'ASSET',
-        ownerId: null,
-        uploadedAt: '2026-06-01T10:00:00',
-      },
-    ]));
+    operationalDocumentApi.list.mockResolvedValue(
+      pageResponse([
+        {
+          id: 10,
+          originalFileName: 'manual.pdf',
+          documentType: 'MANUAL',
+          ownerType: 'ASSET',
+          ownerId: null,
+          uploadedAt: '2026-06-01T10:00:00',
+        },
+      ])
+    );
     operationalDocumentApi.delete.mockRejectedValue({ status: 403, message: 'Forbidden' });
 
     render(
@@ -420,12 +440,16 @@ describe('AssetsPage operational document owner selection', () => {
     });
 
     await user.click(screen.getByRole('button', { name: 'Delete' }));
-    await user.click(screen.getAllByRole('button', { name: 'Delete' }).find(
-      (button) => button.classList.contains('btn-confirm')
-    ));
+    await user.click(
+      screen
+        .getAllByRole('button', { name: 'Delete' })
+        .find((button) => button.classList.contains('btn-confirm'))
+    );
 
     await waitFor(() => {
-      expect(screen.getByText('You do not have permission to delete this document.')).toBeInTheDocument();
+      expect(
+        screen.getByText('You do not have permission to delete this document.')
+      ).toBeInTheDocument();
     });
     expect(screen.getByText('manual.pdf')).toBeInTheDocument();
   });

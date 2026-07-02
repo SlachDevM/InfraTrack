@@ -26,7 +26,8 @@ export default function CreateWorkOrderForm({
             <option value="">Select operational decision</option>
             {eligibleDecisions.map((decision) => (
               <option key={decision.id} value={decision.id}>
-                #{decision.id} — {decision.assetName} ({getOperationalDecisionOutcomeLabel(decision.outcome)})
+                #{decision.id} — {decision.assetName} (
+                {getOperationalDecisionOutcomeLabel(decision.outcome)})
               </option>
             ))}
           </select>

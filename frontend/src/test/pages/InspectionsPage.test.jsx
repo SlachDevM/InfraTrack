@@ -85,9 +85,7 @@ function pageResponse(content, number = 0, totalPages = 1) {
   return { content, number, totalPages };
 }
 
-const assets = [
-  { id: 5, name: 'Street Light A', departmentId: 1, assetCategoryId: 20 },
-];
+const assets = [{ id: 5, name: 'Street Light A', departmentId: 1, assetCategoryId: 20 }];
 
 const triggers = [
   {
@@ -101,7 +99,13 @@ const triggers = [
 ];
 
 const workers = [
-  { id: 20, name: 'Alex Field', role: USER_ROLES.FIELD_EMPLOYEE, status: 'ACTIVE', departmentId: 1 },
+  {
+    id: 20,
+    name: 'Alex Field',
+    role: USER_ROLES.FIELD_EMPLOYEE,
+    status: 'ACTIVE',
+    departmentId: 1,
+  },
 ];
 
 const publishedTemplate = {
@@ -183,15 +187,16 @@ describe('InspectionsPage template assignment', () => {
     await user.selectOptions(screen.getByLabelText('Business Trigger'), '1');
 
     await waitFor(() => {
-      expect(inspectionTemplateApi.list).toHaveBeenCalledWith(
-        0,
-        100,
-        { assetCategoryId: 20, status: 'PUBLISHED' }
-      );
+      expect(inspectionTemplateApi.list).toHaveBeenCalledWith(0, 100, {
+        assetCategoryId: 20,
+        status: 'PUBLISHED',
+      });
     });
 
     expect(await screen.findByLabelText('Inspection Template')).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Street Light Inspection (v1)' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('option', { name: 'Street Light Inspection (v1)' })
+    ).toBeInTheDocument();
   });
 
   it('assigns inspection without template for legacy workflow', async () => {
@@ -265,7 +270,9 @@ describe('InspectionsPage templated inspection completion', () => {
     expect(await screen.findByLabelText(/Is the light working/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Pole damage level/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Additional notes/i)).toBeInTheDocument();
-    expect(screen.queryByText(/No active checklist questions are defined/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/No active checklist questions are defined/i)
+    ).not.toBeInTheDocument();
     expect(inspectionTemplateQuestionApi.list).toHaveBeenCalledWith(50);
   });
 
@@ -284,26 +291,31 @@ describe('InspectionsPage templated inspection completion', () => {
     await user.click(screen.getByRole('button', { name: 'Complete Inspection' }));
 
     await waitFor(() => {
-      expect(inspectionApi.complete).toHaveBeenCalledWith(200, expect.objectContaining({
-        answers: [
-          expect.objectContaining({
-            questionId: 1,
-            booleanValue: false,
-          }),
-        ],
-      }));
+      expect(inspectionApi.complete).toHaveBeenCalledWith(
+        200,
+        expect.objectContaining({
+          answers: [
+            expect.objectContaining({
+              questionId: 1,
+              booleanValue: false,
+            }),
+          ],
+        })
+      );
     });
   });
 
   it('keeps legacy completion form when inspection has no template', async () => {
-    inspectionApi.list.mockResolvedValue(pageResponse([
-      {
-        ...templatedInspection,
-        id: 201,
-        inspectionTemplateId: null,
-        inspectionTemplateName: null,
-      },
-    ]));
+    inspectionApi.list.mockResolvedValue(
+      pageResponse([
+        {
+          ...templatedInspection,
+          id: 201,
+          inspectionTemplateId: null,
+          inspectionTemplateName: null,
+        },
+      ])
+    );
 
     render(
       <MemoryRouter>

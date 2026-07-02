@@ -9,7 +9,11 @@ import PaginationControls from '../components/PaginationControls';
 import ExportCsvButton from '../components/ExportCsvButton';
 import { ROUTES } from '../constants/routes';
 import { REPORTING_EXPORT_TYPES } from '../constants/reportingExports';
-import { canMakeOperationalDecisions, canRecordIssues, canExportReporting } from '../constants/userRoles';
+import {
+  canMakeOperationalDecisions,
+  canRecordIssues,
+  canExportReporting,
+} from '../constants/userRoles';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
 import {
   DEFAULT_PAGE,
@@ -89,9 +93,10 @@ export default function IssuesPage() {
   const canExport = canExportReporting(auth?.user?.role);
 
   const selectedInspection = useMemo(
-    () => eligibleInspections.find(
-      (inspection) => String(inspection.id) === String(formData.inspectionId)
-    ),
+    () =>
+      eligibleInspections.find(
+        (inspection) => String(inspection.id) === String(formData.inspectionId)
+      ),
     [eligibleInspections, formData.inspectionId]
   );
 
@@ -134,7 +139,10 @@ export default function IssuesPage() {
       setIssuesTotalPages(getTotalPages(issuePage));
 
       if (canRecord) {
-        const inspectionPage = await inspectionApi.listEligibleForIssueRecording(DEFAULT_PAGE, MAX_PAGE_SIZE);
+        const inspectionPage = await inspectionApi.listEligibleForIssueRecording(
+          DEFAULT_PAGE,
+          MAX_PAGE_SIZE
+        );
         setEligibleInspections(unwrapPageContent(inspectionPage));
       } else {
         setEligibleInspections([]);
@@ -176,12 +184,15 @@ export default function IssuesPage() {
       setSubmitting(true);
       setError(null);
       setSuccess(null);
-      const payload = appendOptionalCapaFields({
-        inspectionId: Number(formData.inspectionId),
-        description: formData.description,
-        severity: formData.severity,
-        recordedAt: `${formData.recordedAt}:00`,
-      }, formData);
+      const payload = appendOptionalCapaFields(
+        {
+          inspectionId: Number(formData.inspectionId),
+          description: formData.description,
+          severity: formData.severity,
+          recordedAt: `${formData.recordedAt}:00`,
+        },
+        formData
+      );
       await issueApi.record(payload);
       setSuccess('Issue recorded successfully.');
       setFormData({
@@ -258,7 +269,9 @@ export default function IssuesPage() {
         <h1>Issues</h1>
         <div className="user-header-actions">
           <NotificationButton />
-          {canExport && <ExportCsvButton exportType={REPORTING_EXPORT_TYPES.ISSUES} onError={setError} />}
+          {canExport && (
+            <ExportCsvButton exportType={REPORTING_EXPORT_TYPES.ISSUES} onError={setError} />
+          )}
           <button type="button" className="logout-btn" onClick={handleLogout}>
             Logout
           </button>
@@ -286,7 +299,8 @@ export default function IssuesPage() {
                   <option value="">Select inspection</option>
                   {eligibleInspections.map((inspection) => (
                     <option key={inspection.id} value={inspection.id}>
-                      #{inspection.id} — {inspection.assetName} ({getBusinessTriggerTypeLabel(inspection.businessTriggerType)})
+                      #{inspection.id} — {inspection.assetName} (
+                      {getBusinessTriggerTypeLabel(inspection.businessTriggerType)})
                     </option>
                   ))}
                 </select>
@@ -413,7 +427,8 @@ export default function IssuesPage() {
           </section>
         ) : (
           <p className="read-only-note">
-            Issue recording is available to Field Employees and Contractors who completed the inspection.
+            Issue recording is available to Field Employees and Contractors who completed the
+            inspection.
           </p>
         )}
 
@@ -533,11 +548,7 @@ export default function IssuesPage() {
                     <td>{getIssueSeverityLabel(issue.severity)}</td>
                     <td>{displayCapaValue(issue.rootCause)}</td>
                     <td>{displayCapaValue(issue.lessonsLearned)}</td>
-                    <td>
-                      {issue.recordedAt
-                        ? new Date(issue.recordedAt).toLocaleString()
-                        : '-'}
-                    </td>
+                    <td>{issue.recordedAt ? new Date(issue.recordedAt).toLocaleString() : '-'}</td>
                   </tr>
                 ))}
               </tbody>

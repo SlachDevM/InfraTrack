@@ -16,12 +16,7 @@ export default function ConfirmDialog({
         <h2>{title}</h2>
         <p>{message}</p>
         <div className="confirm-actions">
-          <button
-            type="button"
-            className="btn-cancel"
-            onClick={onCancel}
-            disabled={isLoading}
-          >
+          <button type="button" className="btn-cancel" onClick={onCancel} disabled={isLoading}>
             Cancel
           </button>
           <button

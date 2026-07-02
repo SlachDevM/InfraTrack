@@ -189,7 +189,7 @@ describe('DashboardPage', () => {
       expect(dashboardPreferencesApi.getPreferences).toHaveBeenCalled();
       expect(operationsIntelligenceApi.getKpis).toHaveBeenCalled();
       expect(operationsIntelligenceApi.getTrends).toHaveBeenCalledWith(
-        expect.objectContaining({ bucket: 'DAY', from: expect.any(Number), to: expect.any(Number) }),
+        expect.objectContaining({ bucket: 'DAY', from: expect.any(Number), to: expect.any(Number) })
       );
       expect(operationsIntelligenceApi.getRecentActivity).toHaveBeenCalledWith({
         limit: DASHBOARD.DEFAULT_ACTIVITY_LIMIT,
@@ -218,7 +218,9 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Overdue inspections require attention.')).toBeInTheDocument();
     expect(screen.getByText('Open issues are waiting for review.')).toBeInTheDocument();
     expect(screen.getByText('Preventive candidates are waiting for decision.')).toBeInTheDocument();
-    expect(screen.getByText('Suggested actions are waiting for manager review.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Suggested actions are waiting for manager review.')
+    ).toBeInTheDocument();
   });
 
   it('hides attention alerts when all relevant values are zero', async () => {
@@ -244,7 +246,9 @@ describe('DashboardPage', () => {
     const quickNavHeading = await screen.findByText('Quick navigation');
     const quickNavSection = quickNavHeading.closest('section');
     expect(within(quickNavSection).getByRole('button', { name: 'Assets' })).toBeInTheDocument();
-    expect(within(quickNavSection).getByRole('button', { name: 'Preventive Candidates' })).toBeInTheDocument();
+    expect(
+      within(quickNavSection).getByRole('button', { name: 'Preventive Candidates' })
+    ).toBeInTheDocument();
     expect(within(quickNavSection).getByRole('button', { name: 'Scheduler' })).toBeInTheDocument();
   });
 

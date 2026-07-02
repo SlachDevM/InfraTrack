@@ -7,14 +7,7 @@ afterEach(cleanup);
 
 describe('PaginationControls', () => {
   it('disables Previous on the first page', () => {
-    render(
-      <PaginationControls
-        page={0}
-        totalPages={3}
-        onPrevious={vi.fn()}
-        onNext={vi.fn()}
-      />
-    );
+    render(<PaginationControls page={0} totalPages={3} onPrevious={vi.fn()} onNext={vi.fn()} />);
 
     expect(screen.getByTestId('pagination-previous')).toBeDisabled();
     expect(screen.getByTestId('pagination-next')).toBeEnabled();
@@ -22,14 +15,7 @@ describe('PaginationControls', () => {
   });
 
   it('disables Next on the last page', () => {
-    render(
-      <PaginationControls
-        page={2}
-        totalPages={3}
-        onPrevious={vi.fn()}
-        onNext={vi.fn()}
-      />
-    );
+    render(<PaginationControls page={2} totalPages={3} onPrevious={vi.fn()} onNext={vi.fn()} />);
 
     expect(screen.getByTestId('pagination-previous')).toBeEnabled();
     expect(screen.getByTestId('pagination-next')).toBeDisabled();
@@ -41,14 +27,7 @@ describe('PaginationControls', () => {
     const onPrevious = vi.fn();
     const onNext = vi.fn();
 
-    render(
-      <PaginationControls
-        page={1}
-        totalPages={3}
-        onPrevious={onPrevious}
-        onNext={onNext}
-      />
-    );
+    render(<PaginationControls page={1} totalPages={3} onPrevious={onPrevious} onNext={onNext} />);
 
     await user.click(screen.getByTestId('pagination-previous'));
     await user.click(screen.getByTestId('pagination-next'));
@@ -59,13 +38,7 @@ describe('PaginationControls', () => {
 
   it('disables both buttons while loading', () => {
     render(
-      <PaginationControls
-        page={1}
-        totalPages={3}
-        loading
-        onPrevious={vi.fn()}
-        onNext={vi.fn()}
-      />
+      <PaginationControls page={1} totalPages={3} loading onPrevious={vi.fn()} onNext={vi.fn()} />
     );
 
     expect(screen.getByTestId('pagination-previous')).toBeDisabled();
@@ -73,14 +46,7 @@ describe('PaginationControls', () => {
   });
 
   it('shows Page 1 of 1 when totalPages is zero', () => {
-    render(
-      <PaginationControls
-        page={0}
-        totalPages={0}
-        onPrevious={vi.fn()}
-        onNext={vi.fn()}
-      />
-    );
+    render(<PaginationControls page={0} totalPages={0} onPrevious={vi.fn()} onNext={vi.fn()} />);
 
     expect(screen.getByText('Page 1 of 1')).toBeInTheDocument();
     expect(screen.queryByText(/NaN/)).not.toBeInTheDocument();

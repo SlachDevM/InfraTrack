@@ -2,7 +2,6 @@ import {
   DEFAULT_DASHBOARD_PREFERENCES,
   DEFAULT_WIDGET_ORDER,
   DASHBOARD_WIDGET_TYPES,
-  DASHBOARD_TREND_RANGES,
 } from '../constants/dashboardPreferences';
 import { DASHBOARD, getDashboardTrendRangeDays } from '../constants/dashboard';
 
@@ -30,7 +29,8 @@ export function normalizeDashboardPreferences(preferences) {
     showTrendWidget: preferences.showTrendWidget ?? true,
     showRecentActivityWidget: preferences.showRecentActivityWidget ?? true,
     showQuickNavigationWidget: preferences.showQuickNavigationWidget ?? true,
-    defaultTrendRange: preferences.defaultTrendRange ?? DEFAULT_DASHBOARD_PREFERENCES.defaultTrendRange,
+    defaultTrendRange:
+      preferences.defaultTrendRange ?? DEFAULT_DASHBOARD_PREFERENCES.defaultTrendRange,
     widgetOrder,
   };
 }

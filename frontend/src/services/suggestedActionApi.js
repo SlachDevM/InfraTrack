@@ -20,9 +20,7 @@ export const suggestedActionApi = {
       params.set('actionType', filters.actionType);
     }
     const query = params.toString();
-    const url = query
-      ? `${ENDPOINTS.LIST(inspectionId)}?${query}`
-      : ENDPOINTS.LIST(inspectionId);
+    const url = query ? `${ENDPOINTS.LIST(inspectionId)}?${query}` : ENDPOINTS.LIST(inspectionId);
     return apiClient.get(url);
   },
   get: (inspectionId, suggestedActionId) =>

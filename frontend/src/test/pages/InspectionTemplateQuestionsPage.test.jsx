@@ -182,7 +182,14 @@ describe('InspectionTemplateQuestionsPage', () => {
     inspectionTemplateApi.get.mockResolvedValue(draftTemplate);
     inspectionTemplateQuestionApi.list.mockResolvedValue(questions);
     unitOfMeasureApi.list.mockResolvedValue([
-      { id: 1, code: 'CELSIUS', symbol: '°C', name: 'Celsius', quantityType: 'TEMPERATURE', active: true },
+      {
+        id: 1,
+        code: 'CELSIUS',
+        symbol: '°C',
+        name: 'Celsius',
+        quantityType: 'TEMPERATURE',
+        active: true,
+      },
     ]);
     inspectionTemplateQuestionRuleApi.list.mockResolvedValue([]);
     window.confirm = vi.fn(() => true);
@@ -218,7 +225,9 @@ describe('InspectionTemplateQuestionsPage', () => {
       displayOrder: 3,
       active: true,
     });
-    inspectionTemplateQuestionApi.list.mockResolvedValueOnce(questions).mockResolvedValueOnce(questions);
+    inspectionTemplateQuestionApi.list
+      .mockResolvedValueOnce(questions)
+      .mockResolvedValueOnce(questions);
 
     renderPage();
     await screen.findByText('Is there any visible leak?');
@@ -441,14 +450,15 @@ describe('InspectionTemplateQuestionsPage', () => {
     await screen.findByText('Temperature reading');
     await user.click(screen.getAllByRole('button', { name: 'Manage Rules' })[2]);
 
-    expect(await screen.findByRole('heading', { name: /Manage Decision Rules/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: /Manage Decision Rules/i })
+    ).toBeInTheDocument();
     await user.type(screen.getByLabelText('Rule Code'), 'HIGH_TEMPERATURE');
     await user.type(screen.getByLabelText('Rule Name'), 'High temperature');
     await user.type(screen.getByLabelText('Comparison Value'), '90');
-    fireEvent.change(
-      screen.getByLabelText('Action Payload (JSON)'),
-      { target: { value: '{"severity":"HIGH","message":"Too hot"}' } }
-    );
+    fireEvent.change(screen.getByLabelText('Action Payload (JSON)'), {
+      target: { value: '{"severity":"HIGH","message":"Too hot"}' },
+    });
     await user.click(screen.getByRole('button', { name: 'Add Rule' }));
 
     await waitFor(() => {
@@ -473,7 +483,9 @@ describe('InspectionTemplateQuestionsPage', () => {
     await screen.findByText('Is there any visible leak?');
     await user.click(screen.getAllByRole('button', { name: 'Manage Rules' })[0]);
 
-    expect(await screen.findByRole('heading', { name: /Manage Decision Rules/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: /Manage Decision Rules/i })
+    ).toBeInTheDocument();
     const operatorSelect = screen.getByLabelText('Operator');
     expect(Array.from(operatorSelect.options).map((option) => option.value)).toEqual([
       'IS_TRUE',
@@ -490,8 +502,12 @@ describe('InspectionTemplateQuestionsPage', () => {
     await screen.findByText('Temperature reading');
     await user.click(screen.getAllByRole('button', { name: 'Manage Rules' })[2]);
 
-    expect(await screen.findByRole('heading', { name: /Manage Decision Rules/i })).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Action Payload (JSON)'), { target: { value: '{invalid' } });
+    expect(
+      await screen.findByRole('heading', { name: /Manage Decision Rules/i })
+    ).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Action Payload (JSON)'), {
+      target: { value: '{invalid' },
+    });
     expect(await screen.findByText(/valid JSON/i)).toBeInTheDocument();
     expect(inspectionTemplateQuestionRuleApi.create).not.toHaveBeenCalled();
   });

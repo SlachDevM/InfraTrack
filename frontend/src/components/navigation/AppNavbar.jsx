@@ -5,10 +5,7 @@ import NavigationMoreMenu from './NavigationMoreMenu';
 import { canManageUsers } from '../../constants/userRoles';
 import { ROUTES } from '../../constants/routes';
 import { COMMON_LABELS } from '../../constants/uiLabels';
-import {
-  getOverflowNavigationItems,
-  getPrimaryNavigationItems,
-} from '../../constants/navigation';
+import { getOverflowNavigationItems, getPrimaryNavigationItems } from '../../constants/navigation';
 
 export default function AppNavbar({ onNavigate, onLogout }) {
   const { auth } = useAuth();
@@ -36,10 +33,7 @@ export default function AppNavbar({ onNavigate, onLogout }) {
             {item.label}
           </button>
         ))}
-        <NavigationMoreMenu
-          items={overflowNavigationItems}
-          onNavigate={onNavigate}
-        />
+        <NavigationMoreMenu items={overflowNavigationItems} onNavigate={onNavigate} />
         <NotificationButton />
         <button type="button" className="navbar-link logout" onClick={onLogout}>
           {COMMON_LABELS.LOGOUT}

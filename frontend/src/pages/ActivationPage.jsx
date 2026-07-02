@@ -70,8 +70,8 @@ export default function ActivationPage() {
             <h1>Activate Account</h1>
           </div>
           <div className="error-message">
-            This activation link is invalid or missing a token. Please contact an administrator
-            to request a new invitation.
+            This activation link is invalid or missing a token. Please contact an administrator to
+            request a new invitation.
           </div>
           <p className="activation-footer">
             <Link to={ROUTES.LOGIN}>Back to Login</Link>

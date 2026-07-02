@@ -1,14 +1,20 @@
 {
   "name": "infratrack-frontend",
-  "version": "1.0.1",
+  "version": "2.0.1",
   "private": true,
+  "engines": {
+    "node": ">=22 <23"
+  },
   "scripts": {
     "start": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "lint": "eslint .",
+    "format": "prettier \"src/**/*.{js,jsx,css}\" --write",
+    "format:check": "prettier \"src/**/*.{js,jsx,css}\" --check"
   },
   "dependencies": {
     "react": "^19.0.0",
@@ -16,13 +22,21 @@
     "react-router-dom": "^6.20.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.49.1",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@testing-library/user-event": "^14.5.2",
     "@vitejs/plugin-react": "^4.3.1",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^17.7.0",
     "jsdom": "^25.0.1",
+    "prettier": "^3.9.4",
     "vite": "^5.4.0",
     "vitest": "^2.1.8"
   }

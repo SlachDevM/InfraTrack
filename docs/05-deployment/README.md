@@ -27,6 +27,8 @@ Operational deployment, security, and maintenance guides for InfraTrack.
 
 The default local stack uses `docker-compose.yml` with the `dev` Spring profile.
 
+The frontend image build stage uses **Node.js 22** (same as CI and local frontend development). See `frontend/.nvmrc` when working outside Docker.
+
 ### Start
 
 ```bash

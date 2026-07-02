@@ -28,9 +28,7 @@ describe('AssignWorkOrderForm', () => {
           workType: 'INTERNAL_MAINTENANCE',
           description: 'Replace chain',
         }}
-        eligibleAssignees={[
-          { id: 20, name: 'Alex Field', role: 'FIELD_EMPLOYEE' },
-        ]}
+        eligibleAssignees={[{ id: 20, name: 'Alex Field', role: 'FIELD_EMPLOYEE' }]}
         assigning={false}
         onChange={vi.fn()}
         onSubmit={onSubmit}

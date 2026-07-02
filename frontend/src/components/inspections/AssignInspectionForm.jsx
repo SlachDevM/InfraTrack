@@ -1,7 +1,5 @@
 import { getBusinessTriggerTypeLabel } from '../../constants/businessTriggerTypes';
-import {
-  INSPECTION_PRIORITY_OPTIONS,
-} from '../../constants/inspectionPriorities';
+import { INSPECTION_PRIORITY_OPTIONS } from '../../constants/inspectionPriorities';
 
 export default function AssignInspectionForm({
   formData,
@@ -128,10 +126,14 @@ export default function AssignInspectionForm({
         </button>
       </form>
       {triggers.length === 0 && (
-        <p className="read-only-note">Create at least one business trigger before assigning an inspection.</p>
+        <p className="read-only-note">
+          Create at least one business trigger before assigning an inspection.
+        </p>
       )}
       {workers.length === 0 && (
-        <p className="read-only-note">No active field employees in your department are available for assignment.</p>
+        <p className="read-only-note">
+          No active field employees in your department are available for assignment.
+        </p>
       )}
     </section>
   );

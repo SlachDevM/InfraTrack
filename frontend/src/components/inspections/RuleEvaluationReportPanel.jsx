@@ -49,7 +49,10 @@ export default function RuleEvaluationReportPanel({ inspectionId, assetName }) {
 
   if (loading) {
     return (
-      <div className="rule-evaluation-panel loading" data-testid={`rule-report-loading-${inspectionId}`}>
+      <div
+        className="rule-evaluation-panel loading"
+        data-testid={`rule-report-loading-${inspectionId}`}
+      >
         Loading rule evaluation report...
       </div>
     );
@@ -57,7 +60,10 @@ export default function RuleEvaluationReportPanel({ inspectionId, assetName }) {
 
   if (error) {
     return (
-      <div className="rule-evaluation-panel error" data-testid={`rule-report-error-${inspectionId}`}>
+      <div
+        className="rule-evaluation-panel error"
+        data-testid={`rule-report-error-${inspectionId}`}
+      >
         {error}
       </div>
     );

@@ -38,6 +38,16 @@ The authoritative version history is [Platform Version History](../06-release-no
 
 - **1.0.1** — Platform hardening after V1 core delivery
 - **2.0.1** — Security and quality hardening after Version 2.0.0
+- **2.1.0** — Dashboard and Operations Intelligence (validated foundation)
+- **2.2.x** — Mobile API and CSV reporting foundations (validated; Android client deferred)
+
+---
+
+## Artifact and build versions
+
+Maven (`backend/pom.xml`), npm (`frontend/package.json`), and the OpenAPI `info.version` field align with the **current validated product version** in [Platform Version History](../06-release-notes/platform-version-history.md).
+
+Product semver remains the authoritative description of **business capability**. Artifact versions track the same validated release for build metadata, deployment labels, and operator diagnostics — not a separate versioning lifecycle.
 
 ---
 
@@ -67,7 +77,7 @@ Historical sprint reports (for example [v2-phase-a-b.md](../06-release-notes/v2-
 
 | Context | Preferred reference |
 |---------|---------------------|
-| Delivered product capability | Version 2.0.0, Version 2.0.1 |
+| Delivered product capability | Version 2.0.0, Version 2.0.1, Version 2.1.0, Version 2.2.x foundations |
 | Future planning | Version 2.1.0+ (see roadmap) |
 | Historical engineering record | Phase A, Sprint B4 (inside sprint reports only) |
 | Domain implementation detail | Domain Engine sprint sections (A2.x, B3, etc.) |

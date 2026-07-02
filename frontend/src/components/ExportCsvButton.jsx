@@ -7,10 +7,14 @@ import { COMMON_MESSAGES } from '../constants/messages';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
 
 const EXPORT_HANDLERS = {
-  [REPORTING_EXPORT_TYPES.ASSETS]: (token, params) => reportingExportApi.exportAssets(token, params),
-  [REPORTING_EXPORT_TYPES.INSPECTIONS]: (token, params) => reportingExportApi.exportInspections(token, params),
-  [REPORTING_EXPORT_TYPES.ISSUES]: (token, params) => reportingExportApi.exportIssues(token, params),
-  [REPORTING_EXPORT_TYPES.WORK_ORDERS]: (token, params) => reportingExportApi.exportWorkOrders(token, params),
+  [REPORTING_EXPORT_TYPES.ASSETS]: (token, params) =>
+    reportingExportApi.exportAssets(token, params),
+  [REPORTING_EXPORT_TYPES.INSPECTIONS]: (token, params) =>
+    reportingExportApi.exportInspections(token, params),
+  [REPORTING_EXPORT_TYPES.ISSUES]: (token, params) =>
+    reportingExportApi.exportIssues(token, params),
+  [REPORTING_EXPORT_TYPES.WORK_ORDERS]: (token, params) =>
+    reportingExportApi.exportWorkOrders(token, params),
   [REPORTING_EXPORT_TYPES.PREVENTIVE_CANDIDATES]: (token, params) =>
     reportingExportApi.exportPreventiveCandidates(token, params),
 };

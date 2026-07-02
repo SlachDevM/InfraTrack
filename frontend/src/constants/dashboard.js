@@ -11,6 +11,8 @@ export const DASHBOARD = {
 };
 
 export function getDashboardTrendRangeDays(rangeKey) {
-  return DASHBOARD.TREND_RANGE_DAYS[rangeKey]
-    ?? DASHBOARD.TREND_RANGE_DAYS[DASHBOARD_TREND_RANGES.LAST_30_DAYS];
+  return (
+    DASHBOARD.TREND_RANGE_DAYS[rangeKey] ??
+    DASHBOARD.TREND_RANGE_DAYS[DASHBOARD_TREND_RANGES.LAST_30_DAYS]
+  );
 }

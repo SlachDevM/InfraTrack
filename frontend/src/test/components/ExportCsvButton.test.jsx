@@ -62,7 +62,9 @@ describe('ExportCsvButton', () => {
     await user.click(screen.getByRole('button', { name: 'Export CSV' }));
 
     await waitFor(() => {
-      expect(onError).toHaveBeenCalledWith('You do not have permission to export operational data.');
+      expect(onError).toHaveBeenCalledWith(
+        'You do not have permission to export operational data.'
+      );
     });
   });
 });

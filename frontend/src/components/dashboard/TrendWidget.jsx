@@ -11,7 +11,7 @@ const TREND_SERIES = [
 
 export default function TrendWidget({ trends, loading, error }) {
   const hasSeries = Boolean(
-    trends?.series && TREND_SERIES.some(({ key }) => trends.series[key]?.length),
+    trends?.series && TREND_SERIES.some(({ key }) => trends.series[key]?.length)
   );
 
   return (
@@ -27,11 +27,7 @@ export default function TrendWidget({ trends, loading, error }) {
       {hasSeries && (
         <div className="dashboard-trend-grid">
           {TREND_SERIES.map(({ key, title }) => (
-            <TrendMiniChart
-              key={key}
-              title={title}
-              dataPoints={trends.series[key]}
-            />
+            <TrendMiniChart key={key} title={title} dataPoints={trends.series[key]} />
           ))}
         </div>
       )}

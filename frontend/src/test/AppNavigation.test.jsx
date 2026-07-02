@@ -39,14 +39,7 @@ function renderProtectedRoute(initialEntry, page) {
   render(
     <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
-        <Route
-          path={initialEntry}
-          element={
-            <PrivateRoute>
-              {page}
-            </PrivateRoute>
-          }
-        />
+        <Route path={initialEntry} element={<PrivateRoute>{page}</PrivateRoute>} />
       </Routes>
     </MemoryRouter>
   );

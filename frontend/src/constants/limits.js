@@ -1,7 +1,4 @@
-import {
-  PASSWORD_MIN_LENGTH,
-  PASSWORD_MAX_LENGTH,
-} from './passwordPolicy';
+import { PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH } from './passwordPolicy';
 
 export const FIELD_LIMITS = {
   PASSWORD_MIN_LENGTH,

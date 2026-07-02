@@ -18,7 +18,11 @@ import ExportCsvButton from '../components/ExportCsvButton';
 import { ROUTES } from '../constants/routes';
 import { HTTP_STATUS } from '../constants/httpStatus';
 import { REPORTING_EXPORT_TYPES } from '../constants/reportingExports';
-import { canRegisterAssets, canUploadOperationalDocuments, canExportReporting } from '../constants/userRoles';
+import {
+  canRegisterAssets,
+  canUploadOperationalDocuments,
+  canExportReporting,
+} from '../constants/userRoles';
 import { ASSET_STATUSES } from '../constants/assetStatuses';
 import {
   getApiErrorMessage,
@@ -26,21 +30,13 @@ import {
   isForbidden,
   isUploadAuthorizationError,
 } from '../utils/apiError';
-import {
-  DEFAULT_PAGE,
-  getPageNumber,
-  getTotalPages,
-  unwrapPageContent,
-} from '../utils/pagination';
+import { DEFAULT_PAGE, getPageNumber, getTotalPages, unwrapPageContent } from '../utils/pagination';
 import '../styles/ReferenceDataPage.css';
 import '../styles/AssetsPage.css';
 import '../styles/UserManagementPage.css';
 
 function appendRequestPart(formData, name, value) {
-  formData.append(
-    name,
-    new Blob([JSON.stringify(value)], { type: 'application/json' }),
-  );
+  formData.append(name, new Blob([JSON.stringify(value)], { type: 'application/json' }));
 }
 
 function todayIsoDate() {
@@ -194,7 +190,9 @@ export default function AssetsPage() {
       await loadPageData();
     } catch (err) {
       if (isConflict(err)) {
-        setError('A possible duplicate asset already exists with the same name, department and category.');
+        setError(
+          'A possible duplicate asset already exists with the same name, department and category.'
+        );
       } else if (isForbidden(err)) {
         setError(getApiErrorMessage(err, 'You do not have permission to register this asset.'));
       } else {
@@ -213,7 +211,7 @@ export default function AssetsPage() {
   const loadAssetDetails = async (
     assetId,
     historyPageIndex = DEFAULT_PAGE,
-    documentsPageIndex = DEFAULT_PAGE,
+    documentsPageIndex = DEFAULT_PAGE
   ) => {
     try {
       setHistoryLoading(true);
@@ -251,7 +249,8 @@ export default function AssetsPage() {
     let cancelled = false;
     setEligibleOwnersLoading(true);
     setEligibleOwnersError(null);
-    operationalDocumentApi.listEligibleOwners(Number(selectedAssetId), documentForm.ownerType)
+    operationalDocumentApi
+      .listEligibleOwners(Number(selectedAssetId), documentForm.ownerType)
       .then((owners) => {
         if (!cancelled) {
           setEligibleOwners(owners);
@@ -324,7 +323,12 @@ export default function AssetsPage() {
 
   const handleDocumentUpload = async (e) => {
     e.preventDefault();
-    if (!canUploadDocuments || !selectedAssetId || !documentForm.file || !documentForm.documentType) {
+    if (
+      !canUploadDocuments ||
+      !selectedAssetId ||
+      !documentForm.file ||
+      !documentForm.documentType
+    ) {
       return;
     }
     if (documentForm.ownerType && !selectedOwnerId) {
@@ -358,7 +362,7 @@ export default function AssetsPage() {
       setEligibleOwnersError(null);
       const documentsPageResponse = await operationalDocumentApi.list(
         Number(selectedAssetId),
-        documentsPage,
+        documentsPage
       );
       setAssetDocuments(unwrapPageContent(documentsPageResponse));
       setDocumentsPage(getPageNumber(documentsPageResponse, documentsPage));
@@ -423,7 +427,7 @@ export default function AssetsPage() {
 
       const documentsPageResponse = await operationalDocumentApi.list(
         Number(selectedAssetId),
-        pageToLoad,
+        pageToLoad
       );
       setAssetDocuments(unwrapPageContent(documentsPageResponse));
       setDocumentsPage(getPageNumber(documentsPageResponse, pageToLoad));
@@ -449,9 +453,7 @@ export default function AssetsPage() {
     }
   };
 
-  const selectedAsset = assets.find(
-    (asset) => String(asset.id) === String(selectedAssetId)
-  );
+  const selectedAsset = assets.find((asset) => String(asset.id) === String(selectedAssetId));
 
   if (loading) {
     return <div className="loading">Loading assets...</div>;
@@ -472,7 +474,9 @@ export default function AssetsPage() {
         <h1>Assets</h1>
         <div className="user-header-actions">
           <NotificationButton />
-          {canExport && <ExportCsvButton exportType={REPORTING_EXPORT_TYPES.ASSETS} onError={setError} />}
+          {canExport && (
+            <ExportCsvButton exportType={REPORTING_EXPORT_TYPES.ASSETS} onError={setError} />
+          )}
           <button type="button" className="logout-btn" onClick={handleLogout}>
             Logout
           </button>
@@ -517,7 +521,9 @@ export default function AssetsPage() {
           historyPage={historyPage}
           historyTotalPages={historyTotalPages}
           onAssetChange={handleAssetHistoryChange}
-          onHistoryPrevious={() => loadAssetDetails(selectedAssetId, historyPage - 1, documentsPage)}
+          onHistoryPrevious={() =>
+            loadAssetDetails(selectedAssetId, historyPage - 1, documentsPage)
+          }
           onHistoryNext={() => loadAssetDetails(selectedAssetId, historyPage + 1, documentsPage)}
         />
 
@@ -540,7 +546,9 @@ export default function AssetsPage() {
           onUpload={handleDocumentUpload}
           onDownload={handleDocumentDownload}
           onDeleteClick={handleDocumentDeleteClick}
-          onDocumentsPrevious={() => loadAssetDetails(selectedAssetId, historyPage, documentsPage - 1)}
+          onDocumentsPrevious={() =>
+            loadAssetDetails(selectedAssetId, historyPage, documentsPage - 1)
+          }
           onDocumentsNext={() => loadAssetDetails(selectedAssetId, historyPage, documentsPage + 1)}
         />
       </main>

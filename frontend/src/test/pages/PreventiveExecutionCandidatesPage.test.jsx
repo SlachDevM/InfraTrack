@@ -142,7 +142,9 @@ const candidate = {
 
 const assets = [{ id: 5, name: 'Pump A', departmentId: 10 }];
 const plans = [{ id: 100, planCode: 'PUMP_MONTHLY', name: 'Monthly Pump Inspection' }];
-const workers = [{ id: 60, name: 'Field Worker', role: 'FIELD_EMPLOYEE', status: 'ACTIVE', departmentId: 10 }];
+const workers = [
+  { id: 60, name: 'Field Worker', role: 'FIELD_EMPLOYEE', status: 'ACTIVE', departmentId: 10 },
+];
 
 describe('PreventiveExecutionCandidatesPage', () => {
   afterEach(cleanup);
@@ -371,7 +373,9 @@ describe('PreventiveExecutionCandidatesPage', () => {
 
     const reportDetail = screen.getByText('Report Status').closest('dl');
     expect(within(reportDetail).getByText('Inspection created')).toBeInTheDocument();
-    expect(within(reportDetail).getByRole('link', { name: /Inspection #900/i })).toBeInTheDocument();
+    expect(
+      within(reportDetail).getByRole('link', { name: /Inspection #900/i })
+    ).toBeInTheDocument();
   });
 
   it('shows rejected report with decision reason', async () => {
@@ -413,12 +417,14 @@ describe('PreventiveExecutionCandidatesPage', () => {
   });
 
   it('displays nextEligibleAt when present', async () => {
-    preventiveExecutionCandidateApi.list.mockResolvedValue(pageResponse([
-      {
-        ...candidate,
-        nextEligibleAt: 1712678400000,
-      },
-    ]));
+    preventiveExecutionCandidateApi.list.mockResolvedValue(
+      pageResponse([
+        {
+          ...candidate,
+          nextEligibleAt: 1712678400000,
+        },
+      ])
+    );
 
     render(
       <MemoryRouter>
@@ -466,7 +472,9 @@ describe('PreventiveExecutionCandidatesPage', () => {
         notes: 'Monthly preventive check',
       });
     });
-    expect(await screen.findByText(/Candidate approved and inspection created/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Candidate approved and inspection created/i)
+    ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Execute' })).not.toBeInTheDocument();
   });
 
@@ -511,7 +519,7 @@ describe('PreventiveExecutionCandidatesPage', () => {
         500,
         expect.objectContaining({
           assigneeId: 60,
-        }),
+        })
       );
     });
 

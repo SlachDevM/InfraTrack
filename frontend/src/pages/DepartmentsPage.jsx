@@ -87,79 +87,79 @@ export default function DepartmentsPage() {
 
   return (
     <ReferenceDataLayout title="Departments">
-        {error && <div className="error-message">{error}</div>}
+      {error && <div className="error-message">{error}</div>}
 
-        {!isAdministrator && (
-          <p className="read-only-note">
-            Reference data is read-only. Administrators can create and manage departments.
-          </p>
-        )}
+      {!isAdministrator && (
+        <p className="read-only-note">
+          Reference data is read-only. Administrators can create and manage departments.
+        </p>
+      )}
 
-        {isAdministrator && (
-          <form className="reference-form" onSubmit={handleSubmit}>
-            <input
-              type="text"
-              placeholder={editingId ? 'Edit department name' : 'New department name'}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              disabled={submitting}
-            />
-            <button type="submit" className="btn-primary" disabled={submitting}>
-              {editingId ? 'Update' : 'Add'}
+      {isAdministrator && (
+        <form className="reference-form" onSubmit={handleSubmit}>
+          <input
+            type="text"
+            placeholder={editingId ? 'Edit department name' : 'New department name'}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            disabled={submitting}
+          />
+          <button type="submit" className="btn-primary" disabled={submitting}>
+            {editingId ? 'Update' : 'Add'}
+          </button>
+          {editingId && (
+            <button
+              type="button"
+              className="btn-cancel"
+              onClick={() => {
+                setEditingId(null);
+                setName('');
+              }}
+            >
+              Cancel
             </button>
-            {editingId && (
-              <button
-                type="button"
-                className="btn-cancel"
-                onClick={() => {
-                  setEditingId(null);
-                  setName('');
-                }}
-              >
-                Cancel
-              </button>
-            )}
-          </form>
-        )}
+          )}
+        </form>
+      )}
 
-        {departments.length === 0 ? (
-          <p className="no-items">No departments yet.</p>
-        ) : (
-          <table className="reference-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                {isAdministrator && <th>Actions</th>}
+      {departments.length === 0 ? (
+        <p className="no-items">No departments yet.</p>
+      ) : (
+        <table className="reference-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              {isAdministrator && <th>Actions</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {departments.map((department) => (
+              <tr key={department.id}>
+                <td>{department.name}</td>
+                {isAdministrator && (
+                  <td className="actions-cell">
+                    <button
+                      type="button"
+                      className="action-btn edit-btn"
+                      onClick={() => handleEdit(department)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className="action-btn delete-btn"
+                      onClick={() => handleDelete(department.id)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                )}
               </tr>
-            </thead>
-            <tbody>
-              {departments.map((department) => (
-                <tr key={department.id}>
-                  <td>{department.name}</td>
-                  {isAdministrator && (
-                    <td className="actions-cell">
-                      <button
-                        type="button"
-                        className="action-btn edit-btn"
-                        onClick={() => handleEdit(department)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="action-btn delete-btn"
-                        onClick={() => handleDelete(department.id)}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+            ))}
+          </tbody>
+        </table>
+      )}
     </ReferenceDataLayout>
   );
 }

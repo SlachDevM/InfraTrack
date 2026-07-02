@@ -27,9 +27,9 @@ export function canManageUsers(role) {
 
 export function canViewInspectionTemplates(role) {
   return (
-    role === USER_ROLES.ADMINISTRATOR
-    || role === USER_ROLES.MANAGER
-    || role === USER_ROLES.OPERATIONAL_COORDINATOR
+    role === USER_ROLES.ADMINISTRATOR ||
+    role === USER_ROLES.MANAGER ||
+    role === USER_ROLES.OPERATIONAL_COORDINATOR
   );
 }
 
@@ -39,9 +39,9 @@ export function canManageInspectionTemplates(role) {
 
 export function canViewPreventiveMaintenancePlans(role) {
   return (
-    role === USER_ROLES.ADMINISTRATOR
-    || role === USER_ROLES.MANAGER
-    || role === USER_ROLES.OPERATIONAL_COORDINATOR
+    role === USER_ROLES.ADMINISTRATOR ||
+    role === USER_ROLES.MANAGER ||
+    role === USER_ROLES.OPERATIONAL_COORDINATOR
   );
 }
 
@@ -51,9 +51,9 @@ export function canManagePreventiveMaintenancePlans(role) {
 
 export function canViewPreventiveExecutionCandidates(role) {
   return (
-    role === USER_ROLES.ADMINISTRATOR
-    || role === USER_ROLES.MANAGER
-    || role === USER_ROLES.OPERATIONAL_COORDINATOR
+    role === USER_ROLES.ADMINISTRATOR ||
+    role === USER_ROLES.MANAGER ||
+    role === USER_ROLES.OPERATIONAL_COORDINATOR
   );
 }
 
@@ -67,17 +67,17 @@ export function canReviewPreventiveExecutionCandidates(role) {
 
 export function canViewPreventiveScheduler(role) {
   return (
-    role === USER_ROLES.ADMINISTRATOR
-    || role === USER_ROLES.MANAGER
-    || role === USER_ROLES.OPERATIONAL_COORDINATOR
+    role === USER_ROLES.ADMINISTRATOR ||
+    role === USER_ROLES.MANAGER ||
+    role === USER_ROLES.OPERATIONAL_COORDINATOR
   );
 }
 
 export function canViewOperationsDashboard(role) {
   return (
-    role === USER_ROLES.ADMINISTRATOR
-    || role === USER_ROLES.MANAGER
-    || role === USER_ROLES.OPERATIONAL_COORDINATOR
+    role === USER_ROLES.ADMINISTRATOR ||
+    role === USER_ROLES.MANAGER ||
+    role === USER_ROLES.OPERATIONAL_COORDINATOR
   );
 }
 
@@ -96,8 +96,7 @@ export function canRegisterAssets(role) {
 
   const normalisedRole = String(role).trim().toUpperCase();
   return (
-    normalisedRole === USER_ROLES.MANAGER
-    || normalisedRole === USER_ROLES.OPERATIONAL_COORDINATOR
+    normalisedRole === USER_ROLES.MANAGER || normalisedRole === USER_ROLES.OPERATIONAL_COORDINATOR
   );
 }
 
@@ -147,10 +146,10 @@ export function canRecordCompletionReview(role) {
 
 export function canUploadOperationalDocuments(role) {
   return (
-    role === USER_ROLES.MANAGER
-    || role === USER_ROLES.OPERATIONAL_COORDINATOR
-    || role === USER_ROLES.FIELD_EMPLOYEE
-    || role === USER_ROLES.CONTRACTOR
+    role === USER_ROLES.MANAGER ||
+    role === USER_ROLES.OPERATIONAL_COORDINATOR ||
+    role === USER_ROLES.FIELD_EMPLOYEE ||
+    role === USER_ROLES.CONTRACTOR
   );
 }
 

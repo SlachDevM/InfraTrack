@@ -73,20 +73,24 @@ describe('BusinessTriggersPage', () => {
   });
 
   it('renders with mocked trigger and asset data', async () => {
-    businessTriggerApi.list.mockResolvedValue(pageResponse([
-      {
-        id: 1,
-        assetName: 'Central Playground',
-        type: 'CUSTOMER_REQUEST',
-        reason: 'Reported damage',
-        urgent: false,
-        createdAt: '2026-06-01T09:00:00',
-      },
-    ]));
-    assetApi.list.mockResolvedValue(pageResponse([
-      { id: 10, name: 'Central Playground', departmentId: 1, departmentName: 'Parks' },
-      { id: 11, name: 'Other Asset', departmentId: 2, departmentName: 'Roads' },
-    ]));
+    businessTriggerApi.list.mockResolvedValue(
+      pageResponse([
+        {
+          id: 1,
+          assetName: 'Central Playground',
+          type: 'CUSTOMER_REQUEST',
+          reason: 'Reported damage',
+          urgent: false,
+          createdAt: '2026-06-01T09:00:00',
+        },
+      ])
+    );
+    assetApi.list.mockResolvedValue(
+      pageResponse([
+        { id: 10, name: 'Central Playground', departmentId: 1, departmentName: 'Parks' },
+        { id: 11, name: 'Other Asset', departmentId: 2, departmentName: 'Roads' },
+      ])
+    );
 
     render(
       <MemoryRouter>
@@ -113,10 +117,12 @@ describe('BusinessTriggersPage', () => {
 
   it('shows no assignable assets when department id is unavailable', async () => {
     userApi.getCurrentUser.mockResolvedValue({});
-    assetApi.list.mockResolvedValue(pageResponse([
-      { id: 10, name: 'Central Playground', departmentId: 1, departmentName: 'Parks' },
-      { id: 11, name: 'Other Asset', departmentId: 2, departmentName: 'Roads' },
-    ]));
+    assetApi.list.mockResolvedValue(
+      pageResponse([
+        { id: 10, name: 'Central Playground', departmentId: 1, departmentName: 'Parks' },
+        { id: 11, name: 'Other Asset', departmentId: 2, departmentName: 'Roads' },
+      ])
+    );
 
     render(
       <MemoryRouter>
@@ -125,7 +131,9 @@ describe('BusinessTriggersPage', () => {
     );
 
     expect(await screen.findByText(/no assets in your department/i)).toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: 'Central Playground (Parks)' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('option', { name: 'Central Playground (Parks)' })
+    ).not.toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'Other Asset (Roads)' })).not.toBeInTheDocument();
   });
 
@@ -147,16 +155,22 @@ describe('BusinessTriggersPage', () => {
   });
 
   it('loads the first page on initial render', async () => {
-    businessTriggerApi.list.mockResolvedValue(pageResponse([
-      {
-        id: 1,
-        assetName: 'Page One Asset',
-        type: 'CUSTOMER_REQUEST',
-        reason: 'First page trigger',
-        urgent: false,
-        createdAt: '2026-06-01T09:00:00',
-      },
-    ], 0, 2));
+    businessTriggerApi.list.mockResolvedValue(
+      pageResponse(
+        [
+          {
+            id: 1,
+            assetName: 'Page One Asset',
+            type: 'CUSTOMER_REQUEST',
+            reason: 'First page trigger',
+            urgent: false,
+            createdAt: '2026-06-01T09:00:00',
+          },
+        ],
+        0,
+        2
+      )
+    );
 
     render(
       <MemoryRouter>
@@ -172,27 +186,39 @@ describe('BusinessTriggersPage', () => {
     const user = userEvent.setup();
     businessTriggerApi.list.mockImplementation((page = 0) => {
       if (page === 0) {
-        return Promise.resolve(pageResponse([
-          {
-            id: 1,
-            assetName: 'Page One Asset',
-            type: 'CUSTOMER_REQUEST',
-            reason: 'First page trigger',
-            urgent: false,
-            createdAt: '2026-06-01T09:00:00',
-          },
-        ], 0, 2));
+        return Promise.resolve(
+          pageResponse(
+            [
+              {
+                id: 1,
+                assetName: 'Page One Asset',
+                type: 'CUSTOMER_REQUEST',
+                reason: 'First page trigger',
+                urgent: false,
+                createdAt: '2026-06-01T09:00:00',
+              },
+            ],
+            0,
+            2
+          )
+        );
       }
-      return Promise.resolve(pageResponse([
-        {
-          id: 2,
-          assetName: 'Page Two Asset',
-          type: 'CUSTOMER_REQUEST',
-          reason: 'Second page trigger',
-          urgent: false,
-          createdAt: '2026-06-02T09:00:00',
-        },
-      ], 1, 2));
+      return Promise.resolve(
+        pageResponse(
+          [
+            {
+              id: 2,
+              assetName: 'Page Two Asset',
+              type: 'CUSTOMER_REQUEST',
+              reason: 'Second page trigger',
+              urgent: false,
+              createdAt: '2026-06-02T09:00:00',
+            },
+          ],
+          1,
+          2
+        )
+      );
     });
 
     render(
@@ -214,27 +240,39 @@ describe('BusinessTriggersPage', () => {
     const user = userEvent.setup();
     businessTriggerApi.list.mockImplementation((page = 0) => {
       if (page === 0) {
-        return Promise.resolve(pageResponse([
-          {
-            id: 1,
-            assetName: 'Page One Asset',
-            type: 'CUSTOMER_REQUEST',
-            reason: 'First page trigger',
-            urgent: false,
-            createdAt: '2026-06-01T09:00:00',
-          },
-        ], 0, 2));
+        return Promise.resolve(
+          pageResponse(
+            [
+              {
+                id: 1,
+                assetName: 'Page One Asset',
+                type: 'CUSTOMER_REQUEST',
+                reason: 'First page trigger',
+                urgent: false,
+                createdAt: '2026-06-01T09:00:00',
+              },
+            ],
+            0,
+            2
+          )
+        );
       }
-      return Promise.resolve(pageResponse([
-        {
-          id: 2,
-          assetName: 'Page Two Asset',
-          type: 'CUSTOMER_REQUEST',
-          reason: 'Second page trigger',
-          urgent: false,
-          createdAt: '2026-06-02T09:00:00',
-        },
-      ], 1, 2));
+      return Promise.resolve(
+        pageResponse(
+          [
+            {
+              id: 2,
+              assetName: 'Page Two Asset',
+              type: 'CUSTOMER_REQUEST',
+              reason: 'Second page trigger',
+              urgent: false,
+              createdAt: '2026-06-02T09:00:00',
+            },
+          ],
+          1,
+          2
+        )
+      );
     });
 
     render(

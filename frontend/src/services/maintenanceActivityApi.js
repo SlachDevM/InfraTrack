@@ -7,7 +7,8 @@ const ENDPOINTS = {
 
 export const maintenanceActivityApi = {
   list: () => apiClient.get(ENDPOINTS.LIST),
-  listEligibleForCompletionReview: () => apiClient.get(`${ENDPOINTS.LIST}?eligibleForCompletionReview=true`),
+  listEligibleForCompletionReview: () =>
+    apiClient.get(`${ENDPOINTS.LIST}?eligibleForCompletionReview=true`),
   recordCompletionReview: (id, request) => apiClient.post(ENDPOINTS.COMPLETION_REVIEW(id), request),
 };
 

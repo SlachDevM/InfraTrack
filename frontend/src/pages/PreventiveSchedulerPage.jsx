@@ -5,22 +5,14 @@ import apiClient from '../services/apiClient';
 import preventiveSchedulerApi from '../services/preventiveSchedulerApi';
 import ReferenceDataLayout from '../components/layout/ReferenceDataLayout';
 import PaginationControls from '../components/PaginationControls';
-import {
-  canRunPreventiveScheduler,
-  canViewPreventiveScheduler,
-} from '../constants/userRoles';
+import { canRunPreventiveScheduler, canViewPreventiveScheduler } from '../constants/userRoles';
 import { ROUTES } from '../constants/routes';
 import {
   getSchedulerRunStatusLabel,
   getSchedulerTriggeredByLabel,
 } from '../constants/schedulerRunStatuses';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
-import {
-  DEFAULT_PAGE,
-  getPageNumber,
-  getTotalPages,
-  unwrapPageContent,
-} from '../utils/pagination';
+import { DEFAULT_PAGE, getPageNumber, getTotalPages, unwrapPageContent } from '../utils/pagination';
 
 function formatTimestamp(timestamp) {
   if (!timestamp) {
@@ -97,9 +89,9 @@ export default function PreventiveSchedulerPage() {
       const result = await preventiveSchedulerApi.run();
       setLastRunResult(result);
       setSuccess(
-        `Scheduler run complete: ${result.candidatesCreatedCount} created, `
-        + `${result.candidatesSkippedDuplicateCount} skipped, `
-        + `${result.plansNotEligibleCount} not eligible.`
+        `Scheduler run complete: ${result.candidatesCreatedCount} created, ` +
+          `${result.candidatesSkippedDuplicateCount} skipped, ` +
+          `${result.plansNotEligibleCount} not eligible.`
       );
       await loadRuns(DEFAULT_PAGE);
       setSelectedRun(null);
@@ -133,31 +125,24 @@ export default function PreventiveSchedulerPage() {
 
   return (
     <ReferenceDataLayout title="Preventive Scheduler">
-        {error && <div className="error-message">{error}</div>}
-        {success && <div className="success-message">{success}</div>}
+      {error && <div className="error-message">{error}</div>}
+      {success && <div className="success-message">{success}</div>}
 
-        <section className="reference-form-section">
+      <section className="reference-form-section">
         <div className="section-header">
           <h2>Scheduler Status</h2>
           {canRun && (
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={handleRun}
-              disabled={running}
-            >
+            <button type="button" className="btn-primary" onClick={handleRun} disabled={running}>
               {running ? 'Running...' : 'Run Scheduler'}
             </button>
           )}
         </div>
         <p>
-          Scheduled execution:
-          {' '}
-          <strong>{schedulerEnabled ? 'Enabled' : 'Disabled'}</strong>
+          Scheduled execution: <strong>{schedulerEnabled ? 'Enabled' : 'Disabled'}</strong>
         </p>
         <p className="help-text">
-          The scheduler generates preventive execution candidates only.
-          Managers still review and approve candidates manually.
+          The scheduler generates preventive execution candidates only. Managers still review and
+          approve candidates manually.
         </p>
         {lastRunResult && (
           <dl className="detail-list">
@@ -172,11 +157,7 @@ export default function PreventiveSchedulerPage() {
             <dt>Not Eligible</dt>
             <dd>{lastRunResult.plansNotEligibleCount}</dd>
             <dt>Duration</dt>
-            <dd>
-              {lastRunResult.durationMs}
-              {' '}
-              ms
-            </dd>
+            <dd>{lastRunResult.durationMs} ms</dd>
           </dl>
         )}
       </section>
@@ -184,55 +165,55 @@ export default function PreventiveSchedulerPage() {
       <section className="reference-form-section">
         <h2>Run History</h2>
         {listLoading ? (
-          <p className="loading-state-inline" role="status">Loading runs...</p>
+          <p className="loading-state-inline" role="status">
+            Loading runs...
+          </p>
         ) : (
           <div className="table-scroll">
-          <table className="reference-table">
-            <thead>
-              <tr>
-                <th>Started</th>
-                <th>Status</th>
-                <th>Triggered By</th>
-                <th>Created</th>
-                <th>Skipped</th>
-                <th>Not Eligible</th>
-                <th>Duration</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {runs.length === 0 ? (
+            <table className="reference-table">
+              <thead>
                 <tr>
-                  <td colSpan={8} className="empty-state">No scheduler runs found.</td>
+                  <th>Started</th>
+                  <th>Status</th>
+                  <th>Triggered By</th>
+                  <th>Created</th>
+                  <th>Skipped</th>
+                  <th>Not Eligible</th>
+                  <th>Duration</th>
+                  <th>Actions</th>
                 </tr>
-              ) : (
-                runs.map((run) => (
-                  <tr key={run.id}>
-                    <td>{formatTimestamp(run.startedAt)}</td>
-                    <td>{getSchedulerRunStatusLabel(run.status)}</td>
-                    <td>{getSchedulerTriggeredByLabel(run.triggeredBy)}</td>
-                    <td>{run.candidatesCreatedCount}</td>
-                    <td>{run.candidatesSkippedDuplicateCount}</td>
-                    <td>{run.plansNotEligibleCount}</td>
-                    <td>
-                      {run.durationMs}
-                      {' '}
-                      ms
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        className="btn-link"
-                        onClick={() => handleViewRun(run.id)}
-                      >
-                        View
-                      </button>
+              </thead>
+              <tbody>
+                {runs.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="empty-state">
+                      No scheduler runs found.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  runs.map((run) => (
+                    <tr key={run.id}>
+                      <td>{formatTimestamp(run.startedAt)}</td>
+                      <td>{getSchedulerRunStatusLabel(run.status)}</td>
+                      <td>{getSchedulerTriggeredByLabel(run.triggeredBy)}</td>
+                      <td>{run.candidatesCreatedCount}</td>
+                      <td>{run.candidatesSkippedDuplicateCount}</td>
+                      <td>{run.plansNotEligibleCount}</td>
+                      <td>{run.durationMs} ms</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="btn-link"
+                          onClick={() => handleViewRun(run.id)}
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         )}
       </section>
@@ -255,11 +236,7 @@ export default function PreventiveSchedulerPage() {
         <section className="reference-form-section">
           <div className="section-header">
             <h2>Run Detail</h2>
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => setSelectedRun(null)}
-            >
+            <button type="button" className="btn-secondary" onClick={() => setSelectedRun(null)}>
               Close
             </button>
           </div>
@@ -273,11 +250,7 @@ export default function PreventiveSchedulerPage() {
             <dt>Finished At</dt>
             <dd>{formatTimestamp(selectedRun.finishedAt)}</dd>
             <dt>Duration</dt>
-            <dd>
-              {selectedRun.durationMs}
-              {' '}
-              ms
-            </dd>
+            <dd>{selectedRun.durationMs} ms</dd>
             <dt>Plans Evaluated</dt>
             <dd>{selectedRun.plansEvaluatedCount}</dd>
             <dt>Candidates Created</dt>

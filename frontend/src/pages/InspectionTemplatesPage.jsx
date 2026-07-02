@@ -6,22 +6,14 @@ import inspectionTemplateApi from '../services/inspectionTemplateApi';
 import assetCategoryApi from '../services/assetCategoryApi';
 import ReferenceDataLayout from '../components/layout/ReferenceDataLayout';
 import PaginationControls from '../components/PaginationControls';
-import {
-  canManageInspectionTemplates,
-  canViewInspectionTemplates,
-} from '../constants/userRoles';
+import { canManageInspectionTemplates, canViewInspectionTemplates } from '../constants/userRoles';
 import { ROUTES } from '../constants/routes';
 import {
   INSPECTION_TEMPLATE_STATUS_OPTIONS,
   getInspectionTemplateStatusLabel,
 } from '../constants/inspectionTemplateStatuses';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
-import {
-  DEFAULT_PAGE,
-  getPageNumber,
-  getTotalPages,
-  unwrapPageContent,
-} from '../utils/pagination';
+import { DEFAULT_PAGE, getPageNumber, getTotalPages, unwrapPageContent } from '../utils/pagination';
 
 function formatTimestamp(timestamp) {
   if (!timestamp) {
@@ -237,28 +229,94 @@ export default function InspectionTemplatesPage() {
 
   return (
     <ReferenceDataLayout title="Inspection Templates">
-        {error && <div className="error-message">{error}</div>}
-        {success && <div className="success-message">{success}</div>}
+      {error && <div className="error-message">{error}</div>}
+      {success && <div className="success-message">{success}</div>}
 
-        {!canManage && (
-          <p className="read-only-note">
-            Inspection templates are read-only. Administrators can create, edit, and archive templates.
-          </p>
-        )}
+      {!canManage && (
+        <p className="read-only-note">
+          Inspection templates are read-only. Administrators can create, edit, and archive
+          templates.
+        </p>
+      )}
 
+      <section className="reference-form-section">
+        <h2>Filters</h2>
+        <div className="reference-form">
+          <div className="form-row">
+            <label htmlFor="filterAssetCategoryId">Asset Category</label>
+            <select
+              id="filterAssetCategoryId"
+              name="filterAssetCategoryId"
+              value={filterAssetCategoryId}
+              onChange={handleFilterChange}
+              disabled={listLoading}
+            >
+              <option value="">All categories</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-row">
+            <label htmlFor="filterStatus">Status</label>
+            <select
+              id="filterStatus"
+              name="filterStatus"
+              value={filterStatus}
+              onChange={handleFilterChange}
+              disabled={listLoading}
+            >
+              <option value="">All statuses</option>
+              {INSPECTION_TEMPLATE_STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </section>
+
+      {canManage && (
         <section className="reference-form-section">
-          <h2>Filters</h2>
-          <div className="reference-form">
+          <h2>{editingId ? 'Edit Inspection Template' : 'Create Inspection Template'}</h2>
+          <form className="reference-form" onSubmit={handleSubmit}>
             <div className="form-row">
-              <label htmlFor="filterAssetCategoryId">Asset Category</label>
+              <label htmlFor="name">Name</label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                value={formData.name}
+                onChange={handleFormChange}
+                required
+                disabled={submitting}
+              />
+            </div>
+            <div className="form-row">
+              <label htmlFor="description">Description</label>
+              <textarea
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={handleFormChange}
+                disabled={submitting}
+                rows={3}
+              />
+            </div>
+            <div className="form-row">
+              <label htmlFor="assetCategoryId">Asset Category</label>
               <select
-                id="filterAssetCategoryId"
-                name="filterAssetCategoryId"
-                value={filterAssetCategoryId}
-                onChange={handleFilterChange}
-                disabled={listLoading}
+                id="assetCategoryId"
+                name="assetCategoryId"
+                value={formData.assetCategoryId}
+                onChange={handleFormChange}
+                required={!editingId}
+                disabled={submitting || Boolean(editingId)}
               >
-                <option value="">All categories</option>
+                <option value="">Select asset category</option>
                 {categories.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
@@ -266,169 +324,103 @@ export default function InspectionTemplatesPage() {
                 ))}
               </select>
             </div>
-            <div className="form-row">
-              <label htmlFor="filterStatus">Status</label>
-              <select
-                id="filterStatus"
-                name="filterStatus"
-                value={filterStatus}
-                onChange={handleFilterChange}
-                disabled={listLoading}
-              >
-                <option value="">All statuses</option>
-                {INSPECTION_TEMPLATE_STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </section>
-
-        {canManage && (
-          <section className="reference-form-section">
-            <h2>{editingId ? 'Edit Inspection Template' : 'Create Inspection Template'}</h2>
-            <form className="reference-form" onSubmit={handleSubmit}>
-              <div className="form-row">
-                <label htmlFor="name">Name</label>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={handleFormChange}
-                  required
+            <div className="form-actions">
+              <button type="submit" className="btn-primary" disabled={submitting}>
+                {submitting ? 'Saving...' : editingId ? 'Update Template' : 'Create Template'}
+              </button>
+              {editingId && (
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={resetForm}
                   disabled={submitting}
-                />
-              </div>
-              <div className="form-row">
-                <label htmlFor="description">Description</label>
-                <textarea
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleFormChange}
-                  disabled={submitting}
-                  rows={3}
-                />
-              </div>
-              <div className="form-row">
-                <label htmlFor="assetCategoryId">Asset Category</label>
-                <select
-                  id="assetCategoryId"
-                  name="assetCategoryId"
-                  value={formData.assetCategoryId}
-                  onChange={handleFormChange}
-                  required={!editingId}
-                  disabled={submitting || Boolean(editingId)}
                 >
-                  <option value="">Select asset category</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-actions">
-                <button type="submit" className="btn-primary" disabled={submitting}>
-                  {submitting ? 'Saving...' : editingId ? 'Update Template' : 'Create Template'}
+                  Cancel Edit
                 </button>
-                {editingId && (
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={resetForm}
-                    disabled={submitting}
-                  >
-                    Cancel Edit
-                  </button>
-                )}
-              </div>
-            </form>
-          </section>
-        )}
-
-        <section>
-          <h2>Templates</h2>
-          {templates.length === 0 ? (
-            <p className="no-items">No inspection templates found.</p>
-          ) : (
-            <table className="reference-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Asset Category</th>
-                  <th>Version</th>
-                  <th>Status</th>
-                  <th>Updated</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {templates.map((template) => (
-                  <tr key={template.id}>
-                    <td>{template.name}</td>
-                    <td>{template.assetCategoryName}</td>
-                    <td>{template.version}</td>
-                    <td>{getInspectionTemplateStatusLabel(template.status)}</td>
-                    <td>{formatTimestamp(template.updatedAt)}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="btn-link"
-                        onClick={() => navigate(`/inspection-templates/${template.id}/questions`)}
-                      >
-                        {getQuestionsActionLabel(template.status)}
-                      </button>
-                      {canManage && template.status === 'DRAFT' && (
-                        <>
-                          {' '}
-                          <button
-                            type="button"
-                            className="btn-link"
-                            onClick={() => handleEdit(template)}
-                          >
-                            Edit
-                          </button>
-                          {' '}
-                          <button
-                            type="button"
-                            className="btn-link"
-                            onClick={() => handlePublish(template.id)}
-                          >
-                            Publish
-                          </button>
-                        </>
-                      )}
-                      {canManage && template.status === 'PUBLISHED' && (
-                        <>
-                          {' '}
-                          <button
-                            type="button"
-                            className="btn-link"
-                            onClick={() => handleArchive(template.id)}
-                          >
-                            Archive
-                          </button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+              )}
+            </div>
+          </form>
         </section>
+      )}
 
-        <PaginationControls
-          page={templatesPage}
-          totalPages={templatesTotalPages}
-          loading={listLoading}
-          onPrevious={() => loadTemplates(templatesPage - 1)}
-          onNext={() => loadTemplates(templatesPage + 1)}
-        />
+      <section>
+        <h2>Templates</h2>
+        {templates.length === 0 ? (
+          <p className="no-items">No inspection templates found.</p>
+        ) : (
+          <table className="reference-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Asset Category</th>
+                <th>Version</th>
+                <th>Status</th>
+                <th>Updated</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {templates.map((template) => (
+                <tr key={template.id}>
+                  <td>{template.name}</td>
+                  <td>{template.assetCategoryName}</td>
+                  <td>{template.version}</td>
+                  <td>{getInspectionTemplateStatusLabel(template.status)}</td>
+                  <td>{formatTimestamp(template.updatedAt)}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn-link"
+                      onClick={() => navigate(`/inspection-templates/${template.id}/questions`)}
+                    >
+                      {getQuestionsActionLabel(template.status)}
+                    </button>
+                    {canManage && template.status === 'DRAFT' && (
+                      <>
+                        {' '}
+                        <button
+                          type="button"
+                          className="btn-link"
+                          onClick={() => handleEdit(template)}
+                        >
+                          Edit
+                        </button>{' '}
+                        <button
+                          type="button"
+                          className="btn-link"
+                          onClick={() => handlePublish(template.id)}
+                        >
+                          Publish
+                        </button>
+                      </>
+                    )}
+                    {canManage && template.status === 'PUBLISHED' && (
+                      <>
+                        {' '}
+                        <button
+                          type="button"
+                          className="btn-link"
+                          onClick={() => handleArchive(template.id)}
+                        >
+                          Archive
+                        </button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      <PaginationControls
+        page={templatesPage}
+        totalPages={templatesTotalPages}
+        loading={listLoading}
+        onPrevious={() => loadTemplates(templatesPage - 1)}
+        onNext={() => loadTemplates(templatesPage + 1)}
+      />
     </ReferenceDataLayout>
   );
 }

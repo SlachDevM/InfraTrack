@@ -132,7 +132,9 @@ export default function BusinessTriggersPage() {
       await loadPageData(triggersPage);
     } catch (err) {
       if (isForbidden(err)) {
-        setError(getApiErrorMessage(err, 'You do not have permission to create business triggers.'));
+        setError(
+          getApiErrorMessage(err, 'You do not have permission to create business triggers.')
+        );
       } else {
         setError(getApiErrorMessage(err, 'Failed to create business trigger.'));
       }
@@ -257,7 +259,8 @@ export default function BusinessTriggersPage() {
             </form>
             {assets.length === 0 && (
               <p className="read-only-note">
-                No assets in your department are available. Register an asset in your department first.
+                No assets in your department are available. Register an asset in your department
+                first.
               </p>
             )}
           </section>
@@ -290,9 +293,7 @@ export default function BusinessTriggersPage() {
                     <td>{trigger.reason}</td>
                     <td>{trigger.urgent ? 'Yes' : 'No'}</td>
                     <td>
-                      {trigger.createdAt
-                        ? new Date(trigger.createdAt).toLocaleString()
-                        : '-'}
+                      {trigger.createdAt ? new Date(trigger.createdAt).toLocaleString() : '-'}
                     </td>
                   </tr>
                 ))}

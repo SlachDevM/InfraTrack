@@ -106,7 +106,9 @@ export default function DashboardSettingsPanel({
               <input
                 type="checkbox"
                 checked={draft.showRecentActivityWidget}
-                onChange={(event) => updateVisibility('showRecentActivityWidget', event.target.checked)}
+                onChange={(event) =>
+                  updateVisibility('showRecentActivityWidget', event.target.checked)
+                }
               />
               Recent Activity
             </label>
@@ -114,7 +116,9 @@ export default function DashboardSettingsPanel({
               <input
                 type="checkbox"
                 checked={draft.showQuickNavigationWidget}
-                onChange={(event) => updateVisibility('showQuickNavigationWidget', event.target.checked)}
+                onChange={(event) =>
+                  updateVisibility('showQuickNavigationWidget', event.target.checked)
+                }
               />
               Quick Navigation
             </label>
@@ -164,9 +168,7 @@ export default function DashboardSettingsPanel({
             </ul>
           </section>
 
-          {validationError && (
-            <div className="dashboard-settings-error">{validationError}</div>
-          )}
+          {validationError && <div className="dashboard-settings-error">{validationError}</div>}
 
           <footer className="dashboard-settings-footer">
             <button

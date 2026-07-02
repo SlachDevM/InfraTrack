@@ -1,8 +1,14 @@
 # InfraTrack Product Roadmap
 
-Planned evolution of InfraTrack by **product version**. Delivered versions are documented in [Platform Version History](platform-version-history.md).
+Planned evolution of InfraTrack by **product version**. Delivered and validated versions are documented in [Platform Version History](platform-version-history.md).
 
-**Legend:** ✓ Released · ⬜ Planned
+**Legend:**
+
+| Symbol | Meaning |
+|--------|---------|
+| ✓ | **Validated** — implemented and internally validated; not a production release unless stated |
+| ◐ | **In Progress** — partial delivery; remaining scope on roadmap |
+| ⬜ | **Planned** — not yet implemented |
 
 Versioning rules: [ADR-004](../03-architecture/adr-004-platform-versioning-strategy.md)
 
@@ -42,41 +48,51 @@ Security, stability, documentation, CI, and code quality baseline. No new busine
 
 **Business value:** Safer council deployments without changing operational workflows.
 
+**Status:** Validated baseline (current artifact version).
+
 **Reference:** [v2-0-1-security-hardening.md](v2-0-1-security-hardening.md)
 
 ---
 
-## ⬜ Version 2.1.0 — Dashboard & KPI
+## ✓ Version 2.1.0 — Dashboard & Operations Intelligence
 
 **Objective:** Operational visibility over inspection, decision, and preventive audit data.
 
-**Business value:** Managers see trends without exporting raw data.
+**Business value:** Managers see trends and workload without exporting raw data manually.
 
-**Major capabilities:**
+**Status:** Validated — all foundation sprints complete.
 
-- **Sprint C1 (complete):** Read-only Operations Intelligence KPI Engine (`GET /api/operations-intelligence/kpis`)
-- **Sprint C2 (complete):** Web dashboard UI at `/dashboard` consuming the KPI API — read-only, no exports
-- **Sprint C3 (complete):** Read-only trend time-series API (`GET /api/operations-intelligence/trends`) and lightweight dashboard trend widgets
-- **Sprint C4 (complete):** Dashboard widget structure and read-only recent activity feed (`GET /api/operations-intelligence/recent-activity`)
-- **Sprint C5 (complete):** User-scoped dashboard personalization (`GET/PUT /api/dashboard/preferences`, reset endpoint)
-- Summary dashboards, preventive execution KPIs, decision-engine metrics, department-scoped views
+**Delivered capabilities:**
 
-The KPI API is designed for reuse by the React web client, future Android application, and CSV reporting exports (Sprint R1).
+- **Sprint C1 (validated):** Read-only Operations Intelligence KPI Engine (`GET /api/operations-intelligence/kpis`)
+- **Sprint C2 (validated):** Web dashboard UI at `/dashboard` consuming the KPI API — read-only, no exports
+- **Sprint C3 (validated):** Read-only trend time-series API (`GET /api/operations-intelligence/trends`) and dashboard trend widgets
+- **Sprint C4 (validated):** Dashboard widget structure and read-only recent activity feed (`GET /api/operations-intelligence/recent-activity`)
+- **Sprint C5 (validated):** User-scoped dashboard personalisation (`GET/PUT /api/dashboard/preferences`, reset endpoint)
+
+The KPI API is designed for reuse by the React web client, future Android application, and CSV reporting exports.
 
 ---
 
-## ⬜ Version 2.2.0 — Mobile API & Reporting
+## ✓ Version 2.2.x — Mobile API & CSV Reporting Foundation
 
 **Objective:** Prepare backend and reporting capabilities for field and council use.
 
-**Business value:** Android field client can consume compact APIs; councils can export operational data.
+**Business value:** Future Android field client can consume compact APIs; councils can export operational data today.
 
-**Major capabilities:**
+**Status:** Validated foundation — M1 and R1 complete; extended reporting formats deferred.
 
-- **Sprint M1 (complete):** Mobile API foundation — read/bundle endpoints under `/api/mobile/*` (identity, dashboard, my inspections/work orders, screen bundles)
-- **Sprint R1 (complete):** CSV reporting foundation — read-only exports under `/api/reporting/exports/*.csv` (Assets, Inspections, Issues, Work Orders, Preventive Execution Candidates)
-- Scheduled reports, template-aligned inspection analytics, preventive compliance summaries (deferred)
-- PDF and Excel (`.xlsx`) exports remain deferred
+**Delivered capabilities:**
+
+- **Sprint M1 (validated):** Mobile API foundation — read/bundle endpoints under `/api/mobile/*` (identity, dashboard, my inspections/work orders, screen bundles)
+- **Sprint R1 (validated):** CSV reporting foundation — read-only exports under `/api/reporting/exports/*.csv` (Assets, Inspections, Issues, Work Orders, Preventive Execution Candidates)
+
+**Planned within this version family (not yet delivered):**
+
+- Scheduled reports
+- Template-aligned inspection analytics
+- Preventive compliance summaries
+- PDF and Excel (`.xlsx`) exports
 
 **Reference:** [Mobile API](../04-api/mobile-api.md), [Reporting API](../04-api/reporting-api.md)
 
