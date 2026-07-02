@@ -94,7 +94,22 @@ jobs:
       - name: OWASP dependency check
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
-        run: mvn org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=9 -DnvdApiKey="${NVD_API_KEY}"
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            echo "Dependency-Check attempt ${attempt}/3"
+            if mvn -B org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=9 -DnvdApiKey="${NVD_API_KEY}"; then
+              exit 0
+            fi
+
+            if [ "${attempt}" -lt 3 ]; then
+              echo "Dependency-Check failed (likely transient NVD/API issue). Retrying in 20s..."
+              sleep 20
+            fi
+          done
+
+          echo "Dependency-Check failed after 3 attempts."
+          exit 1
 
       - name: Upload dependency check report
         if: always()
