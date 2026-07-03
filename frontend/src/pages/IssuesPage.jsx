@@ -6,10 +6,9 @@ import issueApi from '../services/issueApi';
 import inspectionApi from '../services/inspectionApi';
 import NotificationButton from '../components/NotificationButton';
 import PaginationControls from '../components/PaginationControls';
-import ExportCsvButton from '../components/ExportCsvButton';
-import ExportReportingButton from '../components/ExportReportingButton';
+import ExportReportingMenu from '../components/ExportReportingMenu';
 import { ROUTES } from '../constants/routes';
-import { REPORTING_EXPORT_FORMATS, REPORTING_EXPORT_TYPES } from '../constants/reportingExports';
+import { REPORTING_EXPORT_TYPES } from '../constants/reportingExports';
 import {
   canMakeOperationalDecisions,
   canRecordIssues,
@@ -271,19 +270,10 @@ export default function IssuesPage() {
         <div className="user-header-actions">
           <NotificationButton />
           {canExport && (
-            <>
-              <ExportCsvButton exportType={REPORTING_EXPORT_TYPES.ISSUES} onError={setError} />
-              <ExportReportingButton
-                exportType={REPORTING_EXPORT_TYPES.ISSUES}
-                format={REPORTING_EXPORT_FORMATS.XLSX}
-                onError={setError}
-              />
-              <ExportReportingButton
-                exportType={REPORTING_EXPORT_TYPES.ISSUES}
-                format={REPORTING_EXPORT_FORMATS.PDF}
-                onError={setError}
-              />
-            </>
+            <ExportReportingMenu
+              exportType={REPORTING_EXPORT_TYPES.ISSUES}
+              onError={setError}
+            />
           )}
           <button type="button" className="logout-btn" onClick={handleLogout}>
             Logout

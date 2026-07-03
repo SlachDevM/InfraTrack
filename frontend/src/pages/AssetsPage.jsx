@@ -14,11 +14,10 @@ import AssetList from '../components/assets/AssetList';
 import AssetHistoryPanel from '../components/assets/AssetHistoryPanel';
 import OperationalDocumentsPanel from '../components/assets/OperationalDocumentsPanel';
 import ConfirmDialog from '../components/ConfirmDialog';
-import ExportCsvButton from '../components/ExportCsvButton';
-import ExportReportingButton from '../components/ExportReportingButton';
+import ExportReportingMenu from '../components/ExportReportingMenu';
 import { ROUTES } from '../constants/routes';
 import { HTTP_STATUS } from '../constants/httpStatus';
-import { REPORTING_EXPORT_FORMATS, REPORTING_EXPORT_TYPES } from '../constants/reportingExports';
+import { REPORTING_EXPORT_TYPES } from '../constants/reportingExports';
 import {
   canRegisterAssets,
   canUploadOperationalDocuments,
@@ -476,19 +475,10 @@ export default function AssetsPage() {
         <div className="user-header-actions">
           <NotificationButton />
           {canExport && (
-            <>
-              <ExportCsvButton exportType={REPORTING_EXPORT_TYPES.ASSETS} onError={setError} />
-              <ExportReportingButton
-                exportType={REPORTING_EXPORT_TYPES.ASSETS}
-                format={REPORTING_EXPORT_FORMATS.XLSX}
-                onError={setError}
-              />
-              <ExportReportingButton
-                exportType={REPORTING_EXPORT_TYPES.ASSETS}
-                format={REPORTING_EXPORT_FORMATS.PDF}
-                onError={setError}
-              />
-            </>
+            <ExportReportingMenu
+              exportType={REPORTING_EXPORT_TYPES.ASSETS}
+              onError={setError}
+            />
           )}
           <button type="button" className="logout-btn" onClick={handleLogout}>
             Logout

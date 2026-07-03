@@ -8,8 +8,7 @@ import assetApi from '../services/assetApi';
 import inspectionApi from '../services/inspectionApi';
 import userApi from '../services/userApi';
 import ReferenceDataLayout from '../components/layout/ReferenceDataLayout';
-import ExportCsvButton from '../components/ExportCsvButton';
-import ExportReportingButton from '../components/ExportReportingButton';
+import ExportReportingMenu from '../components/ExportReportingMenu';
 import PaginationControls from '../components/PaginationControls';
 import {
   canExportReporting,
@@ -18,7 +17,7 @@ import {
   canViewPreventiveExecutionCandidates,
 } from '../constants/userRoles';
 import { PREVENTIVE_CANDIDATE_STATUS } from '../constants/statuses';
-import { REPORTING_EXPORT_FORMATS, REPORTING_EXPORT_TYPES } from '../constants/reportingExports';
+import { REPORTING_EXPORT_TYPES } from '../constants/reportingExports';
 import { ROUTES } from '../constants/routes';
 import {
   EXECUTION_CANDIDATE_STATUS_OPTIONS,
@@ -378,22 +377,10 @@ export default function PreventiveExecutionCandidatesPage() {
       title="Preventive Execution Candidates"
       headerActions={
         canExport ? (
-          <>
-            <ExportCsvButton
-              exportType={REPORTING_EXPORT_TYPES.PREVENTIVE_CANDIDATES}
-              onError={setError}
-            />
-            <ExportReportingButton
-              exportType={REPORTING_EXPORT_TYPES.PREVENTIVE_CANDIDATES}
-              format={REPORTING_EXPORT_FORMATS.XLSX}
-              onError={setError}
-            />
-            <ExportReportingButton
-              exportType={REPORTING_EXPORT_TYPES.PREVENTIVE_CANDIDATES}
-              format={REPORTING_EXPORT_FORMATS.PDF}
-              onError={setError}
-            />
-          </>
+          <ExportReportingMenu
+            exportType={REPORTING_EXPORT_TYPES.PREVENTIVE_CANDIDATES}
+            onError={setError}
+          />
         ) : null
       }
     >

@@ -48,6 +48,14 @@
   cursor: not-allowed;
 }
 
+.export-reporting-menu {
+  position: relative;
+}
+
+.reference-header .export-reporting-menu .navbar-more-menu {
+  right: 0;
+}
+
 .reference-content {
   max-width: 900px;
   margin: 0 auto;
