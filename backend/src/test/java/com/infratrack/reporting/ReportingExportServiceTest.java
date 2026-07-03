@@ -191,6 +191,40 @@ class ReportingExportServiceTest {
         }
     }
 
+    @Test
+    void exportAssetsPdf_admin_returnsValidPdfWithFilename() {
+        when(userService.getById(1L)).thenReturn(admin());
+        when(assetRepository.findForExport(isNull(), isNull(), isNull()))
+                .thenReturn(List.of(parksAsset()));
+
+        ExportFileResponse response = exportService.exportAssetsPdf(1L, null, null);
+
+        assertThat(response.filename()).isEqualTo("assets-export.pdf");
+        assertThat(response.content().length).isGreaterThan(100);
+        assertThat(new String(response.content(), 0, 4)).isEqualTo("%PDF");
+    }
+
+    @Test
+    void exportAssetsPdf_manager_scopesToDepartment() {
+        when(userService.getById(2L)).thenReturn(manager(3L));
+        when(assetRepository.findForExport(eq(3L), isNull(), isNull())).thenReturn(List.of());
+
+        exportService.exportAssetsPdf(2L, null, null);
+
+        verify(assetRepository).findForExport(3L, null, null);
+        verify(assetRepository, never()).findForExport(isNull(), any(), any());
+    }
+
+    @Test
+    void exportAssetsPdf_emptyResult_stillProducesValidPdf() {
+        when(userService.getById(1L)).thenReturn(admin());
+        when(assetRepository.findForExport(isNull(), isNull(), isNull())).thenReturn(List.of());
+
+        ExportFileResponse response = exportService.exportAssetsPdf(1L, null, null);
+
+        assertThat(new String(response.content(), 0, 4)).isEqualTo("%PDF");
+    }
+
     private static User admin() {
         User user = new User("admin@test.com", "password", "Admin", UserRole.ADMINISTRATOR);
         user.setId(1L);

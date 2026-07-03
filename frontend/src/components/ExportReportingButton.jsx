@@ -29,7 +29,11 @@ export default function ExportReportingButton({
   const { auth } = useAuth();
   const [exporting, setExporting] = useState(false);
   const defaultLabel =
-    format === REPORTING_EXPORT_FORMATS.XLSX ? COMMON_LABELS.EXPORT_XLSX : COMMON_LABELS.EXPORT_CSV;
+    format === REPORTING_EXPORT_FORMATS.XLSX
+      ? COMMON_LABELS.EXPORT_XLSX
+      : format === REPORTING_EXPORT_FORMATS.PDF
+        ? COMMON_LABELS.EXPORT_PDF
+        : COMMON_LABELS.EXPORT_CSV;
   const buttonLabel = exporting ? COMMON_LABELS.EXPORTING : (label ?? defaultLabel);
 
   const handleClick = async () => {

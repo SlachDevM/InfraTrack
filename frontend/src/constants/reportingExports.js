@@ -3,6 +3,7 @@ import { COMMON_LABELS } from './uiLabels';
 export const REPORTING_EXPORT_FORMATS = {
   CSV: 'csv',
   XLSX: 'xlsx',
+  PDF: 'pdf',
 };
 
 export const REPORTING_EXPORT_TYPES = {
@@ -41,12 +42,20 @@ function buildExportConfig(type, format) {
   if (!definition) {
     return null;
   }
-  const extension = format === REPORTING_EXPORT_FORMATS.XLSX ? '.xlsx' : '.csv';
+  const extension =
+    format === REPORTING_EXPORT_FORMATS.XLSX
+      ? '.xlsx'
+      : format === REPORTING_EXPORT_FORMATS.PDF
+        ? '.pdf'
+        : '.csv';
+  const label =
+    format === REPORTING_EXPORT_FORMATS.XLSX
+      ? COMMON_LABELS.EXPORT_XLSX
+      : format === REPORTING_EXPORT_FORMATS.PDF
+        ? COMMON_LABELS.EXPORT_PDF
+        : COMMON_LABELS.EXPORT_CSV;
   return {
-    label:
-      format === REPORTING_EXPORT_FORMATS.XLSX
-        ? COMMON_LABELS.EXPORT_XLSX
-        : COMMON_LABELS.EXPORT_CSV,
+    label,
     filename: `${definition.baseFilename}${extension}`,
     endpoint: `${definition.endpointBase}${extension}`,
   };

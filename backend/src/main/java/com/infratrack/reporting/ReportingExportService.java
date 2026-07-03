@@ -70,6 +70,11 @@ public class ReportingExportService {
     }
 
     @Transactional(readOnly = true)
+    public ExportFileResponse exportAssetsPdf(Long userId, Long from, Long to) {
+        return buildPdfResponse(ExportType.ASSETS, loadAssetsExport(userId, from, to), from, to);
+    }
+
+    @Transactional(readOnly = true)
     public CsvExportResponse exportInspections(Long userId, Long from, Long to) {
         return buildCsvResponse(ExportType.INSPECTIONS, loadInspectionsExport(userId, from, to));
     }
@@ -77,6 +82,11 @@ public class ReportingExportService {
     @Transactional(readOnly = true)
     public ExportFileResponse exportInspectionsXlsx(Long userId, Long from, Long to) {
         return buildXlsxResponse(ExportType.INSPECTIONS, loadInspectionsExport(userId, from, to));
+    }
+
+    @Transactional(readOnly = true)
+    public ExportFileResponse exportInspectionsPdf(Long userId, Long from, Long to) {
+        return buildPdfResponse(ExportType.INSPECTIONS, loadInspectionsExport(userId, from, to), from, to);
     }
 
     @Transactional(readOnly = true)
@@ -90,6 +100,11 @@ public class ReportingExportService {
     }
 
     @Transactional(readOnly = true)
+    public ExportFileResponse exportIssuesPdf(Long userId, Long from, Long to) {
+        return buildPdfResponse(ExportType.ISSUES, loadIssuesExport(userId, from, to), from, to);
+    }
+
+    @Transactional(readOnly = true)
     public CsvExportResponse exportWorkOrders(Long userId, Long from, Long to) {
         return buildCsvResponse(ExportType.WORK_ORDERS, loadWorkOrdersExport(userId, from, to));
     }
@@ -100,6 +115,11 @@ public class ReportingExportService {
     }
 
     @Transactional(readOnly = true)
+    public ExportFileResponse exportWorkOrdersPdf(Long userId, Long from, Long to) {
+        return buildPdfResponse(ExportType.WORK_ORDERS, loadWorkOrdersExport(userId, from, to), from, to);
+    }
+
+    @Transactional(readOnly = true)
     public CsvExportResponse exportPreventiveCandidates(Long userId, Long from, Long to) {
         return buildCsvResponse(ExportType.PREVENTIVE_CANDIDATES, loadPreventiveCandidatesExport(userId, from, to));
     }
@@ -107,6 +127,15 @@ public class ReportingExportService {
     @Transactional(readOnly = true)
     public ExportFileResponse exportPreventiveCandidatesXlsx(Long userId, Long from, Long to) {
         return buildXlsxResponse(ExportType.PREVENTIVE_CANDIDATES, loadPreventiveCandidatesExport(userId, from, to));
+    }
+
+    @Transactional(readOnly = true)
+    public ExportFileResponse exportPreventiveCandidatesPdf(Long userId, Long from, Long to) {
+        return buildPdfResponse(
+                ExportType.PREVENTIVE_CANDIDATES,
+                loadPreventiveCandidatesExport(userId, from, to),
+                from,
+                to);
     }
 
     private TabularExport loadAssetsExport(Long userId, Long from, Long to) {
@@ -242,6 +271,18 @@ public class ReportingExportService {
                         tabularExport.headers(),
                         new ArrayList<>(tabularExport.rows())),
                 exportType.getFilename(ReportingExportFormat.XLSX));
+    }
+
+    private static ExportFileResponse buildPdfResponse(
+            ExportType exportType, TabularExport tabularExport, Long from, Long to) {
+        return new ExportFileResponse(
+                PdfExportWriter.write(
+                        exportType.getReportTitle(),
+                        tabularExport.headers(),
+                        new ArrayList<>(tabularExport.rows()),
+                        from,
+                        to),
+                exportType.getFilename(ReportingExportFormat.PDF));
     }
 
     private static String categoryName(Asset asset) {

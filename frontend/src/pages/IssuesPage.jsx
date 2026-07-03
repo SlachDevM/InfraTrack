@@ -278,6 +278,11 @@ export default function IssuesPage() {
                 format={REPORTING_EXPORT_FORMATS.XLSX}
                 onError={setError}
               />
+              <ExportReportingButton
+                exportType={REPORTING_EXPORT_TYPES.ISSUES}
+                format={REPORTING_EXPORT_FORMATS.PDF}
+                onError={setError}
+              />
             </>
           )}
           <button type="button" className="logout-btn" onClick={handleLogout}>

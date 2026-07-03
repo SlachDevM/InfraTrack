@@ -483,6 +483,11 @@ export default function AssetsPage() {
                 format={REPORTING_EXPORT_FORMATS.XLSX}
                 onError={setError}
               />
+              <ExportReportingButton
+                exportType={REPORTING_EXPORT_TYPES.ASSETS}
+                format={REPORTING_EXPORT_FORMATS.PDF}
+                onError={setError}
+              />
             </>
           )}
           <button type="button" className="logout-btn" onClick={handleLogout}>

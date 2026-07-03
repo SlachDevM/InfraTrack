@@ -53,6 +53,30 @@ describe('ExportReportingButton', () => {
     expect(onError).not.toHaveBeenCalled();
   });
 
+  it('calls assets PDF endpoint on click', async () => {
+    const user = userEvent.setup();
+    const onError = vi.fn();
+
+    render(
+      <ExportReportingButton
+        exportType="assets"
+        format={REPORTING_EXPORT_FORMATS.PDF}
+        onError={onError}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Export PDF' }));
+
+    await waitFor(() => {
+      expect(reportingExportApi.exportAssets).toHaveBeenCalledWith(
+        'test-token',
+        undefined,
+        REPORTING_EXPORT_FORMATS.PDF
+      );
+    });
+    expect(onError).not.toHaveBeenCalled();
+  });
+
   it('reports forbidden errors via onError', async () => {
     const user = userEvent.setup();
     const onError = vi.fn();

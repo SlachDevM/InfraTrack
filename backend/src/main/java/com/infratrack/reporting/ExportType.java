@@ -26,4 +26,8 @@ public enum ExportType {
     public String getSheetName() {
         return sheetName;
     }
+
+    public String getReportTitle() {
+        return sheetName + " Export";
+    }
 }

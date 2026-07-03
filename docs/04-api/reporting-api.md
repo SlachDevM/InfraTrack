@@ -1,8 +1,8 @@
-# Reporting API — CSV and XLSX Exports (V2.2.x / V2.3.x)
+# Reporting API — CSV, XLSX, and PDF Exports (V2.2.x / V2.3.x)
 
-Read-only CSV and XLSX export endpoints for operational reporting. Reporting **observes** data only — it does not create, update, approve workflows, run the scheduler, or send notifications.
+Read-only CSV, XLSX, and PDF export endpoints for operational reporting. Reporting **observes** data only — it does not create, update, approve workflows, run the scheduler, or send notifications.
 
-PDF (`.pdf`) exports remain **deferred**.
+PDF exports are simple tabular reports (title, timestamp, optional date range, table). They are not branded report templates.
 
 ## Base path
 
@@ -28,7 +28,17 @@ All endpoints require JWT authentication (`Authorization: Bearer <token>`).
 | `GET /api/reporting/exports/work-orders.xlsx` | `work-orders-export.xlsx` | `workOrder.asset.department` |
 | `GET /api/reporting/exports/preventive-candidates.xlsx` | `preventive-candidates-export.xlsx` | `candidate.asset.department` |
 
-CSV and XLSX exports share the same authorization, filters, columns, and row data for a given request.
+### PDF endpoints (V2.3.x C2)
+
+| Endpoint | Filename | Scope path |
+|----------|----------|------------|
+| `GET /api/reporting/exports/assets.pdf` | `assets-export.pdf` | `asset.department` |
+| `GET /api/reporting/exports/inspections.pdf` | `inspections-export.pdf` | `inspection.asset.department` |
+| `GET /api/reporting/exports/issues.pdf` | `issues-export.pdf` | `issue.asset.department` |
+| `GET /api/reporting/exports/work-orders.pdf` | `work-orders-export.pdf` | `workOrder.asset.department` |
+| `GET /api/reporting/exports/preventive-candidates.pdf` | `preventive-candidates-export.pdf` | `candidate.asset.department` |
+
+CSV, XLSX, and PDF exports share the same authorization, filters, columns, and row data for a given request.
 
 ## Response
 
@@ -47,6 +57,14 @@ CSV and XLSX exports share the same authorization, filters, columns, and row dat
 - Single-sheet workbook with bold header row, frozen top row, and auto-sized columns
 - Null fields appear as blank cells
 - Date and datetime values are written as readable ISO strings (same as CSV)
+
+### PDF
+
+- `Content-Type: application/pdf`
+- `Content-Disposition: attachment; filename="<export-filename>"`
+- Simple tabular layout: report title, server-generated timestamp, optional applied date range (`from` / `to`), column headers, and data rows
+- Null fields appear as blank cells
+- Wide tables may use landscape orientation, smaller font, or truncated cell text
 
 ## Authorization
 
@@ -107,7 +125,7 @@ If `from` / `to` are omitted, all rows within the user's scope are exported.
 
 ## Known limitations
 
-- PDF exports remain deferred.
+- PDF exports are simple tabular reports — no logos, branding, charts, or custom templates.
 - No scheduled or email reports.
 - No streaming; suitable for typical council operational volumes.
 - Work order date filtering uses `createdAt`, not completion time.
@@ -115,7 +133,7 @@ If `from` / `to` are omitted, all rows within the user's scope are exported.
 
 ## Frontend
 
-List pages expose **Export CSV** and **Export XLSX** buttons for Administrator, Manager, and Operational Coordinator. Field Employee and Contractor do not see the buttons; direct API calls return `403`.
+List pages expose **Export CSV**, **Export XLSX**, and **Export PDF** buttons for Administrator, Manager, and Operational Coordinator. Field Employee and Contractor do not see the buttons; direct API calls return `403`.
 
 ## Related documentation
 

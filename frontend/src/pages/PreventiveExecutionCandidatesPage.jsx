@@ -388,6 +388,11 @@ export default function PreventiveExecutionCandidatesPage() {
               format={REPORTING_EXPORT_FORMATS.XLSX}
               onError={setError}
             />
+            <ExportReportingButton
+              exportType={REPORTING_EXPORT_TYPES.PREVENTIVE_CANDIDATES}
+              format={REPORTING_EXPORT_FORMATS.PDF}
+              onError={setError}
+            />
           </>
         ) : null
       }

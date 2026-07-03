@@ -19,13 +19,14 @@ import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/reporting/exports")
-@Tag(name = "Reporting Exports", description = "Read-only CSV and XLSX exports for operational reporting (V2.2.x / V2.3.x)")
+@Tag(name = "Reporting Exports", description = "Read-only CSV, XLSX, and PDF exports for operational reporting (V2.2.x / V2.3.x)")
 @StandardApiResponses
 @SecurityRequirement(name = "bearerAuth")
 public class ReportingExportController {
 
     private static final MediaType XLSX_MEDIA_TYPE = MediaType.parseMediaType(
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    private static final MediaType PDF_MEDIA_TYPE = MediaType.APPLICATION_PDF;
 
     private final ReportingExportService exportService;
 
@@ -53,6 +54,16 @@ public class ReportingExportController {
         return xlsxResponse(exportService.exportAssetsXlsx(userId(authentication), from, to));
     }
 
+    @GetMapping(value = "/assets.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @Operation(summary = "Export assets as PDF")
+    @ApiResponse(responseCode = "200", description = "PDF file download")
+    public ResponseEntity<byte[]> exportAssetsPdf(
+            Authentication authentication,
+            @RequestParam(required = false) Long from,
+            @RequestParam(required = false) Long to) {
+        return pdfResponse(exportService.exportAssetsPdf(userId(authentication), from, to));
+    }
+
     @GetMapping(value = "/inspections.csv", produces = "text/csv")
     @Operation(summary = "Export inspections as CSV")
     @ApiResponse(responseCode = "200", description = "CSV file download")
@@ -71,6 +82,16 @@ public class ReportingExportController {
             @RequestParam(required = false) Long from,
             @RequestParam(required = false) Long to) {
         return xlsxResponse(exportService.exportInspectionsXlsx(userId(authentication), from, to));
+    }
+
+    @GetMapping(value = "/inspections.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @Operation(summary = "Export inspections as PDF")
+    @ApiResponse(responseCode = "200", description = "PDF file download")
+    public ResponseEntity<byte[]> exportInspectionsPdf(
+            Authentication authentication,
+            @RequestParam(required = false) Long from,
+            @RequestParam(required = false) Long to) {
+        return pdfResponse(exportService.exportInspectionsPdf(userId(authentication), from, to));
     }
 
     @GetMapping(value = "/issues.csv", produces = "text/csv")
@@ -93,6 +114,16 @@ public class ReportingExportController {
         return xlsxResponse(exportService.exportIssuesXlsx(userId(authentication), from, to));
     }
 
+    @GetMapping(value = "/issues.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @Operation(summary = "Export issues as PDF")
+    @ApiResponse(responseCode = "200", description = "PDF file download")
+    public ResponseEntity<byte[]> exportIssuesPdf(
+            Authentication authentication,
+            @RequestParam(required = false) Long from,
+            @RequestParam(required = false) Long to) {
+        return pdfResponse(exportService.exportIssuesPdf(userId(authentication), from, to));
+    }
+
     @GetMapping(value = "/work-orders.csv", produces = "text/csv")
     @Operation(summary = "Export work orders as CSV")
     @ApiResponse(responseCode = "200", description = "CSV file download")
@@ -111,6 +142,16 @@ public class ReportingExportController {
             @RequestParam(required = false) Long from,
             @RequestParam(required = false) Long to) {
         return xlsxResponse(exportService.exportWorkOrdersXlsx(userId(authentication), from, to));
+    }
+
+    @GetMapping(value = "/work-orders.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @Operation(summary = "Export work orders as PDF")
+    @ApiResponse(responseCode = "200", description = "PDF file download")
+    public ResponseEntity<byte[]> exportWorkOrdersPdf(
+            Authentication authentication,
+            @RequestParam(required = false) Long from,
+            @RequestParam(required = false) Long to) {
+        return pdfResponse(exportService.exportWorkOrdersPdf(userId(authentication), from, to));
     }
 
     @GetMapping(value = "/preventive-candidates.csv", produces = "text/csv")
@@ -133,6 +174,16 @@ public class ReportingExportController {
         return xlsxResponse(exportService.exportPreventiveCandidatesXlsx(userId(authentication), from, to));
     }
 
+    @GetMapping(value = "/preventive-candidates.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @Operation(summary = "Export preventive execution candidates as PDF")
+    @ApiResponse(responseCode = "200", description = "PDF file download")
+    public ResponseEntity<byte[]> exportPreventiveCandidatesPdf(
+            Authentication authentication,
+            @RequestParam(required = false) Long from,
+            @RequestParam(required = false) Long to) {
+        return pdfResponse(exportService.exportPreventiveCandidatesPdf(userId(authentication), from, to));
+    }
+
     private static Long userId(Authentication authentication) {
         return ((JwtAuthenticationToken) authentication).getUserId();
     }
@@ -150,6 +201,14 @@ public class ReportingExportController {
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=\"" + export.filename() + "\"")
                 .contentType(XLSX_MEDIA_TYPE)
+                .body(export.content());
+    }
+
+    private static ResponseEntity<byte[]> pdfResponse(ExportFileResponse export) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + export.filename() + "\"")
+                .contentType(PDF_MEDIA_TYPE)
                 .body(export.content());
     }
 }

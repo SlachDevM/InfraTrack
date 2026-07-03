@@ -8,6 +8,7 @@ export const COMMON_LABELS = {
   CREATE: 'Create',
   EXPORT_CSV: 'Export CSV',
   EXPORT_XLSX: 'Export XLSX',
+  EXPORT_PDF: 'Export PDF',
   EXPORTING: 'Exporting...',
   LOGOUT: 'Logout',
   BACK: '← Back',

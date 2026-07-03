@@ -1186,7 +1186,7 @@ The KPI Engine aggregates counts and breakdowns from Assets, Inspections, Issues
 
 ### Deferred to later sprints
 
-- Advanced analytics, forecasting, and PDF reporting remain deferred
+- Advanced analytics and forecasting remain deferred
 - Scheduled and email reports remain deferred
 - The same KPI and trend APIs are consumed by the React dashboard, the future Android application, and reporting exports
 
@@ -1222,9 +1222,25 @@ Version 2.3.x adds **read-only XLSX exports** for the same entities as CSV, shar
 | `GET /api/reporting/exports/work-orders.xlsx` | Work order list export |
 | `GET /api/reporting/exports/preventive-candidates.xlsx` | Preventive execution candidate export |
 
-CSV exports remain supported unchanged. PDF and scheduled/email reports remain deferred.
+CSV exports remain supported unchanged. Scheduled and email reports remain deferred.
 
 The React web client adds **Export XLSX** buttons alongside existing CSV buttons for authorized roles.
+
+### Sprint C2 — PDF Export Foundation (V2.3.x)
+
+Version 2.3.x adds **read-only PDF exports** for the same entities as CSV and XLSX, sharing authorization, filters, columns, and row data.
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/reporting/exports/assets.pdf` | Asset register export |
+| `GET /api/reporting/exports/inspections.pdf` | Inspection list export |
+| `GET /api/reporting/exports/issues.pdf` | Issue register export |
+| `GET /api/reporting/exports/work-orders.pdf` | Work order list export |
+| `GET /api/reporting/exports/preventive-candidates.pdf` | Preventive execution candidate export |
+
+PDF exports are simple tabular reports (title, timestamp, optional date range, table) — not branded report templates. CSV and XLSX exports remain supported unchanged. Scheduled and email reports remain deferred.
+
+The React web client adds **Export PDF** buttons alongside existing CSV and XLSX buttons for authorized roles.
 
 ### Sprint C2 — Dashboard UI
 
@@ -1250,7 +1266,7 @@ Trend series: `inspectionsCompleted` (by `completedAt`), `issuesCreated` (by `re
 
 Authorization matches Sprint C1 (Administrator global; Manager and Operational Coordinator own department; Field Employee and Contractor forbidden).
 
-The dashboard adds lightweight CSS mini-bar trend widgets (no charting library). Exports and PDF reporting remain deferred.
+The dashboard adds lightweight CSS mini-bar trend widgets (no charting library). Scheduled and email reports remain deferred.
 
 ### Sprint C4 — Recent Activity & Dashboard Widgets
 

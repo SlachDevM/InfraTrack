@@ -270,10 +270,10 @@ Managers see department-scoped data. Field employees see assigned work only. Adm
 | Mobile bundles | `/api/mobile/*` read paths | No |
 | Operations Intelligence | KPIs, trends, recent activity | No |
 | Dashboard preferences | GET preferences | No (PUT writes preferences only) |
-| Reporting | CSV and XLSX exports | No |
+| Reporting | CSV, XLSX, and PDF exports | No |
 | Rule evaluation reports | Read evaluation history | No |
 
-**Intelligence layers are read-only** from a workflow perspective: KPIs, trends, CSV/XLSX exports, and mobile dashboard counts do not create inspections, approve candidates, or assign work.
+**Intelligence layers are read-only** from a workflow perspective: KPIs, trends, CSV/XLSX/PDF exports, and mobile dashboard counts do not create inspections, approve candidates, or assign work.
 
 ### Write APIs (explicit actions)
 
@@ -391,10 +391,11 @@ Reporting endpoints under `/api/reporting/exports/*` are **strictly read-only**.
 - They do not run the scheduler or approve workflows.
 - CSV responses use `text/csv` with `Content-Disposition: attachment`.
 - XLSX responses use `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` with `Content-Disposition: attachment`.
+- PDF responses use `application/pdf` with `Content-Disposition: attachment`.
 
-**Today:** CSV and XLSX exports for assets, inspections, issues, work orders, and preventive candidates. Both formats share the same columns, filters, and authorization for a given request.
+**Today:** CSV, XLSX, and PDF exports for assets, inspections, issues, work orders, and preventive candidates. All formats share the same columns, filters, and authorization for a given request.
 
-**Deferred:** PDF exports; scheduled and email reports.
+**Deferred:** Scheduled and email reports.
 
 Authorisation: Administrator (global), Manager and Operational Coordinator (department-scoped). Field employees and contractors receive `403`.
 
@@ -463,7 +464,7 @@ Planned capabilities will extend clients without invalidating the core pattern:
 | [Product Vision](../00-product-vision.md) | Why InfraTrack exists |
 | [Business Capability Map](../01-business-architecture/business-capability-map.md) | What the platform does |
 | [Mobile API](mobile-api.md) | Mobile endpoints, bundles, sorting |
-| [Reporting API](reporting-api.md) | CSV and XLSX export behaviour |
+| [Reporting API](reporting-api.md) | CSV, XLSX, and PDF export behaviour |
 | [V2 Domain Engine API](v2-domain-engine-api.md) | Intelligence endpoint groups |
 | [API documentation index](README.md) | Swagger links and index |
 | [Domain Engine](../07-business-architecture/domain-engine.md) | Business rules behind APIs |

@@ -12,6 +12,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -112,6 +113,32 @@ class ReportingExportControllerTest {
                 .thenThrow(new ForbiddenOperationException("You do not have permission to export operational reports."));
 
         mockMvc.perform(get("/api/reporting/exports/inspections.xlsx")
+                        .header("Authorization", bearerToken(FIELD_USER_ID, "field@test.com")))
+                .andExpect(status().isForbidden())
+                .andExpect(content().string("You do not have permission to export operational reports."));
+    }
+
+    @Test
+    void exportAssetsPdf_admin_returnsPdfWithHeaders() throws Exception {
+        byte[] pdf = "%PDF-1.4 test".getBytes(StandardCharsets.UTF_8);
+        when(exportService.exportAssetsPdf(eq(ADMIN_USER_ID), isNull(), isNull()))
+                .thenReturn(new ExportFileResponse(pdf, "assets-export.pdf"));
+
+        mockMvc.perform(get("/api/reporting/exports/assets.pdf")
+                        .header("Authorization", bearerToken(ADMIN_USER_ID, "admin@test.com")))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"assets-export.pdf\""))
+                .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+                .andExpect(content().bytes(pdf));
+    }
+
+    @Test
+    void exportInspectionsPdf_fieldEmployee_returnsForbidden() throws Exception {
+        when(exportService.exportInspectionsPdf(eq(FIELD_USER_ID), isNull(), isNull()))
+                .thenThrow(new ForbiddenOperationException("You do not have permission to export operational reports."));
+
+        mockMvc.perform(get("/api/reporting/exports/inspections.pdf")
                         .header("Authorization", bearerToken(FIELD_USER_ID, "field@test.com")))
                 .andExpect(status().isForbidden())
                 .andExpect(content().string("You do not have permission to export operational reports."));

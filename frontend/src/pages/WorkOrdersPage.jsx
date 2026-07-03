@@ -422,6 +422,11 @@ export default function WorkOrdersPage() {
                 format={REPORTING_EXPORT_FORMATS.XLSX}
                 onError={setError}
               />
+              <ExportReportingButton
+                exportType={REPORTING_EXPORT_TYPES.WORK_ORDERS}
+                format={REPORTING_EXPORT_FORMATS.PDF}
+                onError={setError}
+              />
             </>
           )}
           <button type="button" className="logout-btn" onClick={handleLogout}>

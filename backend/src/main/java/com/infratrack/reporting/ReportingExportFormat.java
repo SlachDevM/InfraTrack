@@ -2,7 +2,8 @@ package com.infratrack.reporting;
 
 public enum ReportingExportFormat {
     CSV(".csv"),
-    XLSX(".xlsx");
+    XLSX(".xlsx"),
+    PDF(".pdf");
 
     private final String extension;
 
