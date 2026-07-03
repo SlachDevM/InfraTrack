@@ -243,9 +243,8 @@ New protected controllers should follow the `Controller → Service → Authoriz
 - No production dependencies are affected
 
 **Remediation status:**
-- Fixes require major upgrades: `vite@8.1.3`, `vitest@4.1.9`
-- `@vitejs/plugin-react@4.7.0` is incompatible with `vite@8.x` (peer dependency conflict)
-- Remediation deferred pending dedicated Vite/Vitest upgrade sprint
+- An `npm audit fix --force` attempt during T2 temporarily upgraded the dev toolchain to `vite@8.x` / `vitest@4.x`; that upgrade was reverted in T2.1 because `@vitejs/plugin-react@4.x` is incompatible with Vite 8.
+- Fixes for the dev-only findings require a dedicated Vite/Vitest migration sprint (target: `vite@8.x`, `vitest@4.x` with a compatible `@vitejs/plugin-react` release).
 - No runtime production dependency vulnerabilities are currently reported
 
 **CI strategy:** Continue using `npm audit --audit-level=high --omit=dev` to protect production builds.
