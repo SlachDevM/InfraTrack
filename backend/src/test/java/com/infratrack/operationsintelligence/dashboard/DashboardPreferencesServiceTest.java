@@ -4,6 +4,9 @@ import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.operationsintelligence.dashboard.dto.DashboardPreferencesRequest;
 import com.infratrack.operationsintelligence.dashboard.dto.DashboardPreferencesResponse;
+import com.infratrack.organization.policy.dashboard.DashboardPolicyService;
+import com.infratrack.organization.policy.dashboard.DefaultDashboardPolicy;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -17,6 +20,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,8 +34,16 @@ class DashboardPreferencesServiceTest {
     @Mock
     private DashboardPreferencesRepository repository;
 
+    @Mock
+    private DashboardPolicyService dashboardPolicyService;
+
     @InjectMocks
     private DashboardPreferencesService preferencesService;
+
+    @BeforeEach
+    void setUp() {
+        lenient().when(dashboardPolicyService.getPolicy()).thenReturn(new DefaultDashboardPolicy());
+    }
 
     @Test
     void getPreferences_shouldReturnDefaultsWhenNoRecordExists() {
@@ -44,6 +56,23 @@ class DashboardPreferencesServiceTest {
         assertThat(response.getDefaultTrendRange()).isEqualTo("LAST_30_DAYS");
         assertThat(response.getWidgetOrder()).containsExactly(
                 "OVERVIEW", "ATTENTION", "TRENDS", "RECENT_ACTIVITY", "QUICK_NAVIGATION");
+    }
+
+    @Test
+    void getPreferences_shouldReturnSavedPreferencesWhenRecordExists() {
+        DashboardPreferences saved = DashboardPreferences.createDefaultForUser(
+                1L,
+                DashboardWidgetOrderSupport.serialize(List.of(DashboardWidgetType.TRENDS, DashboardWidgetType.OVERVIEW)),
+                new DefaultDashboardPolicy());
+        saved.setShowRecentActivityWidget(false);
+        saved.setDefaultTrendRange(DashboardTrendRange.LAST_90_DAYS);
+        when(repository.findByUserId(1L)).thenReturn(Optional.of(saved));
+
+        DashboardPreferencesResponse response = preferencesService.getPreferences(1L);
+
+        assertThat(response.isShowRecentActivityWidget()).isFalse();
+        assertThat(response.getDefaultTrendRange()).isEqualTo("LAST_90_DAYS");
+        assertThat(response.getWidgetOrder().subList(0, 2)).containsExactly("TRENDS", "OVERVIEW");
     }
 
     @Test
@@ -103,7 +132,7 @@ class DashboardPreferencesServiceTest {
     }
 
     @Test
-    void resetPreferences_shouldDeleteRecordAndReturnDefaults() {
+    void resetPreferences_shouldDeleteRecordAndReturnOrganizationPolicyDefaults() {
         DashboardPreferencesResponse response = preferencesService.resetPreferences(1L);
 
         verify(repository).deleteByUserId(1L);

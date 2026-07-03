@@ -90,6 +90,10 @@ It remains a **view-only** policy: it does not grant assignment, completion, ans
 
 **Notification Policy** is the second organizational policy foundation. A `NotificationPolicy` abstraction and `DefaultNotificationPolicy` now govern whether operational notifications are sent. **Notification policy modes** (`DEFAULT`, `QUIET`) are configurable via `app.policies.notification.mode`; `DEFAULT` preserves the original fixed behaviour exactly.
 
+**Dashboard Policy** is the third organizational policy foundation. A `DashboardPolicy` abstraction and `DefaultDashboardPolicy` now govern organizational dashboard presentation defaults (widget visibility, widget order, default trend range). `DashboardPreferencesService` uses `DashboardPolicyService.getPolicy()` when no user preferences are saved and when preferences are reset. Saved user preferences always override the organizational policy. No configurable modes, properties, persistence, or admin UI exist yet — `DefaultDashboardPolicy` preserves existing behaviour exactly.
+
+Future dashboard policy modes may include `OPERATIONAL`, `FIELD`, `MANAGEMENT`, and `EXECUTIVE` (documentation only).
+
 Inspection visibility may eventually support modes such as:
 
 - **Organization** (broader visibility)

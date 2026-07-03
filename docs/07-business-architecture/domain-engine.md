@@ -46,6 +46,22 @@ As of V2.3 foundation work, **Inspection Visibility Policy** is the first concre
 
 **Notification Policy** is the second foundation. Operational services consult `NotificationPolicyService.getPolicy()` before sending UC-013 notifications.
 
+**Dashboard Policy** is the third foundation. `DashboardPreferencesService` consults `DashboardPolicyService.getPolicy()` when no saved user preferences exist, and when preferences are reset. User-scoped saved preferences always take precedence over the organizational dashboard policy.
+
+Precedence:
+
+```text
+User Preferences
+↓
+Organization Dashboard Policy
+↓
+System Defaults (DefaultDashboardPolicy)
+```
+
+No configurable dashboard policy modes, properties, or admin UI exist yet. `DefaultDashboardPolicy` reproduces the original fixed dashboard presentation exactly.
+
+Future dashboard policy modes may include `OPERATIONAL`, `FIELD`, `MANAGEMENT`, and `EXECUTIVE` — documentation only; not implemented.
+
 | Mode | Purpose |
 |------|---------|
 | `DEFAULT` | Reproduces the original fixed notification behaviour exactly (default) |
@@ -1309,7 +1325,9 @@ Version 2.1.0 Sprint C5 adds **user-scoped dashboard presentation preferences**.
 |----------|---------|
 | `GET /api/dashboard/preferences` | Load preferences for the authenticated user |
 | `PUT /api/dashboard/preferences` | Save widget visibility, order, and default trend range |
-| `POST /api/dashboard/preferences/reset` | Restore default dashboard presentation |
+| `POST /api/dashboard/preferences/reset` | Restore organizational dashboard policy defaults (deletes saved user preferences) |
+
+When no saved preferences exist, `GET` returns defaults from `DashboardPolicyService.getPolicy()`. Saved user preferences override the organizational policy.
 
 Supported trend ranges: `LAST_7_DAYS`, `LAST_30_DAYS`, `LAST_90_DAYS`. At least one widget must remain visible. Preferences are stored per user in `dashboard_preferences`.
 

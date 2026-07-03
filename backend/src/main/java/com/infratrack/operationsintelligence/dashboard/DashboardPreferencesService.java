@@ -3,6 +3,8 @@ package com.infratrack.operationsintelligence.dashboard;
 import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.operationsintelligence.dashboard.dto.DashboardPreferencesRequest;
 import com.infratrack.operationsintelligence.dashboard.dto.DashboardPreferencesResponse;
+import com.infratrack.organization.policy.dashboard.DashboardPolicy;
+import com.infratrack.organization.policy.dashboard.DashboardPolicyService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,12 +15,15 @@ public class DashboardPreferencesService {
 
     private final DashboardPreferencesAuthorizationService authorizationService;
     private final DashboardPreferencesRepository repository;
+    private final DashboardPolicyService dashboardPolicyService;
 
     public DashboardPreferencesService(
             DashboardPreferencesAuthorizationService authorizationService,
-            DashboardPreferencesRepository repository) {
+            DashboardPreferencesRepository repository,
+            DashboardPolicyService dashboardPolicyService) {
         this.authorizationService = authorizationService;
         this.repository = repository;
+        this.dashboardPolicyService = dashboardPolicyService;
     }
 
     @Transactional(readOnly = true)
@@ -37,8 +42,9 @@ public class DashboardPreferencesService {
         List<DashboardWidgetType> widgetOrder = DashboardWidgetOrderSupport.parseAndNormalize(request.getWidgetOrder());
         String widgetOrderJson = DashboardWidgetOrderSupport.serialize(widgetOrder);
 
+        DashboardPolicy policy = dashboardPolicyService.getPolicy();
         DashboardPreferences preferences = repository.findByUserId(userId)
-                .orElseGet(() -> DashboardPreferences.createDefaultForUser(userId, widgetOrderJson));
+                .orElseGet(() -> DashboardPreferences.createDefaultForUser(userId, widgetOrderJson, policy));
 
         preferences.setShowOverviewWidget(Boolean.TRUE.equals(request.getShowOverviewWidget()));
         preferences.setShowAttentionWidget(Boolean.TRUE.equals(request.getShowAttentionWidget()));
@@ -74,14 +80,15 @@ public class DashboardPreferencesService {
     }
 
     private DashboardPreferencesResponse defaultResponse() {
+        DashboardPolicy policy = dashboardPolicyService.getPolicy();
         DashboardPreferencesResponse response = new DashboardPreferencesResponse();
-        response.setShowOverviewWidget(true);
-        response.setShowAttentionWidget(true);
-        response.setShowTrendWidget(true);
-        response.setShowRecentActivityWidget(true);
-        response.setShowQuickNavigationWidget(true);
-        response.setDefaultTrendRange(DashboardTrendRange.LAST_30_DAYS.name());
-        response.setWidgetOrder(DashboardWidgetType.DEFAULT_ORDER.stream().map(Enum::name).toList());
+        response.setShowOverviewWidget(policy.isOverviewWidgetVisibleByDefault());
+        response.setShowAttentionWidget(policy.isAttentionWidgetVisibleByDefault());
+        response.setShowTrendWidget(policy.isTrendWidgetVisibleByDefault());
+        response.setShowRecentActivityWidget(policy.isRecentActivityWidgetVisibleByDefault());
+        response.setShowQuickNavigationWidget(policy.isQuickNavigationWidgetVisibleByDefault());
+        response.setDefaultTrendRange(policy.defaultTrendRange().name());
+        response.setWidgetOrder(policy.defaultWidgetOrder().stream().map(Enum::name).toList());
         return response;
     }
 

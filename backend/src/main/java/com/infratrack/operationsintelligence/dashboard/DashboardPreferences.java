@@ -1,5 +1,6 @@
 package com.infratrack.operationsintelligence.dashboard;
 
+import com.infratrack.organization.policy.dashboard.DashboardPolicy;
 import jakarta.persistence.*;
 
 @Entity
@@ -44,29 +45,30 @@ public class DashboardPreferences {
     protected DashboardPreferences() {
     }
 
-    public static DashboardPreferences createDefaultForUser(Long userId, String widgetOrderJson) {
+    public static DashboardPreferences createDefaultForUser(
+            Long userId, String widgetOrderJson, DashboardPolicy policy) {
         DashboardPreferences preferences = new DashboardPreferences();
         long now = System.currentTimeMillis();
         preferences.userId = userId;
-        preferences.showOverviewWidget = true;
-        preferences.showAttentionWidget = true;
-        preferences.showTrendWidget = true;
-        preferences.showRecentActivityWidget = true;
-        preferences.showQuickNavigationWidget = true;
-        preferences.defaultTrendRange = DashboardTrendRange.LAST_30_DAYS;
+        preferences.showOverviewWidget = policy.isOverviewWidgetVisibleByDefault();
+        preferences.showAttentionWidget = policy.isAttentionWidgetVisibleByDefault();
+        preferences.showTrendWidget = policy.isTrendWidgetVisibleByDefault();
+        preferences.showRecentActivityWidget = policy.isRecentActivityWidgetVisibleByDefault();
+        preferences.showQuickNavigationWidget = policy.isQuickNavigationWidgetVisibleByDefault();
+        preferences.defaultTrendRange = policy.defaultTrendRange();
         preferences.widgetOrderJson = widgetOrderJson;
         preferences.createdAt = now;
         preferences.updatedAt = now;
         return preferences;
     }
 
-    public void applyDefaults(String widgetOrderJson) {
-        this.showOverviewWidget = true;
-        this.showAttentionWidget = true;
-        this.showTrendWidget = true;
-        this.showRecentActivityWidget = true;
-        this.showQuickNavigationWidget = true;
-        this.defaultTrendRange = DashboardTrendRange.LAST_30_DAYS;
+    public void applyDefaults(String widgetOrderJson, DashboardPolicy policy) {
+        this.showOverviewWidget = policy.isOverviewWidgetVisibleByDefault();
+        this.showAttentionWidget = policy.isAttentionWidgetVisibleByDefault();
+        this.showTrendWidget = policy.isTrendWidgetVisibleByDefault();
+        this.showRecentActivityWidget = policy.isRecentActivityWidgetVisibleByDefault();
+        this.showQuickNavigationWidget = policy.isQuickNavigationWidgetVisibleByDefault();
+        this.defaultTrendRange = policy.defaultTrendRange();
         this.widgetOrderJson = widgetOrderJson;
         this.updatedAt = System.currentTimeMillis();
     }
