@@ -215,7 +215,26 @@ Authorization uses `MaintenanceActivityAuthorizationService` for single-record c
 
 ### Known npm audit findings (dev toolchain)
 
-`npm audit` without `--omit=dev` reports moderate/high issues in **Vite / esbuild / Vitest** (development server and test tooling only, e.g. GHSA-67mh-4wv8-2f99). These do not affect the production bundle built by `npm run build`. Remediation requires a major Vite upgrade and is deferred.
+**Investigation performed (T2):** Full `npm audit` run without `--omit=dev` identified 5 vulnerabilities in development dependencies only:
+
+| Package | Severity | Advisory ID | Affects |
+|---------|----------|-------------|---------|
+| vitest | critical | GHSA-5xrq-8626-4rwp | Test runner (UI server) |
+| vite | high | GHSA-4w7w-66w2-5vf9, GHSA-fx2h-pf6j-xcff | Dev server, build tool |
+| esbuild | moderate | GHSA-67mh-4wv8-2f99 | Bundler (via vite) |
+| @vitest/mocker, vite-node | moderate | - | Test tooling (via vite) |
+
+**Production audit status:**
+- `npm audit --audit-level=high --omit=dev` reports **0 vulnerabilities**
+- No production dependencies are affected
+
+**Remediation status:**
+- Fixes require major upgrades: `vite@8.1.3`, `vitest@4.1.9`
+- `@vitejs/plugin-react@4.7.0` is incompatible with `vite@8.x` (peer dependency conflict)
+- Remediation deferred pending dedicated Vite/Vitest upgrade sprint
+- No runtime production dependency vulnerabilities are currently reported
+
+**CI strategy:** Continue using `npm audit --audit-level=high --omit=dev` to protect production builds.
 
 ### OWASP Dependency-Check threshold
 

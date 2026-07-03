@@ -12,8 +12,9 @@ import AssignWorkOrderForm from '../components/workorders/AssignWorkOrderForm';
 import CompleteMaintenanceForm from '../components/workorders/CompleteMaintenanceForm';
 import WorkOrderList from '../components/workorders/WorkOrderList';
 import ExportCsvButton from '../components/ExportCsvButton';
+import ExportReportingButton from '../components/ExportReportingButton';
 import { WORK_ORDER_STATUS } from '../constants/statuses';
-import { REPORTING_EXPORT_TYPES } from '../constants/reportingExports';
+import { REPORTING_EXPORT_FORMATS, REPORTING_EXPORT_TYPES } from '../constants/reportingExports';
 import { ROUTES } from '../constants/routes';
 import {
   canAssignWorkOrders,
@@ -414,7 +415,14 @@ export default function WorkOrdersPage() {
         <div className="user-header-actions">
           <NotificationButton />
           {canExport && (
-            <ExportCsvButton exportType={REPORTING_EXPORT_TYPES.WORK_ORDERS} onError={setError} />
+            <>
+              <ExportCsvButton exportType={REPORTING_EXPORT_TYPES.WORK_ORDERS} onError={setError} />
+              <ExportReportingButton
+                exportType={REPORTING_EXPORT_TYPES.WORK_ORDERS}
+                format={REPORTING_EXPORT_FORMATS.XLSX}
+                onError={setError}
+              />
+            </>
           )}
           <button type="button" className="logout-btn" onClick={handleLogout}>
             Logout

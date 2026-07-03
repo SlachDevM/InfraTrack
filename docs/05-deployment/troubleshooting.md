@@ -139,6 +139,25 @@ Same response format as login rate limiting. The message does not indicate wheth
 
 ---
 
+## Frontend npm install
+
+### `ERESOLVE` peer dependency errors (historical)
+
+**Symptoms:** `npm ci` or `npm install` fails with peer dependency conflicts involving React, Testing Library, or ESLint.
+
+**Cause (resolved in V2.3.x T1):** The flag `--legacy-peer-deps` was added when React 19 was first adopted alongside Vitest and `@testing-library/react`. Older Testing Library releases declared peer support for React 18 only; npm 7+ strict peer resolution then rejected the tree. Subsequent dependency updates (`@testing-library/react` 16.x, ESLint 9 flat config plugins) resolved the conflict.
+
+**Fix:** Use standard install commands without the flag:
+
+```bash
+cd frontend
+npm ci
+```
+
+If a new peer conflict appears after adding a dependency, prefer upgrading the conflicting package to a React 19 / ESLint 9 compatible release rather than reintroducing `--legacy-peer-deps`.
+
+---
+
 ## Logs
 
 ```bash

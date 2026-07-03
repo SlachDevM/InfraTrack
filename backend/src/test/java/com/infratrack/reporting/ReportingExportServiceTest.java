@@ -14,6 +14,9 @@ import com.infratrack.user.UserNameLookup;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
 import com.infratrack.workorder.WorkOrderRepository;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.io.ByteArrayInputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -140,6 +144,51 @@ class ReportingExportServiceTest {
 
         String csv = new String(response.content(), StandardCharsets.UTF_8);
         assertThat(csv).startsWith("Issue ID,Asset Name,Department,Issue Type,Severity,Description,Recorded By,Recorded At,Resolved\n");
+    }
+
+    @Test
+    void exportAssetsXlsx_admin_containsHeaderAndDataRow() throws Exception {
+        when(userService.getById(1L)).thenReturn(admin());
+        when(assetRepository.findForExport(isNull(), isNull(), isNull()))
+                .thenReturn(List.of(parksAsset()));
+
+        ExportFileResponse response = exportService.exportAssetsXlsx(1L, null, null);
+
+        assertThat(response.filename()).isEqualTo("assets-export.xlsx");
+        try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(response.content()))) {
+            Sheet sheet = workbook.getSheetAt(0);
+            assertThat(sheet.getSheetName()).isEqualTo("Assets");
+            assertThat(sheet.getRow(0).getCell(0).getStringCellValue()).isEqualTo("Asset ID");
+            Row dataRow = sheet.getRow(1);
+            assertThat(dataRow.getCell(0).getStringCellValue()).isEqualTo("5");
+            assertThat(dataRow.getCell(1).getStringCellValue()).isEqualTo("Street Light 001");
+            assertThat(dataRow.getCell(2).getStringCellValue()).isEqualTo("Street Lighting");
+            assertThat(dataRow.getCell(3).getStringCellValue()).isEqualTo("Parks");
+        }
+    }
+
+    @Test
+    void exportAssetsXlsx_manager_scopesToDepartment() {
+        when(userService.getById(2L)).thenReturn(manager(3L));
+        when(assetRepository.findForExport(eq(3L), isNull(), isNull())).thenReturn(List.of());
+
+        exportService.exportAssetsXlsx(2L, null, null);
+
+        verify(assetRepository).findForExport(3L, null, null);
+        verify(assetRepository, never()).findForExport(isNull(), any(), any());
+    }
+
+    @Test
+    void exportAssetsXlsx_emptyResult_containsHeaderOnly() throws Exception {
+        when(userService.getById(1L)).thenReturn(admin());
+        when(assetRepository.findForExport(isNull(), isNull(), isNull())).thenReturn(List.of());
+
+        ExportFileResponse response = exportService.exportAssetsXlsx(1L, null, null);
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(response.content()))) {
+            Sheet sheet = workbook.getSheetAt(0);
+            assertThat(sheet.getPhysicalNumberOfRows()).isEqualTo(1);
+        }
     }
 
     private static User admin() {

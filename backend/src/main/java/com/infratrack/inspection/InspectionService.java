@@ -31,6 +31,7 @@ import com.infratrack.time.WorkflowClock;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import com.infratrack.notification.OperationalEventNotificationService;
+import com.infratrack.organization.policy.notification.NotificationPolicyService;
 import com.infratrack.user.User;
 import com.infratrack.user.UserNameLookup;
 import com.infratrack.user.UserService;
@@ -60,6 +61,7 @@ public class InspectionService {
     private final UserService userService;
     private final UserNameLookup userNameLookup;
     private final OperationalEventNotificationService operationalEventNotificationService;
+    private final NotificationPolicyService notificationPolicyService;
     private final RuleEvaluationReportService ruleEvaluationReportService;
     private final WorkflowClock workflowClock;
 
@@ -73,6 +75,7 @@ public class InspectionService {
             UserService userService,
             UserNameLookup userNameLookup,
             OperationalEventNotificationService operationalEventNotificationService,
+            NotificationPolicyService notificationPolicyService,
             RuleEvaluationReportService ruleEvaluationReportService,
             WorkflowClock workflowClock) {
         this.inspectionRepository = inspectionRepository;
@@ -84,6 +87,7 @@ public class InspectionService {
         this.userService = userService;
         this.userNameLookup = userNameLookup;
         this.operationalEventNotificationService = operationalEventNotificationService;
+        this.notificationPolicyService = notificationPolicyService;
         this.ruleEvaluationReportService = ruleEvaluationReportService;
         this.workflowClock = workflowClock;
     }
@@ -177,7 +181,9 @@ public class InspectionService {
                 candidate.getId(),
                 candidate.getPlanCodeSnapshot());
 
-        operationalEventNotificationService.notifyInspectionAssigned(assignedToUser.getId());
+        if (notificationPolicyService.getPolicy().shouldNotifyInspectionCompletion()) {
+            operationalEventNotificationService.notifyInspectionAssigned(assignedToUser.getId());
+        }
 
         User decidingUser = userService.getById(decidingUserId);
         return InspectionResponse.from(inspection, assignedToUser, decidingUser);
@@ -213,7 +219,9 @@ public class InspectionService {
 
         historyRecorder.recordInspectionAssigned(asset, userId, LocalDate.now());
 
-        operationalEventNotificationService.notifyInspectionAssigned(assignedToUser.getId());
+        if (notificationPolicyService.getPolicy().shouldNotifyInspectionCompletion()) {
+            operationalEventNotificationService.notifyInspectionAssigned(assignedToUser.getId());
+        }
 
         return InspectionResponse.from(inspection, assignedToUser, coordinator);
     }

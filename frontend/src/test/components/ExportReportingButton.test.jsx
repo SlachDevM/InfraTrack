@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import ExportCsvButton from '../../components/ExportCsvButton';
+import ExportReportingButton from '../../components/ExportReportingButton';
 import reportingExportApi from '../../services/reportingExportApi';
+import { REPORTING_EXPORT_FORMATS } from '../../constants/reportingExports';
 
 const mockAuth = { token: 'test-token', user: { userId: 2, role: 'MANAGER' } };
 
@@ -20,7 +21,7 @@ vi.mock('../../services/reportingExportApi', () => ({
   },
 }));
 
-describe('ExportCsvButton', () => {
+describe('ExportReportingButton', () => {
   afterEach(cleanup);
 
   beforeEach(() => {
@@ -28,27 +29,28 @@ describe('ExportCsvButton', () => {
     reportingExportApi.exportAssets.mockResolvedValue(undefined);
   });
 
-  it('renders export label and calls assets endpoint on click', async () => {
+  it('calls assets XLSX endpoint on click', async () => {
     const user = userEvent.setup();
     const onError = vi.fn();
 
-    render(<ExportCsvButton exportType="assets" onError={onError} />);
+    render(
+      <ExportReportingButton
+        exportType="assets"
+        format={REPORTING_EXPORT_FORMATS.XLSX}
+        onError={onError}
+      />
+    );
 
-    const button = screen.getByRole('button', { name: 'Export CSV' });
-    expect(button).toHaveAttribute('aria-busy', 'false');
-
-    await user.click(button);
+    await user.click(screen.getByRole('button', { name: 'Export XLSX' }));
 
     await waitFor(() => {
-      expect(reportingExportApi.exportAssets).toHaveBeenCalledWith('test-token', undefined, 'csv');
+      expect(reportingExportApi.exportAssets).toHaveBeenCalledWith(
+        'test-token',
+        undefined,
+        REPORTING_EXPORT_FORMATS.XLSX
+      );
     });
     expect(onError).not.toHaveBeenCalled();
-  });
-
-  it('uses custom label for accessible name', () => {
-    render(<ExportCsvButton exportType="assets" label="Export assets CSV" onError={vi.fn()} />);
-
-    expect(screen.getByRole('button', { name: 'Export assets CSV' })).toBeInTheDocument();
   });
 
   it('reports forbidden errors via onError', async () => {
@@ -58,8 +60,14 @@ describe('ExportCsvButton', () => {
     forbidden.status = 403;
     reportingExportApi.exportAssets.mockRejectedValue(forbidden);
 
-    render(<ExportCsvButton exportType="assets" onError={onError} />);
-    await user.click(screen.getByRole('button', { name: 'Export CSV' }));
+    render(
+      <ExportReportingButton
+        exportType="assets"
+        format={REPORTING_EXPORT_FORMATS.XLSX}
+        onError={onError}
+      />
+    );
+    await user.click(screen.getByRole('button', { name: 'Export XLSX' }));
 
     await waitFor(() => {
       expect(onError).toHaveBeenCalledWith(

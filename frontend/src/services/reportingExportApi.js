@@ -1,31 +1,29 @@
-import downloadCsv from '../utils/downloadCsv';
-import { REPORTING_EXPORT_TYPES, REPORTING_EXPORTS } from '../constants/reportingExports';
+import downloadAttachment from '../utils/downloadAttachment';
+import {
+  REPORTING_EXPORT_FORMATS,
+  REPORTING_EXPORT_TYPES,
+  getReportingExportConfig,
+} from '../constants/reportingExports';
 
-function getExportConfig(type) {
-  return REPORTING_EXPORTS[type];
+function exportByType(type, format, token, params) {
+  const config = getReportingExportConfig(type, format);
+  if (!config) {
+    return Promise.reject(new Error('Unknown export type'));
+  }
+  return downloadAttachment(config.endpoint, token, params, config.filename);
 }
 
 export const reportingExportApi = {
-  exportAssets: (token, params) => {
-    const config = getExportConfig(REPORTING_EXPORT_TYPES.ASSETS);
-    return downloadCsv(config.endpoint, token, params, config.filename);
-  },
-  exportInspections: (token, params) => {
-    const config = getExportConfig(REPORTING_EXPORT_TYPES.INSPECTIONS);
-    return downloadCsv(config.endpoint, token, params, config.filename);
-  },
-  exportIssues: (token, params) => {
-    const config = getExportConfig(REPORTING_EXPORT_TYPES.ISSUES);
-    return downloadCsv(config.endpoint, token, params, config.filename);
-  },
-  exportWorkOrders: (token, params) => {
-    const config = getExportConfig(REPORTING_EXPORT_TYPES.WORK_ORDERS);
-    return downloadCsv(config.endpoint, token, params, config.filename);
-  },
-  exportPreventiveCandidates: (token, params) => {
-    const config = getExportConfig(REPORTING_EXPORT_TYPES.PREVENTIVE_CANDIDATES);
-    return downloadCsv(config.endpoint, token, params, config.filename);
-  },
+  exportAssets: (token, params, format = REPORTING_EXPORT_FORMATS.CSV) =>
+    exportByType(REPORTING_EXPORT_TYPES.ASSETS, format, token, params),
+  exportInspections: (token, params, format = REPORTING_EXPORT_FORMATS.CSV) =>
+    exportByType(REPORTING_EXPORT_TYPES.INSPECTIONS, format, token, params),
+  exportIssues: (token, params, format = REPORTING_EXPORT_FORMATS.CSV) =>
+    exportByType(REPORTING_EXPORT_TYPES.ISSUES, format, token, params),
+  exportWorkOrders: (token, params, format = REPORTING_EXPORT_FORMATS.CSV) =>
+    exportByType(REPORTING_EXPORT_TYPES.WORK_ORDERS, format, token, params),
+  exportPreventiveCandidates: (token, params, format = REPORTING_EXPORT_FORMATS.CSV) =>
+    exportByType(REPORTING_EXPORT_TYPES.PREVENTIVE_CANDIDATES, format, token, params),
 };
 
 export default reportingExportApi;

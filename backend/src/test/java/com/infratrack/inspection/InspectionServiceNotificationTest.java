@@ -12,6 +12,7 @@ import com.infratrack.inspection.dto.AssignInspectionRequest;
 import com.infratrack.inspectiontemplate.InspectionTemplateRepository;
 import com.infratrack.notification.NotificationService;
 import com.infratrack.notification.OperationalEventNotificationService;
+import com.infratrack.organization.policy.notification.NotificationPolicyService;
 import com.infratrack.organization.policy.visibility.InspectionVisibilityPolicyService;
 import com.infratrack.time.WorkflowClock;
 import com.infratrack.user.User;
@@ -98,6 +99,7 @@ class InspectionServiceNotificationTest {
                 userService,
                 userNameLookup,
                 operationalEventNotificationService,
+                new NotificationPolicyService(),
                 ruleEvaluationReportService,
                 new WorkflowClock(Clock.systemDefaultZone()));
     }

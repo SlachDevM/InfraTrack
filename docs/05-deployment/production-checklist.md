@@ -61,7 +61,7 @@ Run locally or in CI before tagging a release:
 
 ```bash
 cd backend && mvn clean test && mvn clean package -DskipTests
-cd frontend && npm ci --legacy-peer-deps && npm test -- --run && npm run build
+cd frontend && npm ci && npm test -- --run && npm run build
 docker compose up --build -d
 curl http://localhost:4000/actuator/health
 ```

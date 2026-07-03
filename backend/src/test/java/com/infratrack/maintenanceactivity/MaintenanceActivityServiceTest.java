@@ -22,6 +22,8 @@ import com.infratrack.completionreview.CompletionReviewAuthorizationService;
 import com.infratrack.completionreview.CompletionReviewRepository;
 import com.infratrack.maintenanceactivity.dto.CompleteMaintenanceActivityRequest;
 import com.infratrack.notification.OperationalEventNotificationService;
+import com.infratrack.organization.policy.notification.DefaultNotificationPolicy;
+import com.infratrack.organization.policy.notification.NotificationPolicyService;
 import com.infratrack.operationaldecision.OperationalDecision;
 import com.infratrack.operationaldecision.OperationalDecisionOutcome;
 import com.infratrack.time.WorkflowClock;
@@ -85,12 +87,16 @@ class MaintenanceActivityServiceTest {
     @Mock
     private MaintenanceActivityAuthorizationService maintenanceActivityAuthorizationService;
 
+    @Mock
+    private NotificationPolicyService notificationPolicyService;
+
     @InjectMocks
     private MaintenanceActivityService maintenanceActivityService;
 
     @BeforeEach
     void setUpClock() {
         lenient().when(workflowClock.now()).thenReturn(FIXED_NOW);
+        lenient().when(notificationPolicyService.getPolicy()).thenReturn(new DefaultNotificationPolicy());
     }
 
     @Test

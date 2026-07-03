@@ -36,6 +36,6 @@ public final class CsvExportWriter {
     }
 
     static String cell(Object value) {
-        return value == null ? null : String.valueOf(value);
+        return ExportCellFormatter.cell(value);
     }
 }
