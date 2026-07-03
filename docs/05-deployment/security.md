@@ -205,6 +205,20 @@ Authorization uses `MaintenanceActivityAuthorizationService` for single-record c
 
 ---
 
+## Authorization architecture guard
+
+A backend architecture test (`AuthorizationArchitectureTest` in `backend/src/test/java/com/infratrack/architecture/`) scans all `@RestController` classes and verifies each one either:
+
+1. depends directly on an `*AuthorizationService`;
+2. delegates to an application service that depends on an `*AuthorizationService`; or
+3. is explicitly allowlisted in the test with a documented reason.
+
+The guard catches obvious regressions when a new protected controller is added without an authorization dependency path. It is **not** a replacement for endpoint-specific authorization tests or manual security review.
+
+New protected controllers should follow the `Controller → Service → AuthorizationService` pattern or be added to the allowlist with a clear justification (public endpoints, reference data, or documented interim admin checks).
+
+---
+
 ## Dependency and static analysis (CI)
 
 | Check | Scope | Policy |
