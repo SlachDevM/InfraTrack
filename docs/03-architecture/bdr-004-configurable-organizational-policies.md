@@ -94,6 +94,10 @@ It remains a **view-only** policy: it does not grant assignment, completion, ans
 
 Future dashboard policy modes may include `OPERATIONAL`, `FIELD`, `MANAGEMENT`, and `EXECUTIVE` (documentation only).
 
+**Reporting Policy** is the fourth organizational policy foundation. A `ReportingPolicy` abstraction and `DefaultReportingPolicy` now govern organizational reporting defaults (default export format, enabled export formats, default reporting date range). `ReportingExportService` uses `ReportingPolicyService.getPolicy()` where reporting defaults are resolved. No user reporting preferences exist yet. No configurable modes, properties, persistence, or admin UI exist yet — `DefaultReportingPolicy` preserves existing behaviour exactly.
+
+Future reporting policy modes may include `OPERATIONAL`, `MANAGEMENT`, `EXECUTIVE`, `CSV_ONLY`, and `FULL_EXPORT` (documentation only).
+
 Inspection visibility may eventually support modes such as:
 
 - **Organization** (broader visibility)

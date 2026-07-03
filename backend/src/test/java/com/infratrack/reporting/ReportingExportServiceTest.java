@@ -8,6 +8,8 @@ import com.infratrack.department.Department;
 import com.infratrack.inspection.InspectionRepository;
 import com.infratrack.issue.IssueRepository;
 import com.infratrack.operationaldecision.OperationalDecisionRepository;
+import com.infratrack.organization.policy.reporting.ReportingPolicyService;
+import com.infratrack.organization.policy.reporting.DefaultReportingPolicy;
 import com.infratrack.preventivemaintenance.PreventiveExecutionCandidateRepository;
 import com.infratrack.user.User;
 import com.infratrack.user.UserNameLookup;
@@ -64,10 +66,16 @@ class ReportingExportServiceTest {
     @Mock
     private UserNameLookup userNameLookup;
 
+    @Mock
+    private ReportingPolicyService reportingPolicyService;
+
     private ReportingExportService exportService;
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.lenient()
+                .when(reportingPolicyService.getPolicy())
+                .thenReturn(new DefaultReportingPolicy());
         ReportingAuthorizationService authorizationService = new ReportingAuthorizationService(userService);
         exportService = new ReportingExportService(
                 authorizationService,
@@ -77,7 +85,8 @@ class ReportingExportServiceTest {
                 workOrderRepository,
                 preventiveExecutionCandidateRepository,
                 operationalDecisionRepository,
-                userNameLookup);
+                userNameLookup,
+                reportingPolicyService);
     }
 
     @Test
@@ -95,6 +104,16 @@ class ReportingExportServiceTest {
         assertThat(csv).contains("Street Lighting");
         assertThat(csv).contains("Parks");
         verify(assetRepository).findForExport(null, null, null);
+    }
+
+    @Test
+    void exportAssets_csvFilenameUsesReportingPolicyDefault() {
+        when(userService.getById(1L)).thenReturn(admin());
+        when(assetRepository.findForExport(isNull(), isNull(), isNull())).thenReturn(List.of());
+
+        exportService.exportAssets(1L, null, null);
+
+        org.mockito.Mockito.verify(reportingPolicyService).getPolicy();
     }
 
     @Test

@@ -62,6 +62,24 @@ No configurable dashboard policy modes, properties, or admin UI exist yet. `Defa
 
 Future dashboard policy modes may include `OPERATIONAL`, `FIELD`, `MANAGEMENT`, and `EXECUTIVE` — documentation only; not implemented.
 
+**Reporting Policy** is the fourth foundation. `ReportingExportService` consults `ReportingPolicyService.getPolicy()` for organizational reporting defaults (default export format, enabled export formats, default reporting date range). No user reporting preferences exist yet.
+
+Precedence:
+
+```text
+User Preference (future)
+↓
+Organization Reporting Policy
+↓
+System Defaults (DefaultReportingPolicy)
+```
+
+Current defaults: CSV export format; CSV, XLSX, and PDF enabled; `LAST_30_DAYS` default reporting period. Export endpoints still accept explicit `from` and `to` parameters; when omitted, exports remain unfiltered until policy-driven defaults are applied in a future sprint.
+
+No configurable reporting policy modes, properties, or admin UI exist yet. `DefaultReportingPolicy` reproduces existing behaviour exactly.
+
+Future reporting policy modes may include `OPERATIONAL`, `MANAGEMENT`, `EXECUTIVE`, `CSV_ONLY`, and `FULL_EXPORT` — documentation only; not implemented.
+
 | Mode | Purpose |
 |------|---------|
 | `DEFAULT` | Reproduces the original fixed notification behaviour exactly (default) |
@@ -1274,6 +1292,10 @@ Version 2.3.x adds **read-only PDF exports** for the same entities as CSV and XL
 | `GET /api/reporting/exports/preventive-candidates.pdf` | Preventive execution candidate export |
 
 PDF exports are simple tabular reports (title, timestamp, optional date range, table) — not branded report templates. CSV and XLSX exports remain supported unchanged. Scheduled and email reports remain deferred.
+
+### Sprint B4 — Reporting Policy Foundation (V2.3.x)
+
+Version 2.3.x introduces the **Reporting Policy** organizational foundation (BDR-004). `DefaultReportingPolicy` defines CSV as the default export format, enables CSV/XLSX/PDF, and records `LAST_30_DAYS` as the default reporting period. `ReportingExportService` uses the policy for CSV export filenames. Enabled formats and default date range are not enforced yet — export behaviour is unchanged.
 
 The React web client adds **Export PDF** buttons alongside existing CSV and XLSX buttons for authorized roles.
 

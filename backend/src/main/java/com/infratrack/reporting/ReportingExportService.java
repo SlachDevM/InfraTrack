@@ -10,6 +10,7 @@ import com.infratrack.operationaldecision.OperationalDecisionRepository;
 import com.infratrack.preventivemaintenance.PreventiveExecutionCandidate;
 import com.infratrack.preventivemaintenance.PreventiveExecutionCandidateRepository;
 import com.infratrack.user.UserNameLookup;
+import com.infratrack.organization.policy.reporting.ReportingPolicyService;
 import com.infratrack.workorder.WorkOrder;
 import com.infratrack.workorder.WorkOrderRepository;
 import org.springframework.stereotype.Service;
@@ -39,6 +40,7 @@ public class ReportingExportService {
     private final PreventiveExecutionCandidateRepository preventiveExecutionCandidateRepository;
     private final OperationalDecisionRepository operationalDecisionRepository;
     private final UserNameLookup userNameLookup;
+    private final ReportingPolicyService reportingPolicyService;
 
     public ReportingExportService(
             ReportingAuthorizationService authorizationService,
@@ -48,7 +50,8 @@ public class ReportingExportService {
             WorkOrderRepository workOrderRepository,
             PreventiveExecutionCandidateRepository preventiveExecutionCandidateRepository,
             OperationalDecisionRepository operationalDecisionRepository,
-            UserNameLookup userNameLookup) {
+            UserNameLookup userNameLookup,
+            ReportingPolicyService reportingPolicyService) {
         this.authorizationService = authorizationService;
         this.assetRepository = assetRepository;
         this.inspectionRepository = inspectionRepository;
@@ -57,6 +60,7 @@ public class ReportingExportService {
         this.preventiveExecutionCandidateRepository = preventiveExecutionCandidateRepository;
         this.operationalDecisionRepository = operationalDecisionRepository;
         this.userNameLookup = userNameLookup;
+        this.reportingPolicyService = reportingPolicyService;
     }
 
     @Transactional(readOnly = true)
@@ -258,10 +262,10 @@ public class ReportingExportService {
         return new TabularExport(headers, rows);
     }
 
-    private static CsvExportResponse buildCsvResponse(ExportType exportType, TabularExport tabularExport) {
+    private CsvExportResponse buildCsvResponse(ExportType exportType, TabularExport tabularExport) {
         return new CsvExportResponse(
                 CsvExportWriter.write(tabularExport.headers(), new ArrayList<>(tabularExport.rows())),
-                exportType.getFilename());
+                exportType.getFilename(reportingPolicyService.getPolicy().defaultExportFormat()));
     }
 
     private static ExportFileResponse buildXlsxResponse(ExportType exportType, TabularExport tabularExport) {
