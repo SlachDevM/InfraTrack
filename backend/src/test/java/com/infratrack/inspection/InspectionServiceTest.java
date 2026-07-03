@@ -123,7 +123,7 @@ class InspectionServiceTest {
                 userService,
                 userNameLookup,
                 operationalEventNotificationService,
-                new NotificationPolicyService(),
+                new NotificationPolicyService("DEFAULT"),
                 ruleEvaluationReportService,
                 workflowClock);
     }

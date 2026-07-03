@@ -44,7 +44,22 @@ Rules produce **Suggested Actions**, not automatic Issues. The scheduler generat
 
 As of V2.3 foundation work, **Inspection Visibility Policy** is the first concrete implementation of the BDR-004 principle: business rules remain stable; organizational policies are configurable.
 
-**Notification Policy** is the second foundation. Operational services consult `NotificationPolicyService.getPolicy()` before sending UC-013 notifications. `DefaultNotificationPolicy` reproduces the original fixed behaviour exactly. No configuration property or database setting exists yet.
+**Notification Policy** is the second foundation. Operational services consult `NotificationPolicyService.getPolicy()` before sending UC-013 notifications.
+
+| Mode | Purpose |
+|------|---------|
+| `DEFAULT` | Reproduces the original fixed notification behaviour exactly (default) |
+| `QUIET` | Reduces non-critical notifications: preserves direct-action notifications (assignments, completion review, rework decision); suppresses informational maintenance-completed notifications to coordinators |
+
+Configuration:
+
+```properties
+app.policies.notification.mode=DEFAULT
+```
+
+Environment override: `APP_POLICIES_NOTIFICATION_MODE=QUIET`
+
+No user-level notification preferences, database settings, or push/email delivery changes exist yet.
 
 Visibility is configured by property:
 

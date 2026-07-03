@@ -110,8 +110,17 @@ docker compose -f docker-compose.prod.yml up -d --build
 | `PREVENTIVE_SCHEDULER_ENABLED` | No | Default `false`; enable scheduled preventive candidate generation |
 | `PREVENTIVE_SCHEDULER_CRON` | No | Cron expression (default `0 0 6 * * *`) |
 | `INSPECTION_VISIBILITY_POLICY` | No | Inspection visibility mode: `DEPARTMENT` (default) or `ORGANIZATION` |
+| `APP_POLICIES_NOTIFICATION_MODE` | No | Notification policy mode: `DEFAULT` (default) or `QUIET` |
 
 Full list: [`.env.example`](../../.env.example)
+
+### Notification policy mode
+
+Operational in-app notifications (UC-013) consult `NotificationPolicyService` before send. This does **not** change push notification infrastructure, email delivery, or user preferences.
+
+| Property / variable | Default | Purpose |
+|---------------------|---------|---------|
+| `app.policies.notification.mode` / `APP_POLICIES_NOTIFICATION_MODE` | `DEFAULT` | `DEFAULT` = original behaviour; `QUIET` = suppress coordinator maintenance-completed informational notifications while preserving direct-action notifications |
 
 ### Preventive Scheduler
 

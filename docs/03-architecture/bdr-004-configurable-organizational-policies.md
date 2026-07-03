@@ -88,7 +88,7 @@ The policy is implemented incrementally:
 
 It remains a **view-only** policy: it does not grant assignment, completion, answer saving, approvals, or other mutations.
 
-**Notification Policy** is the second organizational policy foundation. A `NotificationPolicy` abstraction and `DefaultNotificationPolicy` now govern whether operational notifications are sent. No configuration exists yet; behaviour is identical to the original fixed notification rules.
+**Notification Policy** is the second organizational policy foundation. A `NotificationPolicy` abstraction and `DefaultNotificationPolicy` now govern whether operational notifications are sent. **Notification policy modes** (`DEFAULT`, `QUIET`) are configurable via `app.policies.notification.mode`; `DEFAULT` preserves the original fixed behaviour exactly.
 
 Inspection visibility may eventually support modes such as:
 

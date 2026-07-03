@@ -99,7 +99,7 @@ class InspectionServiceNotificationTest {
                 userService,
                 userNameLookup,
                 operationalEventNotificationService,
-                new NotificationPolicyService(),
+                new NotificationPolicyService("DEFAULT"),
                 ruleEvaluationReportService,
                 new WorkflowClock(Clock.systemDefaultZone()));
     }

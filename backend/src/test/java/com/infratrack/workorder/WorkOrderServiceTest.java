@@ -88,7 +88,7 @@ class WorkOrderServiceTest {
                 userService,
                 userNameLookup,
                 operationalEventNotificationService,
-                new NotificationPolicyService());
+                new NotificationPolicyService("DEFAULT"));
     }
 
     @Test

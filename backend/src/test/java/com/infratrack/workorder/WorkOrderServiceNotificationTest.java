@@ -78,7 +78,7 @@ class WorkOrderServiceNotificationTest {
                 userService,
                 userNameLookup,
                 operationalEventNotificationService,
-                new NotificationPolicyService());
+                new NotificationPolicyService("DEFAULT"));
     }
 
     @Test
@@ -108,6 +108,48 @@ class WorkOrderServiceNotificationTest {
                 eq(OperationalEventNotificationService.WORK_ORDER_ASSIGNED_TITLE),
                 eq(OperationalEventNotificationService.WORK_ORDER_ASSIGNED_MESSAGE),
                 eq(OperationalEventNotificationService.WORK_ORDERS_ROUTE));
+    }
+
+    @Test
+    void assignWorkOrder_inQuietMode_shouldStillNotifyAssignee() {
+        AssignWorkOrderRequest request = new AssignWorkOrderRequest();
+        request.setAssignedToUserId(20L);
+        request.setAssignedAt(LocalDateTime.now().minusMinutes(5));
+
+        WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
+        User coordinator = userInDepartment(40L, UserRole.OPERATIONAL_COORDINATOR, 1L);
+        User fieldEmployee = userInDepartment(20L, UserRole.FIELD_EMPLOYEE, 1L);
+
+        WorkOrderService quietModeService = serviceWithNotificationPolicy("QUIET");
+
+        when(userService.getById(40L)).thenReturn(coordinator);
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.of(workOrder));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        quietModeService.assignWorkOrder(1000L, request, 40L);
+
+        verify(notificationService).create(
+                eq(20L),
+                eq(OperationalEventNotificationService.WORK_ORDER_ASSIGNED_TITLE),
+                eq(OperationalEventNotificationService.WORK_ORDER_ASSIGNED_MESSAGE),
+                eq(OperationalEventNotificationService.WORK_ORDERS_ROUTE));
+    }
+
+    private WorkOrderService serviceWithNotificationPolicy(String mode) {
+        OperationalEventNotificationService operationalEventNotificationService =
+                new OperationalEventNotificationService(notificationService, userRepository);
+        WorkOrderAuthorizationService authorizationService = new WorkOrderAuthorizationService(userService);
+        WorkOrderHistoryRecorder historyRecorder = new WorkOrderHistoryRecorder(assetHistoryEventRepository);
+        return new WorkOrderService(
+                workOrderRepository,
+                operationalDecisionRepository,
+                authorizationService,
+                historyRecorder,
+                userService,
+                userNameLookup,
+                operationalEventNotificationService,
+                new NotificationPolicyService(mode));
     }
 
     private WorkOrder createdWorkOrder(Long id, WorkType workType) {

@@ -92,7 +92,7 @@ class MaintenanceActivityServiceNotificationTest {
                 userService,
                 completionReviewRepository,
                 operationalEventNotificationService,
-                new NotificationPolicyService(),
+                new NotificationPolicyService("DEFAULT"),
                 completionReviewAuthorizationService,
                 new WorkflowClock(java.time.Clock.systemDefaultZone()),
                 new MaintenanceActivityAuthorizationService(delegatedAuthorityService));
@@ -228,6 +228,78 @@ class MaintenanceActivityServiceNotificationTest {
         verify(maintenanceActivityRepository).save(any(MaintenanceActivity.class));
         verify(workOrderRepository).save(any(WorkOrder.class));
         verify(assetHistoryEventRepository).save(any());
+    }
+
+    @Test
+    void completeMaintenance_inQuietMode_shouldSuppressMaintenanceCompletedNotification() {
+        CompleteMaintenanceActivityRequest request = validRequest();
+        WorkOrder workOrder = assignedWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE, 20L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        MaintenanceActivityService quietModeService = serviceWithNotificationPolicy("QUIET");
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+        when(maintenanceActivityRepository.existsByWorkOrderId(1000L)).thenReturn(false);
+        when(maintenanceActivityRepository.save(any(MaintenanceActivity.class))).thenAnswer(invocation -> {
+            MaintenanceActivity activity = invocation.getArgument(0);
+            activity.setId(5000L);
+            return activity;
+        });
+        when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        quietModeService.completeMaintenance(1000L, request, 20L);
+
+        verify(notificationService, never()).create(anyLong(), anyString(), anyString(), anyString());
+        verify(userRepository, never()).findByRoleAndDepartmentId(eq(UserRole.OPERATIONAL_COORDINATOR), anyLong());
+        verify(userRepository, never()).findByRoleAndDepartmentId(eq(UserRole.MANAGER), anyLong());
+    }
+
+    @Test
+    void completeMaintenance_inQuietMode_shouldStillNotifyManagersForContractorWork() {
+        CompleteMaintenanceActivityRequest request = validRequest();
+        WorkOrder workOrder = assignedWorkOrder(1000L, WorkType.CONTRACTOR_WORK, 25L);
+        User contractor = user(25L, UserRole.CONTRACTOR);
+        User manager = user(30L, UserRole.MANAGER, workOrder.getAsset().getDepartment());
+
+        MaintenanceActivityService quietModeService = serviceWithNotificationPolicy("QUIET");
+
+        when(userService.getById(25L)).thenReturn(contractor);
+        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
+        when(maintenanceActivityRepository.existsByWorkOrderId(1000L)).thenReturn(false);
+        when(maintenanceActivityRepository.save(any(MaintenanceActivity.class))).thenAnswer(invocation -> {
+            MaintenanceActivity activity = invocation.getArgument(0);
+            activity.setId(5001L);
+            return activity;
+        });
+        when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.findByRoleAndDepartmentId(UserRole.MANAGER, 1L))
+                .thenReturn(List.of(manager));
+
+        quietModeService.completeMaintenance(1000L, request, 25L);
+
+        verify(notificationService).create(
+                30L,
+                OperationalEventNotificationService.COMPLETION_REVIEW_REQUIRED_TITLE,
+                OperationalEventNotificationService.COMPLETION_REVIEW_REQUIRED_MESSAGE,
+                OperationalEventNotificationService.WORK_ORDERS_ROUTE);
+        verify(userRepository, never()).findByRoleAndDepartmentId(eq(UserRole.OPERATIONAL_COORDINATOR), anyLong());
+    }
+
+    private MaintenanceActivityService serviceWithNotificationPolicy(String mode) {
+        OperationalEventNotificationService operationalEventNotificationService =
+                new OperationalEventNotificationService(notificationService, userRepository);
+        return new MaintenanceActivityService(
+                maintenanceActivityRepository,
+                workOrderRepository,
+                assetHistoryEventRepository,
+                userService,
+                completionReviewRepository,
+                operationalEventNotificationService,
+                new NotificationPolicyService(mode),
+                completionReviewAuthorizationService,
+                new WorkflowClock(java.time.Clock.systemDefaultZone()),
+                new MaintenanceActivityAuthorizationService(delegatedAuthorityService));
     }
 
     private CompleteMaintenanceActivityRequest validRequest() {
