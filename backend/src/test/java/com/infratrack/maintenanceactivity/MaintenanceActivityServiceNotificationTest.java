@@ -18,6 +18,7 @@ import com.infratrack.issue.IssueSeverity;
 import com.infratrack.maintenanceactivity.dto.CompleteMaintenanceActivityRequest;
 import com.infratrack.notification.NotificationService;
 import com.infratrack.notification.OperationalEventNotificationService;
+import com.infratrack.organization.policy.approval.ApprovalPolicyService;
 import com.infratrack.organization.policy.notification.NotificationPolicyService;
 import com.infratrack.time.WorkflowClock;
 import com.infratrack.operationaldecision.OperationalDecision;
@@ -93,6 +94,7 @@ class MaintenanceActivityServiceNotificationTest {
                 completionReviewRepository,
                 operationalEventNotificationService,
                 new NotificationPolicyService("DEFAULT"),
+                new ApprovalPolicyService(),
                 completionReviewAuthorizationService,
                 new WorkflowClock(java.time.Clock.systemDefaultZone()),
                 new MaintenanceActivityAuthorizationService(delegatedAuthorityService));
@@ -297,6 +299,7 @@ class MaintenanceActivityServiceNotificationTest {
                 completionReviewRepository,
                 operationalEventNotificationService,
                 new NotificationPolicyService(mode),
+                new ApprovalPolicyService(),
                 completionReviewAuthorizationService,
                 new WorkflowClock(java.time.Clock.systemDefaultZone()),
                 new MaintenanceActivityAuthorizationService(delegatedAuthorityService));

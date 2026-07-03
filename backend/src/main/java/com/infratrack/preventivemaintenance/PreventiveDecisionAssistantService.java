@@ -4,6 +4,7 @@ import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.NotFoundException;
 import com.infratrack.inspection.InspectionService;
 import com.infratrack.inspection.dto.InspectionResponse;
+import com.infratrack.organization.policy.approval.ApprovalPolicyService;
 import com.infratrack.preventivemaintenance.dto.ApprovePreventiveCandidateRequest;
 import com.infratrack.preventivemaintenance.dto.ApprovePreventiveCandidateResponse;
 import com.infratrack.preventivemaintenance.dto.DismissPreventiveCandidateRequest;
@@ -24,18 +25,21 @@ public class PreventiveDecisionAssistantService {
     private final InspectionService inspectionService;
     private final PreventiveExecutionReportService reportService;
     private final WorkflowClock workflowClock;
+    private final ApprovalPolicyService approvalPolicyService;
 
     public PreventiveDecisionAssistantService(
             PreventiveExecutionCandidateRepository candidateRepository,
             PreventiveExecutionCandidateAuthorizationService authorizationService,
             InspectionService inspectionService,
             PreventiveExecutionReportService reportService,
-            WorkflowClock workflowClock) {
+            WorkflowClock workflowClock,
+            ApprovalPolicyService approvalPolicyService) {
         this.candidateRepository = candidateRepository;
         this.authorizationService = authorizationService;
         this.inspectionService = inspectionService;
         this.reportService = reportService;
         this.workflowClock = workflowClock;
+        this.approvalPolicyService = approvalPolicyService;
     }
 
     @Transactional
@@ -43,6 +47,7 @@ public class PreventiveDecisionAssistantService {
             Long candidateId,
             ApprovePreventiveCandidateRequest request,
             Long userId) {
+        requirePreventiveCandidateApprovalEnabled();
         PreventiveExecutionCandidate candidate = findAuthorizedCandidate(candidateId, userId);
         candidate.requirePending();
         requireSupportedTargetAction(candidate);
@@ -67,6 +72,7 @@ public class PreventiveDecisionAssistantService {
             Long candidateId,
             RejectPreventiveCandidateRequest request,
             Long userId) {
+        requirePreventiveCandidateApprovalEnabled();
         PreventiveExecutionCandidate candidate = findAuthorizedCandidate(candidateId, userId);
         long decidedAt = workflowClock.nowMillis();
         candidate.markRejected(userId, normalizeOptionalText(request.getReason()), decidedAt);
@@ -80,6 +86,7 @@ public class PreventiveDecisionAssistantService {
             Long candidateId,
             DismissPreventiveCandidateRequest request,
             Long userId) {
+        requirePreventiveCandidateApprovalEnabled();
         PreventiveExecutionCandidate candidate = findAuthorizedCandidate(candidateId, userId);
         long decidedAt = workflowClock.nowMillis();
         candidate.markDismissed(userId, normalizeOptionalText(request.getComment()), decidedAt);
@@ -107,5 +114,12 @@ public class PreventiveDecisionAssistantService {
             return null;
         }
         return value.trim();
+    }
+
+    private void requirePreventiveCandidateApprovalEnabled() {
+        if (!approvalPolicyService.getPolicy().requiresPreventiveCandidateApproval()) {
+            throw new BusinessValidationException(
+                    "Preventive candidate approval is not enabled by the current approval policy");
+        }
     }
 }

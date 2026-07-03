@@ -15,6 +15,7 @@ import com.infratrack.exception.NotFoundException;
 import com.infratrack.maintenanceactivity.dto.CompleteMaintenanceActivityRequest;
 import com.infratrack.maintenanceactivity.dto.MaintenanceActivityResponse;
 import com.infratrack.notification.OperationalEventNotificationService;
+import com.infratrack.organization.policy.approval.ApprovalPolicyService;
 import com.infratrack.organization.policy.notification.NotificationPolicyService;
 import com.infratrack.time.WorkflowClock;
 import com.infratrack.user.User;
@@ -42,6 +43,7 @@ public class MaintenanceActivityService {
     private final CompletionReviewRepository completionReviewRepository;
     private final OperationalEventNotificationService operationalEventNotificationService;
     private final NotificationPolicyService notificationPolicyService;
+    private final ApprovalPolicyService approvalPolicyService;
     private final CompletionReviewAuthorizationService completionReviewAuthorizationService;
     private final WorkflowClock workflowClock;
     private final MaintenanceActivityAuthorizationService maintenanceActivityAuthorizationService;
@@ -54,6 +56,7 @@ public class MaintenanceActivityService {
             CompletionReviewRepository completionReviewRepository,
             OperationalEventNotificationService operationalEventNotificationService,
             NotificationPolicyService notificationPolicyService,
+            ApprovalPolicyService approvalPolicyService,
             CompletionReviewAuthorizationService completionReviewAuthorizationService,
             WorkflowClock workflowClock,
             MaintenanceActivityAuthorizationService maintenanceActivityAuthorizationService) {
@@ -64,6 +67,7 @@ public class MaintenanceActivityService {
         this.completionReviewRepository = completionReviewRepository;
         this.operationalEventNotificationService = operationalEventNotificationService;
         this.notificationPolicyService = notificationPolicyService;
+        this.approvalPolicyService = approvalPolicyService;
         this.completionReviewAuthorizationService = completionReviewAuthorizationService;
         this.workflowClock = workflowClock;
         this.maintenanceActivityAuthorizationService = maintenanceActivityAuthorizationService;
@@ -138,7 +142,8 @@ public class MaintenanceActivityService {
         if (notificationPolicyService.getPolicy().shouldNotifyMaintenanceCompleted()) {
             operationalEventNotificationService.notifyMaintenanceCompleted(asset.getDepartment());
         }
-        if (notificationPolicyService.getPolicy().shouldNotifyCompletionReview(workOrder.getWorkType())) {
+        if (approvalPolicyService.getPolicy().requiresCompletionReview(workOrder.getWorkType())
+                && notificationPolicyService.getPolicy().shouldNotifyCompletionReview(workOrder.getWorkType())) {
             operationalEventNotificationService.notifyCompletionReviewRequired(asset.getDepartment());
         }
 

@@ -5,6 +5,7 @@ import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.ConflictException;
 import com.infratrack.exception.NotFoundException;
 import com.infratrack.notification.OperationalEventNotificationService;
+import com.infratrack.organization.policy.approval.ApprovalPolicyService;
 import com.infratrack.organization.policy.notification.NotificationPolicyService;
 import com.infratrack.operationaldecision.OperationalDecision;
 import com.infratrack.operationaldecision.OperationalDecisionOutcome;
@@ -40,6 +41,7 @@ public class WorkOrderService {
     private final UserNameLookup userNameLookup;
     private final OperationalEventNotificationService operationalEventNotificationService;
     private final NotificationPolicyService notificationPolicyService;
+    private final ApprovalPolicyService approvalPolicyService;
 
     public WorkOrderService(
             WorkOrderRepository workOrderRepository,
@@ -49,7 +51,8 @@ public class WorkOrderService {
             UserService userService,
             UserNameLookup userNameLookup,
             OperationalEventNotificationService operationalEventNotificationService,
-            NotificationPolicyService notificationPolicyService) {
+            NotificationPolicyService notificationPolicyService,
+            ApprovalPolicyService approvalPolicyService) {
         this.workOrderRepository = workOrderRepository;
         this.operationalDecisionRepository = operationalDecisionRepository;
         this.authorizationService = authorizationService;
@@ -58,6 +61,7 @@ public class WorkOrderService {
         this.userNameLookup = userNameLookup;
         this.operationalEventNotificationService = operationalEventNotificationService;
         this.notificationPolicyService = notificationPolicyService;
+        this.approvalPolicyService = approvalPolicyService;
     }
 
     @Transactional(readOnly = true)
@@ -90,6 +94,7 @@ public class WorkOrderService {
 
     @Transactional
     public WorkOrderResponse createWorkOrder(CreateWorkOrderRequest request, Long userId) {
+        requireManagerOperationalDecisionEnabled();
         User coordinator = authorizationService.requireOperationalCoordinator(userId);
         OperationalDecision decision = findOperationalDecisionOrThrow(request.getOperationalDecisionId());
         WorkType workType = requirePhysicalWorkOutcome(decision);
@@ -231,5 +236,12 @@ public class WorkOrderService {
                     "Work order creation date and time cannot be in the future");
         }
         return createdAtBusinessDate;
+    }
+
+    private void requireManagerOperationalDecisionEnabled() {
+        if (!approvalPolicyService.getPolicy().requiresManagerOperationalDecision()) {
+            throw new BusinessValidationException(
+                    "Work orders require manager operational decisions under the current approval policy");
+        }
     }
 }

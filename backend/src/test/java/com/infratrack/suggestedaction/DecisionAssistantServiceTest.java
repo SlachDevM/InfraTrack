@@ -24,6 +24,7 @@ import com.infratrack.suggestedaction.dto.ApproveSuggestedActionRequest;
 import com.infratrack.suggestedaction.dto.ApproveSuggestedActionResponse;
 import com.infratrack.suggestedaction.dto.DismissSuggestedActionRequest;
 import com.infratrack.suggestedaction.dto.RejectSuggestedActionRequest;
+import com.infratrack.organization.policy.approval.ApprovalPolicyService;
 import com.infratrack.time.WorkflowClock;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
@@ -73,7 +74,8 @@ class DecisionAssistantServiceTest {
                 suggestedActionRepository,
                 issueService,
                 userService,
-                workflowClock);
+                workflowClock,
+                new ApprovalPolicyService());
     }
 
     @Test

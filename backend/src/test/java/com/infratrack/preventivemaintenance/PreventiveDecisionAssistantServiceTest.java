@@ -16,6 +16,7 @@ import com.infratrack.preventivemaintenance.dto.ApprovePreventiveCandidateReques
 import com.infratrack.preventivemaintenance.dto.ApprovePreventiveCandidateResponse;
 import com.infratrack.preventivemaintenance.dto.DismissPreventiveCandidateRequest;
 import com.infratrack.preventivemaintenance.dto.RejectPreventiveCandidateRequest;
+import com.infratrack.organization.policy.approval.ApprovalPolicyService;
 import com.infratrack.time.WorkflowClock;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
@@ -71,7 +72,8 @@ class PreventiveDecisionAssistantServiceTest {
                 authorizationService,
                 inspectionService,
                 reportService,
-                workflowClock);
+                workflowClock,
+                new ApprovalPolicyService());
     }
 
     @Test

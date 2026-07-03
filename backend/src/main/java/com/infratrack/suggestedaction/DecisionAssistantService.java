@@ -5,6 +5,7 @@ import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.exception.NotFoundException;
 import com.infratrack.inspectiontemplate.DecisionRuleActionType;
 import com.infratrack.issue.IssueService;
+import com.infratrack.organization.policy.approval.ApprovalPolicyService;
 import com.infratrack.issue.dto.IssueResponse;
 import com.infratrack.suggestedaction.dto.ApproveSuggestedActionRequest;
 import com.infratrack.suggestedaction.dto.ApproveSuggestedActionResponse;
@@ -24,16 +25,19 @@ public class DecisionAssistantService {
     private final IssueService issueService;
     private final UserService userService;
     private final WorkflowClock workflowClock;
+    private final ApprovalPolicyService approvalPolicyService;
 
     public DecisionAssistantService(
             SuggestedActionRepository suggestedActionRepository,
             IssueService issueService,
             UserService userService,
-            WorkflowClock workflowClock) {
+            WorkflowClock workflowClock,
+            ApprovalPolicyService approvalPolicyService) {
         this.suggestedActionRepository = suggestedActionRepository;
         this.issueService = issueService;
         this.userService = userService;
         this.workflowClock = workflowClock;
+        this.approvalPolicyService = approvalPolicyService;
     }
 
     @Transactional(readOnly = true)
@@ -47,6 +51,7 @@ public class DecisionAssistantService {
             Long suggestedActionId,
             ApproveSuggestedActionRequest request,
             Long userId) {
+        requireSuggestedActionApprovalEnabled();
         SuggestedAction action = findAuthorizedAction(suggestedActionId, userId);
         action.requirePending();
         requireIssueApprovalActionType(action.getActionType());
@@ -66,6 +71,7 @@ public class DecisionAssistantService {
             Long suggestedActionId,
             RejectSuggestedActionRequest request,
             Long userId) {
+        requireSuggestedActionApprovalEnabled();
         SuggestedAction action = findAuthorizedAction(suggestedActionId, userId);
         action.markRejected(userId, normalizeOptionalText(request.getReason()), workflowClock.nowMillis());
         return SuggestedActionDetailResponse.from(suggestedActionRepository.save(action));
@@ -76,6 +82,7 @@ public class DecisionAssistantService {
             Long suggestedActionId,
             DismissSuggestedActionRequest request,
             Long userId) {
+        requireSuggestedActionApprovalEnabled();
         SuggestedAction action = findAuthorizedAction(suggestedActionId, userId);
         action.markDismissed(userId, normalizeOptionalText(request.getComment()), workflowClock.nowMillis());
         return SuggestedActionDetailResponse.from(suggestedActionRepository.save(action));
@@ -121,5 +128,12 @@ public class DecisionAssistantService {
             return null;
         }
         return value.trim();
+    }
+
+    private void requireSuggestedActionApprovalEnabled() {
+        if (!approvalPolicyService.getPolicy().requiresSuggestedActionApproval()) {
+            throw new BusinessValidationException(
+                    "Suggested action approval is not enabled by the current approval policy");
+        }
     }
 }

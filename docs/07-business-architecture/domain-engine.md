@@ -80,6 +80,12 @@ No configurable reporting policy modes, properties, or admin UI exist yet. `Defa
 
 Future reporting policy modes may include `OPERATIONAL`, `MANAGEMENT`, `EXECUTIVE`, `CSV_ONLY`, and `FULL_EXPORT` — documentation only; not implemented.
 
+**Approval Policy** is the fifth foundation. Operational services consult `ApprovalPolicyService.getPolicy()` to determine whether approval steps are required (completion review, manager operational decisions, suggested action approval, preventive candidate approval). `DefaultApprovalPolicy` reproduces today's fixed approval behaviour exactly.
+
+No configurable approval policy modes, properties, or admin UI exist yet.
+
+Future approval policy modes may include `STANDARD`, `SIMPLIFIED`, and `STRICT` — documentation only; not implemented. Potential future capabilities include always require review, contractor-only review, automatic approval, dual approval, and threshold-based approval.
+
 | Mode | Purpose |
 |------|---------|
 | `DEFAULT` | Reproduces the original fixed notification behaviour exactly (default) |
@@ -1296,6 +1302,10 @@ PDF exports are simple tabular reports (title, timestamp, optional date range, t
 ### Sprint B4 — Reporting Policy Foundation (V2.3.x)
 
 Version 2.3.x introduces the **Reporting Policy** organizational foundation (BDR-004). `DefaultReportingPolicy` defines CSV as the default export format, enables CSV/XLSX/PDF, and records `LAST_30_DAYS` as the default reporting period. `ReportingExportService` uses the policy for CSV export filenames. Enabled formats and default date range are not enforced yet — export behaviour is unchanged.
+
+### Sprint B5 — Approval Policy Foundation (V2.3.x)
+
+Version 2.3.x introduces the **Approval Policy** organizational foundation (BDR-004). `DefaultApprovalPolicy` governs whether completion review, manager operational decisions, suggested action approval, and preventive candidate approval are required. Integrated services consult `ApprovalPolicyService.getPolicy()` at existing approval decision points. No configurable modes exist yet — workflow behaviour is unchanged.
 
 The React web client adds **Export PDF** buttons alongside existing CSV and XLSX buttons for authorized roles.
 

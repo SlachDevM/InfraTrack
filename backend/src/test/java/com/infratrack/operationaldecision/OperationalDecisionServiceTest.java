@@ -23,12 +23,15 @@ import com.infratrack.inspection.PhysicalCondition;
 import com.infratrack.issue.Issue;
 import com.infratrack.issue.IssueRepository;
 import com.infratrack.issue.IssueSeverity;
+import com.infratrack.organization.policy.approval.ApprovalPolicyService;
+import com.infratrack.organization.policy.approval.DefaultApprovalPolicy;
 import com.infratrack.operationaldecision.dto.CreateOperationalDecisionRequest;
 import com.infratrack.operationaldecision.dto.OperationalDecisionResponse;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRepository;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -78,8 +81,18 @@ class OperationalDecisionServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private ApprovalPolicyService approvalPolicyService;
+
     @InjectMocks
     private OperationalDecisionService operationalDecisionService;
+
+    @BeforeEach
+    void setUp() {
+        org.mockito.Mockito.lenient()
+                .when(approvalPolicyService.getPolicy())
+                .thenReturn(new DefaultApprovalPolicy());
+    }
 
     @Test
     void makeOperationalDecision_shouldCreateDecisionAndHistoryEvent_whenValid() {
@@ -396,7 +409,8 @@ class OperationalDecisionServiceTest {
                 issueRepository,
                 assetHistoryEventRepository,
                 userService,
-                realAuthorizationService);
+                realAuthorizationService,
+                new ApprovalPolicyService());
 
         when(userService.getById(30L)).thenReturn(manager);
         when(issueRepository.findDetailedById(500L)).thenReturn(Optional.of(issue));

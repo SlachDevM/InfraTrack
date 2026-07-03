@@ -14,6 +14,7 @@ import com.infratrack.issue.Issue;
 import com.infratrack.issue.IssueSeverity;
 import com.infratrack.notification.NotificationService;
 import com.infratrack.notification.OperationalEventNotificationService;
+import com.infratrack.organization.policy.approval.ApprovalPolicyService;
 import com.infratrack.organization.policy.notification.NotificationPolicyService;
 import com.infratrack.operationaldecision.OperationalDecision;
 import com.infratrack.operationaldecision.OperationalDecisionOutcome;
@@ -78,7 +79,8 @@ class WorkOrderServiceNotificationTest {
                 userService,
                 userNameLookup,
                 operationalEventNotificationService,
-                new NotificationPolicyService("DEFAULT"));
+                new NotificationPolicyService("DEFAULT"),
+                new ApprovalPolicyService());
     }
 
     @Test
@@ -149,7 +151,8 @@ class WorkOrderServiceNotificationTest {
                 userService,
                 userNameLookup,
                 operationalEventNotificationService,
-                new NotificationPolicyService(mode));
+                new NotificationPolicyService(mode),
+                new ApprovalPolicyService());
     }
 
     private WorkOrder createdWorkOrder(Long id, WorkType workType) {

@@ -98,6 +98,10 @@ Future dashboard policy modes may include `OPERATIONAL`, `FIELD`, `MANAGEMENT`, 
 
 Future reporting policy modes may include `OPERATIONAL`, `MANAGEMENT`, `EXECUTIVE`, `CSV_ONLY`, and `FULL_EXPORT` (documentation only).
 
+**Approval Policy** is the fifth organizational policy foundation. An `ApprovalPolicy` abstraction and `DefaultApprovalPolicy` now govern whether approval steps are required for completion review, manager operational decisions, suggested action approval, and preventive candidate approval. Integrated workflow services consult `ApprovalPolicyService.getPolicy()` at existing approval decision points. No configurable modes, properties, persistence, or admin UI exist yet — `DefaultApprovalPolicy` preserves existing behaviour exactly.
+
+Future approval policy modes may include `STANDARD`, `SIMPLIFIED`, and `STRICT` (documentation only).
+
 Inspection visibility may eventually support modes such as:
 
 - **Organization** (broader visibility)

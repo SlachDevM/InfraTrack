@@ -14,6 +14,7 @@ import com.infratrack.issue.Issue;
 import com.infratrack.issue.IssueRepository;
 import com.infratrack.operationaldecision.dto.CreateOperationalDecisionRequest;
 import com.infratrack.operationaldecision.dto.OperationalDecisionResponse;
+import com.infratrack.organization.policy.approval.ApprovalPolicyService;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
 import org.springframework.data.domain.Page;
@@ -34,18 +35,21 @@ public class OperationalDecisionService {
     private final AssetHistoryEventRepository assetHistoryEventRepository;
     private final UserService userService;
     private final DelegatedAuthorityService delegatedAuthorityService;
+    private final ApprovalPolicyService approvalPolicyService;
 
     public OperationalDecisionService(
             OperationalDecisionRepository operationalDecisionRepository,
             IssueRepository issueRepository,
             AssetHistoryEventRepository assetHistoryEventRepository,
             UserService userService,
-            DelegatedAuthorityService delegatedAuthorityService) {
+            DelegatedAuthorityService delegatedAuthorityService,
+            ApprovalPolicyService approvalPolicyService) {
         this.operationalDecisionRepository = operationalDecisionRepository;
         this.issueRepository = issueRepository;
         this.assetHistoryEventRepository = assetHistoryEventRepository;
         this.userService = userService;
         this.delegatedAuthorityService = delegatedAuthorityService;
+        this.approvalPolicyService = approvalPolicyService;
     }
 
     @Transactional(readOnly = true)
@@ -73,6 +77,7 @@ public class OperationalDecisionService {
 
     @Transactional
     public OperationalDecisionResponse makeOperationalDecision(CreateOperationalDecisionRequest request, Long userId) {
+        requireManagerOperationalDecisionEnabled();
         User manager = requireManager(userId);
         Issue issue = findIssueOrThrow(request.getIssueId());
         requireIssueFromCompletedInspection(issue);
@@ -179,5 +184,12 @@ public class OperationalDecisionService {
                     "Decision date and time cannot be in the future");
         }
         return decidedAt;
+    }
+
+    private void requireManagerOperationalDecisionEnabled() {
+        if (!approvalPolicyService.getPolicy().requiresManagerOperationalDecision()) {
+            throw new BusinessValidationException(
+                    "Manager operational decisions are not enabled by the current approval policy");
+        }
     }
 }

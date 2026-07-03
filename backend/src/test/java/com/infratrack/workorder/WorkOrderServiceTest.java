@@ -26,6 +26,7 @@ import com.infratrack.workorder.dto.AssignWorkOrderRequest;
 import com.infratrack.workorder.dto.CreateWorkOrderRequest;
 import com.infratrack.workorder.dto.WorkOrderSummaryResponse;
 import com.infratrack.notification.OperationalEventNotificationService;
+import com.infratrack.organization.policy.approval.ApprovalPolicyService;
 import com.infratrack.organization.policy.notification.NotificationPolicyService;
 import com.infratrack.user.User;
 import com.infratrack.user.UserNameLookup;
@@ -88,7 +89,8 @@ class WorkOrderServiceTest {
                 userService,
                 userNameLookup,
                 operationalEventNotificationService,
-                new NotificationPolicyService("DEFAULT"));
+                new NotificationPolicyService("DEFAULT"),
+                new ApprovalPolicyService());
     }
 
     @Test
