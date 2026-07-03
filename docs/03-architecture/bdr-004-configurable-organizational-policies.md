@@ -77,7 +77,7 @@ Business rules define the product. Organizational policies adapt the product to 
 
 ## 5. First Planned Application
 
-The first planned implementation of this decision will be:
+The first concrete implementation of this decision is:
 
 **Inspection Visibility Policy**
 
@@ -88,7 +88,9 @@ The policy is implemented incrementally:
 
 It remains a **view-only** policy: it does not grant assignment, completion, answer saving, approvals, or other mutations.
 
-This policy will become the first concrete example of configurable organizational policy. It may support modes such as:
+**Notification Policy** is the second organizational policy foundation. A `NotificationPolicy` abstraction and `DefaultNotificationPolicy` now govern whether operational notifications are sent. No configuration exists yet; behaviour is identical to the original fixed notification rules.
+
+Inspection visibility may eventually support modes such as:
 
 - **Organization** (broader visibility)
 - **Department** (department-scoped visibility)

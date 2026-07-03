@@ -16,6 +16,7 @@ import com.infratrack.issue.IssueType;
 import com.infratrack.maintenanceactivity.MaintenanceActivity;
 import com.infratrack.maintenanceactivity.MaintenanceActivityRepository;
 import com.infratrack.notification.OperationalEventNotificationService;
+import com.infratrack.organization.policy.notification.NotificationPolicyService;
 import com.infratrack.time.WorkflowClock;
 import com.infratrack.user.User;
 import com.infratrack.workorder.WorkOrderStatus;
@@ -38,6 +39,7 @@ public class CompletionReviewService {
     private final CompletionReviewAuthorizationService authorizationService;
     private final IssueRepository issueRepository;
     private final OperationalEventNotificationService operationalEventNotificationService;
+    private final NotificationPolicyService notificationPolicyService;
     private final WorkflowClock workflowClock;
 
     public CompletionReviewService(
@@ -47,6 +49,7 @@ public class CompletionReviewService {
             CompletionReviewAuthorizationService authorizationService,
             IssueRepository issueRepository,
             OperationalEventNotificationService operationalEventNotificationService,
+            NotificationPolicyService notificationPolicyService,
             WorkflowClock workflowClock) {
         this.completionReviewRepository = completionReviewRepository;
         this.maintenanceActivityRepository = maintenanceActivityRepository;
@@ -54,6 +57,7 @@ public class CompletionReviewService {
         this.authorizationService = authorizationService;
         this.issueRepository = issueRepository;
         this.operationalEventNotificationService = operationalEventNotificationService;
+        this.notificationPolicyService = notificationPolicyService;
         this.workflowClock = workflowClock;
     }
 
@@ -145,9 +149,12 @@ public class CompletionReviewService {
                 buildReworkIssueHistoryDetails(severity, rootCause)
         ));
 
-        operationalEventNotificationService.notifyReworkIssueRequiresOperationalDecision(
-                asset.getDepartment(),
-                reworkIssue.getId());
+        if (notificationPolicyService.getPolicy()
+                .shouldNotifyReworkIssueRequiresOperationalDecision(CompletionReviewDecision.REWORK_REQUIRED)) {
+            operationalEventNotificationService.notifyReworkIssueRequiresOperationalDecision(
+                    asset.getDepartment(),
+                    reworkIssue.getId());
+        }
 
         return reworkIssue.getId();
     }

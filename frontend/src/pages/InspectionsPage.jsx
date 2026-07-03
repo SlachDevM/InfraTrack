@@ -14,8 +14,9 @@ import AssignInspectionForm from '../components/inspections/AssignInspectionForm
 import CompleteInspectionForm from '../components/inspections/CompleteInspectionForm';
 import InspectionList from '../components/inspections/InspectionList';
 import ExportCsvButton from '../components/ExportCsvButton';
+import ExportReportingButton from '../components/ExportReportingButton';
 import { INSPECTION_STATUS } from '../constants/statuses';
-import { REPORTING_EXPORT_TYPES } from '../constants/reportingExports';
+import { REPORTING_EXPORT_FORMATS, REPORTING_EXPORT_TYPES } from '../constants/reportingExports';
 import { ROUTES } from '../constants/routes';
 import {
   canAssignInspections,
@@ -386,7 +387,14 @@ export default function InspectionsPage() {
         <div className="user-header-actions">
           <NotificationButton />
           {canExport && (
-            <ExportCsvButton exportType={REPORTING_EXPORT_TYPES.INSPECTIONS} onError={setError} />
+            <>
+              <ExportCsvButton exportType={REPORTING_EXPORT_TYPES.INSPECTIONS} onError={setError} />
+              <ExportReportingButton
+                exportType={REPORTING_EXPORT_TYPES.INSPECTIONS}
+                format={REPORTING_EXPORT_FORMATS.XLSX}
+                onError={setError}
+              />
+            </>
           )}
           <button type="button" className="logout-btn" onClick={handleLogout}>
             Logout

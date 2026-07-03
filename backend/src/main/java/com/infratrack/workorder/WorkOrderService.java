@@ -5,6 +5,7 @@ import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.ConflictException;
 import com.infratrack.exception.NotFoundException;
 import com.infratrack.notification.OperationalEventNotificationService;
+import com.infratrack.organization.policy.notification.NotificationPolicyService;
 import com.infratrack.operationaldecision.OperationalDecision;
 import com.infratrack.operationaldecision.OperationalDecisionOutcome;
 import com.infratrack.operationaldecision.OperationalDecisionRepository;
@@ -38,6 +39,7 @@ public class WorkOrderService {
     private final UserService userService;
     private final UserNameLookup userNameLookup;
     private final OperationalEventNotificationService operationalEventNotificationService;
+    private final NotificationPolicyService notificationPolicyService;
 
     public WorkOrderService(
             WorkOrderRepository workOrderRepository,
@@ -46,7 +48,8 @@ public class WorkOrderService {
             WorkOrderHistoryRecorder historyRecorder,
             UserService userService,
             UserNameLookup userNameLookup,
-            OperationalEventNotificationService operationalEventNotificationService) {
+            OperationalEventNotificationService operationalEventNotificationService,
+            NotificationPolicyService notificationPolicyService) {
         this.workOrderRepository = workOrderRepository;
         this.operationalDecisionRepository = operationalDecisionRepository;
         this.authorizationService = authorizationService;
@@ -54,6 +57,7 @@ public class WorkOrderService {
         this.userService = userService;
         this.userNameLookup = userNameLookup;
         this.operationalEventNotificationService = operationalEventNotificationService;
+        this.notificationPolicyService = notificationPolicyService;
     }
 
     @Transactional(readOnly = true)
@@ -132,7 +136,9 @@ public class WorkOrderService {
 
         historyRecorder.recordWorkOrderAssigned(workOrder.getAsset(), coordinator.getId(), assignedAt.toLocalDate());
 
-        operationalEventNotificationService.notifyWorkOrderAssigned(assignee.getId());
+        if (notificationPolicyService.getPolicy().shouldNotifyWorkOrderAssignment()) {
+            operationalEventNotificationService.notifyWorkOrderAssigned(assignee.getId());
+        }
 
         return WorkOrderResponse.from(workOrder, assignee);
     }

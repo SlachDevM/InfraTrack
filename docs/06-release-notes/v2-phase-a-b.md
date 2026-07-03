@@ -112,7 +112,7 @@ See [Deployment — Preventive Scheduler](../05-deployment/README.md#preventive-
 
 ```bash
 cd backend && mvn clean test && mvn clean package -DskipTests
-cd frontend && npm ci --legacy-peer-deps && npm test -- --run && npm run build
+cd frontend && npm ci && npm test -- --run && npm run build
 docker compose up --build -d
 ```
 

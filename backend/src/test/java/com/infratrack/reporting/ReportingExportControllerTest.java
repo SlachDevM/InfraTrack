@@ -90,6 +90,33 @@ class ReportingExportControllerTest {
                         "attachment; filename=\"work-orders-export.csv\""));
     }
 
+    @Test
+    void exportAssetsXlsx_admin_returnsXlsxWithHeaders() throws Exception {
+        byte[] xlsx = new byte[] {1, 2, 3};
+        when(exportService.exportAssetsXlsx(eq(ADMIN_USER_ID), isNull(), isNull()))
+                .thenReturn(new ExportFileResponse(xlsx, "assets-export.xlsx"));
+
+        mockMvc.perform(get("/api/reporting/exports/assets.xlsx")
+                        .header("Authorization", bearerToken(ADMIN_USER_ID, "admin@test.com")))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"assets-export.xlsx\""))
+                .andExpect(content().contentType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .andExpect(content().bytes(xlsx));
+    }
+
+    @Test
+    void exportInspectionsXlsx_fieldEmployee_returnsForbidden() throws Exception {
+        when(exportService.exportInspectionsXlsx(eq(FIELD_USER_ID), isNull(), isNull()))
+                .thenThrow(new ForbiddenOperationException("You do not have permission to export operational reports."));
+
+        mockMvc.perform(get("/api/reporting/exports/inspections.xlsx")
+                        .header("Authorization", bearerToken(FIELD_USER_ID, "field@test.com")))
+                .andExpect(status().isForbidden())
+                .andExpect(content().string("You do not have permission to export operational reports."));
+    }
+
     private String bearerToken(Long userId, String email) {
         return "Bearer " + jwtTokenProvider.generateToken(userId, email);
     }

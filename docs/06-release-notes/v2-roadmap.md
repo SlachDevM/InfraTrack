@@ -80,19 +80,20 @@ The KPI API is designed for reuse by the React web client, future Android applic
 
 **Business value:** Future Android field client can consume compact APIs; councils can export operational data today.
 
-**Status:** Validated foundation — M1 and R1 complete; extended reporting formats deferred.
+**Status:** Validated foundation — M1 and R1 complete; XLSX exports added in V2.3.x C1.
 
 **Delivered capabilities:**
 
 - **Sprint M1 (validated):** Mobile API foundation — read/bundle endpoints under `/api/mobile/*` (identity, dashboard, my inspections/work orders, screen bundles)
 - **Sprint R1 (validated):** CSV reporting foundation — read-only exports under `/api/reporting/exports/*.csv` (Assets, Inspections, Issues, Work Orders, Preventive Execution Candidates)
+- **Sprint C1 (V2.3.x):** XLSX reporting foundation — read-only exports under `/api/reporting/exports/*.xlsx` with the same scoping and columns as CSV
 
 **Planned within this version family (not yet delivered):**
 
 - Scheduled reports
 - Template-aligned inspection analytics
 - Preventive compliance summaries
-- PDF and Excel (`.xlsx`) exports
+- PDF exports
 
 **Reference:** [Mobile API](../04-api/mobile-api.md), [Reporting API](../04-api/reporting-api.md)
 

@@ -19,10 +19,13 @@ import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/reporting/exports")
-@Tag(name = "Reporting Exports", description = "Read-only CSV exports for operational reporting (V2.2.x)")
+@Tag(name = "Reporting Exports", description = "Read-only CSV and XLSX exports for operational reporting (V2.2.x / V2.3.x)")
 @StandardApiResponses
 @SecurityRequirement(name = "bearerAuth")
 public class ReportingExportController {
+
+    private static final MediaType XLSX_MEDIA_TYPE = MediaType.parseMediaType(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
     private final ReportingExportService exportService;
 
@@ -40,6 +43,16 @@ public class ReportingExportController {
         return csvResponse(exportService.exportAssets(userId(authentication), from, to));
     }
 
+    @GetMapping(value = "/assets.xlsx", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    @Operation(summary = "Export assets as XLSX")
+    @ApiResponse(responseCode = "200", description = "XLSX file download")
+    public ResponseEntity<byte[]> exportAssetsXlsx(
+            Authentication authentication,
+            @RequestParam(required = false) Long from,
+            @RequestParam(required = false) Long to) {
+        return xlsxResponse(exportService.exportAssetsXlsx(userId(authentication), from, to));
+    }
+
     @GetMapping(value = "/inspections.csv", produces = "text/csv")
     @Operation(summary = "Export inspections as CSV")
     @ApiResponse(responseCode = "200", description = "CSV file download")
@@ -48,6 +61,16 @@ public class ReportingExportController {
             @RequestParam(required = false) Long from,
             @RequestParam(required = false) Long to) {
         return csvResponse(exportService.exportInspections(userId(authentication), from, to));
+    }
+
+    @GetMapping(value = "/inspections.xlsx", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    @Operation(summary = "Export inspections as XLSX")
+    @ApiResponse(responseCode = "200", description = "XLSX file download")
+    public ResponseEntity<byte[]> exportInspectionsXlsx(
+            Authentication authentication,
+            @RequestParam(required = false) Long from,
+            @RequestParam(required = false) Long to) {
+        return xlsxResponse(exportService.exportInspectionsXlsx(userId(authentication), from, to));
     }
 
     @GetMapping(value = "/issues.csv", produces = "text/csv")
@@ -60,6 +83,16 @@ public class ReportingExportController {
         return csvResponse(exportService.exportIssues(userId(authentication), from, to));
     }
 
+    @GetMapping(value = "/issues.xlsx", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    @Operation(summary = "Export issues as XLSX")
+    @ApiResponse(responseCode = "200", description = "XLSX file download")
+    public ResponseEntity<byte[]> exportIssuesXlsx(
+            Authentication authentication,
+            @RequestParam(required = false) Long from,
+            @RequestParam(required = false) Long to) {
+        return xlsxResponse(exportService.exportIssuesXlsx(userId(authentication), from, to));
+    }
+
     @GetMapping(value = "/work-orders.csv", produces = "text/csv")
     @Operation(summary = "Export work orders as CSV")
     @ApiResponse(responseCode = "200", description = "CSV file download")
@@ -68,6 +101,16 @@ public class ReportingExportController {
             @RequestParam(required = false) Long from,
             @RequestParam(required = false) Long to) {
         return csvResponse(exportService.exportWorkOrders(userId(authentication), from, to));
+    }
+
+    @GetMapping(value = "/work-orders.xlsx", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    @Operation(summary = "Export work orders as XLSX")
+    @ApiResponse(responseCode = "200", description = "XLSX file download")
+    public ResponseEntity<byte[]> exportWorkOrdersXlsx(
+            Authentication authentication,
+            @RequestParam(required = false) Long from,
+            @RequestParam(required = false) Long to) {
+        return xlsxResponse(exportService.exportWorkOrdersXlsx(userId(authentication), from, to));
     }
 
     @GetMapping(value = "/preventive-candidates.csv", produces = "text/csv")
@@ -80,6 +123,16 @@ public class ReportingExportController {
         return csvResponse(exportService.exportPreventiveCandidates(userId(authentication), from, to));
     }
 
+    @GetMapping(value = "/preventive-candidates.xlsx", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    @Operation(summary = "Export preventive execution candidates as XLSX")
+    @ApiResponse(responseCode = "200", description = "XLSX file download")
+    public ResponseEntity<byte[]> exportPreventiveCandidatesXlsx(
+            Authentication authentication,
+            @RequestParam(required = false) Long from,
+            @RequestParam(required = false) Long to) {
+        return xlsxResponse(exportService.exportPreventiveCandidatesXlsx(userId(authentication), from, to));
+    }
+
     private static Long userId(Authentication authentication) {
         return ((JwtAuthenticationToken) authentication).getUserId();
     }
@@ -89,6 +142,14 @@ public class ReportingExportController {
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=\"" + export.filename() + "\"")
                 .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
+                .body(export.content());
+    }
+
+    private static ResponseEntity<byte[]> xlsxResponse(ExportFileResponse export) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + export.filename() + "\"")
+                .contentType(XLSX_MEDIA_TYPE)
                 .body(export.content());
     }
 }

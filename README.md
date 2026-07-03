@@ -155,7 +155,7 @@ Integration tests use Testcontainers and require Docker.
 
 ```bash
 cd frontend
-npm ci --legacy-peer-deps              # Install dependencies
+npm ci                              # Install dependencies
 npm start                              # Vite dev server
 npm test -- --run                      # Vitest unit tests
 npm run build                          # Production build
@@ -200,7 +200,7 @@ Full guide: [docs/05-deployment/secrets.md](docs/05-deployment/secrets.md)
 Before tagging or deploying a release:
 
 1. `cd backend && mvn clean test && mvn clean package -DskipTests`
-2. `cd frontend && npm ci --legacy-peer-deps && npm test -- --run && npm run build`
+2. `cd frontend && npm ci && npm test -- --run && npm run build`
 3. `docker compose up --build -d` — verify health at `/actuator/health`
 4. Confirm Swagger works in dev and is disabled with `prod` profile
 5. Confirm login rate limit returns HTTP 429 with `Retry-After`
@@ -401,7 +401,7 @@ Coverage is measured but not enforced in Sprint 0. A future quality gate of **80
 
 ```bash
 cd frontend
-npm ci --legacy-peer-deps
+npm ci
 npm test
 npm run build
 ```

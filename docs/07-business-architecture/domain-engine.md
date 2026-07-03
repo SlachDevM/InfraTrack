@@ -44,6 +44,8 @@ Rules produce **Suggested Actions**, not automatic Issues. The scheduler generat
 
 As of V2.3 foundation work, **Inspection Visibility Policy** is the first concrete implementation of the BDR-004 principle: business rules remain stable; organizational policies are configurable.
 
+**Notification Policy** is the second foundation. Operational services consult `NotificationPolicyService.getPolicy()` before sending UC-013 notifications. `DefaultNotificationPolicy` reproduces the original fixed behaviour exactly. No configuration property or database setting exists yet.
+
 Visibility is configured by property:
 
 ```properties
@@ -1185,7 +1187,6 @@ The KPI Engine aggregates counts and breakdowns from Assets, Inspections, Issues
 ### Deferred to later sprints
 
 - Advanced analytics, forecasting, and PDF reporting remain deferred
-- Excel (`.xlsx`) exports remain deferred
 - Scheduled and email reports remain deferred
 - The same KPI and trend APIs are consumed by the React dashboard, the future Android application, and reporting exports
 
@@ -1205,9 +1206,25 @@ Optional query parameters: `from` and `to` (epoch millis) where a reliable busin
 
 Authorization matches Sprint C1 (Administrator global; Manager and Operational Coordinator own department; Field Employee and Contractor forbidden).
 
-Reporting **never** mutates operational data, runs the scheduler, or sends notifications. PDF and `.xlsx` remain deferred.
+Reporting **never** mutates operational data, runs the scheduler, or sends notifications.
 
 The React web client adds lightweight **Export CSV** buttons on list pages for authorized roles.
+
+### Sprint C1 — XLSX Export Foundation (V2.3.x)
+
+Version 2.3.x adds **read-only XLSX exports** for the same entities as CSV, sharing authorization, filters, columns, and row data.
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/reporting/exports/assets.xlsx` | Asset register export |
+| `GET /api/reporting/exports/inspections.xlsx` | Inspection list export |
+| `GET /api/reporting/exports/issues.xlsx` | Issue register export |
+| `GET /api/reporting/exports/work-orders.xlsx` | Work order list export |
+| `GET /api/reporting/exports/preventive-candidates.xlsx` | Preventive execution candidate export |
+
+CSV exports remain supported unchanged. PDF and scheduled/email reports remain deferred.
+
+The React web client adds **Export XLSX** buttons alongside existing CSV buttons for authorized roles.
 
 ### Sprint C2 — Dashboard UI
 

@@ -61,25 +61,73 @@ public class ReportingExportService {
 
     @Transactional(readOnly = true)
     public CsvExportResponse exportAssets(Long userId, Long from, Long to) {
+        return buildCsvResponse(ExportType.ASSETS, loadAssetsExport(userId, from, to));
+    }
+
+    @Transactional(readOnly = true)
+    public ExportFileResponse exportAssetsXlsx(Long userId, Long from, Long to) {
+        return buildXlsxResponse(ExportType.ASSETS, loadAssetsExport(userId, from, to));
+    }
+
+    @Transactional(readOnly = true)
+    public CsvExportResponse exportInspections(Long userId, Long from, Long to) {
+        return buildCsvResponse(ExportType.INSPECTIONS, loadInspectionsExport(userId, from, to));
+    }
+
+    @Transactional(readOnly = true)
+    public ExportFileResponse exportInspectionsXlsx(Long userId, Long from, Long to) {
+        return buildXlsxResponse(ExportType.INSPECTIONS, loadInspectionsExport(userId, from, to));
+    }
+
+    @Transactional(readOnly = true)
+    public CsvExportResponse exportIssues(Long userId, Long from, Long to) {
+        return buildCsvResponse(ExportType.ISSUES, loadIssuesExport(userId, from, to));
+    }
+
+    @Transactional(readOnly = true)
+    public ExportFileResponse exportIssuesXlsx(Long userId, Long from, Long to) {
+        return buildXlsxResponse(ExportType.ISSUES, loadIssuesExport(userId, from, to));
+    }
+
+    @Transactional(readOnly = true)
+    public CsvExportResponse exportWorkOrders(Long userId, Long from, Long to) {
+        return buildCsvResponse(ExportType.WORK_ORDERS, loadWorkOrdersExport(userId, from, to));
+    }
+
+    @Transactional(readOnly = true)
+    public ExportFileResponse exportWorkOrdersXlsx(Long userId, Long from, Long to) {
+        return buildXlsxResponse(ExportType.WORK_ORDERS, loadWorkOrdersExport(userId, from, to));
+    }
+
+    @Transactional(readOnly = true)
+    public CsvExportResponse exportPreventiveCandidates(Long userId, Long from, Long to) {
+        return buildCsvResponse(ExportType.PREVENTIVE_CANDIDATES, loadPreventiveCandidatesExport(userId, from, to));
+    }
+
+    @Transactional(readOnly = true)
+    public ExportFileResponse exportPreventiveCandidatesXlsx(Long userId, Long from, Long to) {
+        return buildXlsxResponse(ExportType.PREVENTIVE_CANDIDATES, loadPreventiveCandidatesExport(userId, from, to));
+    }
+
+    private TabularExport loadAssetsExport(Long userId, Long from, Long to) {
         ExportScope scope = authorizationService.resolveScope(userId);
         List<Asset> assets = assetRepository.findForExport(scope.departmentId(), from, to);
         List<String> headers = List.of(
                 "Asset ID", "Asset Name", "Category", "Department", "Location", "Status", "Created At");
         List<List<String>> rows = assets.stream()
                 .map(asset -> List.of(
-                        CsvExportWriter.cell(asset.getId()),
-                        CsvExportWriter.cell(asset.getName()),
-                        CsvExportWriter.cell(categoryName(asset)),
-                        CsvExportWriter.cell(departmentName(asset)),
-                        CsvExportWriter.cell(asset.getLocation()),
-                        CsvExportWriter.cell(asset.getStatus()),
+                        ExportCellFormatter.cell(asset.getId()),
+                        ExportCellFormatter.cell(asset.getName()),
+                        ExportCellFormatter.cell(categoryName(asset)),
+                        ExportCellFormatter.cell(departmentName(asset)),
+                        ExportCellFormatter.cell(asset.getLocation()),
+                        ExportCellFormatter.cell(asset.getStatus()),
                         formatEpochMillis(asset.getCreatedAt())))
                 .toList();
-        return buildResponse(ExportType.ASSETS, headers, rows);
+        return new TabularExport(headers, rows);
     }
 
-    @Transactional(readOnly = true)
-    public CsvExportResponse exportInspections(Long userId, Long from, Long to) {
+    private TabularExport loadInspectionsExport(Long userId, Long from, Long to) {
         ExportScope scope = authorizationService.resolveScope(userId);
         List<Inspection> inspections = inspectionRepository.findForExport(scope.departmentId(), from, to);
         Map<Long, String> assigneeNames = userNameLookup.resolveNames(inspections.stream()
@@ -90,22 +138,21 @@ public class ReportingExportService {
                 "Expected Completion Date", "Completed At", "Template", "Issue Identified");
         List<List<String>> rows = inspections.stream()
                 .map(inspection -> List.of(
-                        CsvExportWriter.cell(inspection.getId()),
-                        CsvExportWriter.cell(inspection.getAsset().getName()),
-                        CsvExportWriter.cell(departmentName(inspection.getAsset())),
-                        CsvExportWriter.cell(inspection.getStatus()),
-                        CsvExportWriter.cell(inspection.getPriority()),
-                        CsvExportWriter.cell(assigneeNames.get(inspection.getAssignedToUserId())),
+                        ExportCellFormatter.cell(inspection.getId()),
+                        ExportCellFormatter.cell(inspection.getAsset().getName()),
+                        ExportCellFormatter.cell(departmentName(inspection.getAsset())),
+                        ExportCellFormatter.cell(inspection.getStatus()),
+                        ExportCellFormatter.cell(inspection.getPriority()),
+                        ExportCellFormatter.cell(assigneeNames.get(inspection.getAssignedToUserId())),
                         formatLocalDate(inspection.getExpectedCompletionDate()),
                         formatLocalDateTime(inspection.getCompletedAt()),
-                        CsvExportWriter.cell(templateName(inspection)),
-                        CsvExportWriter.cell(inspection.isIssueIdentified())))
+                        ExportCellFormatter.cell(templateName(inspection)),
+                        ExportCellFormatter.cell(inspection.isIssueIdentified())))
                 .toList();
-        return buildResponse(ExportType.INSPECTIONS, headers, rows);
+        return new TabularExport(headers, rows);
     }
 
-    @Transactional(readOnly = true)
-    public CsvExportResponse exportIssues(Long userId, Long from, Long to) {
+    private TabularExport loadIssuesExport(Long userId, Long from, Long to) {
         ExportScope scope = authorizationService.resolveScope(userId);
         LocalDateTime fromDateTime = toLocalDateTime(from);
         LocalDateTime toDateTime = toLocalDateTimeExclusive(to);
@@ -122,21 +169,20 @@ public class ReportingExportService {
                 "Recorded By", "Recorded At", "Resolved");
         List<List<String>> rows = issues.stream()
                 .map(issue -> List.of(
-                        CsvExportWriter.cell(issue.getId()),
-                        CsvExportWriter.cell(issue.getAsset().getName()),
-                        CsvExportWriter.cell(departmentName(issue.getAsset())),
-                        CsvExportWriter.cell(issue.getIssueType()),
-                        CsvExportWriter.cell(issue.getSeverity()),
-                        CsvExportWriter.cell(issue.getDescription()),
-                        CsvExportWriter.cell(recorderNames.get(issue.getRecordedByUserId())),
+                        ExportCellFormatter.cell(issue.getId()),
+                        ExportCellFormatter.cell(issue.getAsset().getName()),
+                        ExportCellFormatter.cell(departmentName(issue.getAsset())),
+                        ExportCellFormatter.cell(issue.getIssueType()),
+                        ExportCellFormatter.cell(issue.getSeverity()),
+                        ExportCellFormatter.cell(issue.getDescription()),
+                        ExportCellFormatter.cell(recorderNames.get(issue.getRecordedByUserId())),
                         formatLocalDateTime(issue.getRecordedAt()),
-                        CsvExportWriter.cell(resolvedIssueIds.contains(issue.getId()))))
+                        ExportCellFormatter.cell(resolvedIssueIds.contains(issue.getId()))))
                 .toList();
-        return buildResponse(ExportType.ISSUES, headers, rows);
+        return new TabularExport(headers, rows);
     }
 
-    @Transactional(readOnly = true)
-    public CsvExportResponse exportWorkOrders(Long userId, Long from, Long to) {
+    private TabularExport loadWorkOrdersExport(Long userId, Long from, Long to) {
         ExportScope scope = authorizationService.resolveScope(userId);
         List<WorkOrder> workOrders = workOrderRepository.findForExport(scope.departmentId(), from, to);
         Map<Long, String> assigneeNames = userNameLookup.resolveNames(workOrders.stream()
@@ -147,21 +193,20 @@ public class ReportingExportService {
                 "Description", "Created At", "Updated At");
         List<List<String>> rows = workOrders.stream()
                 .map(workOrder -> List.of(
-                        CsvExportWriter.cell(workOrder.getId()),
-                        CsvExportWriter.cell(workOrder.getAsset().getName()),
-                        CsvExportWriter.cell(departmentName(workOrder.getAsset())),
-                        CsvExportWriter.cell(workOrder.getStatus()),
-                        CsvExportWriter.cell(workOrder.getPriority()),
-                        CsvExportWriter.cell(assigneeNames.get(workOrder.getAssignedToUserId())),
-                        CsvExportWriter.cell(workOrder.getDescription()),
+                        ExportCellFormatter.cell(workOrder.getId()),
+                        ExportCellFormatter.cell(workOrder.getAsset().getName()),
+                        ExportCellFormatter.cell(departmentName(workOrder.getAsset())),
+                        ExportCellFormatter.cell(workOrder.getStatus()),
+                        ExportCellFormatter.cell(workOrder.getPriority()),
+                        ExportCellFormatter.cell(assigneeNames.get(workOrder.getAssignedToUserId())),
+                        ExportCellFormatter.cell(workOrder.getDescription()),
                         formatEpochMillis(workOrder.getCreatedAt()),
                         formatEpochMillis(workOrder.getUpdatedAt())))
                 .toList();
-        return buildResponse(ExportType.WORK_ORDERS, headers, rows);
+        return new TabularExport(headers, rows);
     }
 
-    @Transactional(readOnly = true)
-    public CsvExportResponse exportPreventiveCandidates(Long userId, Long from, Long to) {
+    private TabularExport loadPreventiveCandidatesExport(Long userId, Long from, Long to) {
         ExportScope scope = authorizationService.resolveScope(userId);
         List<PreventiveExecutionCandidate> candidates = preventiveExecutionCandidateRepository.findForExport(
                 scope.departmentId(), from, to);
@@ -170,25 +215,33 @@ public class ReportingExportService {
                 "Trigger Type", "Evaluated At", "Decision Date", "Created Inspection ID");
         List<List<String>> rows = candidates.stream()
                 .map(candidate -> List.of(
-                        CsvExportWriter.cell(candidate.getId()),
-                        CsvExportWriter.cell(candidate.getPlanCodeSnapshot()),
-                        CsvExportWriter.cell(candidate.getAsset().getName()),
-                        CsvExportWriter.cell(departmentName(candidate.getAsset())),
-                        CsvExportWriter.cell(candidate.getCandidateStatus()),
-                        CsvExportWriter.cell(candidate.getTargetActionSnapshot()),
-                        CsvExportWriter.cell(candidate.getTriggerType()),
+                        ExportCellFormatter.cell(candidate.getId()),
+                        ExportCellFormatter.cell(candidate.getPlanCodeSnapshot()),
+                        ExportCellFormatter.cell(candidate.getAsset().getName()),
+                        ExportCellFormatter.cell(departmentName(candidate.getAsset())),
+                        ExportCellFormatter.cell(candidate.getCandidateStatus()),
+                        ExportCellFormatter.cell(candidate.getTargetActionSnapshot()),
+                        ExportCellFormatter.cell(candidate.getTriggerType()),
                         formatEpochMillis(candidate.getEvaluatedAt()),
                         formatEpochMillis(candidate.getDecidedAt()),
-                        CsvExportWriter.cell(candidate.getCreatedInspectionId())))
+                        ExportCellFormatter.cell(candidate.getCreatedInspectionId())))
                 .toList();
-        return buildResponse(ExportType.PREVENTIVE_CANDIDATES, headers, rows);
+        return new TabularExport(headers, rows);
     }
 
-    private static CsvExportResponse buildResponse(
-            ExportType exportType,
-            List<String> headers,
-            List<List<String>> rows) {
-        return new CsvExportResponse(CsvExportWriter.write(headers, new ArrayList<>(rows)), exportType.getFilename());
+    private static CsvExportResponse buildCsvResponse(ExportType exportType, TabularExport tabularExport) {
+        return new CsvExportResponse(
+                CsvExportWriter.write(tabularExport.headers(), new ArrayList<>(tabularExport.rows())),
+                exportType.getFilename());
+    }
+
+    private static ExportFileResponse buildXlsxResponse(ExportType exportType, TabularExport tabularExport) {
+        return new ExportFileResponse(
+                XlsxExportWriter.write(
+                        exportType.getSheetName(),
+                        tabularExport.headers(),
+                        new ArrayList<>(tabularExport.rows())),
+                exportType.getFilename(ReportingExportFormat.XLSX));
     }
 
     private static String categoryName(Asset asset) {

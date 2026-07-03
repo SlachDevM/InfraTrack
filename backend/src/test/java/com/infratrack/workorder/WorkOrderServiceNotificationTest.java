@@ -14,6 +14,7 @@ import com.infratrack.issue.Issue;
 import com.infratrack.issue.IssueSeverity;
 import com.infratrack.notification.NotificationService;
 import com.infratrack.notification.OperationalEventNotificationService;
+import com.infratrack.organization.policy.notification.NotificationPolicyService;
 import com.infratrack.operationaldecision.OperationalDecision;
 import com.infratrack.operationaldecision.OperationalDecisionOutcome;
 import com.infratrack.operationaldecision.OperationalDecisionRepository;
@@ -76,7 +77,8 @@ class WorkOrderServiceNotificationTest {
                 historyRecorder,
                 userService,
                 userNameLookup,
-                operationalEventNotificationService);
+                operationalEventNotificationService,
+                new NotificationPolicyService());
     }
 
     @Test

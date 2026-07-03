@@ -1,12 +1,14 @@
-# Reporting API — CSV Exports (V2.2.x)
+# Reporting API — CSV and XLSX Exports (V2.2.x / V2.3.x)
 
-Read-only CSV export endpoints for operational reporting. Reporting **observes** data only — it does not create, update, approve workflows, run the scheduler, or send notifications.
+Read-only CSV and XLSX export endpoints for operational reporting. Reporting **observes** data only — it does not create, update, approve workflows, run the scheduler, or send notifications.
 
-PDF (`.pdf`) and Excel (`.xlsx`) exports remain **deferred**.
+PDF (`.pdf`) exports remain **deferred**.
 
 ## Base path
 
 All endpoints require JWT authentication (`Authorization: Bearer <token>`).
+
+### CSV endpoints
 
 | Endpoint | Filename | Scope path |
 |----------|----------|------------|
@@ -16,13 +18,35 @@ All endpoints require JWT authentication (`Authorization: Bearer <token>`).
 | `GET /api/reporting/exports/work-orders.csv` | `work-orders-export.csv` | `workOrder.asset.department` |
 | `GET /api/reporting/exports/preventive-candidates.csv` | `preventive-candidates-export.csv` | `candidate.asset.department` |
 
+### XLSX endpoints (V2.3.x C1)
+
+| Endpoint | Filename | Scope path |
+|----------|----------|------------|
+| `GET /api/reporting/exports/assets.xlsx` | `assets-export.xlsx` | `asset.department` |
+| `GET /api/reporting/exports/inspections.xlsx` | `inspections-export.xlsx` | `inspection.asset.department` |
+| `GET /api/reporting/exports/issues.xlsx` | `issues-export.xlsx` | `issue.asset.department` |
+| `GET /api/reporting/exports/work-orders.xlsx` | `work-orders-export.xlsx` | `workOrder.asset.department` |
+| `GET /api/reporting/exports/preventive-candidates.xlsx` | `preventive-candidates-export.xlsx` | `candidate.asset.department` |
+
+CSV and XLSX exports share the same authorization, filters, columns, and row data for a given request.
+
 ## Response
+
+### CSV
 
 - `Content-Type: text/csv;charset=UTF-8`
 - `Content-Disposition: attachment; filename="<export-filename>"`
 - UTF-8 body with a header row and comma-separated values
 - Values containing commas, quotes, or newlines are double-quoted; embedded quotes are escaped as `""`
 - Null fields appear as blank cells
+
+### XLSX
+
+- `Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
+- `Content-Disposition: attachment; filename="<export-filename>"`
+- Single-sheet workbook with bold header row, frozen top row, and auto-sized columns
+- Null fields appear as blank cells
+- Date and datetime values are written as readable ISO strings (same as CSV)
 
 ## Authorization
 
@@ -57,7 +81,7 @@ Date field used per export:
 
 If `from` / `to` are omitted, all rows within the user's scope are exported.
 
-## CSV columns
+## Export columns
 
 ### Assets
 
@@ -83,7 +107,7 @@ If `from` / `to` are omitted, all rows within the user's scope are exported.
 
 ## Known limitations
 
-- CSV only in this sprint; PDF and `.xlsx` are deferred.
+- PDF exports remain deferred.
 - No scheduled or email reports.
 - No streaming; suitable for typical council operational volumes.
 - Work order date filtering uses `createdAt`, not completion time.
@@ -91,7 +115,7 @@ If `from` / `to` are omitted, all rows within the user's scope are exported.
 
 ## Frontend
 
-List pages expose an **Export CSV** button for Administrator, Manager, and Operational Coordinator. Field Employee and Contractor do not see the button; direct API calls return `403`.
+List pages expose **Export CSV** and **Export XLSX** buttons for Administrator, Manager, and Operational Coordinator. Field Employee and Contractor do not see the buttons; direct API calls return `403`.
 
 ## Related documentation
 
