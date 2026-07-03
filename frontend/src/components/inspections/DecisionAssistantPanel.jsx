@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import suggestedActionApi from '../../services/suggestedActionApi';
 import { canReviewSuggestedActions } from '../../constants/userRoles';
@@ -368,7 +368,7 @@ export default function DecisionAssistantPanel({ inspectionId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const loadSuggestions = async () => {
+  const loadSuggestions = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -379,11 +379,11 @@ export default function DecisionAssistantPanel({ inspectionId }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [inspectionId]);
 
   useEffect(() => {
     loadSuggestions();
-  }, [inspectionId]);
+  }, [loadSuggestions]);
 
   if (loading) {
     return (

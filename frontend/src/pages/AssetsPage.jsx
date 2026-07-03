@@ -475,10 +475,7 @@ export default function AssetsPage() {
         <div className="user-header-actions">
           <NotificationButton />
           {canExport && (
-            <ExportReportingMenu
-              exportType={REPORTING_EXPORT_TYPES.ASSETS}
-              onError={setError}
-            />
+            <ExportReportingMenu exportType={REPORTING_EXPORT_TYPES.ASSETS} onError={setError} />
           )}
           <button type="button" className="logout-btn" onClick={handleLogout}>
             Logout

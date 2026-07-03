@@ -112,8 +112,9 @@ export default function EditUserModal({ isOpen, onClose, onSuccess, user }) {
           </div>
 
           <div className="form-group readonly">
-            <label>Role</label>
+            <label htmlFor="edit-user-role">Role</label>
             <input
+              id="edit-user-role"
               type="text"
               value={getRoleLabel(user.role)}
               disabled

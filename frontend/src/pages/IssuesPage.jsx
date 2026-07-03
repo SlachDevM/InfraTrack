@@ -270,10 +270,7 @@ export default function IssuesPage() {
         <div className="user-header-actions">
           <NotificationButton />
           {canExport && (
-            <ExportReportingMenu
-              exportType={REPORTING_EXPORT_TYPES.ISSUES}
-              onError={setError}
-            />
+            <ExportReportingMenu exportType={REPORTING_EXPORT_TYPES.ISSUES} onError={setError} />
           )}
           <button type="button" className="logout-btn" onClick={handleLogout}>
             Logout

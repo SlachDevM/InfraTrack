@@ -23,9 +23,7 @@ vi.mock('../../services/reportingExportApi', () => ({
 }));
 
 function renderExportMenu(props = {}) {
-  return render(
-    <ExportReportingMenu exportType="assets" onError={vi.fn()} {...props} />
-  );
+  return render(<ExportReportingMenu exportType="assets" onError={vi.fn()} {...props} />);
 }
 
 describe('ExportReportingMenu', () => {
@@ -120,7 +118,10 @@ describe('ExportReportingMenu', () => {
     await waitFor(() => {
       expect(screen.queryByRole('menuitem', { name: 'Export as CSV' })).not.toBeInTheDocument();
     });
-    expect(screen.getByRole('button', { name: 'Export' })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('button', { name: 'Export' })).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    );
   });
 
   it('closes the menu when Escape is pressed', async () => {
@@ -133,7 +134,10 @@ describe('ExportReportingMenu', () => {
     await user.keyboard('{Escape}');
 
     expect(screen.queryByRole('menuitem', { name: 'Export as CSV' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Export' })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('button', { name: 'Export' })).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    );
   });
 
   it('closes the menu on outside click', async () => {
