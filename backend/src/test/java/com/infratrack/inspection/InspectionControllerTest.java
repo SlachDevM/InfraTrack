@@ -292,7 +292,7 @@ class InspectionControllerTest {
 
     private InspectionResponse progressResponse() {
         Inspection inspection = savedAnswerEntity().getInspection();
-        inspection.saveProgress(com.infratrack.inspection.PhysicalCondition.GOOD, "Draft notes", true);
+        inspection.saveProgress(com.infratrack.inspection.PhysicalCondition.GOOD, "Draft notes", true, true);
         return InspectionResponse.from(inspection);
     }
 

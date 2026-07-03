@@ -113,11 +113,12 @@ public class Inspection {
     public void saveProgress(
             PhysicalCondition observedCondition,
             String observations,
+            boolean updateObservations,
             Boolean issueIdentified) {
         if (observedCondition != null) {
             this.observedCondition = observedCondition;
         }
-        if (observations != null) {
+        if (updateObservations) {
             this.observations = observations;
         }
         if (issueIdentified != null) {

@@ -1210,6 +1210,248 @@ class InspectionServiceTest {
         verify(ruleEvaluationReportService, times(1)).createReportIfApplicable(100L);
     }
 
+    @Test
+    void saveInspectionProgress_emptyBody_shouldSucceed() {
+        SaveInspectionProgressRequest request = new SaveInspectionProgressRequest();
+        Inspection inspection = assignedInspection(100L, 20L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        var response = inspectionService.saveInspectionProgress(100L, request, 20L);
+
+        assertThat(response.getStatus()).isEqualTo(InspectionStatus.ASSIGNED);
+        verify(inspectionRepository).save(inspection);
+    }
+
+    @Test
+    void saveInspectionProgress_emptyAnswersArray_shouldSucceed() {
+        SaveInspectionProgressRequest request = new SaveInspectionProgressRequest();
+        request.setAnswers(List.of());
+
+        Inspection inspection = templatedAssignedInspection(100L, 20L, 50L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        var response = inspectionService.saveInspectionProgress(100L, request, 20L);
+
+        assertThat(response.getStatus()).isEqualTo(InspectionStatus.ASSIGNED);
+        verify(inspectionAnswerRepository, never()).save(any(InspectionAnswer.class));
+    }
+
+    @Test
+    void saveInspectionProgress_observedConditionOnly_shouldSucceed() {
+        SaveInspectionProgressRequest request = new SaveInspectionProgressRequest();
+        request.setObservedCondition(PhysicalCondition.GOOD);
+
+        Inspection inspection = assignedInspection(100L, 20L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        var response = inspectionService.saveInspectionProgress(100L, request, 20L);
+
+        assertThat(response.getObservedCondition()).isEqualTo(PhysicalCondition.GOOD);
+        assertThat(response.getObservations()).isNull();
+    }
+
+    @Test
+    void saveInspectionProgress_observationsOnly_shouldSucceed() {
+        SaveInspectionProgressRequest request = new SaveInspectionProgressRequest();
+        request.setObservations("Partial observation.");
+
+        Inspection inspection = assignedInspection(100L, 20L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        var response = inspectionService.saveInspectionProgress(100L, request, 20L);
+
+        assertThat(response.getObservations()).isEqualTo("Partial observation.");
+    }
+
+    @Test
+    void saveInspectionProgress_issueIdentifiedOnly_shouldSucceed() {
+        SaveInspectionProgressRequest request = new SaveInspectionProgressRequest();
+        request.setIssueIdentified(true);
+
+        Inspection inspection = assignedInspection(100L, 20L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        var response = inspectionService.saveInspectionProgress(100L, request, 20L);
+
+        assertThat(response.isIssueIdentified()).isTrue();
+    }
+
+    @Test
+    void saveInspectionProgress_blankObservations_shouldClearStoredValue() {
+        SaveInspectionProgressRequest request = new SaveInspectionProgressRequest();
+        request.setObservations("   ");
+
+        Inspection inspection = assignedInspection(100L, 20L);
+        inspection.saveProgress(null, "Previous notes", true, null);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        var response = inspectionService.saveInspectionProgress(100L, request, 20L);
+
+        assertThat(response.getObservations()).isNull();
+    }
+
+    @Test
+    void saveInspectionProgress_emptyObservations_shouldClearStoredValue() {
+        SaveInspectionProgressRequest request = new SaveInspectionProgressRequest();
+        request.setObservations("");
+
+        Inspection inspection = assignedInspection(100L, 20L);
+        inspection.saveProgress(null, "Previous notes", true, null);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        var response = inspectionService.saveInspectionProgress(100L, request, 20L);
+
+        assertThat(response.getObservations()).isNull();
+    }
+
+    @Test
+    void saveInspectionProgress_observations_shouldTrimWhitespace() {
+        SaveInspectionProgressRequest request = new SaveInspectionProgressRequest();
+        request.setObservations("  Partial observation.  ");
+
+        Inspection inspection = assignedInspection(100L, 20L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        var response = inspectionService.saveInspectionProgress(100L, request, 20L);
+
+        assertThat(response.getObservations()).isEqualTo("Partial observation.");
+    }
+
+    @Test
+    void saveInspectionProgress_answerWithQuestionIdOnly_shouldBeIgnored() {
+        SaveInspectionProgressRequest request = new SaveInspectionProgressRequest();
+        InspectionAnswerRequest answerRequest = new InspectionAnswerRequest();
+        answerRequest.setQuestionId(1L);
+        request.setAnswers(List.of(answerRequest));
+
+        Inspection inspection = templatedAssignedInspection(100L, 20L, 50L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenReturn(List.of());
+
+        var response = inspectionService.saveInspectionProgress(100L, request, 20L);
+
+        assertThat(response.getStatus()).isEqualTo(InspectionStatus.ASSIGNED);
+        verify(inspectionAnswerRepository, never()).save(any(InspectionAnswer.class));
+    }
+
+    @Test
+    void saveInspectionProgress_answerWithNullBooleanValue_shouldBeIgnored() {
+        SaveInspectionProgressRequest request = new SaveInspectionProgressRequest();
+        InspectionAnswerRequest answerRequest = new InspectionAnswerRequest();
+        answerRequest.setQuestionId(1L);
+        answerRequest.setBooleanValue(null);
+        request.setAnswers(List.of(answerRequest));
+
+        Inspection inspection = templatedAssignedInspection(100L, 20L, 50L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenReturn(List.of());
+
+        inspectionService.saveInspectionProgress(100L, request, 20L);
+
+        verify(inspectionAnswerRepository, never()).save(any(InspectionAnswer.class));
+    }
+
+    @Test
+    void saveInspectionProgress_invalidQuestionId_shouldStillReject() {
+        SaveInspectionProgressRequest request = new SaveInspectionProgressRequest();
+        InspectionAnswerRequest answerRequest = new InspectionAnswerRequest();
+        answerRequest.setQuestionId(99L);
+        answerRequest.setBooleanValue(true);
+        request.setAnswers(List.of(answerRequest));
+
+        Inspection inspection = templatedAssignedInspection(100L, 20L, 50L);
+        InspectionTemplateQuestion question = templateQuestion(1L, inspection.getInspectionTemplate());
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionTemplateQuestionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
+                .thenReturn(List.of(question));
+
+        assertThatThrownBy(() -> inspectionService.saveInspectionProgress(100L, request, 20L))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Checklist question does not belong to this inspection template");
+    }
+
+    @Test
+    void saveInspectionProgress_shouldNotRequireMandatoryQuestions() {
+        SaveInspectionProgressRequest request = new SaveInspectionProgressRequest();
+        InspectionAnswerRequest answerRequest = new InspectionAnswerRequest();
+        answerRequest.setQuestionId(1L);
+        answerRequest.setBooleanValue(true);
+        request.setAnswers(List.of(answerRequest));
+
+        Inspection inspection = templatedAssignedInspection(100L, 20L, 50L);
+        InspectionTemplateQuestion requiredQuestion = templateQuestion(1L, inspection.getInspectionTemplate());
+        requiredQuestion.setRequired(true);
+        InspectionTemplateQuestion unansweredRequired = templateQuestion(2L, inspection.getInspectionTemplate());
+        unansweredRequired.setRequired(true);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionTemplateQuestionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
+                .thenReturn(List.of(requiredQuestion, unansweredRequired));
+        when(inspectionAnswerRepository.findByInspectionIdAndQuestionId(100L, 1L)).thenReturn(Optional.empty());
+        when(inspectionAnswerRepository.save(any(InspectionAnswer.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenAnswer(invocation -> List.of(new InspectionAnswer(
+                        inspection,
+                        requiredQuestion,
+                        "LEAK",
+                        "Is there a visible leak?",
+                        InspectionAnswerQuestionTypeSnapshot.BOOLEAN,
+                        true,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        1)));
+
+        var response = inspectionService.saveInspectionProgress(100L, request, 20L);
+
+        assertThat(response.getStatus()).isEqualTo(InspectionStatus.ASSIGNED);
+    }
+
     private CompleteInspectionRequest validCompleteRequest() {
         CompleteInspectionRequest request = new CompleteInspectionRequest();
         request.setObservedCondition(PhysicalCondition.GOOD);

@@ -353,6 +353,10 @@ Assigned templated inspections can now persist structured answers **before** fin
 
 Progressive saves must never create Issues, Suggested Actions, Rule Evaluation Reports, Operational Decisions, Work Orders, or notifications. Only final completion may trigger those outcomes.
 
+A draft inspection represents only the information explicitly entered by the field agent. Missing information is not considered invalid during draft persistence and is therefore neither replaced with placeholder values nor validated as final inspection data. Complete inspection validation occurs only during the inspection completion workflow.
+
+Draft observation semantics on `PUT /progress`: omitted observations leave the stored value unchanged; empty or whitespace-only observations clear the stored value; non-empty observations are trimmed and saved. Checklist answer entries with no populated value are ignored (not persisted, not validated as errors).
+
 ### Authorization
 
 The same inspection access rules apply: assigned Field Employee or Contractor, Administrator (support), and Manager / Operational Coordinator where existing view permissions allow. Completed inspections reject further saves with `409 Conflict`.

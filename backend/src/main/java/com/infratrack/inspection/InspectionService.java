@@ -294,7 +294,7 @@ public class InspectionService {
         requireActiveForAnswerSave(inspection);
 
         List<InspectionAnswerRequest> answers = request.getAnswers() == null ? List.of() : request.getAnswers();
-        return saveInspectionProgress(inspection, null, null, null, answers);
+        return saveInspectionProgress(inspection, null, null, false, null, answers);
     }
 
     @Transactional
@@ -310,14 +310,18 @@ public class InspectionService {
         PhysicalCondition observedCondition = request.getObservedCondition() != null
                 ? validateObservedCondition(request.getObservedCondition())
                 : null;
-        String observations = request.getObservations() != null
-                ? normalizeObservations(request.getObservations())
-                : null;
+        boolean updateObservations = false;
+        String observations = null;
+        if (request.getObservations() != null) {
+            updateObservations = true;
+            observations = request.getObservations().isBlank() ? null : request.getObservations().trim();
+        }
 
         saveInspectionProgress(
                 inspection,
                 observedCondition,
                 observations,
+                updateObservations,
                 request.getIssueIdentified(),
                 request.getAnswers());
 
@@ -339,6 +343,7 @@ public class InspectionService {
                 inspection,
                 observedCondition,
                 observations,
+                true,
                 issueIdentified,
                 request.getAnswers());
 
@@ -501,9 +506,10 @@ public class InspectionService {
             Inspection inspection,
             PhysicalCondition observedCondition,
             String observations,
+            boolean updateObservations,
             Boolean issueIdentified,
             List<InspectionAnswerRequest> answers) {
-        inspection.saveProgress(observedCondition, observations, issueIdentified);
+        inspection.saveProgress(observedCondition, observations, updateObservations, issueIdentified);
         inspectionRepository.save(inspection);
         if (answers == null) {
             return null;

@@ -203,6 +203,135 @@ class InspectionAnswerServiceTest {
     }
 
     @Test
+    void upsertProgressiveAnswers_shouldIgnoreEmptyAnswerPayload() {
+        Inspection inspection = inspection(100L, template(50L));
+        InspectionAnswerRequest request = new InspectionAnswerRequest();
+        request.setQuestionId(1L);
+
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenReturn(List.of());
+
+        List<com.infratrack.inspection.dto.InspectionAnswerResponse> responses =
+                inspectionAnswerService.upsertProgressiveAnswers(inspection, List.of(request));
+
+        assertThat(responses).isEmpty();
+        verify(questionRepository, never()).findByInspectionTemplateIdOrderByDisplayOrderAsc(anyLong());
+        verify(inspectionAnswerRepository, never()).save(any(InspectionAnswer.class));
+    }
+
+    @Test
+    void upsertProgressiveAnswers_shouldIgnoreNullBooleanValue() {
+        Inspection inspection = inspection(100L, template(50L));
+        InspectionAnswerRequest request = new InspectionAnswerRequest();
+        request.setQuestionId(1L);
+        request.setBooleanValue(null);
+
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenReturn(List.of());
+
+        inspectionAnswerService.upsertProgressiveAnswers(inspection, List.of(request));
+
+        verify(inspectionAnswerRepository, never()).save(any(InspectionAnswer.class));
+    }
+
+    @Test
+    void upsertProgressiveAnswers_shouldPersistTextAnswer() {
+        Inspection inspection = inspection(100L, template(50L));
+        InspectionTemplateQuestion question = textQuestion(3L, inspection.getInspectionTemplate());
+        InspectionAnswerRequest request = new InspectionAnswerRequest();
+        request.setQuestionId(3L);
+        request.setTextValue("Leak near valve.");
+
+        when(questionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
+                .thenReturn(List.of(question));
+        when(inspectionAnswerRepository.findByInspectionIdAndQuestionId(100L, 3L)).thenReturn(Optional.empty());
+        when(inspectionAnswerRepository.save(any(InspectionAnswer.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenAnswer(invocation -> List.of(savedTextAnswer(inspection, question)));
+
+        inspectionAnswerService.upsertProgressiveAnswers(inspection, List.of(request));
+
+        verify(inspectionAnswerRepository).save(argThat(answer ->
+                "Leak near valve.".equals(answer.getTextValue())));
+    }
+
+    @Test
+    void upsertProgressiveAnswers_shouldPersistNumberAnswer() {
+        Inspection inspection = inspection(100L, template(50L));
+        InspectionTemplateQuestion question = numberQuestion(1L, inspection.getInspectionTemplate());
+        InspectionAnswerRequest request = new InspectionAnswerRequest();
+        request.setQuestionId(1L);
+        request.setNumberValue(new BigDecimal("42"));
+
+        when(questionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
+                .thenReturn(List.of(question));
+        when(inspectionAnswerRepository.findByInspectionIdAndQuestionId(100L, 1L)).thenReturn(Optional.empty());
+        when(inspectionAnswerRepository.save(any(InspectionAnswer.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenReturn(List.of(savedNumberAnswer(inspection, question)));
+
+        inspectionAnswerService.upsertProgressiveAnswers(inspection, List.of(request));
+
+        verify(inspectionAnswerRepository).save(argThat(answer ->
+                new BigDecimal("42").equals(answer.getNumberValue())));
+    }
+
+    @Test
+    void upsertProgressiveAnswers_shouldPersistChoiceAnswer() {
+        Inspection inspection = inspection(100L, template(50L));
+        InspectionTemplateQuestion question = choiceQuestion(2L, inspection.getInspectionTemplate());
+        InspectionTemplateQuestionChoice choice = new InspectionTemplateQuestionChoice(
+                question, "GOOD", "Good", 1);
+        InspectionAnswerRequest request = new InspectionAnswerRequest();
+        request.setQuestionId(2L);
+        request.setChoiceCodeValue("GOOD");
+
+        when(questionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
+                .thenReturn(List.of(question));
+        when(choiceRepository.findByQuestionIdAndCode(2L, "GOOD")).thenReturn(Optional.of(choice));
+        when(inspectionAnswerRepository.findByInspectionIdAndQuestionId(100L, 2L)).thenReturn(Optional.empty());
+        when(inspectionAnswerRepository.save(any(InspectionAnswer.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenReturn(List.of(savedChoiceAnswer(inspection, question)));
+
+        inspectionAnswerService.upsertProgressiveAnswers(inspection, List.of(request));
+
+        verify(inspectionAnswerRepository).save(argThat(answer ->
+                "GOOD".equals(answer.getChoiceCodeValue())));
+    }
+
+    @Test
+    void upsertProgressiveAnswers_shouldRejectWrongValueType() {
+        Inspection inspection = inspection(100L, template(50L));
+        InspectionTemplateQuestion question = question(1L, inspection.getInspectionTemplate());
+        question.setQuestionType(InspectionTemplateQuestionType.NUMBER);
+        InspectionAnswerRequest request = new InspectionAnswerRequest();
+        request.setQuestionId(1L);
+        request.setTextValue("not-a-number");
+
+        when(questionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
+                .thenReturn(List.of(question));
+
+        assertThatThrownBy(() -> inspectionAnswerService.upsertProgressiveAnswers(inspection, List.of(request)))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Number checklist question 'LEAK' requires a numeric answer");
+    }
+
+    @Test
+    void upsertProgressiveAnswers_shouldIgnoreEmptyAnswersOnNonTemplatedInspection() {
+        Inspection inspection = inspection(100L, null);
+        InspectionAnswerRequest request = new InspectionAnswerRequest();
+        request.setQuestionId(1L);
+
+        when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
+                .thenReturn(List.of());
+
+        inspectionAnswerService.upsertProgressiveAnswers(inspection, List.of(request));
+
+        verify(inspectionAnswerRepository, never()).save(any(InspectionAnswer.class));
+    }
+
+    @Test
     void upsertProgressiveAnswers_shouldRejectCompletedInspectionTemplateMissing() {
         Inspection inspection = inspection(100L, null);
         InspectionAnswerRequest request = new InspectionAnswerRequest();
@@ -517,6 +646,44 @@ class InspectionAnswerServiceTest {
         );
         question.setId(id);
         return question;
+    }
+
+    private InspectionTemplateQuestion textQuestion(Long id, InspectionTemplate template) {
+        InspectionTemplateQuestion question = new InspectionTemplateQuestion(
+                template,
+                "Describe the issue",
+                "DESCRIPTION",
+                null,
+                InspectionTemplateQuestionType.TEXT,
+                true,
+                3
+        );
+        question.setId(id);
+        return question;
+    }
+
+    private InspectionAnswer savedTextAnswer(Inspection inspection, InspectionTemplateQuestion question) {
+        InspectionAnswer answer = new InspectionAnswer(
+                inspection,
+                question,
+                "DESCRIPTION",
+                "Describe the issue",
+                InspectionAnswerQuestionTypeSnapshot.TEXT,
+                null,
+                "Leak near valve.",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                1);
+        answer.setId(502L);
+        return answer;
     }
 
     private InspectionAnswer savedNumberAnswer(Inspection inspection, InspectionTemplateQuestion question) {

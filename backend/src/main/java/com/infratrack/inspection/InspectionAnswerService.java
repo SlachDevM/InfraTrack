@@ -64,17 +64,14 @@ public class InspectionAnswerService {
     public List<InspectionAnswerResponse> upsertProgressiveAnswers(
             Inspection inspection,
             List<InspectionAnswerRequest> requests) {
-        if (inspection.getInspectionTemplate() == null) {
-            if (requests != null && !requests.isEmpty()) {
-                throw new BusinessValidationException(
-                        "Structured answers are only supported for templated inspections");
-            }
+        List<InspectionAnswerRequest> answerRequests = filterPopulatedAnswers(requests == null ? List.of() : requests);
+        if (answerRequests.isEmpty()) {
             return listByInspectionId(inspection.getId());
         }
 
-        List<InspectionAnswerRequest> answerRequests = requests == null ? List.of() : requests;
-        if (answerRequests.isEmpty()) {
-            return listByInspectionId(inspection.getId());
+        if (inspection.getInspectionTemplate() == null) {
+            throw new BusinessValidationException(
+                    "Structured answers are only supported for templated inspections");
         }
 
         Map<Long, InspectionTemplateQuestion> questionById = loadQuestionMap(inspection);
@@ -235,6 +232,25 @@ public class InspectionAnswerService {
             default -> throw new BusinessValidationException(
                     "Answers for question type " + question.getQuestionType() + " are not supported yet");
         }
+    }
+
+    private boolean hasPopulatedValue(InspectionAnswerRequest request) {
+        if (request.getBooleanValue() != null) {
+            return true;
+        }
+        if (request.getTextValue() != null && !request.getTextValue().isBlank()) {
+            return true;
+        }
+        if (request.getNumberValue() != null) {
+            return true;
+        }
+        return request.getChoiceCodeValue() != null && !request.getChoiceCodeValue().isBlank();
+    }
+
+    private List<InspectionAnswerRequest> filterPopulatedAnswers(List<InspectionAnswerRequest> requests) {
+        return requests.stream()
+                .filter(this::hasPopulatedValue)
+                .toList();
     }
 
     private boolean hasMultipleValues(InspectionAnswerRequest request) {

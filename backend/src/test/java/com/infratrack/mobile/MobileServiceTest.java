@@ -202,7 +202,7 @@ class MobileServiceTest {
     void getInspectionBundle_shouldAllowAssignedFieldUser() {
         User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
         Inspection inspection = templatedInspection(100L, 20L, 50L);
-        inspection.saveProgress(com.infratrack.inspection.PhysicalCondition.GOOD, "Draft observations", true);
+        inspection.saveProgress(com.infratrack.inspection.PhysicalCondition.GOOD, "Draft observations", true, true);
         InspectionTemplateQuestion question = templateQuestion(10L, inspection.getInspectionTemplate());
         InspectionTemplateQuestionChoice choice = templateChoice(1L, question, "YES", "Yes");
         InspectionAnswer answer = inspectionAnswer(inspection, question, true);
