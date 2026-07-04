@@ -666,18 +666,57 @@ class MobileServiceTest {
     }
 
     @Test
-    void getAssetContext_fieldEmployeeSeesEmptyDocumentsWhenAssetOwnedOnly() {
+    void getAssetContext_fieldEmployeeSeesAssetOwnedDocuments() {
         Department department = department(1L, "Parks");
         User fieldEmployee = userWithDepartment(20L, UserRole.FIELD_EMPLOYEE, department);
         Asset asset = assetInDepartment(department);
         stubAssetLookup(asset);
         when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        OperationalDocument document = assetOwnedDocument(101L, asset);
         when(operationalDocumentService.listVisibleAssetOwnedDocuments(asset, 20L))
-                .thenReturn(List.of());
+                .thenReturn(List.of(document));
+        when(userNameLookup.resolveNames(List.of(30L))).thenReturn(Map.of(30L, "Maintenance Admin"));
 
         AssetContextResponse response = mobileService.getAssetContext(20L, asset.getCode());
 
-        assertThat(response.getDocuments()).isEmpty();
+        assertThat(response.getDocuments()).hasSize(1);
+        assertThat(response.getDocuments().getFirst().getId()).isEqualTo(101L);
+        assertThat(response.getDocuments().getFirst().getOwnerType()).isEqualTo(OperationalDocumentOwnerType.ASSET);
+    }
+
+    @Test
+    void getAssetContext_contractorSeesAssetOwnedDocuments() {
+        Department department = department(1L, "Parks");
+        User contractor = userWithDepartment(21L, UserRole.CONTRACTOR, department);
+        Asset asset = assetInDepartment(department);
+        stubAssetLookup(asset);
+        when(userService.getById(21L)).thenReturn(contractor);
+
+        OperationalDocument document = assetOwnedDocument(102L, asset);
+        when(operationalDocumentService.listVisibleAssetOwnedDocuments(asset, 21L))
+                .thenReturn(List.of(document));
+        when(userNameLookup.resolveNames(List.of(30L))).thenReturn(Map.of(30L, "Maintenance Admin"));
+
+        AssetContextResponse response = mobileService.getAssetContext(21L, asset.getCode());
+
+        assertThat(response.getDocuments()).hasSize(1);
+        assertThat(response.getDocuments().getFirst().getId()).isEqualTo(102L);
+    }
+
+    @Test
+    void getAssetContext_crossDepartmentFieldEmployeeDoesNotLoadDocuments() {
+        Department employeeDepartment = department(1L, "Parks");
+        Department assetDepartment = department(3L, "Roads");
+        User fieldEmployee = userWithDepartment(20L, UserRole.FIELD_EMPLOYEE, employeeDepartment);
+        Asset asset = assetInDepartment(assetDepartment);
+        stubAssetFound(asset);
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        assertThatThrownBy(() -> mobileService.getAssetContext(20L, asset.getCode()))
+                .isInstanceOf(ForbiddenOperationException.class);
+
+        verify(operationalDocumentService, never()).listVisibleAssetOwnedDocuments(any(), any());
     }
 
     @Test

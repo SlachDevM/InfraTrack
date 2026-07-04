@@ -463,7 +463,7 @@ Planned capabilities will extend clients without invalidating the core pattern:
 | Direction | Impact on consumers |
 |-----------|---------------------|
 | **Offline sync** | Local queue + reconciliation; server remains authority |
-| **QR / Barcode** | M4-BE1: `GET /api/mobile/assets/lookup?code=` resolves operational context by asset business code. M4-BE2: `GET /api/assets/{assetId}/qr` generates a PNG QR encoding `assetCode` only. M4-BE3: lookup enriched with nullable `lastInspection`, `lastMaintenance`, and `preventivePlan`. M4-BE4: lookup includes visible asset-owned `documents` with download via existing `/api/operational-documents/{id}/download`. Android scanning UI and printable labels remain deferred. |
+| **QR / Barcode** | M4-BE1: `GET /api/mobile/assets/lookup?code=` resolves operational context by asset business code. M4-BE2: `GET /api/assets/{assetId}/qr` generates a PNG QR encoding `assetCode` only. M4-BE3: lookup enriched with nullable `lastInspection`, `lastMaintenance`, and `preventivePlan`. M4-BE4/M4-BE4.1: lookup includes asset-owned `documents` for users who can view the asset context; download via existing `/api/operational-documents/{id}/download`. Android scanning UI and printable labels remain deferred. |
 | **Push notifications** | FCM delivery of server events; no client-side workflow triggers |
 | **Public API** | Documented integration authentication and stable integration endpoints |
 | **Mobile-optimised writes** | Possible M2+ endpoints if web write shapes prove unsuitable |

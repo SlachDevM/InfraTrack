@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import com.infratrack.user.User;
+import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -152,7 +153,8 @@ public class OperationalDocumentService {
 
     /**
      * Returns asset-owned operational documents visible to the caller for mobile asset context (M4-BE4).
-     * Reuses the same authorization rules as {@link #listDocuments}; returns an empty list when none are visible.
+     * Field employees and contractors who can view the asset context (same department) also see
+     * asset-owned reference documents (M4-BE4.1). Web asset document listing rules are unchanged.
      */
     @Transactional(readOnly = true)
     public List<OperationalDocument> listVisibleAssetOwnedDocuments(Asset asset, Long userId) {
@@ -165,16 +167,12 @@ public class OperationalDocumentService {
         }
 
         if (user.getRole() != null
-                && (user.getRole().isManager() || user.getRole().isOperationalCoordinator())) {
+                && (user.getRole().isManager()
+                || user.getRole().isOperationalCoordinator()
+                || user.getRole().isFieldEmployee()
+                || user.getRole().isContractor())) {
             authorizationService.requireAssetDepartmentDownloadAuthorized(user, asset);
             return documents;
-        }
-
-        if (user.getRole() != null && (user.getRole().isFieldEmployee() || user.getRole().isContractor())) {
-            authorizationService.requireAssetDepartmentDownloadAuthorized(user, asset);
-            return documents.stream()
-                    .filter(document -> canViewDocumentMetadata(user, asset, document))
-                    .toList();
         }
 
         return List.of();
@@ -202,9 +200,20 @@ public class OperationalDocumentService {
                 document.getAsset(),
                 document.getOwnerType(),
                 document.getOwnerId());
-        authorizationService.requireDownloadAuthorized(user, ownerContext);
+        if (isMobileVisibleAssetOwnedDocument(user, ownerContext)) {
+            authorizationService.requireAssetDepartmentDownloadAuthorized(user, document.getAsset());
+        } else {
+            authorizationService.requireDownloadAuthorized(user, ownerContext);
+        }
         Resource resource = fileStore.loadAsResource(document.getStoragePath());
         return new OperationalDocumentDownload(resource, document.getOriginalFileName(), document.getContentType());
+    }
+
+    private boolean isMobileVisibleAssetOwnedDocument(User user, OperationalDocumentOwnerContext ownerContext) {
+        UserRole role = user.getRole();
+        return role != null
+                && (role.isFieldEmployee() || role.isContractor())
+                && ownerContext.ownerType() == OperationalDocumentOwnerType.ASSET;
     }
 
     @Transactional

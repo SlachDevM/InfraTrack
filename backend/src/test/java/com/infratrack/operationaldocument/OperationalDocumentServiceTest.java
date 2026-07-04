@@ -258,7 +258,7 @@ class OperationalDocumentServiceTest {
     }
 
     @Test
-    void listVisibleAssetOwnedDocuments_shouldReturnEmptyListForFieldEmployeeWhenOnlyAssetOwnedDocumentsExist() {
+    void listVisibleAssetOwnedDocuments_shouldReturnAssetOwnedDocumentsForFieldEmployeeInOwnDepartment() {
         Asset asset = asset(5L);
         User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
         OperationalDocument assetDocument = savedDocument(200L, asset);
@@ -271,7 +271,71 @@ class OperationalDocumentServiceTest {
         java.util.List<OperationalDocument> documents =
                 operationalDocumentService.listVisibleAssetOwnedDocuments(asset, 20L);
 
-        assertThat(documents).isEmpty();
+        assertThat(documents).containsExactly(assetDocument);
+    }
+
+    @Test
+    void listVisibleAssetOwnedDocuments_shouldReturnAssetOwnedDocumentsForContractorInOwnDepartment() {
+        Asset asset = asset(5L);
+        User contractor = user(25L, UserRole.CONTRACTOR);
+        OperationalDocument assetDocument = savedDocument(200L, asset);
+
+        when(userService.getById(25L)).thenReturn(contractor);
+        when(operationalDocumentRepository.findByAssetIdAndOwnerTypeOrderByUploadedAtDesc(
+                5L, OperationalDocumentOwnerType.ASSET))
+                .thenReturn(java.util.List.of(assetDocument));
+
+        java.util.List<OperationalDocument> documents =
+                operationalDocumentService.listVisibleAssetOwnedDocuments(asset, 25L);
+
+        assertThat(documents).containsExactly(assetDocument);
+    }
+
+    @Test
+    void listVisibleAssetOwnedDocuments_shouldRejectCrossDepartmentFieldEmployee() {
+        Department otherDepartment = new Department("Roads");
+        otherDepartment.setId(2L);
+        AssetCategory category = new AssetCategory("Playground");
+        category.setId(2L);
+        Asset asset = new Asset(
+                "Road Asset",
+                otherDepartment,
+                category,
+                "Main Road",
+                AssetStatus.ACTIVE,
+                LocalDate.of(2026, 6, 25),
+                10L);
+        asset.setId(2L);
+        User fieldEmployee = userInDepartment(20L, UserRole.FIELD_EMPLOYEE, 1L);
+        OperationalDocument assetDocument = savedDocument(200L, asset);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(operationalDocumentRepository.findByAssetIdAndOwnerTypeOrderByUploadedAtDesc(
+                2L, OperationalDocumentOwnerType.ASSET))
+                .thenReturn(java.util.List.of(assetDocument));
+
+        assertThatThrownBy(() -> operationalDocumentService.listVisibleAssetOwnedDocuments(asset, 20L))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You may only download operational documents for assets in your own department.");
+    }
+
+    @Test
+    void listVisibleAssetOwnedDocuments_shouldExcludeInspectionLinkedDocuments() {
+        Asset asset = asset(5L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        OperationalDocument assetDocument = savedDocument(200L, asset);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(operationalDocumentRepository.findByAssetIdAndOwnerTypeOrderByUploadedAtDesc(
+                5L, OperationalDocumentOwnerType.ASSET))
+                .thenReturn(java.util.List.of(assetDocument));
+
+        java.util.List<OperationalDocument> documents =
+                operationalDocumentService.listVisibleAssetOwnedDocuments(asset, 20L);
+
+        assertThat(documents).allMatch(document -> document.getOwnerType() == OperationalDocumentOwnerType.ASSET);
+        verify(operationalDocumentRepository).findByAssetIdAndOwnerTypeOrderByUploadedAtDesc(
+                5L, OperationalDocumentOwnerType.ASSET);
     }
 
     @Test
@@ -289,6 +353,24 @@ class OperationalDocumentServiceTest {
                 operationalDocumentService.listVisibleAssetOwnedDocuments(asset, 30L);
 
         assertThat(documents).containsExactly(assetDocument);
+    }
+
+    @Test
+    void listDocuments_shouldStillRejectFieldEmployeeForAssetOwnedDocumentsOnly() {
+        Asset asset = asset(5L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        Pageable pageable = PageRequest.of(0, 20);
+        OperationalDocument assetDocument = savedDocument(200L, asset);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(assetRepository.existsById(5L)).thenReturn(true);
+        when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
+        when(operationalDocumentRepository.findByAssetIdOrderByUploadedAtDesc(5L, pageable))
+                .thenReturn(new PageImpl<>(java.util.List.of(assetDocument), pageable, 1));
+
+        assertThatThrownBy(() -> operationalDocumentService.listDocuments(5L, pageable, 20L))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("Unauthorized to download operational evidence for this context");
     }
 
     @Test
@@ -928,6 +1010,40 @@ class OperationalDocumentServiceTest {
                 .hasMessage("You may only download operational documents for assets in your own department.");
 
         verify(fileStore, never()).loadAsResource(any());
+    }
+
+    @Test
+    void downloadDocument_shouldAllowFieldEmployeeForAssetOwnedDocumentInOwnDepartment() {
+        Asset asset = asset(5L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        OperationalDocument document = savedDocument(103L, asset);
+        Resource resource = mock(Resource.class);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(operationalDocumentRepository.findById(103L)).thenReturn(Optional.of(document));
+        when(fileStore.loadAsResource("/tmp/stored-file")).thenReturn(resource);
+
+        OperationalDocumentService.OperationalDocumentDownload download =
+                operationalDocumentService.downloadDocument(103L, 20L);
+
+        assertThat(download.resource()).isSameAs(resource);
+        verify(fileStore).loadAsResource("/tmp/stored-file");
+    }
+
+    @Test
+    void downloadDocument_shouldAllowContractorForAssetOwnedDocumentInOwnDepartment() {
+        Asset asset = asset(5L);
+        User contractor = user(25L, UserRole.CONTRACTOR);
+        OperationalDocument document = savedDocument(103L, asset);
+        Resource resource = mock(Resource.class);
+
+        when(userService.getById(25L)).thenReturn(contractor);
+        when(operationalDocumentRepository.findById(103L)).thenReturn(Optional.of(document));
+        when(fileStore.loadAsResource("/tmp/stored-file")).thenReturn(resource);
+
+        operationalDocumentService.downloadDocument(103L, 25L);
+
+        verify(fileStore).loadAsResource("/tmp/stored-file");
     }
 
     @Test

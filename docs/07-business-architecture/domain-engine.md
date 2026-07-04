@@ -1446,9 +1446,9 @@ Version 2.4.0 Sprint M4-BE4 adds a `documents` array to the existing asset looku
 
 - `documents` — compact metadata for asset-owned operational documents the caller may view (`id`, `filename`, `contentType`, `ownerType`, `uploadedAt`, `uploadedBy`, `downloadUrl`). Empty array when none are visible. Never `null`. No storage paths or internal file keys are exposed.
 
-**Authorization.** Outer M4-BE1 asset authorization runs first. Document listing reuses `OperationalDocumentService` and existing operational document download authorization — no Android-specific document rules. Forbidden asset lookup returns `403` before documents are queried.
+**Authorization.** Outer M4-BE1 asset authorization runs first. **M4-BE4.1:** mobile asset context lists all ASSET-owned documents once department access is confirmed — field employees and contractors in the asset's department see reference documents alongside managers and coordinators. Web `GET /api/assets/{assetId}/documents` listing rules are unchanged. Forbidden asset lookup returns `403` before documents are queried.
 
-**Download.** No new download endpoint. Android calls `downloadUrl` (`GET /api/operational-documents/{id}/download`), which enforces its own authorization.
+**Download.** No new download endpoint. Android calls `downloadUrl` (`GET /api/operational-documents/{id}/download`). For field employees and contractors, asset-owned downloads use the same department gate as mobile asset context; context-linked documents (inspection, work order, issue, maintenance) still require assignment-based authorization.
 
 ---
 
