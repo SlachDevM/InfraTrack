@@ -1,6 +1,7 @@
 package com.infratrack.mobile;
 
 import com.infratrack.asset.Asset;
+import com.infratrack.delegatedauthority.DelegatedAuthorityService;
 import com.infratrack.department.Department;
 import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.inspection.Inspection;
@@ -14,6 +15,8 @@ import com.infratrack.workorder.WorkOrderStatus;
 import com.infratrack.workorder.WorkType;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 /**
  * Enforces mobile API access and read scoping for field-oriented endpoints.
  */
@@ -22,12 +25,15 @@ public class MobileAuthorizationService {
 
     private final UserService userService;
     private final InspectionAuthorizationService inspectionAuthorizationService;
+    private final DelegatedAuthorityService delegatedAuthorityService;
 
     public MobileAuthorizationService(
             UserService userService,
-            InspectionAuthorizationService inspectionAuthorizationService) {
+            InspectionAuthorizationService inspectionAuthorizationService,
+            DelegatedAuthorityService delegatedAuthorityService) {
         this.userService = userService;
         this.inspectionAuthorizationService = inspectionAuthorizationService;
+        this.delegatedAuthorityService = delegatedAuthorityService;
     }
 
     public User requireMobileUser(Long userId) {
@@ -85,6 +91,71 @@ public class MobileAuthorizationService {
             return user.getRole().isContractor();
         }
         return false;
+    }
+
+    /**
+     * Authorizes mobile asset context lookup by QR/barcode scan (M4-BE1).
+     * Administrators may look up any asset. Managers may look up assets in
+     * their own or a delegated department. Operational coordinators, field
+     * employees and contractors are limited to their own department, which
+     * is the existing conservative asset visibility rule for these roles.
+     */
+    public void requireCanViewAssetContext(User user, Asset asset) {
+        UserRole role = user.getRole();
+        if (role == null) {
+            throw new ForbiddenOperationException("Mobile asset lookup is not available for this role.");
+        }
+        if (role.isAdministrator()) {
+            return;
+        }
+        if (role.isManager()) {
+            if (delegatedAuthorityService.canManagerActForAssetDepartment(
+                    user, asset.getDepartment(), LocalDateTime.now())) {
+                return;
+            }
+            throw new ForbiddenOperationException(
+                    "You may only look up assets in your own or delegated department.");
+        }
+        if (role.isOperationalCoordinator() || role.isFieldEmployee() || role.isContractor()) {
+            requireSameDepartmentForAssetLookup(user, asset);
+            return;
+        }
+        throw new ForbiddenOperationException("Mobile asset lookup is not available for this role.");
+    }
+
+    /**
+     * Conservative approximation of the existing "assign inspection" rule
+     * (Operational Coordinator, own department) for the asset context screen.
+     */
+    public boolean canCreateInspectionForAsset(User user, Asset asset) {
+        return user.getRole() != null
+                && user.getRole().isOperationalCoordinator()
+                && isSameDepartment(user, asset);
+    }
+
+    /**
+     * Conservative approximation of the existing "record issue" rule
+     * (field employee or contractor, own department) for the asset context screen.
+     */
+    public boolean canCreateIssueForAsset(User user, Asset asset) {
+        return user.getRole() != null
+                && (user.getRole().isFieldEmployee() || user.getRole().isContractor())
+                && isSameDepartment(user, asset);
+    }
+
+    private void requireSameDepartmentForAssetLookup(User user, Asset asset) {
+        if (!isSameDepartment(user, asset)) {
+            throw new ForbiddenOperationException(
+                    "You may only look up assets in your own department.");
+        }
+    }
+
+    private boolean isSameDepartment(User user, Asset asset) {
+        Department userDepartment = user.getDepartment();
+        Department assetDepartment = asset.getDepartment();
+        return userDepartment != null
+                && assetDepartment != null
+                && userDepartment.getId().equals(assetDepartment.getId());
     }
 
     private void requireMobileRole(User user) {

@@ -41,6 +41,9 @@ public interface InspectionRepository extends JpaRepository<Inspection, Long> {
     @EntityGraph(attributePaths = {"asset", "businessTrigger"})
     List<Inspection> findAllByAsset_IdOrderByCompletedAtDesc(Long assetId);
 
+    @EntityGraph(attributePaths = {"asset", "asset.assetCategory", "inspectionTemplate"})
+    List<Inspection> findByAsset_IdAndStatus(Long assetId, InspectionStatus status);
+
     @EntityGraph(attributePaths = {"asset", "asset.department", "inspectionTemplate"})
     Optional<Inspection> findWithEvaluationContextById(Long id);
 

@@ -18,6 +18,9 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
     Optional<Asset> findById(Long id);
 
     @EntityGraph(attributePaths = {"department", "assetCategory"})
+    Optional<Asset> findByCodeIgnoreCase(String code);
+
+    @EntityGraph(attributePaths = {"department", "assetCategory"})
     List<Asset> findAllByOrderByRegistrationDateDesc();
 
     @EntityGraph(attributePaths = {"department", "assetCategory"})

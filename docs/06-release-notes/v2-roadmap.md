@@ -109,13 +109,26 @@ The KPI API is designed for reuse by the React web client, future Android applic
 
 ---
 
-## ⬜ Version 2.4.0 — Offline Synchronisation
+## ◐ Version 2.4.0 — Offline Synchronisation & Mobile Asset Lookup
 
-**Objective:** Field operations with offline-capable sync.
+**Objective:** Field operations with offline-capable sync, plus QR/barcode-driven asset navigation.
 
-**Business value:** Reliable field work in low-connectivity areas.
+**Business value:** Reliable field work in low-connectivity areas; scanning a physical asset tag opens its operational context instead of manual search.
 
-**Major capabilities:** Local cache, sync reconciliation (scope to be defined).
+**Status:** In progress — Sprint M4-BE1 (backend only) validated; Android scanning UI, QR generation, and offline sync remain planned.
+
+**Delivered capabilities:**
+
+- **Sprint M4-BE1 (validated):** Backend asset lookup endpoint for QR/barcode navigation — `GET /api/mobile/assets/lookup?code={assetCode}`. Adds a stable asset business code (`asset.code`), a scoped `AssetContextResponse` (asset summary, open issues, active inspections, active work orders, backend-generated allowed actions), and role/department authorization reusing existing rules. Backend only — no QR generation, no Android scanner, no new workflows.
+
+**Planned within this version family (not yet delivered):**
+
+- QR/barcode generation and printing
+- Android QR/barcode scanning UI consuming the M4-BE1 endpoint
+- Asset documents and full history on the asset context screen
+- Local cache, sync reconciliation (scope to be defined)
+
+**Reference:** [Mobile API](../04-api/mobile-api.md)
 
 ---
 

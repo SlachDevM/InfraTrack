@@ -1384,6 +1384,36 @@ Version 2.2.0 Sprint M1 introduces **read-only mobile bundle endpoints** under `
 
 Field employees and contractors access assigned items only. Managers access department-scoped items. Administrators have support access. Write operations reuse existing web APIs (`POST /api/inspections/{id}/complete`, `POST /api/work-orders/{id}/maintenance-activity`). Android client, offline sync, and push delivery remain deferred.
 
+### Sprint M4-BE1 — Mobile Asset Lookup / Asset Context API
+
+Version 2.4.0 Sprint M4-BE1 adds a backend endpoint for Android QR/barcode asset navigation: `GET /api/mobile/assets/lookup?code={assetCode}`. This sprint is **backend only** — no QR code generation, no Android scanner, and no new workflows. Android scans a physical tag, resolves the printed asset business code, and will call this endpoint in a later M4 sprint.
+
+**Asset business code.** Every asset now has a stable `code` field (`assets.asset_code`, format `AST-XXXXXXXX`), generated automatically at registration and independent from the internal `asset.id` primary key. This is the identifier intended for QR/barcode encoding. Existing assets were backfilled by migration `V28__asset_business_code.sql`.
+
+**Response.** A compact `AssetContextResponse` (package `com.infratrack.mobile.dto`) bundles:
+
+- Asset summary (id, code, name, category, department, location, status)
+- `openIssues` — issues on the asset with no linked operational decision (unresolved)
+- `activeInspections` — inspections on the asset with status `ASSIGNED`
+- `activeWorkOrders` — work orders on the asset with status `CREATED` or `ASSIGNED`
+- `allowedActions` — backend-generated flags: `canViewAsset`, `canViewInspections`, `canViewIssues`, `canViewWorkOrders`, `canCreateInspection`, `canCreateIssue`
+
+Completed/cancelled/resolved records are excluded. Documents and full asset history are deferred to a later M4 backend sprint.
+
+**Authorization.** Reuses existing role and department rules — no Android-specific permission model:
+
+| Role | Access |
+|------|--------|
+| Administrator | Any asset |
+| Manager | Own department, or a department with an active delegated authority (reuses `DelegatedAuthorityService`) |
+| Operational Coordinator | Own department only (this is the first mobile endpoint Operational Coordinators can call) |
+| Field Employee / Contractor | Own department (existing conservative asset visibility rule; no more specific per-asset rule exists yet) |
+| Any other case | `403 Forbidden`, with no asset context returned |
+
+Blank code returns `400`; unknown code returns `404`. The nested lists are scoped to the same asset only after asset-level access is confirmed, so no lookup ever returns cross-asset or cross-department data.
+
+`canCreateInspection` mirrors the existing "assign inspection" rule (Operational Coordinator, own department). `canCreateIssue` mirrors the existing "record issue" role rule (Field Employee/Contractor, own department). Both flags are advisory only — actual creation still goes through the existing `/api/inspections` and `/api/issues` endpoints and their full validation.
+
 ---
 
 ## Authorization summary

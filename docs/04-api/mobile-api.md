@@ -1,6 +1,6 @@
-# Mobile API (V2.2.0 Sprint M1)
+# Mobile API (V2.2.0 Sprint M1, extended V2.4.0 Sprint M4-BE1)
 
-Compact, read-only REST endpoints for the future Android field client. M1 is a **mobile API foundation only** — no Android app, offline sync, push notifications, or QR scanning in this sprint.
+Compact, read-only REST endpoints for the future Android field client. M1 is a **mobile API foundation only** — no Android app, offline sync, push notifications, or QR scanning in this sprint. V2.4.0 Sprint M4-BE1 adds the backend asset lookup endpoint that a future Android QR/barcode scanner will call; it does **not** add QR generation, an Android client, or any workflow change.
 
 ## Purpose
 
@@ -32,7 +32,7 @@ Unauthenticated requests receive `401`. Forbidden scoping receives `403`.
 | Manager | Department assigned inspections/work orders (active) | Department-scoped (existing inspection view rules) |
 | Administrator | All active assigned inspections/work orders | All (support/debug) |
 
-Operational Coordinators do not have mobile API access in M1.
+Operational Coordinators do not have mobile API access in M1. Starting with M4-BE1, Operational Coordinators may use the asset lookup endpoint only (see below); they still cannot use the M1 dashboard/bundle endpoints.
 
 ## Endpoints
 
@@ -44,6 +44,7 @@ Operational Coordinators do not have mobile API access in M1.
 | `GET` | `/api/mobile/inspections/{inspectionId}/bundle` | Full inspection screen payload |
 | `GET` | `/api/mobile/my-work-orders` | Assigned work order summaries |
 | `GET` | `/api/mobile/work-orders/{workOrderId}/bundle` | Full work order screen payload |
+| `GET` | `/api/mobile/assets/lookup?code={assetCode}` | Asset operational context by scanned business code (M4-BE1) |
 
 Live OpenAPI documentation: [Swagger UI](http://localhost:4000/swagger-ui/index.html) (tag: **Mobile API**).
 
@@ -117,6 +118,70 @@ This is **not** the Operations Intelligence web dashboard.
 
 **Workflow timestamps:** Mobile clients send workflow intent only. The backend sets authoritative `completedAt`, `reviewedAt`, and decision timestamps. Deprecated request fields such as `completedAt` on completion requests may still be accepted for compatibility but are ignored — read timestamps from API responses after each write.
 
+## Asset lookup by QR / barcode (V2.4.0 Sprint M4-BE1)
+
+Android's future QR/barcode scanner resolves a physical asset tag to an `assetCode` string and calls this endpoint to open an "Asset Context" screen. This sprint adds the backend endpoint only — no QR code generation, printing, or Android scanning happens yet.
+
+```http
+GET /api/mobile/assets/lookup?code=AST-1A2B3C4D
+```
+
+### Asset business code
+
+Every asset now has a stable `code` (format `AST-XXXXXXXX`), independent from its internal database ID, generated automatically when the asset is registered. Existing assets were backfilled with a generated code by migration `V28__asset_business_code.sql`. This code — not `asset.id` — is the value intended to be encoded in a QR code or barcode in a later sprint.
+
+### Response shape
+
+```json
+{
+  "asset": {
+    "id": 1,
+    "code": "AST-1A2B3C4D",
+    "name": "Street Light 001",
+    "category": "Street Lighting",
+    "department": "Infrastructure",
+    "location": "Main Street",
+    "status": "ACTIVE"
+  },
+  "openIssues": [],
+  "activeInspections": [],
+  "activeWorkOrders": [],
+  "allowedActions": {
+    "canViewAsset": true,
+    "canViewInspections": true,
+    "canViewIssues": true,
+    "canViewWorkOrders": true,
+    "canCreateInspection": false,
+    "canCreateIssue": false
+  }
+}
+```
+
+- `openIssues` — issues on the asset without a linked operational decision (unresolved), most recent first.
+- `activeInspections` — inspections on the asset with status `ASSIGNED`.
+- `activeWorkOrders` — work orders on the asset with status `CREATED` or `ASSIGNED`.
+- Completed/cancelled/resolved records are excluded. Documents and full asset history are **not** included (deferred to a later M4 backend sprint).
+- `allowedActions` is generated entirely by the backend; Android must not infer these flags itself.
+
+### Authorization and scoping
+
+Reuses existing role and department rules; no new Android-specific permissions were introduced:
+
+| Role | Can look up |
+|------|-------------|
+| Administrator | Any asset |
+| Manager | Assets in own department, or a department they hold an active delegated authority for |
+| Operational Coordinator | Assets in own department |
+| Field Employee / Contractor | Assets in own department (existing conservative asset visibility rule; no more specific per-asset rule exists yet) |
+| Any other role | `403 Forbidden` |
+
+- Blank/missing `code` → `400 Bad Request`.
+- Unknown `code` → `404 Not Found`.
+- Asset exists but the caller is not authorized → `403 Forbidden` with no asset context in the response body.
+- The nested lists (`openIssues`, `activeInspections`, `activeWorkOrders`) are scoped to the same asset only once asset-level access is confirmed; no broader cross-asset data is ever returned.
+
+`canCreateInspection` is `true` only for Operational Coordinators in the asset's own department (matching the existing "assign inspection" rule). `canCreateIssue` is `true` only for Field Employees/Contractors in the asset's own department (matching the existing "record issue" role rule). Neither flag creates any new record — creation still goes through the existing `/api/inspections` and `/api/issues` endpoints, which enforce their own full preconditions.
+
 ## Future phases (deferred)
 
 | Phase | Capability |
@@ -125,6 +190,7 @@ This is **not** the Operations Intelligence web dashboard.
 | V2.3.0 | Android field application |
 | V2.4.0 | Offline synchronisation |
 | V2.2.0+ | Push notification integration beyond FCM token registration |
+| M4 (later sprints) | QR code generation/printing, Android QR scanning UI, asset documents/full history on the context screen |
 
 ## Backend package
 
@@ -134,4 +200,8 @@ com.infratrack.mobile
 ├── MobileService
 ├── MobileAuthorizationService
 └── dto.*
+    ├── AssetContextResponse
+    ├── AssetContextSummaryResponse
+    ├── AssetContextAllowedActionsResponse
+    └── ...
 ```

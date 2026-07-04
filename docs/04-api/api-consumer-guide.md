@@ -177,6 +177,10 @@ A bundle should normally populate **one screen**:
 
 Avoid chaining multiple bundle calls to reconstruct one screen. If a screen needs more data, that is a signal for a backend bundle extension — not client-side orchestration of ten list APIs.
 
+### Asset context lookup (V2.4.0 Sprint M4-BE1, backend only)
+
+`GET /api/mobile/assets/lookup?code={assetCode}` is a bundle-style endpoint for a future "Asset Context" screen reached by scanning a QR code or barcode. It returns the asset summary, scoped open issues, active inspections, active work orders, and `allowedActions` in one call. This sprint ships the backend endpoint only — there is no Android scanner or QR generation yet, so this is not reachable from any client today. See [Mobile API — Asset lookup](mobile-api.md#asset-lookup-by-qr--barcode-v240-sprint-m4-be1) for the full contract.
+
 ### When to use lists
 
 Use list endpoints (`/api/mobile/my-inspections`, `/api/mobile/my-work-orders`) for:
@@ -213,7 +217,7 @@ Show “Complete Inspection” button
 POST /api/inspections/{id}/complete  (server validates again)
 ```
 
-Typical flags include `canComplete`, `canCompleteMaintenance`, `canUploadDocument`, and `canViewAsset`. Flag names and availability are defined in the Mobile API contract.
+Typical flags include `canComplete`, `canCompleteMaintenance`, `canUploadDocument`, and `canViewAsset`. The asset context lookup response uses its own conservative set (`canViewAsset`, `canViewInspections`, `canViewIssues`, `canViewWorkOrders`, `canCreateInspection`, `canCreateIssue`). Flag names and availability are defined in the Mobile API contract.
 
 **Never** infer `canComplete` from role `FIELD_EMPLOYEE` alone. **Never** show actions that the bundle did not explicitly allow.
 
@@ -416,7 +420,7 @@ Recommended practices for Android and future native field clients:
 7. **Reuse write APIs** documented in Mobile API — do not invent parallel mobile-only write paths on the client.
 8. **Register FCM token** via `PUT /api/users/me/fcm-token` when push is implemented — delivery remains server-driven.
 
-Operational Coordinators do not have Mobile API access in M1 — design navigation for field roles accordingly.
+Operational Coordinators do not have Mobile API access in M1 — design navigation for field roles accordingly. Since M4-BE1, Operational Coordinators may call the asset lookup endpoint only; the M1 dashboard/bundle/list endpoints remain unavailable to them.
 
 ---
 
@@ -447,7 +451,7 @@ Planned capabilities will extend clients without invalidating the core pattern:
 | Direction | Impact on consumers |
 |-----------|---------------------|
 | **Offline sync** | Local queue + reconciliation; server remains authority |
-| **QR / Barcode** | Asset lookup accelerators; same asset IDs and APIs |
+| **QR / Barcode** | Backend asset lookup endpoint shipped in M4-BE1 (`GET /api/mobile/assets/lookup?code=`), keyed by a stable asset business code, not `asset.id`. Android scanning UI and QR generation/printing remain deferred to later M4 sprints. |
 | **Push notifications** | FCM delivery of server events; no client-side workflow triggers |
 | **Public API** | Documented integration authentication and stable integration endpoints |
 | **Mobile-optimised writes** | Possible M2+ endpoints if web write shapes prove unsuitable |

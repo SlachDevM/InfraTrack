@@ -5,6 +5,7 @@ import com.infratrack.department.Department;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 @Entity
 @Table(name = "assets")
@@ -13,6 +14,13 @@ public class Asset {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    /**
+     * Stable business identifier for the asset, independent of the primary key.
+     * This is the value encoded in a QR code / barcode for mobile asset lookup (M4-BE1).
+     */
+    @Column(name = "asset_code", nullable = false, unique = true, updatable = false)
+    private String code;
 
     @Column(nullable = false)
     private String name;
@@ -55,6 +63,7 @@ public class Asset {
             AssetStatus status,
             LocalDate registrationDate,
             Long registeredByUserId) {
+        this.code = generateCode();
         this.name = name;
         this.department = department;
         this.assetCategory = assetCategory;
@@ -67,12 +76,20 @@ public class Asset {
         this.updatedAt = now;
     }
 
+    private static String generateCode() {
+        return "AST-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    }
+
     public Long getId() {
         return id;
     }
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getCode() {
+        return code;
     }
 
     public String getName() {

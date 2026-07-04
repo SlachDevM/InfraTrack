@@ -1,6 +1,7 @@
 package com.infratrack.mobile;
 
 import com.infratrack.config.openapi.StandardApiResponses;
+import com.infratrack.mobile.dto.AssetContextResponse;
 import com.infratrack.mobile.dto.MobileDashboardResponse;
 import com.infratrack.mobile.dto.MobileInspectionBundleResponse;
 import com.infratrack.mobile.dto.MobileInspectionSummaryResponse;
@@ -9,6 +10,7 @@ import com.infratrack.mobile.dto.MobileWorkOrderBundleResponse;
 import com.infratrack.mobile.dto.MobileWorkOrderSummaryResponse;
 import com.infratrack.security.JwtAuthenticationToken;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,6 +19,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -84,5 +87,20 @@ public class MobileController {
             @PathVariable Long workOrderId) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         return ResponseEntity.ok(mobileService.getWorkOrderBundle(userId, workOrderId));
+    }
+
+    @GetMapping("/assets/lookup")
+    @Operation(
+            summary = "Look up asset operational context by scanned business code",
+            description = "Resolves a compact, scoped asset context (summary, open issues, active inspections, "
+                    + "active work orders and backend-generated allowed actions) for Android QR/barcode asset "
+                    + "navigation (V2.4.0 Sprint M4-BE1).")
+    @ApiResponse(responseCode = "200", description = "Asset context scoped to the authenticated user")
+    public ResponseEntity<AssetContextResponse> lookupAssetContext(
+            Authentication authentication,
+            @Parameter(description = "Scanned asset business code (e.g. AST-1A2B3C4D)")
+            @RequestParam String code) {
+        Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+        return ResponseEntity.ok(mobileService.getAssetContext(userId, code));
     }
 }

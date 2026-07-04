@@ -1,5 +1,8 @@
 package com.infratrack.mobile;
 
+import com.infratrack.asset.Asset;
+import com.infratrack.asset.AssetRepository;
+import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.NotFoundException;
 import com.infratrack.inspection.Inspection;
 import com.infratrack.inspection.InspectionAnswer;
@@ -11,8 +14,13 @@ import com.infratrack.inspectiontemplate.InspectionTemplateQuestion;
 import com.infratrack.inspectiontemplate.InspectionTemplateQuestionChoice;
 import com.infratrack.inspectiontemplate.InspectionTemplateQuestionChoiceRepository;
 import com.infratrack.inspectiontemplate.InspectionTemplateQuestionRepository;
+import com.infratrack.issue.Issue;
+import com.infratrack.issue.IssueRepository;
 import com.infratrack.maintenanceactivity.MaintenanceActivity;
 import com.infratrack.maintenanceactivity.MaintenanceActivityRepository;
+import com.infratrack.mobile.dto.AssetContextAllowedActionsResponse;
+import com.infratrack.mobile.dto.AssetContextResponse;
+import com.infratrack.mobile.dto.AssetContextSummaryResponse;
 import com.infratrack.mobile.dto.MobileAllowedActionsResponse;
 import com.infratrack.mobile.dto.MobileAnswerResponse;
 import com.infratrack.mobile.dto.MobileAssetSummaryResponse;
@@ -30,7 +38,9 @@ import com.infratrack.mobile.dto.MobileTemplateSummaryResponse;
 import com.infratrack.mobile.dto.MobileWorkOrderBundleResponse;
 import com.infratrack.mobile.dto.MobileWorkOrderDetailResponse;
 import com.infratrack.mobile.dto.MobileWorkOrderSummaryResponse;
+import com.infratrack.operationaldecision.OperationalDecisionRepository;
 import com.infratrack.user.User;
+import com.infratrack.user.UserService;
 import com.infratrack.workorder.WorkOrder;
 import com.infratrack.workorder.WorkOrderPriority;
 import com.infratrack.workorder.WorkOrderRepository;
@@ -44,32 +54,45 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 public class MobileService {
 
     private final MobileAuthorizationService authorizationService;
+    private final UserService userService;
+    private final AssetRepository assetRepository;
     private final InspectionRepository inspectionRepository;
     private final InspectionAnswerRepository inspectionAnswerRepository;
     private final InspectionTemplateQuestionRepository questionRepository;
     private final InspectionTemplateQuestionChoiceRepository choiceRepository;
+    private final IssueRepository issueRepository;
+    private final OperationalDecisionRepository operationalDecisionRepository;
     private final WorkOrderRepository workOrderRepository;
     private final MaintenanceActivityRepository maintenanceActivityRepository;
 
     public MobileService(
             MobileAuthorizationService authorizationService,
+            UserService userService,
+            AssetRepository assetRepository,
             InspectionRepository inspectionRepository,
             InspectionAnswerRepository inspectionAnswerRepository,
             InspectionTemplateQuestionRepository questionRepository,
             InspectionTemplateQuestionChoiceRepository choiceRepository,
+            IssueRepository issueRepository,
+            OperationalDecisionRepository operationalDecisionRepository,
             WorkOrderRepository workOrderRepository,
             MaintenanceActivityRepository maintenanceActivityRepository) {
         this.authorizationService = authorizationService;
+        this.userService = userService;
+        this.assetRepository = assetRepository;
         this.inspectionRepository = inspectionRepository;
         this.inspectionAnswerRepository = inspectionAnswerRepository;
         this.questionRepository = questionRepository;
         this.choiceRepository = choiceRepository;
+        this.issueRepository = issueRepository;
+        this.operationalDecisionRepository = operationalDecisionRepository;
         this.workOrderRepository = workOrderRepository;
         this.maintenanceActivityRepository = maintenanceActivityRepository;
     }
@@ -191,6 +214,61 @@ public class MobileService {
                 decision,
                 maintenanceActivity,
                 allowedActions);
+    }
+
+    @Transactional(readOnly = true)
+    public AssetContextResponse getAssetContext(Long userId, String code) {
+        User user = userService.getById(userId);
+        Asset asset = findAssetByCodeOrThrow(code);
+        authorizationService.requireCanViewAssetContext(user, asset);
+
+        List<MobileIssueSummaryResponse> openIssues = loadOpenIssues(asset.getId());
+        List<MobileInspectionSummaryResponse> activeInspections = inspectionRepository
+                .findByAsset_IdAndStatus(asset.getId(), InspectionStatus.ASSIGNED)
+                .stream()
+                .map(MobileInspectionSummaryResponse::from)
+                .toList();
+        List<MobileWorkOrderSummaryResponse> activeWorkOrders = workOrderRepository
+                .findByAsset_IdAndStatusIn(asset.getId(), List.of(WorkOrderStatus.CREATED, WorkOrderStatus.ASSIGNED))
+                .stream()
+                .map(MobileWorkOrderSummaryResponse::from)
+                .toList();
+
+        AssetContextAllowedActionsResponse allowedActions = new AssetContextAllowedActionsResponse(
+                true,
+                true,
+                true,
+                true,
+                authorizationService.canCreateInspectionForAsset(user, asset),
+                authorizationService.canCreateIssueForAsset(user, asset));
+
+        return new AssetContextResponse(
+                AssetContextSummaryResponse.from(asset),
+                openIssues,
+                activeInspections,
+                activeWorkOrders,
+                allowedActions);
+    }
+
+    private Asset findAssetByCodeOrThrow(String code) {
+        if (code == null || code.isBlank()) {
+            throw new BusinessValidationException("Asset code is required");
+        }
+        return assetRepository.findByCodeIgnoreCase(code.trim())
+                .orElseThrow(() -> new NotFoundException("Asset not found"));
+    }
+
+    private List<MobileIssueSummaryResponse> loadOpenIssues(Long assetId) {
+        List<Issue> issues = issueRepository.findAllByAsset_IdOrderByRecordedAtDesc(assetId);
+        if (issues.isEmpty()) {
+            return List.of();
+        }
+        List<Long> issueIds = issues.stream().map(Issue::getId).toList();
+        Set<Long> resolvedIssueIds = operationalDecisionRepository.findResolvedIssueIds(issueIds);
+        return issues.stream()
+                .filter(issue -> !resolvedIssueIds.contains(issue.getId()))
+                .map(MobileIssueSummaryResponse::from)
+                .toList();
     }
 
     private List<Inspection> loadScopedInspections(User user) {

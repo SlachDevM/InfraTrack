@@ -1,11 +1,14 @@
 package com.infratrack.mobile;
 
 import com.infratrack.asset.Asset;
+import com.infratrack.asset.AssetRepository;
 import com.infratrack.asset.AssetStatus;
 import com.infratrack.assetcategory.AssetCategory;
 import com.infratrack.businesstrigger.BusinessTrigger;
 import com.infratrack.businesstrigger.BusinessTriggerType;
+import com.infratrack.delegatedauthority.DelegatedAuthorityService;
 import com.infratrack.department.Department;
+import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.exception.NotFoundException;
 import com.infratrack.inspection.Inspection;
@@ -24,17 +27,21 @@ import com.infratrack.inspectiontemplate.InspectionTemplateQuestionRepository;
 import com.infratrack.inspectiontemplate.InspectionTemplateQuestionType;
 import com.infratrack.inspectiontemplate.InspectionTemplateStatus;
 import com.infratrack.issue.Issue;
+import com.infratrack.issue.IssueRepository;
 import com.infratrack.issue.IssueSeverity;
 import com.infratrack.maintenanceactivity.MaintenanceActivity;
 import com.infratrack.maintenanceactivity.MaintenanceActivityRepository;
+import com.infratrack.mobile.dto.AssetContextResponse;
 import com.infratrack.mobile.dto.MobileDashboardResponse;
 import com.infratrack.mobile.dto.MobileInspectionBundleResponse;
 import com.infratrack.mobile.dto.MobileInspectionSummaryResponse;
+import com.infratrack.mobile.dto.MobileIssueSummaryResponse;
 import com.infratrack.mobile.dto.MobileMeResponse;
 import com.infratrack.mobile.dto.MobileWorkOrderBundleResponse;
 import com.infratrack.mobile.dto.MobileWorkOrderSummaryResponse;
 import com.infratrack.operationaldecision.OperationalDecision;
 import com.infratrack.operationaldecision.OperationalDecisionOutcome;
+import com.infratrack.operationaldecision.OperationalDecisionRepository;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
@@ -55,11 +62,14 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -86,6 +96,18 @@ class MobileServiceTest {
     @Mock
     private MaintenanceActivityRepository maintenanceActivityRepository;
 
+    @Mock
+    private AssetRepository assetRepository;
+
+    @Mock
+    private IssueRepository issueRepository;
+
+    @Mock
+    private OperationalDecisionRepository operationalDecisionRepository;
+
+    @Mock
+    private DelegatedAuthorityService delegatedAuthorityService;
+
     private MobileService mobileService;
 
     @BeforeEach
@@ -93,13 +115,17 @@ class MobileServiceTest {
         InspectionAuthorizationService inspectionAuthorizationService =
                 new InspectionAuthorizationService(userService, new InspectionVisibilityPolicyService("DEPARTMENT"));
         MobileAuthorizationService authorizationService = new MobileAuthorizationService(
-                userService, inspectionAuthorizationService);
+                userService, inspectionAuthorizationService, delegatedAuthorityService);
         mobileService = new MobileService(
                 authorizationService,
+                userService,
+                assetRepository,
                 inspectionRepository,
                 inspectionAnswerRepository,
                 questionRepository,
                 choiceRepository,
+                issueRepository,
+                operationalDecisionRepository,
                 workOrderRepository,
                 maintenanceActivityRepository);
     }
@@ -370,6 +396,312 @@ class MobileServiceTest {
 
         assertThatThrownBy(() -> mobileService.getInspectionBundle(20L, 999L))
                 .isInstanceOf(NotFoundException.class);
+    }
+
+    // --- Mobile asset lookup / asset context (M4-BE1) ---
+
+    @Test
+    void getAssetContext_blankCode_throwsBusinessValidationException() {
+        User admin = user(1L, UserRole.ADMINISTRATOR);
+        when(userService.getById(1L)).thenReturn(admin);
+
+        assertThatThrownBy(() -> mobileService.getAssetContext(1L, "   "))
+                .isInstanceOf(BusinessValidationException.class);
+
+        verify(assetRepository, never()).findByCodeIgnoreCase(any());
+    }
+
+    @Test
+    void getAssetContext_nullCode_throwsBusinessValidationException() {
+        User admin = user(1L, UserRole.ADMINISTRATOR);
+        when(userService.getById(1L)).thenReturn(admin);
+
+        assertThatThrownBy(() -> mobileService.getAssetContext(1L, null))
+                .isInstanceOf(BusinessValidationException.class);
+    }
+
+    @Test
+    void getAssetContext_unknownCode_throwsNotFoundException() {
+        User admin = user(1L, UserRole.ADMINISTRATOR);
+        when(userService.getById(1L)).thenReturn(admin);
+        when(assetRepository.findByCodeIgnoreCase("UNKNOWN-1")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> mobileService.getAssetContext(1L, "UNKNOWN-1"))
+                .isInstanceOf(NotFoundException.class);
+
+        verify(issueRepository, never()).findAllByAsset_IdOrderByRecordedAtDesc(any());
+        verify(inspectionRepository, never()).findByAsset_IdAndStatus(any(), any());
+        verify(workOrderRepository, never()).findByAsset_IdAndStatusIn(any(), any());
+    }
+
+    @Test
+    void getAssetContext_administrator_canLookupAnyDepartmentAsset() {
+        User admin = user(1L, UserRole.ADMINISTRATOR);
+        Asset asset = asset();
+        stubAssetLookup(asset);
+        when(userService.getById(1L)).thenReturn(admin);
+
+        AssetContextResponse response = mobileService.getAssetContext(1L, asset.getCode());
+
+        assertThat(response.getAsset().getId()).isEqualTo(asset.getId());
+    }
+
+    @Test
+    void getAssetContext_managerOwnDepartment_canLookup() {
+        Department managerDepartment = department(1L, "Parks");
+        User manager = userWithDepartment(2L, UserRole.MANAGER, managerDepartment);
+        Asset asset = assetInDepartment(managerDepartment);
+        stubAssetLookup(asset);
+        when(userService.getById(2L)).thenReturn(manager);
+        when(delegatedAuthorityService.canManagerActForAssetDepartment(eq(manager), eq(managerDepartment), any()))
+                .thenReturn(true);
+
+        AssetContextResponse response = mobileService.getAssetContext(2L, asset.getCode());
+
+        assertThat(response.getAsset().getId()).isEqualTo(asset.getId());
+    }
+
+    @Test
+    void getAssetContext_managerDelegatedDepartment_canLookup() {
+        Department managerDepartment = department(1L, "Parks");
+        Department targetDepartment = department(3L, "Roads");
+        User manager = userWithDepartment(2L, UserRole.MANAGER, managerDepartment);
+        Asset asset = assetInDepartment(targetDepartment);
+        stubAssetLookup(asset);
+        when(userService.getById(2L)).thenReturn(manager);
+        when(delegatedAuthorityService.canManagerActForAssetDepartment(eq(manager), eq(targetDepartment), any()))
+                .thenReturn(true);
+
+        AssetContextResponse response = mobileService.getAssetContext(2L, asset.getCode());
+
+        assertThat(response.getAsset().getId()).isEqualTo(asset.getId());
+    }
+
+    @Test
+    void getAssetContext_managerCrossDepartmentWithoutDelegation_isForbidden() {
+        Department managerDepartment = department(1L, "Parks");
+        Department targetDepartment = department(3L, "Roads");
+        User manager = userWithDepartment(2L, UserRole.MANAGER, managerDepartment);
+        Asset asset = assetInDepartment(targetDepartment);
+        stubAssetFound(asset);
+        when(userService.getById(2L)).thenReturn(manager);
+        when(delegatedAuthorityService.canManagerActForAssetDepartment(eq(manager), eq(targetDepartment), any()))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> mobileService.getAssetContext(2L, asset.getCode()))
+                .isInstanceOf(ForbiddenOperationException.class);
+
+        verify(issueRepository, never()).findAllByAsset_IdOrderByRecordedAtDesc(any());
+    }
+
+    @Test
+    void getAssetContext_operationalCoordinatorOwnDepartment_canLookup() {
+        Department department = department(1L, "Parks");
+        User coordinator = userWithDepartment(3L, UserRole.OPERATIONAL_COORDINATOR, department);
+        Asset asset = assetInDepartment(department);
+        stubAssetLookup(asset);
+        when(userService.getById(3L)).thenReturn(coordinator);
+
+        AssetContextResponse response = mobileService.getAssetContext(3L, asset.getCode());
+
+        assertThat(response.getAsset().getId()).isEqualTo(asset.getId());
+        assertThat(response.getAllowedActions().isCanCreateInspection()).isTrue();
+    }
+
+    @Test
+    void getAssetContext_operationalCoordinatorCrossDepartment_isForbidden() {
+        Department coordinatorDepartment = department(1L, "Parks");
+        Department assetDepartment = department(3L, "Roads");
+        User coordinator = userWithDepartment(3L, UserRole.OPERATIONAL_COORDINATOR, coordinatorDepartment);
+        Asset asset = assetInDepartment(assetDepartment);
+        stubAssetFound(asset);
+        when(userService.getById(3L)).thenReturn(coordinator);
+
+        assertThatThrownBy(() -> mobileService.getAssetContext(3L, asset.getCode()))
+                .isInstanceOf(ForbiddenOperationException.class);
+    }
+
+    @Test
+    void getAssetContext_fieldEmployeeOwnDepartment_canLookup() {
+        Department department = department(1L, "Parks");
+        User fieldEmployee = userWithDepartment(20L, UserRole.FIELD_EMPLOYEE, department);
+        Asset asset = assetInDepartment(department);
+        stubAssetLookup(asset);
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        AssetContextResponse response = mobileService.getAssetContext(20L, asset.getCode());
+
+        assertThat(response.getAsset().getId()).isEqualTo(asset.getId());
+        assertThat(response.getAllowedActions().isCanCreateIssue()).isTrue();
+        assertThat(response.getAllowedActions().isCanCreateInspection()).isFalse();
+    }
+
+    @Test
+    void getAssetContext_contractorOwnDepartment_canLookup() {
+        Department department = department(1L, "Parks");
+        User contractor = userWithDepartment(21L, UserRole.CONTRACTOR, department);
+        Asset asset = assetInDepartment(department);
+        stubAssetLookup(asset);
+        when(userService.getById(21L)).thenReturn(contractor);
+
+        AssetContextResponse response = mobileService.getAssetContext(21L, asset.getCode());
+
+        assertThat(response.getAsset().getId()).isEqualTo(asset.getId());
+        assertThat(response.getAllowedActions().isCanCreateIssue()).isTrue();
+    }
+
+    @Test
+    void getAssetContext_fieldEmployeeCrossDepartment_isForbiddenAndDoesNotLeakContext() {
+        Department employeeDepartment = department(1L, "Parks");
+        Department assetDepartment = department(3L, "Roads");
+        User fieldEmployee = userWithDepartment(20L, UserRole.FIELD_EMPLOYEE, employeeDepartment);
+        Asset asset = assetInDepartment(assetDepartment);
+        stubAssetFound(asset);
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        assertThatThrownBy(() -> mobileService.getAssetContext(20L, asset.getCode()))
+                .isInstanceOf(ForbiddenOperationException.class);
+
+        verify(issueRepository, never()).findAllByAsset_IdOrderByRecordedAtDesc(any());
+        verify(inspectionRepository, never()).findByAsset_IdAndStatus(any(), any());
+        verify(workOrderRepository, never()).findByAsset_IdAndStatusIn(any(), any());
+    }
+
+    @Test
+    void getAssetContext_returnsAssetSummaryFields() {
+        User admin = user(1L, UserRole.ADMINISTRATOR);
+        Asset asset = asset();
+        stubAssetLookup(asset);
+        when(userService.getById(1L)).thenReturn(admin);
+
+        AssetContextResponse response = mobileService.getAssetContext(1L, asset.getCode());
+
+        assertThat(response.getAsset().getId()).isEqualTo(asset.getId());
+        assertThat(response.getAsset().getCode()).isEqualTo(asset.getCode());
+        assertThat(response.getAsset().getName()).isEqualTo("Central Playground");
+        assertThat(response.getAsset().getCategory()).isEqualTo("Playground");
+        assertThat(response.getAsset().getDepartment()).isEqualTo("Parks");
+        assertThat(response.getAsset().getLocation()).isEqualTo("Memorial Park");
+        assertThat(response.getAsset().getStatus()).isEqualTo(AssetStatus.ACTIVE);
+    }
+
+    @Test
+    void getAssetContext_includesOnlyUnresolvedIssues() {
+        User admin = user(1L, UserRole.ADMINISTRATOR);
+        Asset asset = asset();
+        stubAssetLookup(asset);
+        when(userService.getById(1L)).thenReturn(admin);
+
+        Issue openIssue = issueForAsset(asset, 600L);
+        Issue resolvedIssue = issueForAsset(asset, 601L);
+        when(issueRepository.findAllByAsset_IdOrderByRecordedAtDesc(asset.getId()))
+                .thenReturn(List.of(openIssue, resolvedIssue));
+        when(operationalDecisionRepository.findResolvedIssueIds(List.of(600L, 601L)))
+                .thenReturn(Set.of(601L));
+
+        AssetContextResponse response = mobileService.getAssetContext(1L, asset.getCode());
+
+        assertThat(response.getOpenIssues()).extracting(MobileIssueSummaryResponse::getIssueId)
+                .containsExactly(600L);
+    }
+
+    @Test
+    void getAssetContext_includesOnlyActiveInspectionsAndWorkOrders() {
+        User admin = user(1L, UserRole.ADMINISTRATOR);
+        Asset asset = asset();
+        stubAssetLookup(asset);
+        when(userService.getById(1L)).thenReturn(admin);
+
+        Inspection activeInspection = assignedInspection(700L, 20L);
+        when(inspectionRepository.findByAsset_IdAndStatus(asset.getId(), InspectionStatus.ASSIGNED))
+                .thenReturn(List.of(activeInspection));
+
+        WorkOrder activeWorkOrder = createdWorkOrder(800L);
+        when(workOrderRepository.findByAsset_IdAndStatusIn(
+                asset.getId(), List.of(WorkOrderStatus.CREATED, WorkOrderStatus.ASSIGNED)))
+                .thenReturn(List.of(activeWorkOrder));
+
+        AssetContextResponse response = mobileService.getAssetContext(1L, asset.getCode());
+
+        assertThat(response.getActiveInspections())
+                .extracting(MobileInspectionSummaryResponse::getInspectionId)
+                .containsExactly(700L);
+        assertThat(response.getActiveWorkOrders())
+                .extracting(MobileWorkOrderSummaryResponse::getWorkOrderId)
+                .containsExactly(800L);
+    }
+
+    @Test
+    void getAssetContext_allowedActionsAreConservativeForFieldEmployee() {
+        Department department = department(1L, "Parks");
+        User fieldEmployee = userWithDepartment(20L, UserRole.FIELD_EMPLOYEE, department);
+        Asset asset = assetInDepartment(department);
+        stubAssetLookup(asset);
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        AssetContextResponse response = mobileService.getAssetContext(20L, asset.getCode());
+
+        assertThat(response.getAllowedActions().isCanViewAsset()).isTrue();
+        assertThat(response.getAllowedActions().isCanViewInspections()).isTrue();
+        assertThat(response.getAllowedActions().isCanViewIssues()).isTrue();
+        assertThat(response.getAllowedActions().isCanViewWorkOrders()).isTrue();
+        assertThat(response.getAllowedActions().isCanCreateInspection()).isFalse();
+        assertThat(response.getAllowedActions().isCanCreateIssue()).isTrue();
+    }
+
+    private void stubAssetLookup(Asset asset) {
+        when(assetRepository.findByCodeIgnoreCase(asset.getCode())).thenReturn(Optional.of(asset));
+        when(issueRepository.findAllByAsset_IdOrderByRecordedAtDesc(asset.getId())).thenReturn(List.of());
+        when(inspectionRepository.findByAsset_IdAndStatus(asset.getId(), InspectionStatus.ASSIGNED))
+                .thenReturn(List.of());
+        when(workOrderRepository.findByAsset_IdAndStatusIn(
+                asset.getId(), List.of(WorkOrderStatus.CREATED, WorkOrderStatus.ASSIGNED)))
+                .thenReturn(List.of());
+    }
+
+    private void stubAssetFound(Asset asset) {
+        when(assetRepository.findByCodeIgnoreCase(asset.getCode())).thenReturn(Optional.of(asset));
+    }
+
+    private Issue issueForAsset(Asset asset, Long id) {
+        Issue issue = new Issue(
+                null,
+                asset,
+                "Sample issue",
+                IssueSeverity.LOW,
+                10L,
+                LocalDateTime.now().minusDays(1));
+        issue.setId(id);
+        return issue;
+    }
+
+    private Department department(Long id, String name) {
+        Department department = new Department(name);
+        department.setId(id);
+        return department;
+    }
+
+    private User userWithDepartment(Long id, UserRole role, Department department) {
+        User user = new User("user" + id + "@test.com", "password", "Test User " + id, role);
+        user.setId(id);
+        user.setEnabled(true);
+        user.setDepartment(department);
+        return user;
+    }
+
+    private Asset assetInDepartment(Department department) {
+        AssetCategory category = new AssetCategory("Playground");
+        category.setId(2L);
+        Asset asset = new Asset(
+                "Central Playground",
+                department,
+                category,
+                "Memorial Park",
+                AssetStatus.ACTIVE,
+                LocalDate.of(2026, 6, 25),
+                10L);
+        asset.setId(5L);
+        return asset;
     }
 
     private User user(Long id, UserRole role) {
