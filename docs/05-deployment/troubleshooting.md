@@ -125,6 +125,41 @@ Same response format as login rate limiting. The message does not indicate wheth
 
 ---
 
+## Content Security Policy (CSP)
+
+### Browser console reports CSP violations
+
+**Symptoms:** Login or API calls fail; console shows `Refused to connect…` or `violates Content-Security-Policy`.
+
+**Checks:**
+
+1. Confirm the violation directive (usually `connect-src` for API calls).
+2. Production API URL (`VITE_API_BASE_URL`) must be reachable under `https:` in the nginx policy.
+3. Local Docker Compose uses `http://localhost:4000` — allowed explicitly in `frontend/nginx.conf`.
+4. Do not add `'unsafe-eval'` or wildcard script sources — fix the root cause instead.
+
+**Expected:** CSP is enforced by the frontend nginx container only. `npm run dev` (Vite) does not send CSP headers.
+
+### Style blocked by CSP (`style-src`)
+
+**Symptoms:** Layout broken; console shows `Refused to apply inline style` or blocked `<style>` element.
+
+**Checks:**
+
+1. Confirm the violation is from a real inline style source (`<style>` tag or HTML `style=""` attribute), not React `style={{…}}` props (those are applied via JavaScript and are allowed under `script-src 'self'`).
+2. If a third-party library injects inline styles, prefer fixing or replacing the library over adding `'unsafe-inline'` globally.
+3. Only add `style-src 'unsafe-inline'` when a specific component or library has a documented technical requirement.
+
+### CSP header missing
+
+**Checks:**
+
+1. Request is served by the frontend Docker container (nginx), not Vite dev server.
+2. Inspect headers: `curl -I http://localhost:3000/` should include `Content-Security-Policy`.
+3. Rebuild frontend image after `nginx.conf` changes: `docker compose build frontend`.
+
+---
+
 ## Docker Compose
 
 ### Bind mount fails for Firebase credentials

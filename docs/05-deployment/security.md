@@ -42,6 +42,71 @@ Bearer token storage in clients is an intentional architecture decision — see 
 
 ---
 
+## Content Security Policy (CSP)
+
+**V2.4.x DT-2A** adds a production Content Security Policy on the **frontend nginx** container (`frontend/nginx.conf`). **DT-2A.1** tightened the policy after review. The policy is **not** emitted by the Spring Boot API — the React SPA is served separately from the backend.
+
+### Architecture unchanged
+
+| Aspect | Status |
+|--------|--------|
+| JWT Bearer authentication | Unchanged |
+| Token storage (`localStorage`) | Unchanged — see BDR-003 |
+| Login / logout flows | Unchanged |
+| Backend `SecurityConfig` | Unchanged (API CSP intentionally deferred) |
+| HttpOnly cookies | Not introduced — possible future V3 evolution |
+
+CSP **reduces XSS impact** by restricting script, connection, and embedding sources. It does **not** replace secure React coding practices (avoid `dangerouslySetInnerHTML`, validate user input, keep dependencies patched).
+
+### Enforcement location
+
+| Environment | CSP enforced |
+|-------------|--------------|
+| `npm run dev` (Vite) | No — local development unchanged |
+| Frontend Docker image (nginx on port 8080) | Yes |
+| Production external HTTPS reverse proxy | May add additional headers; frontend container CSP still applies to SPA responses |
+
+### Policy (frontend nginx)
+
+```http
+Content-Security-Policy:
+  default-src 'self';
+  script-src 'self';
+  style-src 'self';
+  img-src 'self' data:;
+  font-src 'self' data:;
+  connect-src 'self' https: http://localhost:4000;
+  object-src 'none';
+  base-uri 'self';
+  frame-ancestors 'none';
+  form-action 'self';
+```
+
+**Directive notes:**
+
+| Directive | Rationale |
+|-----------|-----------|
+| `script-src 'self'` | Vite production build serves bundled scripts from same origin only — no `'unsafe-eval'` or `'unsafe-inline'` |
+| `style-src 'self'` | Stylesheets are bundled CSS from same origin. React `style={{…}}` props set styles via JavaScript at runtime and do **not** require `'unsafe-inline'` (DT-2A.1 audit: no `<style>` blocks, no HTML `style=""` attributes, no libraries injecting inline styles) |
+| `connect-src https:` | Production `VITE_API_BASE_URL` is HTTPS (see `.env.example`) |
+| `connect-src http://localhost:4000` | Local Docker Compose / dev API origin reachable from the browser |
+| `upgrade-insecure-requests` | **Not included** (DT-2A.1). InfraTrack supports HTTP deployments (local Docker Compose, staging). Reintroduce only when HTTPS is mandatory for all supported deployments — typically at the external HTTPS reverse proxy once plain HTTP is no longer offered |
+
+If your deployment uses another API origin (e.g. a dedicated API subdomain), ensure it is covered by `https:` in `connect-src`. Do not add wildcard script permissions or `'unsafe-eval'`.
+
+### Verification
+
+After deploying the frontend container:
+
+1. Open the application in a browser.
+2. Confirm login and authenticated API calls succeed.
+3. Check the browser developer console for CSP violation reports.
+4. Inspect response headers — `Content-Security-Policy` should be present on HTML and static asset responses from nginx.
+
+See [production-checklist.md](production-checklist.md) and [troubleshooting.md](troubleshooting.md#content-security-policy-csp).
+
+---
+
 ## Password policy
 
 Registration (`POST /api/auth/register`, development only) and account activation (`POST /api/auth/activate-account`) require passwords between **12 and 128 characters**.

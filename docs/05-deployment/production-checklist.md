@@ -25,6 +25,7 @@ Use this checklist before go-live and before each production release.
 - [ ] Login rate limiting returns HTTP 429 with `Retry-After` when exceeded
 - [ ] PostgreSQL port not exposed publicly in production compose
 - [ ] HTTPS terminated at reverse proxy
+- [ ] Frontend nginx sends `Content-Security-Policy` (V2.4.x DT-2A) — login and API calls work; no CSP violations in browser console
 
 ---
 
