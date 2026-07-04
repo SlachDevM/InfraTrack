@@ -1398,7 +1398,7 @@ Version 2.4.0 Sprint M4-BE1 adds a backend endpoint for Android QR/barcode asset
 - `activeWorkOrders` — work orders on the asset with status `CREATED` or `ASSIGNED`
 - `allowedActions` — backend-generated flags: `canViewAsset`, `canViewInspections`, `canViewIssues`, `canViewWorkOrders`, `canCreateInspection`, `canCreateIssue`
 
-Sprint M4-BE3 adds optional nullable sections: `lastInspection`, `lastMaintenance`, and `preventivePlan` (see below).
+Sprint M4-BE3 adds optional nullable sections: `lastInspection`, `lastMaintenance`, and `preventivePlan` (see below). Sprint M4-BE4 adds a `documents` array of visible asset-owned operational document summaries (see below).
 
 Completed/cancelled/resolved records are excluded. Documents and full asset history are deferred to a later M4 backend sprint.
 
@@ -1437,6 +1437,18 @@ Version 2.4.0 Sprint M4-BE3 enriches the existing `GET /api/mobile/assets/lookup
 **Authorization.** Reuses the M4-BE1 outer asset authorization (`requireCanViewAssetContext`). If the caller can view the asset context, they can view these summaries. Forbidden access returns `403` before nested context is queried; unknown code returns `404`; blank code returns `400`.
 
 **Read-only.** Context only — no inspections, work orders, issues, or plans are created or modified by this endpoint.
+
+### Sprint M4-BE4 — Mobile Asset Documents Context
+
+Version 2.4.0 Sprint M4-BE4 adds a `documents` array to the existing asset lookup response. Asset-owned operational documents only — documents linked to inspections, work orders, issues, or maintenance activities remain deferred.
+
+**Response section:**
+
+- `documents` — compact metadata for asset-owned operational documents the caller may view (`id`, `filename`, `contentType`, `ownerType`, `uploadedAt`, `uploadedBy`, `downloadUrl`). Empty array when none are visible. Never `null`. No storage paths or internal file keys are exposed.
+
+**Authorization.** Outer M4-BE1 asset authorization runs first. Document listing reuses `OperationalDocumentService` and existing operational document download authorization — no Android-specific document rules. Forbidden asset lookup returns `403` before documents are queried.
+
+**Download.** No new download endpoint. Android calls `downloadUrl` (`GET /api/operational-documents/{id}/download`), which enforces its own authorization.
 
 ---
 

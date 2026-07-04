@@ -23,6 +23,7 @@ import com.infratrack.mobile.dto.AssetContextResponse;
 import com.infratrack.mobile.dto.AssetContextSummaryResponse;
 import com.infratrack.mobile.dto.MobileAllowedActionsResponse;
 import com.infratrack.mobile.dto.MobileAnswerResponse;
+import com.infratrack.mobile.dto.MobileAssetDocumentSummaryResponse;
 import com.infratrack.mobile.dto.MobileAssetLastInspectionResponse;
 import com.infratrack.mobile.dto.MobileAssetLastMaintenanceResponse;
 import com.infratrack.mobile.dto.MobileAssetPreventivePlanResponse;
@@ -42,9 +43,12 @@ import com.infratrack.mobile.dto.MobileWorkOrderBundleResponse;
 import com.infratrack.mobile.dto.MobileWorkOrderDetailResponse;
 import com.infratrack.mobile.dto.MobileWorkOrderSummaryResponse;
 import com.infratrack.operationaldecision.OperationalDecisionRepository;
+import com.infratrack.operationaldocument.OperationalDocument;
+import com.infratrack.operationaldocument.OperationalDocumentService;
 import com.infratrack.preventivemaintenance.PreventiveMaintenancePlanRepository;
 import com.infratrack.preventivemaintenance.PreventiveMaintenancePlanStatus;
 import com.infratrack.user.User;
+import com.infratrack.user.UserNameLookup;
 import com.infratrack.user.UserService;
 import com.infratrack.workorder.WorkOrder;
 import com.infratrack.workorder.WorkOrderPriority;
@@ -77,6 +81,8 @@ public class MobileService {
     private final WorkOrderRepository workOrderRepository;
     private final MaintenanceActivityRepository maintenanceActivityRepository;
     private final PreventiveMaintenancePlanRepository preventiveMaintenancePlanRepository;
+    private final OperationalDocumentService operationalDocumentService;
+    private final UserNameLookup userNameLookup;
 
     public MobileService(
             MobileAuthorizationService authorizationService,
@@ -90,7 +96,9 @@ public class MobileService {
             OperationalDecisionRepository operationalDecisionRepository,
             WorkOrderRepository workOrderRepository,
             MaintenanceActivityRepository maintenanceActivityRepository,
-            PreventiveMaintenancePlanRepository preventiveMaintenancePlanRepository) {
+            PreventiveMaintenancePlanRepository preventiveMaintenancePlanRepository,
+            OperationalDocumentService operationalDocumentService,
+            UserNameLookup userNameLookup) {
         this.authorizationService = authorizationService;
         this.userService = userService;
         this.assetRepository = assetRepository;
@@ -103,6 +111,8 @@ public class MobileService {
         this.workOrderRepository = workOrderRepository;
         this.maintenanceActivityRepository = maintenanceActivityRepository;
         this.preventiveMaintenancePlanRepository = preventiveMaintenancePlanRepository;
+        this.operationalDocumentService = operationalDocumentService;
+        this.userNameLookup = userNameLookup;
     }
 
     @Transactional(readOnly = true)
@@ -252,6 +262,8 @@ public class MobileService {
                 .map(MobileAssetPreventivePlanResponse::from)
                 .orElse(null);
 
+        List<MobileAssetDocumentSummaryResponse> documents = loadAssetDocuments(asset, userId);
+
         AssetContextAllowedActionsResponse allowedActions = new AssetContextAllowedActionsResponse(
                 true,
                 true,
@@ -265,10 +277,26 @@ public class MobileService {
                 lastInspection,
                 lastMaintenance,
                 preventivePlan,
+                documents,
                 openIssues,
                 activeInspections,
                 activeWorkOrders,
                 allowedActions);
+    }
+
+    private List<MobileAssetDocumentSummaryResponse> loadAssetDocuments(Asset asset, Long userId) {
+        List<OperationalDocument> documents =
+                operationalDocumentService.listVisibleAssetOwnedDocuments(asset, userId);
+        if (documents.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, String> uploaderNames = userNameLookup.resolveNames(
+                documents.stream().map(OperationalDocument::getUploadedByUserId).toList());
+        return documents.stream()
+                .map(document -> MobileAssetDocumentSummaryResponse.from(
+                        document,
+                        uploaderNames.get(document.getUploadedByUserId())))
+                .toList();
     }
 
     private MobileAssetLastMaintenanceResponse loadLastMaintenance(Long assetId) {

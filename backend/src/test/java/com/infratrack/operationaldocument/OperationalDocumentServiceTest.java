@@ -239,6 +239,59 @@ class OperationalDocumentServiceTest {
     }
 
     @Test
+    void listVisibleAssetOwnedDocuments_shouldReturnAssetOwnedDocumentsForAdministrator() {
+        Asset asset = asset(5L);
+        User administrator = user(1L, UserRole.ADMINISTRATOR);
+        OperationalDocument assetDocument = savedDocument(200L, asset);
+
+        when(userService.getById(1L)).thenReturn(administrator);
+        when(operationalDocumentRepository.findByAssetIdAndOwnerTypeOrderByUploadedAtDesc(
+                5L, OperationalDocumentOwnerType.ASSET))
+                .thenReturn(java.util.List.of(assetDocument));
+
+        java.util.List<OperationalDocument> documents =
+                operationalDocumentService.listVisibleAssetOwnedDocuments(asset, 1L);
+
+        assertThat(documents).containsExactly(assetDocument);
+        verify(operationalDocumentRepository).findByAssetIdAndOwnerTypeOrderByUploadedAtDesc(
+                5L, OperationalDocumentOwnerType.ASSET);
+    }
+
+    @Test
+    void listVisibleAssetOwnedDocuments_shouldReturnEmptyListForFieldEmployeeWhenOnlyAssetOwnedDocumentsExist() {
+        Asset asset = asset(5L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        OperationalDocument assetDocument = savedDocument(200L, asset);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(operationalDocumentRepository.findByAssetIdAndOwnerTypeOrderByUploadedAtDesc(
+                5L, OperationalDocumentOwnerType.ASSET))
+                .thenReturn(java.util.List.of(assetDocument));
+
+        java.util.List<OperationalDocument> documents =
+                operationalDocumentService.listVisibleAssetOwnedDocuments(asset, 20L);
+
+        assertThat(documents).isEmpty();
+    }
+
+    @Test
+    void listVisibleAssetOwnedDocuments_shouldAllowManagerForOwnDepartment() {
+        Asset asset = asset(5L);
+        User manager = user(30L, UserRole.MANAGER);
+        OperationalDocument assetDocument = savedDocument(200L, asset);
+
+        when(userService.getById(30L)).thenReturn(manager);
+        when(operationalDocumentRepository.findByAssetIdAndOwnerTypeOrderByUploadedAtDesc(
+                5L, OperationalDocumentOwnerType.ASSET))
+                .thenReturn(java.util.List.of(assetDocument));
+
+        java.util.List<OperationalDocument> documents =
+                operationalDocumentService.listVisibleAssetOwnedDocuments(asset, 30L);
+
+        assertThat(documents).containsExactly(assetDocument);
+    }
+
+    @Test
     void listDocuments_shouldRejectUnassignedFieldEmployee() {
         Asset asset = asset(5L);
         User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);

@@ -14,4 +14,9 @@ public interface OperationalDocumentRepository extends JpaRepository<Operational
 
     @EntityGraph(attributePaths = {"asset"})
     Page<OperationalDocument> findByAssetIdOrderByUploadedAtDesc(Long assetId, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"asset"})
+    List<OperationalDocument> findByAssetIdAndOwnerTypeOrderByUploadedAtDesc(
+            Long assetId,
+            OperationalDocumentOwnerType ownerType);
 }

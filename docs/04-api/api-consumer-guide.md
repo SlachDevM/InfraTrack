@@ -177,9 +177,9 @@ A bundle should normally populate **one screen**:
 
 Avoid chaining multiple bundle calls to reconstruct one screen. If a screen needs more data, that is a signal for a backend bundle extension — not client-side orchestration of ten list APIs.
 
-### Asset context lookup (V2.4.0 Sprint M4-BE1, enriched M4-BE3)
+### Asset context lookup (V2.4.0 Sprint M4-BE1, enriched M4-BE3/M4-BE4)
 
-`GET /api/mobile/assets/lookup?code={assetCode}` is a bundle-style endpoint for a future "Asset Context" screen reached by scanning a QR code or barcode. It returns the asset summary, optional recent context (`lastInspection`, `lastMaintenance`, `preventivePlan` — each nullable), scoped open issues, active inspections, active work orders, and `allowedActions` in one call. Android should render missing optional sections as “No recent inspection”, “No recent maintenance”, or “No preventive plan”. Android scanning UI remains deferred; see [Mobile API — Asset lookup](mobile-api.md#asset-lookup-by-qr--barcode-v240-sprint-m4-be1-enriched-m4-be3) for the full contract.
+`GET /api/mobile/assets/lookup?code={assetCode}` is a bundle-style endpoint for a future "Asset Context" screen reached by scanning a QR code or barcode. It returns the asset summary, optional recent context (`lastInspection`, `lastMaintenance`, `preventivePlan` — each nullable), visible asset-owned `documents` (empty array when none), scoped open issues, active inspections, active work orders, and `allowedActions` in one call. Android should render missing optional sections as “No recent inspection”, “No recent maintenance”, or “No preventive plan”. Document download uses the existing operational document download endpoint. Android scanning UI remains deferred; see [Mobile API — Asset lookup](mobile-api.md#asset-lookup-by-qr--barcode-v240-sprint-m4-be1-enriched-m4-be3m4-be4) for the full contract.
 
 ### Asset QR code generation (V2.4.0 Sprint M4-BE2)
 
@@ -463,7 +463,7 @@ Planned capabilities will extend clients without invalidating the core pattern:
 | Direction | Impact on consumers |
 |-----------|---------------------|
 | **Offline sync** | Local queue + reconciliation; server remains authority |
-| **QR / Barcode** | M4-BE1: `GET /api/mobile/assets/lookup?code=` resolves operational context by asset business code. M4-BE2: `GET /api/assets/{assetId}/qr` generates a PNG QR encoding `assetCode` only. M4-BE3: lookup response enriched with nullable `lastInspection`, `lastMaintenance`, and `preventivePlan` sections. Android scanning UI and printable labels remain deferred. |
+| **QR / Barcode** | M4-BE1: `GET /api/mobile/assets/lookup?code=` resolves operational context by asset business code. M4-BE2: `GET /api/assets/{assetId}/qr` generates a PNG QR encoding `assetCode` only. M4-BE3: lookup enriched with nullable `lastInspection`, `lastMaintenance`, and `preventivePlan`. M4-BE4: lookup includes visible asset-owned `documents` with download via existing `/api/operational-documents/{id}/download`. Android scanning UI and printable labels remain deferred. |
 | **Push notifications** | FCM delivery of server events; no client-side workflow triggers |
 | **Public API** | Documented integration authentication and stable integration endpoints |
 | **Mobile-optimised writes** | Possible M2+ endpoints if web write shapes prove unsuitable |

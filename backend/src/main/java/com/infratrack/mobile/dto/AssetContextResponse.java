@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * Compact asset operational context returned to Android after a QR/barcode
- * scan resolves an asset business code (V2.4.0 Sprint M4-BE1, enriched M4-BE3).
+ * scan resolves an asset business code (V2.4.0 Sprint M4-BE1, enriched M4-BE3/M4-BE4).
  */
 public class AssetContextResponse {
 
@@ -12,6 +12,7 @@ public class AssetContextResponse {
     private MobileAssetLastInspectionResponse lastInspection;
     private MobileAssetLastMaintenanceResponse lastMaintenance;
     private MobileAssetPreventivePlanResponse preventivePlan;
+    private List<MobileAssetDocumentSummaryResponse> documents;
     private List<MobileIssueSummaryResponse> openIssues;
     private List<MobileInspectionSummaryResponse> activeInspections;
     private List<MobileWorkOrderSummaryResponse> activeWorkOrders;
@@ -22,6 +23,7 @@ public class AssetContextResponse {
             MobileAssetLastInspectionResponse lastInspection,
             MobileAssetLastMaintenanceResponse lastMaintenance,
             MobileAssetPreventivePlanResponse preventivePlan,
+            List<MobileAssetDocumentSummaryResponse> documents,
             List<MobileIssueSummaryResponse> openIssues,
             List<MobileInspectionSummaryResponse> activeInspections,
             List<MobileWorkOrderSummaryResponse> activeWorkOrders,
@@ -30,6 +32,7 @@ public class AssetContextResponse {
         this.lastInspection = lastInspection;
         this.lastMaintenance = lastMaintenance;
         this.preventivePlan = preventivePlan;
+        this.documents = documents;
         this.openIssues = openIssues;
         this.activeInspections = activeInspections;
         this.activeWorkOrders = activeWorkOrders;
@@ -50,6 +53,10 @@ public class AssetContextResponse {
 
     public MobileAssetPreventivePlanResponse getPreventivePlan() {
         return preventivePlan;
+    }
+
+    public List<MobileAssetDocumentSummaryResponse> getDocuments() {
+        return documents;
     }
 
     public List<MobileIssueSummaryResponse> getOpenIssues() {

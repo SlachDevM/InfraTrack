@@ -34,6 +34,10 @@ import com.infratrack.maintenanceactivity.MaintenanceActivity;
 import com.infratrack.maintenanceactivity.MaintenanceActivityRepository;
 import com.infratrack.mobile.dto.AssetContextResponse;
 import com.infratrack.mobile.dto.MobileDashboardResponse;
+import com.infratrack.operationaldocument.OperationalDocument;
+import com.infratrack.operationaldocument.OperationalDocumentOwnerType;
+import com.infratrack.operationaldocument.OperationalDocumentService;
+import com.infratrack.operationaldocument.OperationalDocumentType;
 import com.infratrack.mobile.dto.MobileInspectionBundleResponse;
 import com.infratrack.mobile.dto.MobileInspectionSummaryResponse;
 import com.infratrack.mobile.dto.MobileIssueSummaryResponse;
@@ -51,6 +55,7 @@ import com.infratrack.preventivemaintenance.PreventiveMaintenancePlanPriority;
 import com.infratrack.preventivemaintenance.PreventiveMaintenancePlanRepository;
 import com.infratrack.preventivemaintenance.PreventiveMaintenancePlanStatus;
 import com.infratrack.user.User;
+import com.infratrack.user.UserNameLookup;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
 import com.infratrack.organization.policy.visibility.InspectionVisibilityPolicyService;
@@ -69,6 +74,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -119,6 +125,12 @@ class MobileServiceTest {
     @Mock
     private DelegatedAuthorityService delegatedAuthorityService;
 
+    @Mock
+    private OperationalDocumentService operationalDocumentService;
+
+    @Mock
+    private UserNameLookup userNameLookup;
+
     private MobileService mobileService;
 
     @BeforeEach
@@ -139,7 +151,9 @@ class MobileServiceTest {
                 operationalDecisionRepository,
                 workOrderRepository,
                 maintenanceActivityRepository,
-                preventiveMaintenancePlanRepository);
+                preventiveMaintenancePlanRepository,
+                operationalDocumentService,
+                userNameLookup);
     }
 
     @Test
@@ -449,6 +463,7 @@ class MobileServiceTest {
         verify(maintenanceActivityRepository, never()).findFirstByAsset_IdOrderByCompletedAtDesc(any());
         verify(preventiveMaintenancePlanRepository, never())
                 .findFirstByAsset_IdAndStatusOrderByCreatedAtDesc(any(), any());
+        verify(operationalDocumentService, never()).listVisibleAssetOwnedDocuments(any(), any());
     }
 
     @Test
@@ -587,6 +602,7 @@ class MobileServiceTest {
         verify(maintenanceActivityRepository, never()).findFirstByAsset_IdOrderByCompletedAtDesc(any());
         verify(preventiveMaintenancePlanRepository, never())
                 .findFirstByAsset_IdAndStatusOrderByCreatedAtDesc(any(), any());
+        verify(operationalDocumentService, never()).listVisibleAssetOwnedDocuments(any(), any());
     }
 
     @Test
@@ -601,6 +617,67 @@ class MobileServiceTest {
         assertThat(response.getLastInspection()).isNull();
         assertThat(response.getLastMaintenance()).isNull();
         assertThat(response.getPreventivePlan()).isNull();
+        assertThat(response.getDocuments()).isEmpty();
+    }
+
+    @Test
+    void getAssetContext_includesVisibleAssetOwnedDocuments() {
+        User admin = user(1L, UserRole.ADMINISTRATOR);
+        Asset asset = asset();
+        stubAssetLookup(asset);
+        when(userService.getById(1L)).thenReturn(admin);
+
+        OperationalDocument document = assetOwnedDocument(101L, asset);
+        when(operationalDocumentService.listVisibleAssetOwnedDocuments(asset, 1L))
+                .thenReturn(List.of(document));
+        when(userNameLookup.resolveNames(List.of(30L))).thenReturn(Map.of(30L, "Maintenance Admin"));
+
+        AssetContextResponse response = mobileService.getAssetContext(1L, asset.getCode());
+
+        assertThat(response.getDocuments()).hasSize(1);
+        assertThat(response.getDocuments().getFirst().getId()).isEqualTo(101L);
+        assertThat(response.getDocuments().getFirst().getFilename()).isEqualTo("street-light-manual.pdf");
+        assertThat(response.getDocuments().getFirst().getContentType()).isEqualTo("application/pdf");
+        assertThat(response.getDocuments().getFirst().getOwnerType()).isEqualTo(OperationalDocumentOwnerType.ASSET);
+        assertThat(response.getDocuments().getFirst().getUploadedAt())
+                .isEqualTo(LocalDateTime.of(2026, 7, 4, 9, 30));
+        assertThat(response.getDocuments().getFirst().getUploadedBy()).isEqualTo("Maintenance Admin");
+        assertThat(response.getDocuments().getFirst().getDownloadUrl())
+                .isEqualTo("/api/operational-documents/101/download");
+    }
+
+    @Test
+    void getAssetContext_documentSummariesDoNotExposeStoragePaths() {
+        User admin = user(1L, UserRole.ADMINISTRATOR);
+        Asset asset = asset();
+        stubAssetLookup(asset);
+        when(userService.getById(1L)).thenReturn(admin);
+
+        OperationalDocument document = assetOwnedDocument(101L, asset);
+        when(operationalDocumentService.listVisibleAssetOwnedDocuments(asset, 1L))
+                .thenReturn(List.of(document));
+        when(userNameLookup.resolveNames(List.of(30L))).thenReturn(Map.of(30L, "Maintenance Admin"));
+
+        AssetContextResponse response = mobileService.getAssetContext(1L, asset.getCode());
+
+        assertThat(response.getDocuments().getFirst().getDownloadUrl())
+                .doesNotContain("/tmp/")
+                .doesNotContain("stored-file");
+    }
+
+    @Test
+    void getAssetContext_fieldEmployeeSeesEmptyDocumentsWhenAssetOwnedOnly() {
+        Department department = department(1L, "Parks");
+        User fieldEmployee = userWithDepartment(20L, UserRole.FIELD_EMPLOYEE, department);
+        Asset asset = assetInDepartment(department);
+        stubAssetLookup(asset);
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(operationalDocumentService.listVisibleAssetOwnedDocuments(asset, 20L))
+                .thenReturn(List.of());
+
+        AssetContextResponse response = mobileService.getAssetContext(20L, asset.getCode());
+
+        assertThat(response.getDocuments()).isEmpty();
     }
 
     @Test
@@ -688,6 +765,7 @@ class MobileServiceTest {
         verify(maintenanceActivityRepository, never()).findFirstByAsset_IdOrderByCompletedAtDesc(any());
         verify(preventiveMaintenancePlanRepository, never())
                 .findFirstByAsset_IdAndStatusOrderByCreatedAtDesc(any(), any());
+        verify(operationalDocumentService, never()).listVisibleAssetOwnedDocuments(any(), any());
     }
 
     @Test
@@ -788,6 +866,8 @@ class MobileServiceTest {
         when(preventiveMaintenancePlanRepository.findFirstByAsset_IdAndStatusOrderByCreatedAtDesc(
                 asset.getId(), PreventiveMaintenancePlanStatus.ACTIVE))
                 .thenReturn(Optional.empty());
+        when(operationalDocumentService.listVisibleAssetOwnedDocuments(eq(asset), any()))
+                .thenReturn(List.of());
     }
 
     private void stubAssetFound(Asset asset) {
@@ -833,6 +913,24 @@ class MobileServiceTest {
                 10L);
         asset.setId(5L);
         return asset;
+    }
+
+    private OperationalDocument assetOwnedDocument(Long id, Asset asset) {
+        OperationalDocument document = new OperationalDocument(
+                asset,
+                OperationalDocumentOwnerType.ASSET,
+                asset.getId(),
+                OperationalDocumentType.REPORT,
+                "street-light-manual.pdf",
+                "stored-file-key",
+                "application/pdf",
+                1024L,
+                "/tmp/internal-storage-path",
+                null,
+                30L,
+                LocalDateTime.of(2026, 7, 4, 9, 30));
+        document.setId(id);
+        return document;
     }
 
     private Inspection completedInspection(Long id) {

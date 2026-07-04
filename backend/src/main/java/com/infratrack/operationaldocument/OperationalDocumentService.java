@@ -150,6 +150,36 @@ public class OperationalDocumentService {
         throw new ForbiddenOperationException(OperationalEvidenceMessages.UNAUTHORIZED_DOWNLOAD_OPERATIONAL_EVIDENCE);
     }
 
+    /**
+     * Returns asset-owned operational documents visible to the caller for mobile asset context (M4-BE4).
+     * Reuses the same authorization rules as {@link #listDocuments}; returns an empty list when none are visible.
+     */
+    @Transactional(readOnly = true)
+    public List<OperationalDocument> listVisibleAssetOwnedDocuments(Asset asset, Long userId) {
+        User user = userService.getById(userId);
+        List<OperationalDocument> documents = operationalDocumentRepository
+                .findByAssetIdAndOwnerTypeOrderByUploadedAtDesc(asset.getId(), OperationalDocumentOwnerType.ASSET);
+
+        if (user.getRole() != null && user.getRole().isAdministrator()) {
+            return documents;
+        }
+
+        if (user.getRole() != null
+                && (user.getRole().isManager() || user.getRole().isOperationalCoordinator())) {
+            authorizationService.requireAssetDepartmentDownloadAuthorized(user, asset);
+            return documents;
+        }
+
+        if (user.getRole() != null && (user.getRole().isFieldEmployee() || user.getRole().isContractor())) {
+            authorizationService.requireAssetDepartmentDownloadAuthorized(user, asset);
+            return documents.stream()
+                    .filter(document -> canViewDocumentMetadata(user, asset, document))
+                    .toList();
+        }
+
+        return List.of();
+    }
+
     private boolean canViewDocumentMetadata(User user, Asset asset, OperationalDocument document) {
         try {
             OperationalDocumentOwnerContext ownerContext = ownerResolver.resolveForAsset(
