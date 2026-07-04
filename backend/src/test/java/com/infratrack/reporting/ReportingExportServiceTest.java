@@ -5,6 +5,7 @@ import com.infratrack.asset.AssetRepository;
 import com.infratrack.asset.AssetStatus;
 import com.infratrack.assetcategory.AssetCategory;
 import com.infratrack.department.Department;
+import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.inspection.InspectionRepository;
 import com.infratrack.issue.IssueRepository;
 import com.infratrack.operationaldecision.OperationalDecisionRepository;
@@ -27,11 +28,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.io.ByteArrayInputStream;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -244,6 +247,75 @@ class ReportingExportServiceTest {
         assertThat(new String(response.content(), 0, 4)).isEqualTo("%PDF");
     }
 
+    @Test
+    void exportAssets_csvWithin365DayWindow_succeeds() {
+        when(userService.getById(1L)).thenReturn(admin());
+        when(assetRepository.findForExport(isNull(), eq(januaryFirst2026()), eq(decemberThirtyFirst2026())))
+                .thenReturn(List.of());
+
+        CsvExportResponse response = exportService.exportAssets(1L, januaryFirst2026(), decemberThirtyFirst2026());
+
+        assertThat(response.filename()).isEqualTo("assets-export.csv");
+        verify(assetRepository).findForExport(null, januaryFirst2026(), decemberThirtyFirst2026());
+    }
+
+    @Test
+    void exportAssets_xlsxWithin365DayWindow_succeeds() {
+        when(userService.getById(1L)).thenReturn(admin());
+        when(assetRepository.findForExport(isNull(), eq(januaryFirst2026()), eq(decemberThirtyFirst2026())))
+                .thenReturn(List.of());
+
+        ExportFileResponse response =
+                exportService.exportAssetsXlsx(1L, januaryFirst2026(), decemberThirtyFirst2026());
+
+        assertThat(response.filename()).isEqualTo("assets-export.xlsx");
+        verify(assetRepository).findForExport(null, januaryFirst2026(), decemberThirtyFirst2026());
+    }
+
+    @Test
+    void exportAssets_pdfWithin365DayWindow_succeeds() {
+        when(userService.getById(1L)).thenReturn(admin());
+        when(assetRepository.findForExport(isNull(), eq(januaryFirst2026()), eq(decemberThirtyFirst2026())))
+                .thenReturn(List.of());
+
+        ExportFileResponse response =
+                exportService.exportAssetsPdf(1L, januaryFirst2026(), decemberThirtyFirst2026());
+
+        assertThat(response.filename()).isEqualTo("assets-export.pdf");
+        verify(assetRepository).findForExport(null, januaryFirst2026(), decemberThirtyFirst2026());
+    }
+
+    @Test
+    void exportAssets_exactly365DayWindow_succeeds() {
+        when(userService.getById(1L)).thenReturn(admin());
+        when(assetRepository.findForExport(isNull(), eq(januaryFirst2026()), eq(decemberThirtyFirst2026())))
+                .thenReturn(List.of());
+
+        exportService.exportAssets(1L, januaryFirst2026(), decemberThirtyFirst2026());
+
+        verify(assetRepository).findForExport(null, januaryFirst2026(), decemberThirtyFirst2026());
+    }
+
+    @Test
+    void exportAssets_366DayWindow_rejectsBeforeLoadingData() {
+        assertThatThrownBy(() -> exportService.exportAssets(1L, januaryFirst2025(), januaryFirst2026()))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage(ReportingExportService.EXPORT_WINDOW_EXCEEDED_MESSAGE);
+
+        verify(assetRepository, never()).findForExport(any(), any(), any());
+        verify(userService, never()).getById(any());
+    }
+
+    @Test
+    void exportAssets_omittedDateFilters_unchangedBehaviour() {
+        when(userService.getById(1L)).thenReturn(admin());
+        when(assetRepository.findForExport(isNull(), isNull(), isNull())).thenReturn(List.of());
+
+        exportService.exportAssets(1L, null, null);
+
+        verify(assetRepository).findForExport(null, null, null);
+    }
+
     private static User admin() {
         User user = new User("admin@test.com", "password", "Admin", UserRole.ADMINISTRATOR);
         user.setId(1L);
@@ -274,5 +346,17 @@ class ReportingExportServiceTest {
                 1L);
         asset.setId(5L);
         return asset;
+    }
+
+    private static long januaryFirst2026() {
+        return LocalDate.of(2026, 1, 1).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
+    }
+
+    private static long decemberThirtyFirst2026() {
+        return LocalDate.of(2026, 12, 31).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
+    }
+
+    private static long januaryFirst2025() {
+        return LocalDate.of(2025, 1, 1).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
     }
 }

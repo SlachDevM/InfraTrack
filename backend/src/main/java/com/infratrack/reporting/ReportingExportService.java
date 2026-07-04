@@ -2,24 +2,27 @@ package com.infratrack.reporting;
 
 import com.infratrack.asset.Asset;
 import com.infratrack.asset.AssetRepository;
+import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.inspection.Inspection;
 import com.infratrack.inspection.InspectionRepository;
 import com.infratrack.issue.Issue;
 import com.infratrack.issue.IssueRepository;
 import com.infratrack.operationaldecision.OperationalDecisionRepository;
+import com.infratrack.organization.policy.reporting.ReportingPolicyService;
 import com.infratrack.preventivemaintenance.PreventiveExecutionCandidate;
 import com.infratrack.preventivemaintenance.PreventiveExecutionCandidateRepository;
 import com.infratrack.user.UserNameLookup;
-import com.infratrack.organization.policy.reporting.ReportingPolicyService;
 import com.infratrack.workorder.WorkOrder;
 import com.infratrack.workorder.WorkOrderRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +31,10 @@ import java.util.stream.Collectors;
 
 @Service
 public class ReportingExportService {
+
+    static final int MAX_EXPORT_WINDOW_DAYS = 365;
+    static final String EXPORT_WINDOW_EXCEEDED_MESSAGE =
+            "Reporting exports cannot span more than 365 days.";
 
     private static final DateTimeFormatter ISO_DATE = DateTimeFormatter.ISO_LOCAL_DATE;
     private static final DateTimeFormatter ISO_DATE_TIME = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
@@ -143,6 +150,7 @@ public class ReportingExportService {
     }
 
     private TabularExport loadAssetsExport(Long userId, Long from, Long to) {
+        validateExportDateWindow(from, to);
         ExportScope scope = authorizationService.resolveScope(userId);
         List<Asset> assets = assetRepository.findForExport(scope.departmentId(), from, to);
         List<String> headers = List.of(
@@ -161,6 +169,7 @@ public class ReportingExportService {
     }
 
     private TabularExport loadInspectionsExport(Long userId, Long from, Long to) {
+        validateExportDateWindow(from, to);
         ExportScope scope = authorizationService.resolveScope(userId);
         List<Inspection> inspections = inspectionRepository.findForExport(scope.departmentId(), from, to);
         Map<Long, String> assigneeNames = userNameLookup.resolveNames(inspections.stream()
@@ -186,6 +195,7 @@ public class ReportingExportService {
     }
 
     private TabularExport loadIssuesExport(Long userId, Long from, Long to) {
+        validateExportDateWindow(from, to);
         ExportScope scope = authorizationService.resolveScope(userId);
         LocalDateTime fromDateTime = toLocalDateTime(from);
         LocalDateTime toDateTime = toLocalDateTimeExclusive(to);
@@ -216,6 +226,7 @@ public class ReportingExportService {
     }
 
     private TabularExport loadWorkOrdersExport(Long userId, Long from, Long to) {
+        validateExportDateWindow(from, to);
         ExportScope scope = authorizationService.resolveScope(userId);
         List<WorkOrder> workOrders = workOrderRepository.findForExport(scope.departmentId(), from, to);
         Map<Long, String> assigneeNames = userNameLookup.resolveNames(workOrders.stream()
@@ -240,6 +251,7 @@ public class ReportingExportService {
     }
 
     private TabularExport loadPreventiveCandidatesExport(Long userId, Long from, Long to) {
+        validateExportDateWindow(from, to);
         ExportScope scope = authorizationService.resolveScope(userId);
         List<PreventiveExecutionCandidate> candidates = preventiveExecutionCandidateRepository.findForExport(
                 scope.departmentId(), from, to);
@@ -331,5 +343,17 @@ public class ReportingExportService {
             return null;
         }
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneOffset.UTC);
+    }
+
+    static void validateExportDateWindow(Long from, Long to) {
+        if (from == null || to == null) {
+            return;
+        }
+        LocalDate fromDate = Instant.ofEpochMilli(from).atZone(ZoneOffset.UTC).toLocalDate();
+        LocalDate toDate = Instant.ofEpochMilli(to).atZone(ZoneOffset.UTC).toLocalDate();
+        long inclusiveDays = ChronoUnit.DAYS.between(fromDate, toDate) + 1;
+        if (inclusiveDays > MAX_EXPORT_WINDOW_DAYS) {
+            throw new BusinessValidationException(EXPORT_WINDOW_EXCEEDED_MESSAGE);
+        }
     }
 }

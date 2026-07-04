@@ -99,6 +99,24 @@ Date field used per export:
 
 If `from` / `to` are omitted, all rows within the user's scope are exported.
 
+### Export window limit (V2.3.x T4)
+
+When both `from` and `to` are provided, the export period cannot exceed **365 days** (inclusive calendar days in UTC).
+
+| Request | Result |
+|---------|--------|
+| `from=2026-01-01`, `to=2026-12-31` | Allowed (365 days) |
+| `from` and `to` omitted | Allowed (unfiltered export) |
+| `from=2023-01-01`, `to=2026-01-01` | Rejected (`400`) |
+
+Validation error (plain text body):
+
+```
+Reporting exports cannot span more than 365 days.
+```
+
+Applies equally to CSV, XLSX, and PDF exports.
+
 ## Export columns
 
 ### Assets
