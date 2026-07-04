@@ -115,12 +115,13 @@ The KPI API is designed for reuse by the React web client, future Android applic
 
 **Business value:** Reliable field work in low-connectivity areas; scanning a physical asset tag opens its operational context instead of manual search.
 
-**Status:** In progress — Sprints M4-BE1 and M4-BE2 (backend only) validated; Android scanning UI, printable labels, and offline sync remain planned.
+**Status:** In progress — Sprints M4-BE1, M4-BE2, and M4-BE3 (backend only) validated; Android scanning UI, printable labels, and offline sync remain planned.
 
 **Delivered capabilities:**
 
 - **Sprint M4-BE1 (validated):** Backend asset lookup endpoint for QR/barcode navigation — `GET /api/mobile/assets/lookup?code={assetCode}`. Adds a stable asset business code (`asset.code`), a scoped `AssetContextResponse` (asset summary, open issues, active inspections, active work orders, backend-generated allowed actions), and role/department authorization reusing existing rules. Backend only — no Android scanner, no new workflows.
 - **Sprint M4-BE2 (validated):** Backend QR code generation — `GET /api/assets/{assetId}/qr` returns a PNG QR encoding `assetCode` only (ZXing, 512×512, high error correction). Reuses `AssetAuthorizationService` for view authorization. No printable labels, batch export, or frontend integration.
+- **Sprint M4-BE3 (validated):** Asset lookup response enrichment — adds nullable `lastInspection`, `lastMaintenance`, and `preventivePlan` sections to `AssetContextResponse` for field context after QR scan. Read-only; reuses M4-BE1 authorization. No Android, frontend, or workflow changes.
 
 **Planned within this version family (not yet delivered):**
 

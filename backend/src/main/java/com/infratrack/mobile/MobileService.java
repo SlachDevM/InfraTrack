@@ -23,6 +23,9 @@ import com.infratrack.mobile.dto.AssetContextResponse;
 import com.infratrack.mobile.dto.AssetContextSummaryResponse;
 import com.infratrack.mobile.dto.MobileAllowedActionsResponse;
 import com.infratrack.mobile.dto.MobileAnswerResponse;
+import com.infratrack.mobile.dto.MobileAssetLastInspectionResponse;
+import com.infratrack.mobile.dto.MobileAssetLastMaintenanceResponse;
+import com.infratrack.mobile.dto.MobileAssetPreventivePlanResponse;
 import com.infratrack.mobile.dto.MobileAssetSummaryResponse;
 import com.infratrack.mobile.dto.MobileChoiceResponse;
 import com.infratrack.mobile.dto.MobileDashboardResponse;
@@ -39,6 +42,8 @@ import com.infratrack.mobile.dto.MobileWorkOrderBundleResponse;
 import com.infratrack.mobile.dto.MobileWorkOrderDetailResponse;
 import com.infratrack.mobile.dto.MobileWorkOrderSummaryResponse;
 import com.infratrack.operationaldecision.OperationalDecisionRepository;
+import com.infratrack.preventivemaintenance.PreventiveMaintenancePlanRepository;
+import com.infratrack.preventivemaintenance.PreventiveMaintenancePlanStatus;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
 import com.infratrack.workorder.WorkOrder;
@@ -71,6 +76,7 @@ public class MobileService {
     private final OperationalDecisionRepository operationalDecisionRepository;
     private final WorkOrderRepository workOrderRepository;
     private final MaintenanceActivityRepository maintenanceActivityRepository;
+    private final PreventiveMaintenancePlanRepository preventiveMaintenancePlanRepository;
 
     public MobileService(
             MobileAuthorizationService authorizationService,
@@ -83,7 +89,8 @@ public class MobileService {
             IssueRepository issueRepository,
             OperationalDecisionRepository operationalDecisionRepository,
             WorkOrderRepository workOrderRepository,
-            MaintenanceActivityRepository maintenanceActivityRepository) {
+            MaintenanceActivityRepository maintenanceActivityRepository,
+            PreventiveMaintenancePlanRepository preventiveMaintenancePlanRepository) {
         this.authorizationService = authorizationService;
         this.userService = userService;
         this.assetRepository = assetRepository;
@@ -95,6 +102,7 @@ public class MobileService {
         this.operationalDecisionRepository = operationalDecisionRepository;
         this.workOrderRepository = workOrderRepository;
         this.maintenanceActivityRepository = maintenanceActivityRepository;
+        this.preventiveMaintenancePlanRepository = preventiveMaintenancePlanRepository;
     }
 
     @Transactional(readOnly = true)
@@ -234,6 +242,16 @@ public class MobileService {
                 .map(MobileWorkOrderSummaryResponse::from)
                 .toList();
 
+        MobileAssetLastInspectionResponse lastInspection = inspectionRepository
+                .findFirstByAsset_IdAndStatusOrderByCompletedAtDesc(asset.getId(), InspectionStatus.COMPLETED)
+                .map(MobileAssetLastInspectionResponse::from)
+                .orElse(null);
+        MobileAssetLastMaintenanceResponse lastMaintenance = loadLastMaintenance(asset.getId());
+        MobileAssetPreventivePlanResponse preventivePlan = preventiveMaintenancePlanRepository
+                .findFirstByAsset_IdAndStatusOrderByCreatedAtDesc(asset.getId(), PreventiveMaintenancePlanStatus.ACTIVE)
+                .map(MobileAssetPreventivePlanResponse::from)
+                .orElse(null);
+
         AssetContextAllowedActionsResponse allowedActions = new AssetContextAllowedActionsResponse(
                 true,
                 true,
@@ -244,10 +262,22 @@ public class MobileService {
 
         return new AssetContextResponse(
                 AssetContextSummaryResponse.from(asset),
+                lastInspection,
+                lastMaintenance,
+                preventivePlan,
                 openIssues,
                 activeInspections,
                 activeWorkOrders,
                 allowedActions);
+    }
+
+    private MobileAssetLastMaintenanceResponse loadLastMaintenance(Long assetId) {
+        return maintenanceActivityRepository.findFirstByAsset_IdOrderByCompletedAtDesc(assetId)
+                .map(activity -> {
+                    User performer = userService.getById(activity.getPerformedByUserId());
+                    return MobileAssetLastMaintenanceResponse.from(activity, performer.getName());
+                })
+                .orElse(null);
     }
 
     private Asset findAssetByCodeOrThrow(String code) {

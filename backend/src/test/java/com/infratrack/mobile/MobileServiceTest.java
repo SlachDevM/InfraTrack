@@ -19,6 +19,7 @@ import com.infratrack.inspection.InspectionPriority;
 import com.infratrack.inspection.InspectionRepository;
 import com.infratrack.inspection.InspectionStatus;
 import com.infratrack.inspection.InspectionAuthorizationService;
+import com.infratrack.inspection.PhysicalCondition;
 import com.infratrack.inspectiontemplate.InspectionTemplate;
 import com.infratrack.inspectiontemplate.InspectionTemplateQuestion;
 import com.infratrack.inspectiontemplate.InspectionTemplateQuestionChoice;
@@ -42,6 +43,13 @@ import com.infratrack.mobile.dto.MobileWorkOrderSummaryResponse;
 import com.infratrack.operationaldecision.OperationalDecision;
 import com.infratrack.operationaldecision.OperationalDecisionOutcome;
 import com.infratrack.operationaldecision.OperationalDecisionRepository;
+import com.infratrack.preventivemaintenance.PlanBusinessTrigger;
+import com.infratrack.preventivemaintenance.PlanTargetAction;
+import com.infratrack.preventivemaintenance.PlanTriggerType;
+import com.infratrack.preventivemaintenance.PreventiveMaintenancePlan;
+import com.infratrack.preventivemaintenance.PreventiveMaintenancePlanPriority;
+import com.infratrack.preventivemaintenance.PreventiveMaintenancePlanRepository;
+import com.infratrack.preventivemaintenance.PreventiveMaintenancePlanStatus;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
@@ -97,6 +105,9 @@ class MobileServiceTest {
     private MaintenanceActivityRepository maintenanceActivityRepository;
 
     @Mock
+    private PreventiveMaintenancePlanRepository preventiveMaintenancePlanRepository;
+
+    @Mock
     private AssetRepository assetRepository;
 
     @Mock
@@ -127,7 +138,8 @@ class MobileServiceTest {
                 issueRepository,
                 operationalDecisionRepository,
                 workOrderRepository,
-                maintenanceActivityRepository);
+                maintenanceActivityRepository,
+                preventiveMaintenancePlanRepository);
     }
 
     @Test
@@ -432,6 +444,11 @@ class MobileServiceTest {
         verify(issueRepository, never()).findAllByAsset_IdOrderByRecordedAtDesc(any());
         verify(inspectionRepository, never()).findByAsset_IdAndStatus(any(), any());
         verify(workOrderRepository, never()).findByAsset_IdAndStatusIn(any(), any());
+        verify(inspectionRepository, never())
+                .findFirstByAsset_IdAndStatusOrderByCompletedAtDesc(any(), any());
+        verify(maintenanceActivityRepository, never()).findFirstByAsset_IdOrderByCompletedAtDesc(any());
+        verify(preventiveMaintenancePlanRepository, never())
+                .findFirstByAsset_IdAndStatusOrderByCreatedAtDesc(any(), any());
     }
 
     @Test
@@ -565,6 +582,112 @@ class MobileServiceTest {
         verify(issueRepository, never()).findAllByAsset_IdOrderByRecordedAtDesc(any());
         verify(inspectionRepository, never()).findByAsset_IdAndStatus(any(), any());
         verify(workOrderRepository, never()).findByAsset_IdAndStatusIn(any(), any());
+        verify(inspectionRepository, never())
+                .findFirstByAsset_IdAndStatusOrderByCompletedAtDesc(any(), any());
+        verify(maintenanceActivityRepository, never()).findFirstByAsset_IdOrderByCompletedAtDesc(any());
+        verify(preventiveMaintenancePlanRepository, never())
+                .findFirstByAsset_IdAndStatusOrderByCreatedAtDesc(any(), any());
+    }
+
+    @Test
+    void getAssetContext_enrichmentSectionsNullWhenNoneExist() {
+        User admin = user(1L, UserRole.ADMINISTRATOR);
+        Asset asset = asset();
+        stubAssetLookup(asset);
+        when(userService.getById(1L)).thenReturn(admin);
+
+        AssetContextResponse response = mobileService.getAssetContext(1L, asset.getCode());
+
+        assertThat(response.getLastInspection()).isNull();
+        assertThat(response.getLastMaintenance()).isNull();
+        assertThat(response.getPreventivePlan()).isNull();
+    }
+
+    @Test
+    void getAssetContext_includesLastCompletedInspection() {
+        User admin = user(1L, UserRole.ADMINISTRATOR);
+        Asset asset = asset();
+        stubAssetLookup(asset);
+        when(userService.getById(1L)).thenReturn(admin);
+
+        Inspection completedInspection = completedInspection(901L);
+        when(inspectionRepository.findFirstByAsset_IdAndStatusOrderByCompletedAtDesc(
+                asset.getId(), InspectionStatus.COMPLETED))
+                .thenReturn(Optional.of(completedInspection));
+
+        AssetContextResponse response = mobileService.getAssetContext(1L, asset.getCode());
+
+        assertThat(response.getLastInspection()).isNotNull();
+        assertThat(response.getLastInspection().getId()).isEqualTo(901L);
+        assertThat(response.getLastInspection().getStatus()).isEqualTo(InspectionStatus.COMPLETED);
+        assertThat(response.getLastInspection().getCompletedAt())
+                .isEqualTo(LocalDateTime.of(2026, 7, 4, 10, 15));
+        assertThat(response.getLastInspection().getObservedCondition()).isEqualTo(PhysicalCondition.GOOD);
+        assertThat(response.getLastInspection().isIssueIdentified()).isFalse();
+    }
+
+    @Test
+    void getAssetContext_includesLastMaintenanceWithPerformerName() {
+        User admin = user(1L, UserRole.ADMINISTRATOR);
+        Asset asset = asset();
+        stubAssetLookup(asset);
+        when(userService.getById(1L)).thenReturn(admin);
+
+        MaintenanceActivity maintenanceActivity = maintenanceActivityForAsset(asset, 902L, 77L);
+        when(maintenanceActivityRepository.findFirstByAsset_IdOrderByCompletedAtDesc(asset.getId()))
+                .thenReturn(Optional.of(maintenanceActivity));
+        User performer = user(20L, UserRole.FIELD_EMPLOYEE);
+        when(userService.getById(20L)).thenReturn(performer);
+
+        AssetContextResponse response = mobileService.getAssetContext(1L, asset.getCode());
+
+        assertThat(response.getLastMaintenance()).isNotNull();
+        assertThat(response.getLastMaintenance().getId()).isEqualTo(902L);
+        assertThat(response.getLastMaintenance().getWorkOrderId()).isEqualTo(77L);
+        assertThat(response.getLastMaintenance().getCompletedAt())
+                .isEqualTo(LocalDateTime.of(2026, 7, 3, 15, 30));
+        assertThat(response.getLastMaintenance().getPerformedBy()).isEqualTo("John Smith");
+    }
+
+    @Test
+    void getAssetContext_includesActivePreventivePlan() {
+        User admin = user(1L, UserRole.ADMINISTRATOR);
+        Asset asset = asset();
+        stubAssetLookup(asset);
+        when(userService.getById(1L)).thenReturn(admin);
+
+        PreventiveMaintenancePlan plan = activePreventivePlan(88L, asset);
+        when(preventiveMaintenancePlanRepository.findFirstByAsset_IdAndStatusOrderByCreatedAtDesc(
+                asset.getId(), PreventiveMaintenancePlanStatus.ACTIVE))
+                .thenReturn(Optional.of(plan));
+
+        AssetContextResponse response = mobileService.getAssetContext(1L, asset.getCode());
+
+        assertThat(response.getPreventivePlan()).isNotNull();
+        assertThat(response.getPreventivePlan().isExists()).isTrue();
+        assertThat(response.getPreventivePlan().getId()).isEqualTo(88L);
+        assertThat(response.getPreventivePlan().getName()).isEqualTo("Monthly lighting inspection");
+        assertThat(response.getPreventivePlan().getTriggerType()).isEqualTo(PlanTriggerType.TIME);
+        assertThat(response.getPreventivePlan().isActive()).isTrue();
+    }
+
+    @Test
+    void getAssetContext_forbiddenLookupDoesNotQueryEnrichmentSections() {
+        Department employeeDepartment = department(1L, "Parks");
+        Department assetDepartment = department(3L, "Roads");
+        User fieldEmployee = userWithDepartment(20L, UserRole.FIELD_EMPLOYEE, employeeDepartment);
+        Asset asset = assetInDepartment(assetDepartment);
+        stubAssetFound(asset);
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        assertThatThrownBy(() -> mobileService.getAssetContext(20L, asset.getCode()))
+                .isInstanceOf(ForbiddenOperationException.class);
+
+        verify(inspectionRepository, never())
+                .findFirstByAsset_IdAndStatusOrderByCompletedAtDesc(any(), any());
+        verify(maintenanceActivityRepository, never()).findFirstByAsset_IdOrderByCompletedAtDesc(any());
+        verify(preventiveMaintenancePlanRepository, never())
+                .findFirstByAsset_IdAndStatusOrderByCreatedAtDesc(any(), any());
     }
 
     @Test
@@ -657,6 +780,14 @@ class MobileServiceTest {
         when(workOrderRepository.findByAsset_IdAndStatusIn(
                 asset.getId(), List.of(WorkOrderStatus.CREATED, WorkOrderStatus.ASSIGNED)))
                 .thenReturn(List.of());
+        when(inspectionRepository.findFirstByAsset_IdAndStatusOrderByCompletedAtDesc(
+                asset.getId(), InspectionStatus.COMPLETED))
+                .thenReturn(Optional.empty());
+        when(maintenanceActivityRepository.findFirstByAsset_IdOrderByCompletedAtDesc(asset.getId()))
+                .thenReturn(Optional.empty());
+        when(preventiveMaintenancePlanRepository.findFirstByAsset_IdAndStatusOrderByCreatedAtDesc(
+                asset.getId(), PreventiveMaintenancePlanStatus.ACTIVE))
+                .thenReturn(Optional.empty());
     }
 
     private void stubAssetFound(Asset asset) {
@@ -702,6 +833,67 @@ class MobileServiceTest {
                 10L);
         asset.setId(5L);
         return asset;
+    }
+
+    private Inspection completedInspection(Long id) {
+        Inspection inspection = assignedInspection(id, 20L);
+        inspection.complete(
+                PhysicalCondition.GOOD,
+                "All good",
+                false,
+                LocalDateTime.of(2026, 7, 4, 10, 15),
+                20L);
+        return inspection;
+    }
+
+    private MaintenanceActivity maintenanceActivityForAsset(Asset asset, Long id, Long workOrderId) {
+        OperationalDecision decision = new OperationalDecision(
+                null,
+                asset,
+                OperationalDecisionOutcome.INTERNAL_MAINTENANCE,
+                "Proceed with maintenance",
+                30L,
+                LocalDateTime.now().minusDays(2));
+        decision.setId(910L);
+        WorkOrder workOrder = new WorkOrder(
+                decision,
+                asset,
+                WorkType.INTERNAL_MAINTENANCE,
+                "Replace damaged swing chain",
+                WorkOrderPriority.HIGH,
+                40L,
+                LocalDateTime.now().minusDays(1));
+        workOrder.setId(workOrderId);
+        workOrder.assign(20L, 40L, LocalDateTime.now().minusHours(4));
+        workOrder.complete();
+        MaintenanceActivity maintenanceActivity = new MaintenanceActivity(
+                workOrder,
+                asset,
+                20L,
+                "Replaced damaged swing chain",
+                LocalDateTime.of(2026, 7, 3, 15, 30));
+        maintenanceActivity.setId(id);
+        return maintenanceActivity;
+    }
+
+    private PreventiveMaintenancePlan activePreventivePlan(Long id, Asset asset) {
+        PreventiveMaintenancePlan plan = new PreventiveMaintenancePlan(
+                asset,
+                "LIGHT-MONTHLY",
+                "Monthly lighting inspection",
+                null,
+                1,
+                PreventiveMaintenancePlanStatus.ACTIVE,
+                PreventiveMaintenancePlanPriority.MEDIUM,
+                PlanTargetAction.CREATE_INSPECTION,
+                null);
+        plan.setId(id);
+        PlanBusinessTrigger trigger = new PlanBusinessTrigger(
+                PlanTriggerType.TIME,
+                "{\"intervalDays\":30}",
+                true);
+        plan.setBusinessTrigger(trigger);
+        return plan;
     }
 
     private User user(Long id, UserRole role) {

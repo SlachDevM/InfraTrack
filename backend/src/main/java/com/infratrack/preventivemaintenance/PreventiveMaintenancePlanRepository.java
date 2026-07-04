@@ -38,4 +38,9 @@ public interface PreventiveMaintenancePlanRepository extends JpaRepository<Preve
     List<PreventiveMaintenancePlan> findAllByStatusAndAsset_Department_Id(
             PreventiveMaintenancePlanStatus status,
             Long departmentId);
+
+    @EntityGraph(attributePaths = {"businessTrigger"})
+    Optional<PreventiveMaintenancePlan> findFirstByAsset_IdAndStatusOrderByCreatedAtDesc(
+            Long assetId,
+            PreventiveMaintenancePlanStatus status);
 }

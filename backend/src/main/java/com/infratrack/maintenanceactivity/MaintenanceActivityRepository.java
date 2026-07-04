@@ -92,4 +92,7 @@ public interface MaintenanceActivityRepository extends JpaRepository<Maintenance
 
     @EntityGraph(attributePaths = {"workOrder", "asset"})
     List<MaintenanceActivity> findAllByAsset_IdOrderByCompletedAtDesc(Long assetId);
+
+    @EntityGraph(attributePaths = {"workOrder", "asset"})
+    Optional<MaintenanceActivity> findFirstByAsset_IdOrderByCompletedAtDesc(Long assetId);
 }

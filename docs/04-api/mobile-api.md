@@ -1,6 +1,6 @@
 # Mobile API (V2.2.0 Sprint M1, extended V2.4.0 Sprint M4-BE1 / M4-BE2)
 
-Compact, read-only REST endpoints for the future Android field client. M1 is a **mobile API foundation only** — no Android app, offline sync, push notifications, or QR scanning in this sprint. V2.4.0 Sprint M4-BE1 adds the backend asset lookup endpoint that a future Android QR/barcode scanner will call. V2.4.0 Sprint M4-BE2 adds backend QR code generation (`GET /api/assets/{assetId}/qr`) encoding the asset business code only. Neither sprint adds an Android client, printable labels, or workflow changes.
+Compact, read-only REST endpoints for the future Android field client. M1 is a **mobile API foundation only** — no Android app, offline sync, push notifications, or QR scanning in this sprint. V2.4.0 Sprint M4-BE1 adds the backend asset lookup endpoint that a future Android QR/barcode scanner will call. V2.4.0 Sprint M4-BE2 adds backend QR code generation (`GET /api/assets/{assetId}/qr`) encoding the asset business code only. V2.4.0 Sprint M4-BE3 enriches the asset lookup response with recent operational context (last inspection, last maintenance, preventive plan). Neither sprint adds an Android client, printable labels, or workflow changes.
 
 ## Purpose
 
@@ -44,7 +44,7 @@ Operational Coordinators do not have mobile API access in M1. Starting with M4-B
 | `GET` | `/api/mobile/inspections/{inspectionId}/bundle` | Full inspection screen payload |
 | `GET` | `/api/mobile/my-work-orders` | Assigned work order summaries |
 | `GET` | `/api/mobile/work-orders/{workOrderId}/bundle` | Full work order screen payload |
-| `GET` | `/api/mobile/assets/lookup?code={assetCode}` | Asset operational context by scanned business code (M4-BE1) |
+| `GET` | `/api/mobile/assets/lookup?code={assetCode}` | Asset operational context by scanned business code (M4-BE1, enriched M4-BE3) |
 
 Live OpenAPI documentation: [Swagger UI](http://localhost:4000/swagger-ui/index.html) (tag: **Mobile API**).
 
@@ -118,7 +118,7 @@ This is **not** the Operations Intelligence web dashboard.
 
 **Workflow timestamps:** Mobile clients send workflow intent only. The backend sets authoritative `completedAt`, `reviewedAt`, and decision timestamps. Deprecated request fields such as `completedAt` on completion requests may still be accepted for compatibility but are ignored — read timestamps from API responses after each write.
 
-## Asset lookup by QR / barcode (V2.4.0 Sprint M4-BE1)
+## Asset lookup by QR / barcode (V2.4.0 Sprint M4-BE1, enriched M4-BE3)
 
 Android's future QR/barcode scanner resolves a physical asset tag to an `assetCode` string and calls this endpoint to open an "Asset Context" screen. QR code generation is provided separately by `GET /api/assets/{assetId}/qr` (M4-BE2); printable labels and Android scanning remain deferred.
 
@@ -153,6 +153,26 @@ GET /api/mobile/assets/lookup?code=…  → scoped asset context + allowedAction
     "location": "Main Street",
     "status": "ACTIVE"
   },
+  "lastInspection": {
+    "id": 123,
+    "status": "COMPLETED",
+    "completedAt": "2026-07-04T10:15:00",
+    "observedCondition": "GOOD",
+    "issueIdentified": false
+  },
+  "lastMaintenance": {
+    "id": 456,
+    "workOrderId": 77,
+    "completedAt": "2026-07-03T15:30:00",
+    "performedBy": "Field User"
+  },
+  "preventivePlan": {
+    "exists": true,
+    "id": 88,
+    "name": "Monthly lighting inspection",
+    "triggerType": "TIME",
+    "active": true
+  },
   "openIssues": [],
   "activeInspections": [],
   "activeWorkOrders": [],
@@ -167,11 +187,16 @@ GET /api/mobile/assets/lookup?code=…  → scoped asset context + allowedAction
 }
 ```
 
+- `lastInspection` — most recently **completed** inspection for the asset (compact summary), or `null` when none exists. Android should render `null` as “No recent inspection”.
+- `lastMaintenance` — most recent completed maintenance activity for the asset, or `null` when none exists. Android should render `null` as “No recent maintenance”. `performedBy` is the performer display name when available.
+- `preventivePlan` — compact summary of the active preventive maintenance plan for the asset (most recently created when multiple exist), or `null` when none exists. Android should render `null` as “No preventive plan”.
 - `openIssues` — issues on the asset without a linked operational decision (unresolved), most recent first.
 - `activeInspections` — inspections on the asset with status `ASSIGNED`.
 - `activeWorkOrders` — work orders on the asset with status `CREATED` or `ASSIGNED`.
-- Completed/cancelled/resolved records are excluded. Documents and full asset history are **not** included (deferred to a later M4 backend sprint).
+- Completed/cancelled/resolved records are excluded from the active lists. Documents and full asset history are **not** included (deferred to a later M4 backend sprint).
+- Optional context sections (`lastInspection`, `lastMaintenance`, `preventivePlan`) are `null` when no matching record exists — do not send empty placeholder objects.
 - `allowedActions` is generated entirely by the backend; Android must not infer these flags itself.
+- This endpoint is **read-only**; it does not create or change workflow state.
 
 ### Authorization and scoping
 
@@ -188,7 +213,7 @@ Reuses existing role and department rules; no new Android-specific permissions w
 - Blank/missing `code` → `400 Bad Request`.
 - Unknown `code` → `404 Not Found`.
 - Asset exists but the caller is not authorized → `403 Forbidden` with no asset context in the response body.
-- The nested lists (`openIssues`, `activeInspections`, `activeWorkOrders`) are scoped to the same asset only once asset-level access is confirmed; no broader cross-asset data is ever returned.
+- The nested lists and optional context sections are scoped to the same asset only once asset-level access is confirmed; no broader cross-asset data is ever returned. Forbidden lookups return `403` before any nested context is queried.
 
 `canCreateInspection` is `true` only for Operational Coordinators in the asset's own department (matching the existing "assign inspection" rule). `canCreateIssue` is `true` only for Field Employees/Contractors in the asset's own department (matching the existing "record issue" role rule). Neither flag creates any new record — creation still goes through the existing `/api/inspections` and `/api/issues` endpoints, which enforce their own full preconditions.
 
@@ -213,5 +238,8 @@ com.infratrack.mobile
     ├── AssetContextResponse
     ├── AssetContextSummaryResponse
     ├── AssetContextAllowedActionsResponse
+    ├── MobileAssetLastInspectionResponse
+    ├── MobileAssetLastMaintenanceResponse
+    ├── MobileAssetPreventivePlanResponse
     └── ...
 ```

@@ -1398,6 +1398,8 @@ Version 2.4.0 Sprint M4-BE1 adds a backend endpoint for Android QR/barcode asset
 - `activeWorkOrders` — work orders on the asset with status `CREATED` or `ASSIGNED`
 - `allowedActions` — backend-generated flags: `canViewAsset`, `canViewInspections`, `canViewIssues`, `canViewWorkOrders`, `canCreateInspection`, `canCreateIssue`
 
+Sprint M4-BE3 adds optional nullable sections: `lastInspection`, `lastMaintenance`, and `preventivePlan` (see below).
+
 Completed/cancelled/resolved records are excluded. Documents and full asset history are deferred to a later M4 backend sprint.
 
 **Authorization.** Reuses existing role and department rules — no Android-specific permission model:
@@ -1421,6 +1423,20 @@ Version 2.4.0 Sprint M4-BE2 adds `GET /api/assets/{assetId}/qr`, returning a `im
 **Deferred:** printable PDF labels, batch QR export, Android scanner UI, frontend download UI.
 
 **Future compatibility:** `QrCodeGenerator` is reusable for printable asset label PDFs without changing encoding logic.
+
+### Sprint M4-BE3 — Mobile Asset Context Enrichment
+
+Version 2.4.0 Sprint M4-BE3 enriches the existing `GET /api/mobile/assets/lookup?code={assetCode}` response with compact, nullable operational context sections. No new endpoint, no workflow changes, and no Android or frontend changes in this sprint.
+
+**Additional response sections** (all optional — `null` when no matching record exists):
+
+- `lastInspection` — most recently completed inspection (id, status, completedAt, observedCondition, issueIdentified)
+- `lastMaintenance` — most recent completed maintenance activity (id, workOrderId, completedAt, performedBy display name)
+- `preventivePlan` — active preventive maintenance plan summary (exists, id, name, triggerType, active); when multiple active plans exist, the most recently created is returned
+
+**Authorization.** Reuses the M4-BE1 outer asset authorization (`requireCanViewAssetContext`). If the caller can view the asset context, they can view these summaries. Forbidden access returns `403` before nested context is queried; unknown code returns `404`; blank code returns `400`.
+
+**Read-only.** Context only — no inspections, work orders, issues, or plans are created or modified by this endpoint.
 
 ---
 
