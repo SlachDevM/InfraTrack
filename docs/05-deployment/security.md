@@ -42,6 +42,47 @@ Bearer token storage in clients is an intentional architecture decision — see 
 
 ---
 
+## Spring Boot platform (V2.4.x DT-3)
+
+**V2.4.x DT-3** migrates the backend from Spring Boot **3.2.7** to **4.0.7** (Spring Framework **7.0.8**, embedded Tomcat **11.0.22**). No business logic, REST paths, DTOs, JWT model, frontend, Android, or Mobile API contracts were changed.
+
+| Aspect | Status |
+|--------|--------|
+| JWT Bearer authentication | Unchanged |
+| Login / logout behaviour | Unchanged |
+| Role authorization | Unchanged |
+| `SecurityConfig` rules | Unchanged |
+| OpenAPI / Swagger paths | Unchanged (`springdoc-openapi` **3.0.3**) |
+| Flyway migrations | Unchanged (Flyway **11.14.1** + `flyway-database-postgresql`) |
+| Actuator `/actuator/health`, `/actuator/info` | Unchanged |
+
+### Dependency changes (summary)
+
+| Area | Before (3.2.7) | After (4.0.7) |
+|------|----------------|---------------|
+| OpenAPI UI | `springdoc-openapi-starter-webmvc-ui` 2.5.0 | 3.0.3 |
+| Flyway | `flyway-core` only | `spring-boot-starter-flyway` + `flyway-database-postgresql` |
+| Jackson (internal JSON helpers) | Jackson 2 via Boot 3 defaults | `spring-boot-jackson2` bridge retained for existing `com.fasterxml.jackson` code |
+| Testcontainers | `junit-jupiter`, `postgresql` artifacts | `testcontainers-junit-jupiter`, `testcontainers-postgresql` (Testcontainers **2.0.5**) |
+| WebMvc / Security slice tests | Covered by `spring-boot-starter-test` | Requires `spring-boot-starter-webmvc-test` and `spring-boot-starter-security-test` |
+
+### Manual BOM overrides removed
+
+Pre-migration CVE overrides for **Netty**, **Spring Framework**, and **embedded Tomcat** were removed. Spring Boot **4.0.7** manages patched versions (Netty **4.2.15.Final**, Spring Framework **7.0.8**, Tomcat **11.0.22**). Reintroduce explicit overrides only if a future OWASP Dependency-Check scan reports CVSS ≥ 9 against the managed tree.
+
+### Actuator package move
+
+Custom health contributor `OperationalDocumentStorageHealthIndicator` now uses `org.springframework.boot.health.contributor.*` (Boot 4 modular health API). Info contributor packages are unchanged (`org.springframework.boot.actuate.info.*`).
+
+### Validation commands
+
+```bash
+cd backend && mvn clean test && mvn clean package -DskipTests
+docker compose build backend
+```
+
+---
+
 ## Content Security Policy (CSP)
 
 **V2.4.x DT-2A** adds a production Content Security Policy on the **frontend nginx** container (`frontend/nginx.conf`). **DT-2A.1** tightened the policy after review. The policy is **not** emitted by the Spring Boot API — the React SPA is served separately from the backend.

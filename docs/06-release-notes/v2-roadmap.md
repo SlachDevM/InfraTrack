@@ -123,6 +123,7 @@ The KPI API is designed for reuse by the React web client, future Android applic
 - **Sprint M4-BE2 (validated):** Backend QR code generation — `GET /api/assets/{assetId}/qr` returns a PNG QR encoding `assetCode` only (ZXing, 512×512, high error correction). Reuses `AssetAuthorizationService` for view authorization. No printable labels, batch export, or frontend integration.
 - **Sprint M4-BE3 (validated):** Asset lookup response enrichment — adds nullable `lastInspection`, `lastMaintenance`, and `preventivePlan` sections to `AssetContextResponse` for field context after QR scan. Read-only; reuses M4-BE1 authorization. No Android, frontend, or workflow changes.
 - **Sprint M4-BE4 (validated):** Asset lookup documents context — adds `documents` array of visible asset-owned operational document summaries with `downloadUrl` pointing to existing download endpoint. Reuses operational document authorization. Read-only. No Android, frontend, workflow, or new download endpoint changes.
+- **Sprint DT-3 (validated):** Spring Boot **4.0.7** migration — framework and dependency upgrade only. JWT security, OpenAPI, Flyway, reporting exports, inspection/work-order workflows, Decision Engine, Preventive Engine, and Mobile API contracts unchanged. See [security.md](../05-deployment/security.md#spring-boot-platform-v24x-dt-3).
 
 **Planned within this version family (not yet delivered):**
 

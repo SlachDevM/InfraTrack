@@ -26,6 +26,7 @@ Use this checklist before go-live and before each production release.
 - [ ] PostgreSQL port not exposed publicly in production compose
 - [ ] HTTPS terminated at reverse proxy
 - [ ] Frontend nginx sends `Content-Security-Policy` (V2.4.x DT-2A) — login and API calls work; no CSP violations in browser console
+- [ ] Backend built on Spring Boot **4.0.7** (V2.4.x DT-3) — `mvn clean test` passes; Docker backend image builds
 
 ---
 
@@ -66,6 +67,8 @@ cd frontend && npm ci && npm test -- --run && npm run build
 docker compose up --build -d
 curl http://localhost:4000/actuator/health
 ```
+
+**DT-3 note:** Backend slice tests (`@WebMvcTest`) require `spring-boot-starter-webmvc-test` and `spring-boot-starter-security-test` on the test classpath (modularized in Spring Boot 4). CI uses the same `mvn clean test` command.
 
 ---
 
