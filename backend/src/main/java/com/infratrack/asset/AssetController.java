@@ -18,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,9 +37,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AssetController {
 
     private final AssetService assetService;
+    private final AssetQrCodeService assetQrCodeService;
 
-    public AssetController(AssetService assetService) {
+    public AssetController(AssetService assetService, AssetQrCodeService assetQrCodeService) {
         this.assetService = assetService;
+        this.assetQrCodeService = assetQrCodeService;
     }
 
     @GetMapping
@@ -68,6 +71,25 @@ public class AssetController {
     @ApiResponse(responseCode = "200", description = "Asset details")
     public ResponseEntity<AssetResponse> getAsset(@PathVariable Long id) {
         return ResponseEntity.ok(assetService.getById(id));
+    }
+
+    @GetMapping(value = "/{id}/qr", produces = MediaType.IMAGE_PNG_VALUE)
+    @Operation(
+            summary = "Generate asset QR code",
+            description = "Returns a PNG QR code encoding the asset business code only (V2.4.0 Sprint M4-BE2). "
+                    + "Requires the same asset view authorization as asset history.")
+    @ApiResponse(
+            responseCode = "200",
+            description = "PNG QR code image",
+            content = @Content(mediaType = MediaType.IMAGE_PNG_VALUE))
+    public ResponseEntity<byte[]> getAssetQrCode(
+            @PathVariable Long id,
+            Authentication authentication) {
+        Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+        byte[] png = assetQrCodeService.generateQrCodePng(userId, id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_PNG)
+                .body(png);
     }
 
     @PostMapping

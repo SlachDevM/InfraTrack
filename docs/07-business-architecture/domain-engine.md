@@ -1414,6 +1414,14 @@ Blank code returns `400`; unknown code returns `404`. The nested lists are scope
 
 `canCreateInspection` mirrors the existing "assign inspection" rule (Operational Coordinator, own department). `canCreateIssue` mirrors the existing "record issue" role rule (Field Employee/Contractor, own department). Both flags are advisory only — actual creation still goes through the existing `/api/inspections` and `/api/issues` endpoints and their full validation.
 
+### Sprint M4-BE2 — Asset QR Code Generation Foundation
+
+Version 2.4.0 Sprint M4-BE2 adds `GET /api/assets/{assetId}/qr`, returning a `image/png` QR code that encodes the asset business `code` only (e.g. `AST-1A2B3C4D`). No database ids, URLs, JSON, or metadata are embedded. Generation is isolated in `QrCodeGenerator` (ZXing, 512×512 PNG, high error correction, black on white) and orchestrated by `AssetQrCodeService`, which reuses `AssetAuthorizationService.requireCanViewAsset` — the same rules as asset history view access.
+
+**Deferred:** printable PDF labels, batch QR export, Android scanner UI, frontend download UI.
+
+**Future compatibility:** `QrCodeGenerator` is reusable for printable asset label PDFs without changing encoding logic.
+
 ---
 
 ## Authorization summary

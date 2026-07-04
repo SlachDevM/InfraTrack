@@ -1,6 +1,7 @@
 package com.infratrack.config;
 
 import com.infratrack.asset.AssetController;
+import com.infratrack.asset.AssetQrCodeService;
 import com.infratrack.asset.AssetService;
 import com.infratrack.asset.dto.AssetSummaryResponse;
 import com.infratrack.exception.BusinessValidationException;
@@ -46,6 +47,9 @@ class PaginationControllerValidationTest {
     private AssetService assetService;
 
     @Mock
+    private AssetQrCodeService assetQrCodeService;
+
+    @Mock
     private WorkOrderService workOrderService;
 
     @Mock
@@ -75,7 +79,7 @@ class PaginationControllerValidationTest {
     static Stream<PaginatedListEndpoint> paginatedEndpoints() {
         return Stream.of(
                 new PaginatedListEndpoint("Assets", (page, size) -> {
-                    AssetController controller = new AssetController(null);
+                    AssetController controller = new AssetController(null, null);
                     controller.listAssets(page, size, null, null);
                 }),
                 new PaginatedListEndpoint("Work Orders", (page, size) -> {

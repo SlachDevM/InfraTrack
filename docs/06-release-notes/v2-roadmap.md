@@ -115,16 +115,17 @@ The KPI API is designed for reuse by the React web client, future Android applic
 
 **Business value:** Reliable field work in low-connectivity areas; scanning a physical asset tag opens its operational context instead of manual search.
 
-**Status:** In progress — Sprint M4-BE1 (backend only) validated; Android scanning UI, QR generation, and offline sync remain planned.
+**Status:** In progress — Sprints M4-BE1 and M4-BE2 (backend only) validated; Android scanning UI, printable labels, and offline sync remain planned.
 
 **Delivered capabilities:**
 
-- **Sprint M4-BE1 (validated):** Backend asset lookup endpoint for QR/barcode navigation — `GET /api/mobile/assets/lookup?code={assetCode}`. Adds a stable asset business code (`asset.code`), a scoped `AssetContextResponse` (asset summary, open issues, active inspections, active work orders, backend-generated allowed actions), and role/department authorization reusing existing rules. Backend only — no QR generation, no Android scanner, no new workflows.
+- **Sprint M4-BE1 (validated):** Backend asset lookup endpoint for QR/barcode navigation — `GET /api/mobile/assets/lookup?code={assetCode}`. Adds a stable asset business code (`asset.code`), a scoped `AssetContextResponse` (asset summary, open issues, active inspections, active work orders, backend-generated allowed actions), and role/department authorization reusing existing rules. Backend only — no Android scanner, no new workflows.
+- **Sprint M4-BE2 (validated):** Backend QR code generation — `GET /api/assets/{assetId}/qr` returns a PNG QR encoding `assetCode` only (ZXing, 512×512, high error correction). Reuses `AssetAuthorizationService` for view authorization. No printable labels, batch export, or frontend integration.
 
 **Planned within this version family (not yet delivered):**
 
-- QR/barcode generation and printing
-- Android QR/barcode scanning UI consuming the M4-BE1 endpoint
+- Printable asset labels (PDF)
+- Android QR/barcode scanning UI consuming the M4-BE1 lookup endpoint
 - Asset documents and full history on the asset context screen
 - Local cache, sync reconciliation (scope to be defined)
 

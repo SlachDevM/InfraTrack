@@ -1,6 +1,6 @@
-# Mobile API (V2.2.0 Sprint M1, extended V2.4.0 Sprint M4-BE1)
+# Mobile API (V2.2.0 Sprint M1, extended V2.4.0 Sprint M4-BE1 / M4-BE2)
 
-Compact, read-only REST endpoints for the future Android field client. M1 is a **mobile API foundation only** — no Android app, offline sync, push notifications, or QR scanning in this sprint. V2.4.0 Sprint M4-BE1 adds the backend asset lookup endpoint that a future Android QR/barcode scanner will call; it does **not** add QR generation, an Android client, or any workflow change.
+Compact, read-only REST endpoints for the future Android field client. M1 is a **mobile API foundation only** — no Android app, offline sync, push notifications, or QR scanning in this sprint. V2.4.0 Sprint M4-BE1 adds the backend asset lookup endpoint that a future Android QR/barcode scanner will call. V2.4.0 Sprint M4-BE2 adds backend QR code generation (`GET /api/assets/{assetId}/qr`) encoding the asset business code only. Neither sprint adds an Android client, printable labels, or workflow changes.
 
 ## Purpose
 
@@ -120,7 +120,7 @@ This is **not** the Operations Intelligence web dashboard.
 
 ## Asset lookup by QR / barcode (V2.4.0 Sprint M4-BE1)
 
-Android's future QR/barcode scanner resolves a physical asset tag to an `assetCode` string and calls this endpoint to open an "Asset Context" screen. This sprint adds the backend endpoint only — no QR code generation, printing, or Android scanning happens yet.
+Android's future QR/barcode scanner resolves a physical asset tag to an `assetCode` string and calls this endpoint to open an "Asset Context" screen. QR code generation is provided separately by `GET /api/assets/{assetId}/qr` (M4-BE2); printable labels and Android scanning remain deferred.
 
 ```http
 GET /api/mobile/assets/lookup?code=AST-1A2B3C4D
@@ -128,7 +128,17 @@ GET /api/mobile/assets/lookup?code=AST-1A2B3C4D
 
 ### Asset business code
 
-Every asset now has a stable `code` (format `AST-XXXXXXXX`), independent from its internal database ID, generated automatically when the asset is registered. Existing assets were backfilled with a generated code by migration `V28__asset_business_code.sql`. This code — not `asset.id` — is the value intended to be encoded in a QR code or barcode in a later sprint.
+Every asset now has a stable `code` (format `AST-XXXXXXXX`), independent from its internal database ID, generated automatically when the asset is registered. Existing assets were backfilled with a generated code by migration `V28__asset_business_code.sql`. This code — not `asset.id` — is the value encoded in the QR code returned by `GET /api/assets/{assetId}/qr`.
+
+### End-to-end flow (when Android scanning ships)
+
+```text
+GET /api/assets/{assetId}/qr          → PNG QR encoding assetCode only
+        ↓ (print label — future sprint)
+Android scans QR                      → reads assetCode (e.g. AST-1A2B3C4D)
+        ↓
+GET /api/mobile/assets/lookup?code=…  → scoped asset context + allowedActions
+```
 
 ### Response shape
 
@@ -190,7 +200,7 @@ Reuses existing role and department rules; no new Android-specific permissions w
 | V2.3.0 | Android field application |
 | V2.4.0 | Offline synchronisation |
 | V2.2.0+ | Push notification integration beyond FCM token registration |
-| M4 (later sprints) | QR code generation/printing, Android QR scanning UI, asset documents/full history on the context screen |
+| M4 (later sprints) | Printable asset labels (PDF), Android QR scanning UI, asset documents/full history on the context screen |
 
 ## Backend package
 
