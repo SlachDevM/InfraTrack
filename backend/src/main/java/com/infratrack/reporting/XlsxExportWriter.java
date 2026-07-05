@@ -31,7 +31,7 @@ public final class XlsxExportWriter {
             Row headerRow = sheet.createRow(0);
             for (int columnIndex = 0; columnIndex < headers.size(); columnIndex++) {
                 Cell cell = headerRow.createCell(columnIndex);
-                cell.setCellValue(headers.get(columnIndex));
+                cell.setCellValue(ExportCellFormatter.sanitizeSpreadsheetText(headers.get(columnIndex)));
                 cell.setCellStyle(headerStyle);
             }
 
@@ -41,7 +41,8 @@ public final class XlsxExportWriter {
                 for (int columnIndex = 0; columnIndex < rowValues.size(); columnIndex++) {
                     String value = rowValues.get(columnIndex);
                     if (value != null) {
-                        dataRow.createCell(columnIndex).setCellValue(value);
+                        dataRow.createCell(columnIndex)
+                                .setCellValue(ExportCellFormatter.sanitizeSpreadsheetText(value));
                     }
                 }
             }

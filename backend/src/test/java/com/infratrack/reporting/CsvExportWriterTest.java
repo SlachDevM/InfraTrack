@@ -32,6 +32,33 @@ class CsvExportWriterTest {
     }
 
     @Test
+    void escapeCell_shouldProtectFormulaInjectionTriggers() {
+        assertThat(CsvExportWriter.escapeCell("=SUM(1,1)")).isEqualTo("\"'=SUM(1,1)\"");
+        assertThat(CsvExportWriter.escapeCell("+SUM(1,1)")).isEqualTo("\"'+SUM(1,1)\"");
+        assertThat(CsvExportWriter.escapeCell("-123")).isEqualTo("'-123");
+        assertThat(CsvExportWriter.escapeCell("@USER")).isEqualTo("'@USER");
+        assertThat(CsvExportWriter.escapeCell("\t=evil")).isEqualTo("'\t=evil");
+    }
+
+    @Test
+    void escapeCell_shouldSanitizeBeforeQuotingFormulaWithComma() {
+        assertThat(CsvExportWriter.escapeCell("=HYPERLINK(\"a,b\")"))
+                .isEqualTo("\"'=HYPERLINK(\"\"a,b\"\")\"");
+    }
+
+    @Test
+    void write_shouldSanitizeFormulaInjectionInRows() {
+        byte[] csv = CsvExportWriter.write(
+                List.of("Description"),
+                List.of(List.of("=SUM(1,1)")));
+
+        assertThat(new String(csv, StandardCharsets.UTF_8)).isEqualTo("""
+                Description
+                "'=SUM(1,1)"
+                """);
+    }
+
+    @Test
     void write_shouldReturnHeaderOnlyForEmptyRows() {
         byte[] csv = CsvExportWriter.write(List.of("Issue ID"), List.of());
 

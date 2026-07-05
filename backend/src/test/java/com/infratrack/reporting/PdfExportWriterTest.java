@@ -119,6 +119,23 @@ class PdfExportWriterTest {
     }
 
     @Test
+    void write_shouldNotSanitizeFormulaInjectionTriggers() throws Exception {
+        byte[] content = PdfExportWriter.write(
+                "Issues Export",
+                List.of("Description"),
+                List.of(List.of("=SUM(1,1)")),
+                null,
+                null,
+                GENERATED_AT);
+
+        try (PDDocument document = PDDocument.load(new ByteArrayInputStream(content))) {
+            String text = new PDFTextStripper().getText(document);
+            assertThat(text).contains("=SUM(1,1)");
+            assertThat(text).doesNotContain("'=SUM(1,1)");
+        }
+    }
+
+    @Test
     void formatDateRange_withoutFilters_returnsNull() {
         assertThat(PdfExportWriter.formatDateRange(null, null)).isNull();
     }

@@ -33,6 +33,10 @@ import java.util.stream.Collectors;
 public class ReportingExportService {
 
     static final int MAX_EXPORT_WINDOW_DAYS = 365;
+    static final String EXPORT_DATE_FILTERS_REQUIRED_MESSAGE =
+            "Reporting exports require both from and to date filters.";
+    static final String EXPORT_INVALID_DATE_RANGE_MESSAGE =
+            "Reporting export to date must not be before from date.";
     static final String EXPORT_WINDOW_EXCEEDED_MESSAGE =
             "Reporting exports cannot span more than 365 days.";
 
@@ -347,10 +351,13 @@ public class ReportingExportService {
 
     static void validateExportDateWindow(Long from, Long to) {
         if (from == null || to == null) {
-            return;
+            throw new BusinessValidationException(EXPORT_DATE_FILTERS_REQUIRED_MESSAGE);
         }
         LocalDate fromDate = Instant.ofEpochMilli(from).atZone(ZoneOffset.UTC).toLocalDate();
         LocalDate toDate = Instant.ofEpochMilli(to).atZone(ZoneOffset.UTC).toLocalDate();
+        if (toDate.isBefore(fromDate)) {
+            throw new BusinessValidationException(EXPORT_INVALID_DATE_RANGE_MESSAGE);
+        }
         long inclusiveDays = ChronoUnit.DAYS.between(fromDate, toDate) + 1;
         if (inclusiveDays > MAX_EXPORT_WINDOW_DAYS) {
             throw new BusinessValidationException(EXPORT_WINDOW_EXCEEDED_MESSAGE);

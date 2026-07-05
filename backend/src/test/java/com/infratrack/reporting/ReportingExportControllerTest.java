@@ -5,6 +5,8 @@ import com.infratrack.config.SecurityConfig;
 import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.security.JwtAuthenticationFilter;
 import com.infratrack.security.JwtTokenProvider;
+import com.infratrack.security.UserAccountStatusService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -18,6 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.nio.charset.StandardCharsets;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
@@ -43,6 +46,14 @@ class ReportingExportControllerTest {
 
     @MockitoBean
     private ReportingExportService exportService;
+
+    @MockitoBean
+    private UserAccountStatusService userAccountStatusService;
+
+    @BeforeEach
+    void setUpAccountStatus() {
+        when(userAccountStatusService.isEnabled(any())).thenReturn(true);
+    }
 
     @Test
     void exportAssets_withoutToken_returnsForbidden() throws Exception {

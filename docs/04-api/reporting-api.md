@@ -84,8 +84,8 @@ Query parameters (epoch millis, consistent with other InfraTrack APIs):
 
 | Parameter | Description |
 |-----------|-------------|
-| `from` | Lower bound (inclusive where applicable) |
-| `to` | Upper bound |
+| `from` | Lower bound (inclusive where applicable) — **required** |
+| `to` | Upper bound — **required** |
 
 Date field used per export:
 
@@ -97,19 +97,29 @@ Date field used per export:
 | Work Orders | `createdAt` | Work order creation timestamp |
 | Preventive Candidates | `evaluatedAt` | When the candidate was evaluated |
 
-If `from` / `to` are omitted, all rows within the user's scope are exported.
+Both `from` and `to` must be supplied on every export request. Unfiltered exports are not allowed.
 
-### Export window limit (V2.3.x T4)
+### Export window limit (V2.3.x T4 / Security-2)
 
-When both `from` and `to` are provided, the export period cannot exceed **365 days** (inclusive calendar days in UTC).
+The export period cannot exceed **365 days** (inclusive calendar days in UTC). The `to` date must not be before `from`.
 
 | Request | Result |
 |---------|--------|
+| `from=2026-01-01`, `to=2026-01-01` | Allowed (same day) |
 | `from=2026-01-01`, `to=2026-12-31` | Allowed (365 days) |
-| `from` and `to` omitted | Allowed (unfiltered export) |
-| `from=2023-01-01`, `to=2026-01-01` | Rejected (`400`) |
+| `from` or `to` omitted | Rejected (`400`) |
+| `to` before `from` | Rejected (`400`) |
+| `from=2023-01-01`, `to=2026-01-01` | Rejected (`400`) — exceeds 365 days |
 
-Validation error (plain text body):
+Validation errors (plain text body):
+
+```
+Reporting exports require both from and to date filters.
+```
+
+```
+Reporting export to date must not be before from date.
+```
 
 ```
 Reporting exports cannot span more than 365 days.

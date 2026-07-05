@@ -2,6 +2,7 @@ package com.infratrack.auth;
 
 import com.infratrack.department.DepartmentRepository;
 import com.infratrack.mail.EmailService;
+import com.infratrack.security.UserAccountStatusService;
 import com.infratrack.user.EmailNormalizer;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRepository;
@@ -42,6 +43,9 @@ class ActivationServiceEmailNormalizationTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private UserAccountStatusService userAccountStatusService;
 
     @InjectMocks
     private ActivationService activationService;

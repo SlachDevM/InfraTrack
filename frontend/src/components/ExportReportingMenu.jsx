@@ -1,22 +1,40 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { REPORTING_EXPORT_MENU_OPTIONS } from '../constants/reportingExports';
 import { runReportingExport } from '../services/reportingExportHandlers';
 import { COMMON_LABELS } from '../constants/uiLabels';
 import { COMMON_MESSAGES } from '../constants/messages';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
+import {
+  createDefaultReportingExportRange,
+  toExportDateRangeParams,
+  validateReportingExportRange,
+} from '../utils/reportingExportDateRange';
 
 export default function ExportReportingMenu({
   exportType,
   onError,
+  exportRange,
   className = 'export-csv-btn',
   menuClassName = 'navbar-more-menu',
   menuItemClassName = 'navbar-more-item',
 }) {
   const { auth } = useAuth();
+  const defaultRange = useMemo(() => createDefaultReportingExportRange(), []);
+  const [fromDate, setFromDate] = useState(exportRange?.fromDate ?? defaultRange.fromDate);
+  const [toDate, setToDate] = useState(exportRange?.toDate ?? defaultRange.toDate);
   const [open, setOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (exportRange?.fromDate) {
+      setFromDate(exportRange.fromDate);
+    }
+    if (exportRange?.toDate) {
+      setToDate(exportRange.toDate);
+    }
+  }, [exportRange?.fromDate, exportRange?.toDate]);
 
   useEffect(() => {
     if (!open) {
@@ -46,9 +64,18 @@ export default function ExportReportingMenu({
   const handleExport = async (format) => {
     setOpen(false);
 
+    const validationError = validateReportingExportRange({ fromDate, toDate });
+    if (validationError) {
+      if (onError) {
+        onError(validationError);
+      }
+      return;
+    }
+
     try {
       setExporting(true);
-      await runReportingExport(exportType, auth?.token, undefined, format);
+      const params = toExportDateRangeParams({ fromDate, toDate });
+      await runReportingExport(exportType, auth?.token, params, format);
     } catch (err) {
       const message = isForbidden(err)
         ? COMMON_MESSAGES.EXPORT_FORBIDDEN
@@ -64,35 +91,54 @@ export default function ExportReportingMenu({
   const buttonLabel = exporting ? COMMON_LABELS.EXPORTING : COMMON_LABELS.EXPORT;
 
   return (
-    <div className="export-reporting-menu" ref={containerRef}>
-      <button
-        type="button"
-        className={className}
-        aria-label={COMMON_LABELS.EXPORT}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-busy={exporting}
+    <div className="export-reporting-controls" ref={containerRef}>
+      <span className="export-reporting-range-label">{COMMON_LABELS.EXPORT_RANGE}</span>
+      <input
+        type="date"
+        className="export-reporting-date-input"
+        aria-label={COMMON_LABELS.EXPORT_FROM_DATE}
+        value={fromDate}
         disabled={exporting}
-        onClick={() => setOpen((previous) => !previous)}
-      >
-        {buttonLabel}
-      </button>
-      {open && (
-        <div className={menuClassName} role="menu">
-          {REPORTING_EXPORT_MENU_OPTIONS.map((option) => (
-            <button
-              key={option.format}
-              type="button"
-              role="menuitem"
-              className={menuItemClassName}
-              disabled={exporting}
-              onClick={() => handleExport(option.format)}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      )}
+        onChange={(event) => setFromDate(event.target.value)}
+      />
+      <input
+        type="date"
+        className="export-reporting-date-input"
+        aria-label={COMMON_LABELS.EXPORT_TO_DATE}
+        value={toDate}
+        disabled={exporting}
+        onChange={(event) => setToDate(event.target.value)}
+      />
+      <div className="export-reporting-menu">
+        <button
+          type="button"
+          className={className}
+          aria-label={COMMON_LABELS.EXPORT}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-busy={exporting}
+          disabled={exporting}
+          onClick={() => setOpen((previous) => !previous)}
+        >
+          {buttonLabel}
+        </button>
+        {open && (
+          <div className={menuClassName} role="menu">
+            {REPORTING_EXPORT_MENU_OPTIONS.map((option) => (
+              <button
+                key={option.format}
+                type="button"
+                role="menuitem"
+                className={menuItemClassName}
+                disabled={exporting}
+                onClick={() => handleExport(option.format)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

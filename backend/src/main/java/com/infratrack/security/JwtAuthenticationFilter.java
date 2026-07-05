@@ -1,22 +1,27 @@
 package com.infratrack.security;
 
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
-
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
 import java.io.IOException;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider tokenProvider;
+    private final UserAccountStatusService userAccountStatusService;
 
-    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider) {
+    public JwtAuthenticationFilter(
+            JwtTokenProvider tokenProvider,
+            UserAccountStatusService userAccountStatusService) {
         this.tokenProvider = tokenProvider;
+        this.userAccountStatusService = userAccountStatusService;
     }
 
     @Override
@@ -28,6 +33,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (jwt != null && tokenProvider.validateToken(jwt)) {
                 String email = tokenProvider.getEmailFromToken(jwt);
                 Long userId = tokenProvider.getUserIdFromToken(jwt);
+
+                if (!userAccountStatusService.isEnabled(userId)) {
+                    SecurityContextHolder.clearContext();
+                    response.sendError(HttpStatus.UNAUTHORIZED.value());
+                    return;
+                }
 
                 JwtAuthenticationToken authentication = new JwtAuthenticationToken(userId, email, true);
                 SecurityContextHolder.getContext().setAuthentication(authentication);

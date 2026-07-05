@@ -3,6 +3,7 @@ package com.infratrack.auth;
 import com.infratrack.department.Department;
 import com.infratrack.department.DepartmentRepository;
 import com.infratrack.mail.EmailService;
+import com.infratrack.security.UserAccountStatusService;
 import com.infratrack.user.EmailNormalizer;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
@@ -30,6 +31,7 @@ public class ActivationService {
     private final AccountActivationTokenRepository tokenRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
+    private final UserAccountStatusService userAccountStatusService;
 
     @Value("${app.activation-token-expiration-hours:24}")
     private long tokenExpirationHours;
@@ -42,12 +44,14 @@ public class ActivationService {
             DepartmentRepository departmentRepository,
             AccountActivationTokenRepository tokenRepository,
             EmailService emailService,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            UserAccountStatusService userAccountStatusService) {
         this.userRepository = userRepository;
         this.departmentRepository = departmentRepository;
         this.tokenRepository = tokenRepository;
         this.emailService = emailService;
         this.passwordEncoder = passwordEncoder;
+        this.userAccountStatusService = userAccountStatusService;
     }
 
     /**
@@ -178,6 +182,7 @@ public class ActivationService {
         user.setEnabled(true);
         user.setUpdatedAt(System.currentTimeMillis());
         User activatedUser = userRepository.save(user);
+        userAccountStatusService.evict(user.getId());
 
         // Mark token as used
         activationToken.setUsedAt(System.currentTimeMillis());

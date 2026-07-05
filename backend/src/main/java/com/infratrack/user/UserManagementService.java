@@ -4,6 +4,7 @@ import com.infratrack.auth.ActivationService;
 import com.infratrack.department.Department;
 import com.infratrack.department.DepartmentRepository;
 import com.infratrack.mail.EmailService;
+import com.infratrack.security.UserAccountStatusService;
 import com.infratrack.user.dto.UpdateUserRequest;
 import com.infratrack.user.dto.UserManagementResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -25,16 +26,19 @@ public class UserManagementService {
     private final DepartmentRepository departmentRepository;
     private final ActivationService activationService;
     private final EmailService emailService;
+    private final UserAccountStatusService userAccountStatusService;
 
     public UserManagementService(
             UserRepository userRepository,
             DepartmentRepository departmentRepository,
             ActivationService activationService,
-            EmailService emailService) {
+            EmailService emailService,
+            UserAccountStatusService userAccountStatusService) {
         this.userRepository = userRepository;
         this.departmentRepository = departmentRepository;
         this.activationService = activationService;
         this.emailService = emailService;
+        this.userAccountStatusService = userAccountStatusService;
     }
 
     /**
@@ -215,6 +219,7 @@ public class UserManagementService {
         user.setEnabled(false);
         user.setUpdatedAt(System.currentTimeMillis());
         userRepository.save(user);
+        userAccountStatusService.evict(userId);
 
         log.info("User {} deactivated by admin {}. New status: {}", userId, requestingAdminId, computeStatus(user));
     }
@@ -284,6 +289,7 @@ public class UserManagementService {
         user.setEnabled(true);
         user.setUpdatedAt(System.currentTimeMillis());
         userRepository.save(user);
+        userAccountStatusService.evict(userId);
         log.info("User {} reactivated by admin {}", userId, requestingAdminId);
     }
 

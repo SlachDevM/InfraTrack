@@ -10,6 +10,8 @@ import com.infratrack.inspection.dto.InspectionResponse;
 import com.infratrack.inspectiontemplate.DecisionRuleEvaluationService;
 import com.infratrack.security.JwtAuthenticationFilter;
 import com.infratrack.security.JwtTokenProvider;
+import com.infratrack.security.UserAccountStatusService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -23,7 +25,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -49,6 +54,14 @@ class InspectionControllerTest {
 
     @MockitoBean
     private DecisionRuleEvaluationService decisionRuleEvaluationService;
+
+    @MockitoBean
+    private UserAccountStatusService userAccountStatusService;
+
+    @BeforeEach
+    void setUpAccountStatus() {
+        when(userAccountStatusService.isEnabled(any())).thenReturn(true);
+    }
 
     @Test
     void saveInspectionAnswers_withoutToken_returnsForbidden() throws Exception {
@@ -294,6 +307,19 @@ class InspectionControllerTest {
         Inspection inspection = savedAnswerEntity().getInspection();
         inspection.saveProgress(com.infratrack.inspection.PhysicalCondition.GOOD, "Draft notes", true, true);
         return InspectionResponse.from(inspection);
+    }
+
+    @Test
+    void saveInspectionAnswers_disabledUser_returnsUnauthorized() throws Exception {
+        when(userAccountStatusService.isEnabled(FIELD_USER_ID)).thenReturn(false);
+
+        mockMvc.perform(put("/api/inspections/100/answers")
+                        .header("Authorization", bearerToken(FIELD_USER_ID))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validPayload()))
+                .andExpect(status().isUnauthorized());
+
+        verify(inspectionService, never()).saveInspectionAnswers(any(), any(), any());
     }
 
     private String bearerToken(Long userId) {

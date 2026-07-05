@@ -29,10 +29,11 @@ public final class CsvExportWriter {
         if (value == null) {
             return "";
         }
-        if (value.contains(",") || value.contains("\"") || value.contains("\n") || value.contains("\r")) {
-            return "\"" + value.replace("\"", "\"\"") + "\"";
+        String sanitized = ExportCellFormatter.sanitizeSpreadsheetText(value);
+        if (sanitized.contains(",") || sanitized.contains("\"") || sanitized.contains("\n") || sanitized.contains("\r")) {
+            return "\"" + sanitized.replace("\"", "\"\"") + "\"";
         }
-        return value;
+        return sanitized;
     }
 
     static String cell(Object value) {

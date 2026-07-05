@@ -14,6 +14,9 @@ export const COMMON_LABELS = {
   EXPORT_AS_XLSX: 'Export as XLSX',
   EXPORT_AS_PDF: 'Export as PDF',
   EXPORTING: 'Exporting...',
+  EXPORT_RANGE: 'Export range:',
+  EXPORT_FROM_DATE: 'Export from date',
+  EXPORT_TO_DATE: 'Export to date',
   LOGOUT: 'Logout',
   BACK: '← Back',
 };

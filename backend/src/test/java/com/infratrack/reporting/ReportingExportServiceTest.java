@@ -23,17 +23,22 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.io.ByteArrayInputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -95,10 +100,10 @@ class ReportingExportServiceTest {
     @Test
     void exportAssets_admin_returnsCsvWithHeaderAndRows() {
         when(userService.getById(1L)).thenReturn(admin());
-        when(assetRepository.findForExport(isNull(), isNull(), isNull()))
+        when(assetRepository.findForExport(isNull(), eq(validFrom()), eq(validTo())))
                 .thenReturn(List.of(parksAsset()));
 
-        CsvExportResponse response = exportService.exportAssets(1L, null, null);
+        CsvExportResponse response = exportService.exportAssets(1L, validFrom(), validTo());
 
         assertThat(response.filename()).isEqualTo("assets-export.csv");
         String csv = new String(response.content(), StandardCharsets.UTF_8);
@@ -106,15 +111,15 @@ class ReportingExportServiceTest {
         assertThat(csv).contains("Street Light 001");
         assertThat(csv).contains("Street Lighting");
         assertThat(csv).contains("Parks");
-        verify(assetRepository).findForExport(null, null, null);
+        verify(assetRepository).findForExport(null, validFrom(), validTo());
     }
 
     @Test
     void exportAssets_csvFilenameUsesReportingPolicyDefault() {
         when(userService.getById(1L)).thenReturn(admin());
-        when(assetRepository.findForExport(isNull(), isNull(), isNull())).thenReturn(List.of());
+        when(assetRepository.findForExport(isNull(), eq(validFrom()), eq(validTo()))).thenReturn(List.of());
 
-        exportService.exportAssets(1L, null, null);
+        exportService.exportAssets(1L, validFrom(), validTo());
 
         org.mockito.Mockito.verify(reportingPolicyService).getPolicy();
     }
@@ -122,20 +127,20 @@ class ReportingExportServiceTest {
     @Test
     void exportAssets_manager_scopesToDepartment() {
         when(userService.getById(2L)).thenReturn(manager(3L));
-        when(assetRepository.findForExport(eq(3L), isNull(), isNull())).thenReturn(List.of());
+        when(assetRepository.findForExport(eq(3L), eq(validFrom()), eq(validTo()))).thenReturn(List.of());
 
-        exportService.exportAssets(2L, null, null);
+        exportService.exportAssets(2L, validFrom(), validTo());
 
-        verify(assetRepository).findForExport(3L, null, null);
+        verify(assetRepository).findForExport(3L, validFrom(), validTo());
         verify(assetRepository, never()).findForExport(isNull(), any(), any());
     }
 
     @Test
     void exportAssets_emptyResult_returnsHeaderOnly() {
         when(userService.getById(1L)).thenReturn(admin());
-        when(assetRepository.findForExport(isNull(), isNull(), isNull())).thenReturn(List.of());
+        when(assetRepository.findForExport(isNull(), eq(validFrom()), eq(validTo()))).thenReturn(List.of());
 
-        CsvExportResponse response = exportService.exportAssets(1L, null, null);
+        CsvExportResponse response = exportService.exportAssets(1L, validFrom(), validTo());
 
         String csv = new String(response.content(), StandardCharsets.UTF_8);
         assertThat(csv.lines()).hasSize(1);
@@ -144,9 +149,9 @@ class ReportingExportServiceTest {
     @Test
     void exportAssets_doesNotPersistData() {
         when(userService.getById(1L)).thenReturn(admin());
-        when(assetRepository.findForExport(isNull(), isNull(), isNull())).thenReturn(List.of());
+        when(assetRepository.findForExport(isNull(), eq(validFrom()), eq(validTo()))).thenReturn(List.of());
 
-        exportService.exportAssets(1L, null, null);
+        exportService.exportAssets(1L, validFrom(), validTo());
 
         verify(assetRepository, never()).save(any());
         verify(assetRepository, never()).delete(any());
@@ -159,10 +164,10 @@ class ReportingExportServiceTest {
     @Test
     void exportIssues_resolvedColumnReflectsOperationalDecision() {
         when(userService.getById(1L)).thenReturn(admin());
-        when(issueRepository.findForExport(isNull(), isNull(), isNull())).thenReturn(List.of());
+        when(issueRepository.findForExport(isNull(), any(), any())).thenReturn(List.of());
         when(userNameLookup.resolveNames(any())).thenReturn(Map.of());
 
-        CsvExportResponse response = exportService.exportIssues(1L, null, null);
+        CsvExportResponse response = exportService.exportIssues(1L, validFrom(), validTo());
 
         String csv = new String(response.content(), StandardCharsets.UTF_8);
         assertThat(csv).startsWith("Issue ID,Asset Name,Department,Issue Type,Severity,Description,Recorded By,Recorded At,Resolved\n");
@@ -171,10 +176,10 @@ class ReportingExportServiceTest {
     @Test
     void exportAssetsXlsx_admin_containsHeaderAndDataRow() throws Exception {
         when(userService.getById(1L)).thenReturn(admin());
-        when(assetRepository.findForExport(isNull(), isNull(), isNull()))
+        when(assetRepository.findForExport(isNull(), eq(validFrom()), eq(validTo())))
                 .thenReturn(List.of(parksAsset()));
 
-        ExportFileResponse response = exportService.exportAssetsXlsx(1L, null, null);
+        ExportFileResponse response = exportService.exportAssetsXlsx(1L, validFrom(), validTo());
 
         assertThat(response.filename()).isEqualTo("assets-export.xlsx");
         try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(response.content()))) {
@@ -192,20 +197,20 @@ class ReportingExportServiceTest {
     @Test
     void exportAssetsXlsx_manager_scopesToDepartment() {
         when(userService.getById(2L)).thenReturn(manager(3L));
-        when(assetRepository.findForExport(eq(3L), isNull(), isNull())).thenReturn(List.of());
+        when(assetRepository.findForExport(eq(3L), eq(validFrom()), eq(validTo()))).thenReturn(List.of());
 
-        exportService.exportAssetsXlsx(2L, null, null);
+        exportService.exportAssetsXlsx(2L, validFrom(), validTo());
 
-        verify(assetRepository).findForExport(3L, null, null);
+        verify(assetRepository).findForExport(3L, validFrom(), validTo());
         verify(assetRepository, never()).findForExport(isNull(), any(), any());
     }
 
     @Test
     void exportAssetsXlsx_emptyResult_containsHeaderOnly() throws Exception {
         when(userService.getById(1L)).thenReturn(admin());
-        when(assetRepository.findForExport(isNull(), isNull(), isNull())).thenReturn(List.of());
+        when(assetRepository.findForExport(isNull(), eq(validFrom()), eq(validTo()))).thenReturn(List.of());
 
-        ExportFileResponse response = exportService.exportAssetsXlsx(1L, null, null);
+        ExportFileResponse response = exportService.exportAssetsXlsx(1L, validFrom(), validTo());
 
         try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(response.content()))) {
             Sheet sheet = workbook.getSheetAt(0);
@@ -216,10 +221,10 @@ class ReportingExportServiceTest {
     @Test
     void exportAssetsPdf_admin_returnsValidPdfWithFilename() {
         when(userService.getById(1L)).thenReturn(admin());
-        when(assetRepository.findForExport(isNull(), isNull(), isNull()))
+        when(assetRepository.findForExport(isNull(), eq(validFrom()), eq(validTo())))
                 .thenReturn(List.of(parksAsset()));
 
-        ExportFileResponse response = exportService.exportAssetsPdf(1L, null, null);
+        ExportFileResponse response = exportService.exportAssetsPdf(1L, validFrom(), validTo());
 
         assertThat(response.filename()).isEqualTo("assets-export.pdf");
         assertThat(response.content().length).isGreaterThan(100);
@@ -229,20 +234,20 @@ class ReportingExportServiceTest {
     @Test
     void exportAssetsPdf_manager_scopesToDepartment() {
         when(userService.getById(2L)).thenReturn(manager(3L));
-        when(assetRepository.findForExport(eq(3L), isNull(), isNull())).thenReturn(List.of());
+        when(assetRepository.findForExport(eq(3L), eq(validFrom()), eq(validTo()))).thenReturn(List.of());
 
-        exportService.exportAssetsPdf(2L, null, null);
+        exportService.exportAssetsPdf(2L, validFrom(), validTo());
 
-        verify(assetRepository).findForExport(3L, null, null);
+        verify(assetRepository).findForExport(3L, validFrom(), validTo());
         verify(assetRepository, never()).findForExport(isNull(), any(), any());
     }
 
     @Test
     void exportAssetsPdf_emptyResult_stillProducesValidPdf() {
         when(userService.getById(1L)).thenReturn(admin());
-        when(assetRepository.findForExport(isNull(), isNull(), isNull())).thenReturn(List.of());
+        when(assetRepository.findForExport(isNull(), eq(validFrom()), eq(validTo()))).thenReturn(List.of());
 
-        ExportFileResponse response = exportService.exportAssetsPdf(1L, null, null);
+        ExportFileResponse response = exportService.exportAssetsPdf(1L, validFrom(), validTo());
 
         assertThat(new String(response.content(), 0, 4)).isEqualTo("%PDF");
     }
@@ -297,6 +302,16 @@ class ReportingExportServiceTest {
     }
 
     @Test
+    void exportAssets_sameDayWindow_succeeds() {
+        when(userService.getById(1L)).thenReturn(admin());
+        when(assetRepository.findForExport(isNull(), eq(validFrom()), eq(validTo()))).thenReturn(List.of());
+
+        exportService.exportAssets(1L, validFrom(), validTo());
+
+        verify(assetRepository).findForExport(null, validFrom(), validTo());
+    }
+
+    @Test
     void exportAssets_366DayWindow_rejectsBeforeLoadingData() {
         assertThatThrownBy(() -> exportService.exportAssets(1L, januaryFirst2025(), januaryFirst2026()))
                 .isInstanceOf(BusinessValidationException.class)
@@ -307,13 +322,143 @@ class ReportingExportServiceTest {
     }
 
     @Test
-    void exportAssets_omittedDateFilters_unchangedBehaviour() {
-        when(userService.getById(1L)).thenReturn(admin());
-        when(assetRepository.findForExport(isNull(), isNull(), isNull())).thenReturn(List.of());
+    void exportAssets_xlsx366DayWindow_rejectsBeforeLoadingData() {
+        assertThatThrownBy(() -> exportService.exportAssetsXlsx(1L, januaryFirst2025(), januaryFirst2026()))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage(ReportingExportService.EXPORT_WINDOW_EXCEEDED_MESSAGE);
 
-        exportService.exportAssets(1L, null, null);
+        verify(assetRepository, never()).findForExport(any(), any(), any());
+    }
 
-        verify(assetRepository).findForExport(null, null, null);
+    @Test
+    void exportAssets_pdf366DayWindow_rejectsBeforeLoadingData() {
+        assertThatThrownBy(() -> exportService.exportAssetsPdf(1L, januaryFirst2025(), januaryFirst2026()))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage(ReportingExportService.EXPORT_WINDOW_EXCEEDED_MESSAGE);
+
+        verify(assetRepository, never()).findForExport(any(), any(), any());
+    }
+
+    @Test
+    void exportAssets_bothDateFiltersMissing_rejectsBeforeLoadingData() {
+        assertThatThrownBy(() -> exportService.exportAssets(1L, null, null))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage(ReportingExportService.EXPORT_DATE_FILTERS_REQUIRED_MESSAGE);
+
+        verify(assetRepository, never()).findForExport(any(), any(), any());
+        verify(userService, never()).getById(any());
+    }
+
+    @Test
+    void exportAssets_fromMissing_rejectsBeforeLoadingData() {
+        assertThatThrownBy(() -> exportService.exportAssets(1L, null, validTo()))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage(ReportingExportService.EXPORT_DATE_FILTERS_REQUIRED_MESSAGE);
+
+        verify(assetRepository, never()).findForExport(any(), any(), any());
+    }
+
+    @Test
+    void exportAssets_toMissing_rejectsBeforeLoadingData() {
+        assertThatThrownBy(() -> exportService.exportAssets(1L, validFrom(), null))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage(ReportingExportService.EXPORT_DATE_FILTERS_REQUIRED_MESSAGE);
+
+        verify(assetRepository, never()).findForExport(any(), any(), any());
+    }
+
+    @Test
+    void exportAssets_xlsxMissingDateFilters_rejectsBeforeLoadingData() {
+        assertThatThrownBy(() -> exportService.exportAssetsXlsx(1L, null, null))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage(ReportingExportService.EXPORT_DATE_FILTERS_REQUIRED_MESSAGE);
+
+        verify(assetRepository, never()).findForExport(any(), any(), any());
+    }
+
+    @Test
+    void exportAssets_pdfMissingDateFilters_rejectsBeforeLoadingData() {
+        assertThatThrownBy(() -> exportService.exportAssetsPdf(1L, null, null))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage(ReportingExportService.EXPORT_DATE_FILTERS_REQUIRED_MESSAGE);
+
+        verify(assetRepository, never()).findForExport(any(), any(), any());
+    }
+
+    @Test
+    void exportAssets_toBeforeFrom_rejectsBeforeLoadingData() {
+        assertThatThrownBy(() -> exportService.exportAssets(1L, decemberThirtyFirst2026(), januaryFirst2026()))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage(ReportingExportService.EXPORT_INVALID_DATE_RANGE_MESSAGE);
+
+        verify(assetRepository, never()).findForExport(any(), any(), any());
+        verify(userService, never()).getById(any());
+    }
+
+    @ParameterizedTest
+    @MethodSource("missingDateFilterDomainExports")
+    void exportDomains_missingDateFilters_rejectBeforeLoadingData(DomainExportCall exportCall) {
+        assertThatThrownBy(() -> exportCall.invoke(exportService))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage(ReportingExportService.EXPORT_DATE_FILTERS_REQUIRED_MESSAGE);
+
+        verify(assetRepository, never()).findForExport(any(), any(), any());
+        verify(inspectionRepository, never()).findForExport(any(), any(), any());
+        verify(issueRepository, never()).findForExport(any(), any(), any());
+        verify(workOrderRepository, never()).findForExport(any(), any(), any());
+        verify(preventiveExecutionCandidateRepository, never()).findForExport(any(), any(), any());
+    }
+
+    @Test
+    void validateExportDateWindow_sameDay_allows() {
+        assertThatCode(() -> ReportingExportService.validateExportDateWindow(validFrom(), validTo()))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void validateExportDateWindow_exactly365Days_allows() {
+        assertThatCode(() -> ReportingExportService.validateExportDateWindow(
+                januaryFirst2026(), decemberThirtyFirst2026()))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void validateExportDateWindow_366Days_rejects() {
+        assertThatThrownBy(() -> ReportingExportService.validateExportDateWindow(
+                januaryFirst2025(), januaryFirst2026()))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage(ReportingExportService.EXPORT_WINDOW_EXCEEDED_MESSAGE);
+    }
+
+    @Test
+    void validateExportDateWindow_toBeforeFrom_rejects() {
+        assertThatThrownBy(() -> ReportingExportService.validateExportDateWindow(
+                decemberThirtyFirst2026(), januaryFirst2026()))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage(ReportingExportService.EXPORT_INVALID_DATE_RANGE_MESSAGE);
+    }
+
+    @Test
+    void validateExportDateWindow_missingFilters_reject() {
+        assertThatThrownBy(() -> ReportingExportService.validateExportDateWindow(null, null))
+                .hasMessage(ReportingExportService.EXPORT_DATE_FILTERS_REQUIRED_MESSAGE);
+        assertThatThrownBy(() -> ReportingExportService.validateExportDateWindow(null, validTo()))
+                .hasMessage(ReportingExportService.EXPORT_DATE_FILTERS_REQUIRED_MESSAGE);
+        assertThatThrownBy(() -> ReportingExportService.validateExportDateWindow(validFrom(), null))
+                .hasMessage(ReportingExportService.EXPORT_DATE_FILTERS_REQUIRED_MESSAGE);
+    }
+
+    private static Stream<Arguments> missingDateFilterDomainExports() {
+        return Stream.of(
+                Arguments.of((DomainExportCall) service -> service.exportInspections(1L, null, null)),
+                Arguments.of((DomainExportCall) service -> service.exportIssues(1L, null, null)),
+                Arguments.of((DomainExportCall) service -> service.exportWorkOrders(1L, null, null)),
+                Arguments.of((DomainExportCall) service -> service.exportPreventiveCandidates(1L, null, null)));
+    }
+
+    @FunctionalInterface
+    private interface DomainExportCall {
+        void invoke(ReportingExportService service);
     }
 
     private static User admin() {
@@ -346,6 +491,14 @@ class ReportingExportServiceTest {
                 1L);
         asset.setId(5L);
         return asset;
+    }
+
+    private static long validFrom() {
+        return januaryFirst2026();
+    }
+
+    private static long validTo() {
+        return januaryFirst2026();
     }
 
     private static long januaryFirst2026() {

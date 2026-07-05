@@ -37,6 +37,28 @@ HttpOnly cookies are valuable when the browser client and API share a tightly co
 - Login and activation rate limiting
 - HTTPS enforced at the reverse proxy in production; HSTS enabled on the API in the `prod` profile
 - Production Swagger disabled
+- **Account enabled status checked after JWT signature/expiry validation** (Security-3): disabled or missing users receive HTTP `401` on protected API calls, even with an otherwise valid token
+
+### Post-login token validity (Security-3)
+
+The Bearer token model is unchanged — no refresh tokens, no cookie migration, no token blacklist.
+
+After `JwtAuthenticationFilter` validates a JWT, `UserAccountStatusService` confirms the account is still enabled:
+
+```text
+JWT validated → userId extracted → UserAccountStatusService.isEnabled(userId)
+    → Caffeine cache (30s TTL, 10_000 entries) → UserRepository.existsByIdAndEnabledTrue
+```
+
+| Event | API access |
+|-------|------------|
+| User disabled by administrator | Existing JWTs stop working immediately when cache is evicted; otherwise within 30 seconds |
+| User reactivated or account activated | Cache evicted; access restored on next request |
+| Missing user | Treated as disabled (`401`) — same response as disabled account |
+
+Cache eviction runs on deactivate, reactivate, and account activation so offboarding is effective without waiting for TTL expiry.
+
+Clients (React, Android) should treat HTTP `401` as session invalidation and redirect to login.
 
 Clients must protect tokens at rest on the device (Android Keystore, secure browser storage practices).
 

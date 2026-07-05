@@ -38,6 +38,24 @@ For local development, use:
 
 Production requires a strong `JWT_SECRET`. Token lifetime can be tuned per deployment without code changes.
 
+### Disabled account revocation (Security-3)
+
+JWT Bearer authentication is unchanged — no refresh tokens, no HttpOnly cookies, no token blacklist.
+
+After signature and expiry validation, `JwtAuthenticationFilter` calls `UserAccountStatusService` to confirm the account is still enabled. Disabled or missing users receive HTTP `401 Unauthorized`; the filter chain does not continue and controllers are not reached.
+
+| Control | Setting |
+|---------|---------|
+| Cache | Caffeine, per-user enabled flag |
+| TTL | 30 seconds (`expireAfterWrite`) |
+| Maximum size | 10,000 entries |
+| Database check | `UserRepository.existsByIdAndEnabledTrue(userId)` |
+| Cache eviction | On user deactivate, reactivate, and account activation |
+
+Without eviction, disabled users lose API access within the 30-second TTL. With eviction (implemented), access stops on the next request after status change.
+
+Login still rejects disabled accounts at `POST /api/auth/login`. This control closes the gap where an unexpired JWT continued to work after offboarding.
+
 Bearer token storage in clients is an intentional architecture decision — see [BDR-003](../03-architecture/bdr-003-bearer-token-architecture.md).
 
 ---
@@ -374,6 +392,51 @@ Startup logs:
 | Loaded successfully | `Firebase messaging enabled.` |
 
 The backend starts normally when Firebase is disabled.
+
+---
+
+## Spreadsheet formula injection protection
+
+InfraTrack exports user-controlled text (asset names, issue descriptions, work order notes, and similar fields) as CSV and XLSX downloads. Spreadsheet applications may interpret cell values that begin with certain characters as formulas and execute them when the file is opened ([CWE-1236](https://cwe.mitre.org/data/definitions/1236.html) / CSV injection).
+
+### Mitigation
+
+Before any textual value is written to CSV or XLSX, the export layer prefixes values whose first significant character (after optional leading whitespace) is one of:
+
+- `=` (equals)
+- `+` (plus)
+- `-` (minus)
+- `@` (at)
+- TAB
+
+with a single apostrophe (`'`). Excel, LibreOffice Calc, and Google Sheets then display the literal text instead of evaluating a formula.
+
+Example: `=HYPERLINK("https://evil.example")` is exported as `'=HYPERLINK("https://evil.example")`.
+
+### Scope
+
+| Export format | Protected |
+|---------------|-----------|
+| CSV | Yes |
+| XLSX | Yes |
+| PDF | No — PDF is not opened as a spreadsheet; export content is unchanged |
+
+Implementation is centralized in `ExportCellFormatter.sanitizeSpreadsheetText()` and applied automatically by `CsvExportWriter` and `XlsxExportWriter`. Business services, REST endpoints, DTOs, and API consumers are unchanged — protection is transparent at download time only.
+
+---
+
+## Reporting export volume guard
+
+Reporting exports can return large datasets. To prevent unbounded resource use, every CSV, XLSX, and PDF export request must include explicit `from` and `to` date filters (epoch millis).
+
+| Rule | Behaviour |
+|------|-----------|
+| `from` and `to` required | HTTP `400` if either is omitted |
+| Maximum window | 365 inclusive calendar days (UTC) |
+| `to` before `from` | HTTP `400` |
+| No default range | The server does not default to "last 365 days" or truncate results |
+
+Validation runs once in `ReportingExportService.validateExportDateWindow()` before any export data is loaded. Applies to all export domains (assets, inspections, issues, work orders, preventive candidates) and all formats.
 
 ---
 

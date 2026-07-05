@@ -4,6 +4,7 @@ import com.infratrack.auth.ActivationService;
 import com.infratrack.department.Department;
 import com.infratrack.department.DepartmentRepository;
 import com.infratrack.mail.EmailService;
+import com.infratrack.security.UserAccountStatusService;
 import com.infratrack.user.dto.UpdateUserRequest;
 import com.infratrack.user.dto.UserManagementResponse;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,9 @@ class UserManagementServiceTest {
 
     @Mock
     private EmailService emailService;
+
+    @Mock
+    private UserAccountStatusService userAccountStatusService;
 
     @InjectMocks
     private UserManagementService userManagementService;
@@ -333,6 +337,7 @@ class UserManagementServiceTest {
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
         assertThat(captor.getValue().getEnabled()).isFalse();
+        verify(userAccountStatusService).evict(2L);
     }
 
     @Test
@@ -385,6 +390,7 @@ class UserManagementServiceTest {
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
         assertThat(captor.getValue().getEnabled()).isTrue();
+        verify(userAccountStatusService).evict(2L);
     }
 
     @Test

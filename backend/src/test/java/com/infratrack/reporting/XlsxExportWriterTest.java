@@ -83,4 +83,51 @@ class XlsxExportWriterTest {
 
         assertThat(sanitized).hasSize(31);
     }
+
+    @Test
+    void write_shouldProtectFormulaInjectionTriggers() throws Exception {
+        byte[] content = XlsxExportWriter.write(
+                "Issues",
+                List.of("Formula", "Normal"),
+                List.of(List.of("=SUM(1,1)", "Park BBQ")));
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(content))) {
+            Row dataRow = workbook.getSheetAt(0).getRow(1);
+            assertThat(dataRow.getCell(0).getStringCellValue()).isEqualTo("'=SUM(1,1)");
+            assertThat(dataRow.getCell(1).getStringCellValue()).isEqualTo("Park BBQ");
+        }
+    }
+
+    @Test
+    void write_shouldProtectPlusMinusAtAndTabPrefixedValues() throws Exception {
+        byte[] content = XlsxExportWriter.write(
+                "Issues",
+                List.of("Value"),
+                List.of(
+                        List.of("+SUM(1,1)"),
+                        List.of("-123"),
+                        List.of("@USER"),
+                        List.of("\t=evil")));
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(content))) {
+            Sheet sheet = workbook.getSheetAt(0);
+            assertThat(sheet.getRow(1).getCell(0).getStringCellValue()).isEqualTo("'+SUM(1,1)");
+            assertThat(sheet.getRow(2).getCell(0).getStringCellValue()).isEqualTo("'-123");
+            assertThat(sheet.getRow(3).getCell(0).getStringCellValue()).isEqualTo("'@USER");
+            assertThat(sheet.getRow(4).getCell(0).getStringCellValue()).isEqualTo("'\t=evil");
+        }
+    }
+
+    @Test
+    void write_shouldLeaveNumericStringsUnchanged() throws Exception {
+        byte[] content = XlsxExportWriter.write(
+                "Assets",
+                List.of("Asset ID"),
+                List.of(List.of("123")));
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(content))) {
+            assertThat(workbook.getSheetAt(0).getRow(1).getCell(0).getStringCellValue())
+                    .isEqualTo("123");
+        }
+    }
 }
