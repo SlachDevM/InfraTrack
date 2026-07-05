@@ -75,6 +75,7 @@ Versioning rules: [ADR-004 — Platform Versioning Strategy](03-architecture/adr
 | V2.0.1 hardening | [v2-0-1-security-hardening.md](06-release-notes/v2-0-1-security-hardening.md) |
 | Bearer token BDR | [bdr-003](03-architecture/bdr-003-bearer-token-architecture.md) |
 | Offline sync BDR | [bdr-005](03-architecture/bdr-005-offline-synchronization-architecture.md) |
+| Conflict resolution strategy (BDR-005 companion) | [bdr-005-conflict-resolution-strategy](03-architecture/bdr-005-conflict-resolution-strategy.md) |
 | CI / testing | [Testing (project README)](../README.md#testing) |
 
 ---
@@ -173,6 +174,7 @@ Architecture Decision Records (ADRs) and Business Decision Records (BDRs). **Sta
 - [BDR-003](03-architecture/bdr-003-bearer-token-architecture.md) — Bearer token architecture
 - [BDR-004](03-architecture/bdr-004-configurable-organizational-policies.md) — Configurable organizational policies
 - [BDR-005](03-architecture/bdr-005-offline-synchronization-architecture.md) — Offline & synchronization architecture
+- [BDR-005 — Conflict Resolution Strategy](03-architecture/bdr-005-conflict-resolution-strategy.md) — Conflict taxonomy and resolution philosophy (companion to offline BDR-005)
 
 ### 04 — API
 

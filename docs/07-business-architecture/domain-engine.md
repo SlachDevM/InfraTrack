@@ -1530,6 +1530,7 @@ Validation, Policy Engine,          Room cache + pending queue
 Conflict detection, Audit                  ↓
         ↓                            Sync on reconnect
 POST /api/mobile/sync (M5.2-BE1/BE2)  ←── Protocol handshake (token + empty delta)
+POST /api/mobile/sync (M5.4-BE)       ←── Download: delta.inspections
 POST /api/mobile/sync (future)    ←── Idempotent upload processing
 GET  /api/mobile/sync/* (future)  ──→ Incremental download
 ```
@@ -1540,7 +1541,17 @@ GET  /api/mobile/sync/* (future)  ──→ Incremental download
 
 **M5.2-BE1 (delivered):** `POST /api/mobile/sync` protocol foundation — accepts `SyncRequest` with optional `pendingOperations[]`, returns `SyncResponse`. No domain mutations, no delta download. Extension points: `SyncOperationProcessor`, `SyncTokenService`, `SyncConflictResolver`.
 
-**M5.2-BE2 (delivered):** Opaque `nextSyncToken` on every successful sync (`SyncToken` value object; Android stores only). `protocolVersion: 1`. Empty `SyncDeltaResponse` (`assets`, `inspections`, `workOrders`, `documents`, `users`, `referenceData`). Typed enums for future outcomes: `SyncOperationStatus`, `SyncConflictType`, `SyncWarningCode`. Upload processing, populated deltas, and conflict resolution remain deferred.
+**M5.2-BE2 (delivered):** Opaque `nextSyncToken` on every successful sync (`SyncToken` value object; Android stores only). `protocolVersion: 1`. Empty `SyncDeltaResponse` (`assets`, `inspections`, `workOrders`, `documents`, `users`, `referenceData`). Typed enums for future outcomes: `SyncOperationStatus`, `SyncConflictType`, `SyncWarningCode`.
+
+**M5.3-BE (delivered):** First real upload processing — `SAVE_INSPECTION_PROGRESS` on `INSPECTION` entities via `InspectionService.saveInspectionProgress(...)`. Per-operation `ACCEPTED` / `REJECTED` / `IGNORED` outcomes; one failure does not fail the whole sync. No durable idempotency store yet.
+
+**M5.4-BE (delivered):** First download delta — `delta.inspections` populated with scoped `SyncInspectionDeltaResponse` records and answers. Null/invalid `syncToken` returns full inspection delta; valid token filters by `updatedAt >= token.issuedAt`. Invalid token adds `FULL_SYNC_REQUIRED` warning without failing sync. Processing order: operations first, then delta (so accepted uploads appear in the same response). No tombstones, work order/asset/document deltas, or conflict resolution yet.
+
+**M5.4.1-BE (delivered):** Synchronization hardening — batch limit (100 pending operations), per-operation payload limit (256 KB), Micrometer metrics, structured INFO logging via `SyncDiagnostics`, no workflow or API contract changes.
+
+**M5.5-BE1 (delivered):** Conflict detection for `SAVE_INSPECTION_PROGRESS` only. Stale workflow, permission, or entity-state failures return `CONFLICT` plus a `conflicts[]` entry classified by `SyncConflictType` (`WORKFLOW_COMPLETED`, `ENTITY_DELETED`, `PERMISSION_DENIED`, `VERSION_MISMATCH`, `UNKNOWN`). Malformed payloads and answer validation failures remain `REJECTED`. No automatic resolution, tombstones, or work order/document conflict handling. Android must retain conflicting operations for future UX.
+
+**M5.5-BE1.1 (delivered):** Conflict payload enrichment — `conflicts[]` include structured `SyncConflictServerState` (compact inspection snapshot when entity exists), `SyncConflictClientState` (operation type, client `createdAt`, original payload JSON), and informational `SyncResolutionHint` (`SERVER_WINS`, `CLIENT_RETRY`, `MANUAL_REVIEW`, `UNKNOWN`). Server state uses existing `InspectionService.getById` only on conflict paths where the entity may still exist; `ENTITY_DELETED` returns null `serverState`. No automatic resolution.
 
 ---
 

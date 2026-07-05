@@ -158,6 +158,12 @@ public class MobileService {
     }
 
     @Transactional(readOnly = true)
+    public List<Inspection> listScopedInspectionsForSync(User user) {
+        authorizationService.requireMobileUser(user.getId());
+        return loadScopedInspections(user);
+    }
+
+    @Transactional(readOnly = true)
     public MobileInspectionBundleResponse getInspectionBundle(Long userId, Long inspectionId) {
         User user = authorizationService.requireMobileUser(userId);
         Inspection inspection = inspectionRepository.findMobileBundleById(inspectionId)

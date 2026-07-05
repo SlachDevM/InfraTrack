@@ -51,4 +51,11 @@ class SyncTokenTest {
                 .isInstanceOf(com.infratrack.exception.BusinessValidationException.class)
                 .hasMessage("Sync token is required.");
     }
+
+    @Test
+    void tryFromOpaqueValue_returnsEmptyForInvalidToken() {
+        assertThat(SyncToken.tryFromOpaqueValue("not-valid")).isEmpty();
+        assertThat(SyncToken.tryFromOpaqueValue(null)).isEmpty();
+        assertThat(SyncToken.tryFromOpaqueValue("")).isEmpty();
+    }
 }

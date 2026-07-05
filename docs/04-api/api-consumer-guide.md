@@ -229,21 +229,21 @@ After a write operation, refresh the relevant list **and** reload the bundle if 
 
 See [Mobile API](mobile-api.md) for field definitions and sorting rules.
 
-### Offline sync handshake (M5.2-BE1 / M5.2-BE2)
+### Offline sync handshake (M5.2-BE1 / M5.2-BE2 / M5.3-BE / M5.4-BE / M5.5-BE1 / M5.5-BE1.1)
 
-`POST /api/mobile/sync` is the protocol foundation for Android offline operation ([BDR-005](../03-architecture/bdr-005-offline-synchronization-architecture.md)). The client sends `clientId`, `clientVersion`, optionally the previous `syncToken`, and queued `pendingOperations`. **M5.2-BE2 does not process uploads or return populated deltas** — the response includes `protocolVersion: 1`, a new opaque `nextSyncToken`, and an empty `delta` envelope.
+`POST /api/mobile/sync` is the protocol foundation for Android offline operation ([BDR-005](../03-architecture/bdr-005-offline-synchronization-architecture.md)). The client sends `clientId`, `clientVersion`, optionally the previous `syncToken`, and queued `pendingOperations`. **M5.3-BE** returns per-operation upload outcomes. **M5.4-BE** populates `delta.inspections` with scoped inspection records. **M5.5-BE1** classifies stale workflow, permission, and entity-state failures as `CONFLICT`. **M5.5-BE1.1** enriches matching `conflicts[]` entries with `serverState`, `clientState`, and informational `resolutionHint` (detection only — no automatic resolution). Other delta sections remain empty.
 
 ```text
 Android (future M5.2+)
         ↓
 POST /api/mobile/sync  { clientId, clientVersion, syncToken?, pendingOperations[] }
         ↓
-M5.2-BE2 response      { protocolVersion: 1, serverTime, nextSyncToken, delta: {…:[]}, operations: [], conflicts: [], warnings: [] }
+M5.5-BE1.1 response    { protocolVersion: 1, serverTime, nextSyncToken, delta: { inspections: [...] }, operations: [...], conflicts: [{ serverState, clientState, resolutionHint, ... }], warnings: [] }
 ```
 
-Store `nextSyncToken` opaquely; resubmit as `syncToken` on the next sync. Do not parse token contents client-side.
+Store `nextSyncToken` opaquely; resubmit as `syncToken` on the next sync. Apply `delta.inspections` to local cache after each successful sync. Invalid `syncToken` yields `FULL_SYNC_REQUIRED` warning and a full inspection delta — do not fail the sync locally.
 
-Integrate cautiously: no workflow or cache effects occur until later backend phases implement upload processing and incremental download.
+**Queue handling:** remove pending operations on `ACCEPTED`; retain operations with `CONFLICT` and use enriched `conflicts[]` for future conflict UX; treat `REJECTED` as validation/malformed failures. `resolutionHint` is informational only — the server does not auto-resolve. Tombstones and delta removals are not synchronized yet.
 
 ---
 

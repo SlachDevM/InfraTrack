@@ -14,5 +14,6 @@ Architecture Decision Records (ADRs) and Business Decision Records (BDRs) for In
 | [BDR-003 — Bearer Token Architecture](bdr-003-bearer-token-architecture.md) | JWT Bearer tokens for web and mobile |
 | [BDR-004 — Configurable Organizational Policies](bdr-004-configurable-organizational-policies.md) | Business rules are stable; organizational policies are configurable |
 | [BDR-005 — Offline & Synchronization Architecture](bdr-005-offline-synchronization-architecture.md) | Offline field work; backend source of truth; deterministic sync |
+| [BDR-005 — Conflict Resolution Strategy](bdr-005-conflict-resolution-strategy.md) | Conflict taxonomy, resolution policies, merge boundaries; companion to BDR-005 |
 
 **Start here:** [ADR Index](ADR-INDEX.md)

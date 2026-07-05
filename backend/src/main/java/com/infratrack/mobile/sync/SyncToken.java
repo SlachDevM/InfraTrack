@@ -2,6 +2,7 @@ package com.infratrack.mobile.sync;
 
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -45,5 +46,9 @@ public final class SyncToken {
 
     public static SyncToken fromOpaqueValue(String opaqueValue) {
         return SyncTokenCodec.decode(opaqueValue);
+    }
+
+    public static Optional<SyncToken> tryFromOpaqueValue(String opaqueValue) {
+        return SyncTokenCodec.tryDecode(opaqueValue);
     }
 }

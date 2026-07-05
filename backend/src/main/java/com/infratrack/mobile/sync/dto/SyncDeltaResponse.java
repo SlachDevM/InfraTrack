@@ -6,15 +6,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Future incremental download envelope. All sections are empty until delta sync is implemented (M5.2-BE2+).
+ * Incremental download envelope for mobile sync (M5.2-BE2+).
  */
 public class SyncDeltaResponse {
 
     @Schema(description = "Changed or assigned asset summaries (future)")
     private List<Object> assets = new ArrayList<>();
 
-    @Schema(description = "Changed or assigned inspection summaries (future)")
-    private List<Object> inspections = new ArrayList<>();
+    @Schema(description = "Changed or assigned inspection sync records (M5.4-BE+)")
+    private List<SyncInspectionDeltaResponse> inspections = new ArrayList<>();
 
     @Schema(description = "Changed or assigned work order summaries (future)")
     private List<Object> workOrders = new ArrayList<>();
@@ -40,11 +40,11 @@ public class SyncDeltaResponse {
         this.assets = assets != null ? assets : new ArrayList<>();
     }
 
-    public List<Object> getInspections() {
+    public List<SyncInspectionDeltaResponse> getInspections() {
         return inspections;
     }
 
-    public void setInspections(List<Object> inspections) {
+    public void setInspections(List<SyncInspectionDeltaResponse> inspections) {
         this.inspections = inspections != null ? inspections : new ArrayList<>();
     }
 

@@ -3,8 +3,11 @@ package com.infratrack.mobile.sync;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.infratrack.mobile.sync.dto.PendingOperationRequest;
+import com.infratrack.mobile.sync.dto.SyncConflictClientState;
 import com.infratrack.mobile.sync.dto.SyncConflictResponse;
+import com.infratrack.mobile.sync.dto.SyncConflictServerState;
 import com.infratrack.mobile.sync.dto.SyncConflictType;
+import com.infratrack.mobile.sync.dto.SyncResolutionHint;
 import com.infratrack.mobile.sync.dto.SyncDeltaResponse;
 import com.infratrack.mobile.sync.dto.SyncOperationResponse;
 import com.infratrack.mobile.sync.dto.SyncOperationStatus;
@@ -122,6 +125,41 @@ class SyncDtoSerializationTest {
         assertThat(objectMapper.writeValueAsString(operation)).contains("\"status\":\"ACCEPTED\"");
         assertThat(objectMapper.writeValueAsString(conflict)).contains("\"conflictType\":\"ENTITY_MODIFIED\"");
         assertThat(objectMapper.writeValueAsString(warning)).contains("\"code\":\"SYNC_TOKEN_EXPIRED\"");
+    }
+
+    @Test
+    void syncConflictResponse_serializesEnrichedFields() throws Exception {
+        SyncConflictClientState clientState = new SyncConflictClientState();
+        clientState.setOperationType("SAVE_INSPECTION_PROGRESS");
+        clientState.setCreatedAt(1_751_700_001_000L);
+        clientState.setPayload(objectMapper.readTree("{\"answers\":[]}"));
+
+        SyncConflictServerState serverState = new SyncConflictServerState();
+        serverState.setEntityId(42L);
+        serverState.setEntityType("INSPECTION");
+        serverState.setStatus(com.infratrack.inspection.InspectionStatus.COMPLETED);
+
+        SyncConflictResponse conflict = new SyncConflictResponse();
+        conflict.setOperationId("op-1");
+        conflict.setEntityId(42L);
+        conflict.setConflictType(SyncConflictType.WORKFLOW_COMPLETED);
+        conflict.setResolutionHint(SyncResolutionHint.SERVER_WINS);
+        conflict.setMessage("Inspection is no longer editable.");
+        conflict.setClientState(clientState);
+        conflict.setServerState(serverState);
+
+        String json = objectMapper.writeValueAsString(conflict);
+
+        assertThat(json).contains("\"resolutionHint\":\"SERVER_WINS\"");
+        assertThat(json).contains("\"serverState\"");
+        assertThat(json).contains("\"clientState\"");
+        assertThat(json).contains("\"operationType\":\"SAVE_INSPECTION_PROGRESS\"");
+        assertThat(json).contains("\"status\":\"COMPLETED\"");
+
+        SyncConflictResponse roundTripped = objectMapper.readValue(json, SyncConflictResponse.class);
+        assertThat(roundTripped.getResolutionHint()).isEqualTo(SyncResolutionHint.SERVER_WINS);
+        assertThat(roundTripped.getServerState().getEntityId()).isEqualTo(42L);
+        assertThat(roundTripped.getClientState().getPayload().get("answers").isArray()).isTrue();
     }
 
     @Test

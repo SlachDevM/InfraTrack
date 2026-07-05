@@ -114,6 +114,20 @@ class MobileSyncControllerTest {
                         .content().string("Mobile API access is not available for this role."));
     }
 
+    @Test
+    void sync_exceedsBatchLimit_returnsBadRequest() throws Exception {
+        when(mobileSyncService.sync(eq(FIELD_USER_ID), any()))
+                .thenThrow(new com.infratrack.exception.BusinessValidationException(SyncLimits.BATCH_LIMIT_MESSAGE));
+
+        mockMvc.perform(post("/api/mobile/sync")
+                        .header("Authorization", bearerToken(FIELD_USER_ID, "field@test.com"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validSyncRequestJson()))
+                .andExpect(status().isBadRequest())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .content().string(SyncLimits.BATCH_LIMIT_MESSAGE));
+    }
+
     private String validSyncRequestJson() {
         return """
                 {

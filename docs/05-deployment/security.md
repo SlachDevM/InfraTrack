@@ -102,6 +102,32 @@ Bearer token storage in clients is an intentional architecture decision — see 
 | Flyway migrations | Unchanged (Flyway **11.14.1** + `flyway-database-postgresql`) |
 | Actuator `/actuator/health`, `/actuator/info` | Unchanged |
 
+### Mobile sync operational limits (M5.4.1)
+
+`POST /api/mobile/sync` is protected against oversized client batches:
+
+| Limit | Value | Behaviour |
+|-------|-------|-----------|
+| Pending operations per request | 100 | HTTP `400` — no operation processed |
+| Operation payload (UTF-8) | 256 KB | Operation `REJECTED` — other operations continue |
+
+These limits reduce abuse and accidental overload before M5.5 conflict resolution.
+
+### Mobile sync observability (M5.4.1)
+
+Micrometer counters and a timer are emitted per successful sync handshake (via Spring Boot Actuator metrics registry):
+
+| Metric | Purpose |
+|--------|---------|
+| `mobile.sync.requests` | Sync handshakes completed |
+| `mobile.sync.operations.accepted` | Accepted pending operations |
+| `mobile.sync.operations.rejected` | Rejected pending operations |
+| `mobile.sync.operations.ignored` | Ignored pending operations |
+| `mobile.sync.delta.inspections` | Inspection records in delta |
+| `mobile.sync.duration` | End-to-end sync duration |
+
+Structured **INFO** logging records one line per sync: user id, operation counts, delta inspection count, and duration. Logs exclude JWTs, operation payloads, inspection answers, document names, and user-entered text.
+
 ### Dependency changes (summary)
 
 | Area | Before (3.2.7) | After (4.0.7) |

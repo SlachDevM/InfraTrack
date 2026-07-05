@@ -16,33 +16,19 @@ public class SyncConflictResponse {
     @Schema(description = "Conflict classification", example = "ENTITY_MODIFIED")
     private SyncConflictType conflictType;
 
-    @Schema(description = "Opaque server state snapshot")
-    private String serverState;
+    @Schema(description = "Informational resolution guidance for clients; no server-side merge")
+    private SyncResolutionHint resolutionHint;
 
-    @Schema(description = "Opaque client state snapshot")
-    private String clientState;
+    @Schema(description = "Compact server entity snapshot when available")
+    private SyncConflictServerState serverState;
+
+    @Schema(description = "Client operation snapshot")
+    private SyncConflictClientState clientState;
 
     @Schema(description = "Human-readable conflict explanation")
     private String message;
 
     public SyncConflictResponse() {
-    }
-
-    public SyncConflictResponse(
-            String operationId,
-            String entityType,
-            Long entityId,
-            SyncConflictType conflictType,
-            String serverState,
-            String clientState,
-            String message) {
-        this.operationId = operationId;
-        this.entityType = entityType;
-        this.entityId = entityId;
-        this.conflictType = conflictType;
-        this.serverState = serverState;
-        this.clientState = clientState;
-        this.message = message;
     }
 
     public String getOperationId() {
@@ -77,19 +63,27 @@ public class SyncConflictResponse {
         this.conflictType = conflictType;
     }
 
-    public String getServerState() {
+    public SyncResolutionHint getResolutionHint() {
+        return resolutionHint;
+    }
+
+    public void setResolutionHint(SyncResolutionHint resolutionHint) {
+        this.resolutionHint = resolutionHint;
+    }
+
+    public SyncConflictServerState getServerState() {
         return serverState;
     }
 
-    public void setServerState(String serverState) {
+    public void setServerState(SyncConflictServerState serverState) {
         this.serverState = serverState;
     }
 
-    public String getClientState() {
+    public SyncConflictClientState getClientState() {
         return clientState;
     }
 
-    public void setClientState(String clientState) {
+    public void setClientState(SyncConflictClientState clientState) {
         this.clientState = clientState;
     }
 

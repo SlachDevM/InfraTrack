@@ -5,6 +5,7 @@ import com.infratrack.exception.BusinessValidationException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.Optional;
 
 /**
  * Encodes and decodes {@link SyncToken} as an opaque API string.
@@ -32,6 +33,21 @@ final class SyncTokenCodec {
         if (opaqueValue == null || opaqueValue.isBlank()) {
             throw new BusinessValidationException("Sync token is required.");
         }
+        return decodePayload(opaqueValue);
+    }
+
+    static Optional<SyncToken> tryDecode(String opaqueValue) {
+        if (opaqueValue == null || opaqueValue.isBlank()) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(decodePayload(opaqueValue));
+        } catch (BusinessValidationException ex) {
+            return Optional.empty();
+        }
+    }
+
+    private static SyncToken decodePayload(String opaqueValue) {
         try {
             String payload = new String(DECODER.decode(opaqueValue), StandardCharsets.UTF_8);
             String[] parts = payload.split("\\|", 3);

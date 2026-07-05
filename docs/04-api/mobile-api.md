@@ -45,7 +45,7 @@ Operational Coordinators do not have mobile API access in M1. Starting with M4-B
 | `GET` | `/api/mobile/my-work-orders` | Assigned work order summaries |
 | `GET` | `/api/mobile/work-orders/{workOrderId}/bundle` | Full work order screen payload |
 | `GET` | `/api/mobile/assets/lookup?code={assetCode}` | Asset operational context by scanned business code (M4-BE1, enriched M4-BE3/M4-BE4) |
-| `POST` | `/api/mobile/sync` | Offline synchronization protocol handshake (M5.2-BE1/BE2 — token + delta envelope; no mutations yet) |
+| `POST` | `/api/mobile/sync` | Offline synchronization (M5.3 upload + M5.4 inspection delta download) |
 
 Live OpenAPI documentation: [Swagger UI](http://localhost:4000/swagger-ui/index.html) (tag: **Mobile API**).
 
@@ -234,9 +234,9 @@ Reuses existing role and department rules; no new Android-specific permissions w
 
 `canCreateInspection` is `true` only for Operational Coordinators in the asset's own department (matching the existing "assign inspection" rule). `canCreateIssue` is `true` only for Field Employees/Contractors in the asset's own department (matching the existing "record issue" role rule). Neither flag creates any new record — creation still goes through the existing `/api/inspections` and `/api/issues` endpoints, which enforce their own full preconditions.
 
-## Offline synchronization protocol (M5.2-BE1 / M5.2-BE2)
+## Offline synchronization protocol (M5.2-BE1 / M5.2-BE2 / M5.3-BE / M5.4-BE / M5.5-BE1 / M5.5-BE1.1)
 
-`POST /api/mobile/sync` is the backend synchronization protocol foundation ([BDR-005](../03-architecture/bdr-005-offline-synchronization-architecture.md)). **M5.2-BE1** introduced the request/response envelope. **M5.2-BE2** adds opaque sync tokens, protocol versioning, typed operation/conflict/warning codes, and an empty delta container. Pending operations are accepted structurally but not applied; delta sections remain empty.
+`POST /api/mobile/sync` is the backend synchronization protocol foundation ([BDR-005](../03-architecture/bdr-005-offline-synchronization-architecture.md)). **M5.2-BE1** introduced the request/response envelope. **M5.2-BE2** added opaque sync tokens, protocol versioning, typed operation/conflict/warning codes, and the delta container. **M5.3-BE** processes `SAVE_INSPECTION_PROGRESS` uploads. **M5.4-BE** populates `delta.inspections` with scoped inspection sync records. **M5.5-BE1** detects synchronization conflicts for `SAVE_INSPECTION_PROGRESS`. **M5.5-BE1.1** enriches `conflicts[]` with structured `serverState`, `clientState`, and `resolutionHint` (detection only — no automatic resolution). Other delta sections remain empty; tombstones are not produced yet.
 
 ### Authorization
 
@@ -246,27 +246,103 @@ Same mobile role policy as M1 list/bundle endpoints (not asset lookup): Administ
 
 Required: `clientId`, `clientVersion`. Optional: `appVersion`, `syncToken` (opaque value from the previous `nextSyncToken`), `deviceTime`, `pendingOperations` (defaults to `[]`).
 
-Each `pendingOperations[]` entry requires `operationId`, `entityType`, and `operationType`. Optional: `payload`, `entityId`, `createdAt`.
+Each `pendingOperations[]` entry requires `operationId`, `entityType`, and `operationType`. Optional: `payload` (JSON string matching the target write DTO), `entityId`, `createdAt`.
+
+#### Supported operation (M5.3-BE)
+
+| `operationType` | `entityType` | `entityId` | `payload` |
+|-----------------|--------------|------------|-----------|
+| `SAVE_INSPECTION_PROGRESS` | `INSPECTION` | Inspection id | `SaveInspectionProgressRequest` JSON |
+
+Example `payload` fields: `observedCondition`, `observations`, `issueIdentified`, `answers[]`.
 
 ### Response (`SyncResponse`)
 
-| Field | M5.2-BE2 |
-|-------|----------|
+| Field | M5.5-BE1.1 |
+|-------|------------|
 | `protocolVersion` | `1` — clients must ignore unknown fields on newer versions |
 | `serverTime` | Backend instant |
 | `nextSyncToken` | Opaque cursor issued on every successful sync; store and resubmit as `syncToken` on the next call. Android must not parse it. |
-| `delta` | `SyncDeltaResponse` with empty `assets`, `inspections`, `workOrders`, `documents`, `users`, `referenceData` arrays |
-| `operations` | `[]` — future per-operation outcomes use `SyncOperationStatus` |
-| `conflicts` | `[]` — future conflicts use `SyncConflictType` |
-| `warnings` | `[]` — future warnings use `SyncWarningCode` |
+| `delta.inspections` | Scoped inspection sync records (`SyncInspectionDeltaResponse`) — see below |
+| `delta` (other sections) | `assets`, `workOrders`, `documents`, `users`, `referenceData` remain `[]` |
+| `operations` | One `SyncOperationResponse` per pending operation (in request order) |
+| `conflicts` | Populated when an operation returns `CONFLICT` — see below |
+| `warnings` | May include `FULL_SYNC_REQUIRED` when `syncToken` is invalid; sync still succeeds |
 | `requiresFullSync` | `false` |
 
-### Typed envelopes (future use)
+### Inspection delta (`delta.inspections`)
+
+Each `SyncInspectionDeltaResponse` includes: `id`, `status`, `priority`, `assignedToUserId`, `assignedToName`, compact `asset` summary, draft `observedCondition` / `observations` / `issueIdentified`, `expectedCompletionDate`, `completedAt`, `updatedAt` (epoch millis), and `answers[]` (`questionId`, value fields).
+
+**Download strategy (M5.4):**
+
+| `syncToken` | Behaviour |
+|-------------|-----------|
+| `null` / omitted | Full inspection delta for the authenticated mobile user |
+| Valid opaque token | Inspections with `updatedAt >= token.issuedAt` among scoped records |
+| Invalid token | `FULL_SYNC_REQUIRED` warning + full inspection delta (sync does not fail) |
+
+Inspections are scoped identically to `GET /api/mobile/my-inspections` (administrator / manager department / assigned field user). **Removals and tombstones are not synchronized yet** — records the user loses access to may remain in local cache until a later sprint.
+
+### Per-operation outcomes (`SyncOperationResponse`)
+
+| `status` | Meaning |
+|----------|---------|
+| `ACCEPTED` | Operation applied through existing backend service |
+| `REJECTED` | Malformed payload, validation failure, or oversize payload — safe `message`; sync continues |
+| `CONFLICT` | Server state changed since the operation was queued — see `conflicts[]` |
+| `IGNORED` | Unsupported `operationType` / handler combination |
+| `RETRY` | Reserved for future retry handling |
+
+One rejected or conflicting operation does **not** fail the whole sync request.
+
+### Conflict entries (`SyncConflictResponse`) — M5.5-BE1 / M5.5-BE1.1
+
+When `SAVE_INSPECTION_PROGRESS` cannot be applied safely because server state changed, the matching operation has `status: CONFLICT` and `conflicts[]` includes:
+
+| Field | Notes |
+|-------|-------|
+| `operationId` | Client idempotency key |
+| `entityType` | `INSPECTION` |
+| `entityId` | Inspection id |
+| `conflictType` | `WORKFLOW_COMPLETED`, `ENTITY_DELETED`, `PERMISSION_DENIED`, `VERSION_MISMATCH`, or `UNKNOWN` |
+| `resolutionHint` | Informational guidance only — `SERVER_WINS`, `CLIENT_RETRY`, `MANUAL_REVIEW`, or `UNKNOWN` |
+| `message` | Safe user-facing summary |
+| `clientState` | `SyncConflictClientState`: `operationType`, `createdAt`, original `payload` JSON (not transformed to write DTOs) |
+| `serverState` | `SyncConflictServerState`: compact inspection snapshot when the entity still exists; `null` for `ENTITY_DELETED` |
+
+**`resolutionHint` mapping (conservative, informational only):**
+
+| `conflictType` | `resolutionHint` |
+|----------------|------------------|
+| `WORKFLOW_COMPLETED` | `SERVER_WINS` |
+| `ENTITY_DELETED` | `SERVER_WINS` |
+| `PERMISSION_DENIED` | `MANUAL_REVIEW` |
+| `VERSION_MISMATCH` | `CLIENT_RETRY` |
+| `UNKNOWN` | `UNKNOWN` |
+
+**`serverState` fields (populated when available):** `entityId`, `entityType`, `status`, `updatedAt`, `completedAt`, `assignedTo`, `assignedToName`, `version` (nullable — inspection has no version field yet).
+
+Conflicts are **detected only** — the backend does not merge or resolve them. Android must retain conflicting operations locally for future conflict UX.
+
+### Client queue guidance (Android)
+
+- Remove local pending operations only when `status` is `ACCEPTED`.
+- Keep `CONFLICT` operations locally — do not discard; surface sync conflict state in a later sprint.
+- Keep or surface `REJECTED` operations according to UX rules (malformed or invalid payload).
+- `IGNORED` applies only when the operation type is obsolete or unsupported.
+
+### Idempotency (M5.3)
+
+`operationId` is the conceptual idempotency key. Durable sync operation history is **not** persisted yet — repeated uploads are safe for `SAVE_INSPECTION_PROGRESS` because the underlying service uses draft upsert semantics.
+
+### Typed envelopes
 
 | Enum | Values |
 |------|--------|
 | `SyncOperationStatus` | `ACCEPTED`, `REJECTED`, `CONFLICT`, `RETRY`, `IGNORED` |
 | `SyncConflictType` | `ENTITY_MODIFIED`, `ENTITY_DELETED`, `WORKFLOW_COMPLETED`, `VERSION_MISMATCH`, `PERMISSION_DENIED`, `UNKNOWN` |
+| `SyncResolutionHint` | `SERVER_WINS`, `CLIENT_RETRY`, `MANUAL_REVIEW`, `UNKNOWN` (informational only — M5.5-BE1.1) |
 | `SyncWarningCode` | `FULL_SYNC_REQUIRED`, `SYNC_TOKEN_EXPIRED`, `CLIENT_OUTDATED`, `PARTIAL_SYNC`, `UNKNOWN_WARNING` |
 
 ### Protocol compatibility
@@ -275,7 +351,7 @@ Each `pendingOperations[]` entry requires `operationId`, `entityType`, and `oper
 - Clients must tolerate unknown response fields and empty delta sections until download is implemented.
 - Backend may replace sync token encoding without Android changes; clients store the opaque string only.
 
-Android should not expect upload processing, populated delta sections, or workflow effects until later M5.2+ phases.
+Android should not expect work order/asset/document deltas, inspection completion upload, or automatic conflict resolution until later M5 phases.
 
 ## Future phases (deferred)
 
@@ -297,7 +373,10 @@ com.infratrack.mobile
 ├── sync/
 │   ├── MobileSyncController
 │   ├── MobileSyncService
-│   ├── SyncOperationProcessor (extension point)
+│   ├── SyncOperationProcessor
+│   ├── SyncOperationHandler
+│   ├── InspectionProgressSyncOperationHandler
+│   ├── InspectionSyncDeltaService
 │   ├── SyncTokenService (opaque cursor issuance)
 │   ├── SyncToken / SyncProtocolVersion
 │   ├── SyncConflictResolver (extension point)
