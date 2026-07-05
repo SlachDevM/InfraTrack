@@ -323,12 +323,40 @@ When `SAVE_INSPECTION_PROGRESS` cannot be applied safely because server state ch
 
 **`serverState` fields (populated when available):** `entityId`, `entityType`, `status`, `updatedAt`, `completedAt`, `assignedTo`, `assignedToName`, `version` (nullable — inspection has no version field yet).
 
-Conflicts are **detected only** — the backend does not merge or resolve them. Android must retain conflicting operations locally for future conflict UX.
+Conflicts are **detected** on sync; **explicit resolution** is a separate endpoint (M5.5-BE2). The backend does not merge or auto-apply client payloads during resolution.
+
+### Conflict resolution (`POST /api/mobile/sync/conflicts/resolve`) — M5.5-BE2
+
+Dedicated endpoint for explicit resolution decisions. Does **not** overload `POST /api/mobile/sync`. JWT required; same mobile role policy as sync (Administrator, Manager, Field Employee, Contractor).
+
+**Scope (M5.5-BE2):** `SAVE_INSPECTION_PROGRESS` on `INSPECTION` only.
+
+**Request (`SyncConflictResolutionRequest`):** `operationId`, `entityType`, `entityId`, `operationType`, `conflictType`, `resolution`, optional `clientState`.
+
+**`resolution` values:** `SERVER_WINS`, `CLIENT_RETRY`, `MANUAL_REVIEW`, `DISCARD_CLIENT` (explicit discard — same server behaviour as `SERVER_WINS`).
+
+**Response (`SyncConflictResolutionResponse`):** `operationId`, `entityType`, `entityId`, `operationType`, `resolution`, `status`, `message`, `serverTime`.
+
+| `resolution` | `status` | Server behaviour |
+|--------------|----------|------------------|
+| `SERVER_WINS` | `RESOLVED` | No mutation; client may discard pending op |
+| `DISCARD_CLIENT` | `RESOLVED` | No mutation; explicit discard acknowledgement |
+| `CLIENT_RETRY` | `RETRY_REQUIRED` | No mutation; client refreshes delta and may requeue |
+| `MANUAL_REVIEW` | `MANUAL_REVIEW_REQUIRED` | No mutation; keep conflict visible |
+
+Unsupported operation/entity scope returns `status: REJECTED` (HTTP 200). Loss of inspection view permission returns `MANUAL_REVIEW_REQUIRED`. Operational Coordinator receives `403`.
+
+Resolution is **stateless** — no durable conflict history table. Android retains the pending queue. No client payload is applied during resolution.
+
+See [BDR-005 Conflict Resolution Strategy](../03-architecture/bdr-005-conflict-resolution-strategy.md).
 
 ### Client queue guidance (Android)
 
 - Remove local pending operations only when `status` is `ACCEPTED`.
-- Keep `CONFLICT` operations locally — do not discard; surface sync conflict state in a later sprint.
+- Keep `CONFLICT` operations locally until explicit resolution via `POST /api/mobile/sync/conflicts/resolve` (M5.5-BE2).
+- On `RESOLVED` — remove or archive pending operation per UX.
+- On `RETRY_REQUIRED` — refresh `delta.inspections`, let user requeue if still applicable.
+- On `MANUAL_REVIEW_REQUIRED` — keep conflict visible; no silent discard.
 - Keep or surface `REJECTED` operations according to UX rules (malformed or invalid payload).
 - `IGNORED` applies only when the operation type is obsolete or unsupported.
 
@@ -343,6 +371,8 @@ Conflicts are **detected only** — the backend does not merge or resolve them. 
 | `SyncOperationStatus` | `ACCEPTED`, `REJECTED`, `CONFLICT`, `RETRY`, `IGNORED` |
 | `SyncConflictType` | `ENTITY_MODIFIED`, `ENTITY_DELETED`, `WORKFLOW_COMPLETED`, `VERSION_MISMATCH`, `PERMISSION_DENIED`, `UNKNOWN` |
 | `SyncResolutionHint` | `SERVER_WINS`, `CLIENT_RETRY`, `MANUAL_REVIEW`, `UNKNOWN` (informational only — M5.5-BE1.1) |
+| `SyncConflictResolutionAction` | `SERVER_WINS`, `CLIENT_RETRY`, `MANUAL_REVIEW`, `DISCARD_CLIENT` (explicit resolution request — M5.5-BE2) |
+| `SyncConflictResolutionStatus` | `RESOLVED`, `RETRY_REQUIRED`, `MANUAL_REVIEW_REQUIRED`, `REJECTED` |
 | `SyncWarningCode` | `FULL_SYNC_REQUIRED`, `SYNC_TOKEN_EXPIRED`, `CLIENT_OUTDATED`, `PARTIAL_SYNC`, `UNKNOWN_WARNING` |
 
 ### Protocol compatibility

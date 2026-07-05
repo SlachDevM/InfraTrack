@@ -301,7 +301,7 @@ M5 requires **new backend sync capabilities**. No implementation exists at V2.4 
 | **Delta download** | `SyncResponse.delta.inspections` — **M5.4-BE delivered**. Compact `SyncInspectionDeltaResponse` records scoped like mobile inspection lists. Null/invalid token → full delta; valid token → `updatedAt >= issuedAt` filter. Other delta sections remain empty. |
 | **Delta download endpoints** | `GET /api/mobile/sync/changes?since={cursor}` — alternative/future path; primary delta container is `SyncResponse.delta` |
 | **Operation result envelope** | Per-item `SyncOperationStatus`: `ACCEPTED`, `REJECTED`, `CONFLICT`, `RETRY`, `IGNORED` — **M5.3-BE:** `SAVE_INSPECTION_PROGRESS` returns `ACCEPTED` or `REJECTED`; unsupported types return `IGNORED`. **M5.5-BE1:** stale workflow, permission, or entity-state failures return `CONFLICT` plus a matching `conflicts[]` entry. Validation/malformed payloads remain `REJECTED`. One failure does not fail the whole sync. |
-| **Conflict classification** | `SyncConflictType`: `ENTITY_MODIFIED`, `ENTITY_DELETED`, `WORKFLOW_COMPLETED`, `VERSION_MISMATCH`, `PERMISSION_DENIED`, `UNKNOWN` — **M5.5-BE1 delivered (detection only):** `SAVE_INSPECTION_PROGRESS` conflicts classified via `SyncConflictClassifier` from existing service exceptions. **M5.5-BE1.1:** enriched `conflicts[]` payload with `SyncConflictServerState`, `SyncConflictClientState`, and informational `SyncResolutionHint` — no automatic resolution. |
+| **Conflict classification** | `SyncConflictType`: … **M5.5-BE1.1:** enriched `conflicts[]` payload … **M5.5-BE2:** explicit resolution via `POST /api/mobile/sync/conflicts/resolve` — stateless, no payload apply, no automatic merge. |
 | **Sync warnings** | `SyncWarningCode`: `FULL_SYNC_REQUIRED`, `SYNC_TOKEN_EXPIRED`, `CLIENT_OUTDATED`, `PARTIAL_SYNC`, `UNKNOWN_WARNING` (types defined M5.2-BE2; list empty) |
 | **Document caching support** | `ETag` or `contentVersion` on document metadata; conditional download |
 | **Entity version numbers** | Monotonic `version` or `updatedAt` on bundles for incremental merge decisions |
@@ -324,7 +324,7 @@ M5 requires **new backend sync capabilities**. No implementation exists at V2.4 
 
 - Generic graphQL or arbitrary entity sync.
 - Offline reporting exports.
-- Client-side conflict resolution endpoints.
+- Client-side conflict resolution endpoints — **M5.5-BE2 delivered:** `POST /api/mobile/sync/conflicts/resolve` for explicit `SAVE_INSPECTION_PROGRESS` decisions (stateless; no merge).
 
 ---
 
@@ -386,8 +386,9 @@ M5.5 — Conflict Detection (M5.5-BE1 delivered)
         ↓ Server classifies stale workflow / permission / entity-state failures as CONFLICT; Android retains conflicting operations for future UX
 M5.5.1 — Conflict Payload Enrichment (M5.5-BE1.1 delivered)
         ↓ conflicts[] include serverState, clientState, resolutionHint for Android presentation; detection-only
-M5.5+ — Conflict Resolution (deferred)
-        ↓ Automatic merge rules, conflict UI, progress merge rules
+M5.5.2 — Explicit Conflict Resolution (M5.5-BE2 delivered)
+        ↓ POST /api/mobile/sync/conflicts/resolve records client resolution decisions; no server mutation
+M5.5+ — Automatic Merge / Durable History (deferred)
 M5.6 — Cached Documents
         ↓ Document metadata cache, binary download manager, offline viewing
 M5.7 — Offline UX Polish

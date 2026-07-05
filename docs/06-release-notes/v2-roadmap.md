@@ -166,7 +166,7 @@ The KPI API is designed for reuse by the React web client, future Android applic
 
 **Business value:** Link operational history into asset-level insight; provide a stable sync contract for field offline work.
 
-**Status:** In progress — M5.5-BE1.1 (conflict payload enrichment) validated.
+**Status:** In progress — M5.5-BE2 (explicit conflict resolution) validated.
 
 **Delivered capabilities:**
 
@@ -177,11 +177,12 @@ The KPI API is designed for reuse by the React web client, future Android applic
 - **Sprint M5.4.1-BE (validated):** Sync limits (100 operations, 256 KB payload), Micrometer metrics, structured logging, `SyncDiagnostics` helper. No new sync capabilities.
 - **Sprint M5.5-BE1 (validated):** Conflict detection for `SAVE_INSPECTION_PROGRESS` — `CONFLICT` status plus `conflicts[]` with `SyncConflictType`. Metric `mobile.sync.operations.conflict`. No automatic resolution, tombstones, or Android changes.
 - **Sprint M5.5-BE1.1 (validated):** Enriched conflict payload — `SyncConflictServerState`, `SyncConflictClientState`, `SyncResolutionHint` on `conflicts[]`. Detection-only; no merge or resolution.
+- **Sprint M5.5-BE2 (validated):** Explicit conflict resolution — `POST /api/mobile/sync/conflicts/resolve` for `SAVE_INSPECTION_PROGRESS`. Stateless outcomes (`RESOLVED`, `RETRY_REQUIRED`, `MANUAL_REVIEW_REQUIRED`, `REJECTED`). No payload apply; no automatic merge.
 
 **Planned within this version family (not yet delivered):**
 
 - Asset health indicators, knowledge summaries, cross-workflow timelines
-- Automatic conflict resolution, tombstones, additional delta/upload types (M5.5+ backend / M5 Android)
+- Automatic merge, tombstones, durable sync history, additional delta/upload types (M5.6+ backend / M5 Android)
 
 **Reference:** [BDR-005](../03-architecture/bdr-005-offline-synchronization-architecture.md), [Mobile API](../04-api/mobile-api.md)
 

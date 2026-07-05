@@ -243,7 +243,19 @@ M5.5-BE1.1 response    { protocolVersion: 1, serverTime, nextSyncToken, delta: {
 
 Store `nextSyncToken` opaquely; resubmit as `syncToken` on the next sync. Apply `delta.inspections` to local cache after each successful sync. Invalid `syncToken` yields `FULL_SYNC_REQUIRED` warning and a full inspection delta — do not fail the sync locally.
 
-**Queue handling:** remove pending operations on `ACCEPTED`; retain operations with `CONFLICT` and use enriched `conflicts[]` for future conflict UX; treat `REJECTED` as validation/malformed failures. `resolutionHint` is informational only — the server does not auto-resolve. Tombstones and delta removals are not synchronized yet.
+**Queue handling:** remove pending operations on `ACCEPTED`; resolve `CONFLICT` operations via `POST /api/mobile/sync/conflicts/resolve` (M5.5-BE2). `resolutionHint` from sync is informational; explicit `resolution` action is required for resolution outcome. Tombstones and delta removals are not synchronized yet.
+
+### Conflict resolution (M5.5-BE2)
+
+```text
+Android displays conflict
+        ↓
+POST /api/mobile/sync/conflicts/resolve  { operationId, entityType, entityId, operationType, conflictType, resolution, clientState? }
+        ↓
+SyncConflictResolutionResponse  { status: RESOLVED | RETRY_REQUIRED | MANUAL_REVIEW_REQUIRED | REJECTED, message, serverTime }
+```
+
+No client payload is applied. No automatic merge. Durable conflict history deferred.
 
 ---
 

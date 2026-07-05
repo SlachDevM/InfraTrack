@@ -1551,7 +1551,9 @@ GET  /api/mobile/sync/* (future)  ──→ Incremental download
 
 **M5.5-BE1 (delivered):** Conflict detection for `SAVE_INSPECTION_PROGRESS` only. Stale workflow, permission, or entity-state failures return `CONFLICT` plus a `conflicts[]` entry classified by `SyncConflictType` (`WORKFLOW_COMPLETED`, `ENTITY_DELETED`, `PERMISSION_DENIED`, `VERSION_MISMATCH`, `UNKNOWN`). Malformed payloads and answer validation failures remain `REJECTED`. No automatic resolution, tombstones, or work order/document conflict handling. Android must retain conflicting operations for future UX.
 
-**M5.5-BE1.1 (delivered):** Conflict payload enrichment — `conflicts[]` include structured `SyncConflictServerState` (compact inspection snapshot when entity exists), `SyncConflictClientState` (operation type, client `createdAt`, original payload JSON), and informational `SyncResolutionHint` (`SERVER_WINS`, `CLIENT_RETRY`, `MANUAL_REVIEW`, `UNKNOWN`). Server state uses existing `InspectionService.getById` only on conflict paths where the entity may still exist; `ENTITY_DELETED` returns null `serverState`. No automatic resolution.
+**M5.5-BE1.1 (delivered):** Conflict payload enrichment — … No automatic resolution.
+
+**M5.5-BE2 (delivered):** Explicit conflict resolution engine — `POST /api/mobile/sync/conflicts/resolve` for `SAVE_INSPECTION_PROGRESS` / `INSPECTION`. Accepts `SyncConflictResolutionAction` (`SERVER_WINS`, `CLIENT_RETRY`, `MANUAL_REVIEW`, `DISCARD_CLIENT`); returns `SyncConflictResolutionStatus`. Stateless — no payload apply, no workflow mutation, no durable conflict history. Metrics: `mobile.sync.conflicts.resolved|retry_required|manual_review_required|rejected`.
 
 ---
 

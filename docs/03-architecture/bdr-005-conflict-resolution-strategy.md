@@ -2,7 +2,7 @@
 
 **Status:** Accepted  
 **Date:** July 2026  
-**Context:** V2.5 — M5 Offline Synchronization. Conflict detection and payload enrichment delivered (M5.5-BE1 / M5.5-BE1.1). Conflict resolution implementation deferred.
+**Context:** V2.5 — M5 Offline Synchronization. Conflict detection and payload enrichment delivered (M5.5-BE1 / M5.5-BE1.1). Explicit resolution endpoint delivered (M5.5-BE2). Automatic merge and durable history deferred.
 
 **Companion to:** [BDR-005 — Offline & Synchronization Architecture](bdr-005-offline-synchronization-architecture.md)
 
@@ -33,7 +33,8 @@ These are independent concerns:
 | Concern | Responsibility | M5 status |
 |---------|----------------|-----------|
 | Detection | Classify conflict type; return enriched payload | **Delivered** (M5.5-BE1 / M5.5-BE1.1) |
-| Resolution | Apply or guide outcome; update queues; merge where permitted | **Planned** |
+| Resolution | Accept explicit client decisions; return outcome status | **Delivered** (M5.5-BE2 — stateless, no merge) |
+| Automatic merge | Apply or merge client payload server-side | **Planned** |
 
 Separating them allows Android to integrate sync incrementally: clients can handle `CONFLICT` outcomes and display enriched payloads before any resolution endpoint or merge logic exists. The backend can evolve resolution policies without changing detection semantics.
 
@@ -264,7 +265,7 @@ The backend owns all conflict semantics:
 | Provide server snapshots | `SyncConflictServerState` when entity exists | Delivered |
 | Provide client snapshots | `SyncConflictClientState` from queued operation | Delivered |
 | Provide resolution hints | `SyncResolutionHint` per conflict type | Delivered |
-| Execute resolution requests | Accept explicit resolution commands from client | Planned |
+| Execute resolution requests | Accept explicit resolution via `POST /api/mobile/sync/conflicts/resolve` | **Delivered** (M5.5-BE2) |
 | Remain single source of truth | All accepted mutations pass existing services | Ongoing |
 
 The backend does not trust Android workflow state. Every upload re-validates against PostgreSQL through the same service paths as direct REST writes.
@@ -324,9 +325,9 @@ POST /api/mobile/sync
 | Delta download (`delta.inspections`) | **Delivered** |
 | Conflict detection (`CONFLICT` + `conflicts[]`) | **Delivered** |
 | Enriched payload (`serverState`, `clientState`, `resolutionHint`) | **Delivered** |
+| Explicit resolution endpoint (`POST /api/mobile/sync/conflicts/resolve`) | **Delivered** (M5.5-BE2) |
 | Android conflict UI | Planned |
-| Resolution request endpoint | Planned |
-| Automatic merge policies (draft-only) | Planned |
+| Automatic merge / durable conflict history | Planned |
 
 A sync handshake **succeeds** even when conflicts occur. Conflicts are outcomes, not transport failures.
 
@@ -394,7 +395,7 @@ The following capabilities are planned. None alter the principles in §2.
 | Document synchronization | Metadata and binary cache coordination |
 | Issue synchronization | Offline issue recording where in scope |
 | Automatic retry policies | Server-guided retry backoff for transient classes |
-| Conflict resolution endpoint | Explicit apply/discard/refresh commands |
+| Conflict resolution endpoint | Explicit stateless decisions — **delivered M5.5-BE2**; automatic merge still planned |
 | Per-entity synchronization tokens | Finer incremental consistency than global `syncToken` |
 | Tombstones | Signal removals in delta without silent cache drift |
 | Richer server snapshots | Additional safe fields for conflict UX |
