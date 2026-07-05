@@ -115,16 +115,38 @@ The KPI API is designed for reuse by the React web client, future Android applic
 
 **Business value:** Reliable field work in low-connectivity areas; scanning a physical asset tag opens its operational context instead of manual search.
 
-**Status:** In progress — Sprints M4-BE1, M4-BE2, M4-BE3, and M4-BE4 (backend only) validated; Android scanning UI, printable labels, and offline sync remain planned.
+**Status:** In progress — mobile backend (M4-BE), platform upgrade (DT-3), reporting security hardening, and frontend refactoring validated; Android scanning UI, printable labels, and offline sync remain planned. **V2.4 platform documentation baseline** consolidated in [v2.4.md](v2.4.md) (DOC-1).
 
 **Delivered capabilities:**
 
-- **Sprint M4-BE1 (validated):** Backend asset lookup endpoint for QR/barcode navigation — `GET /api/mobile/assets/lookup?code={assetCode}`. Adds a stable asset business code (`asset.code`), a scoped `AssetContextResponse` (asset summary, open issues, active inspections, active work orders, backend-generated allowed actions), and role/department authorization reusing existing rules. Backend only — no Android scanner, no new workflows.
-- **Sprint M4-BE2 (validated):** Backend QR code generation — `GET /api/assets/{assetId}/qr` returns a PNG QR encoding `assetCode` only (ZXing, 512×512, high error correction). Reuses `AssetAuthorizationService` for view authorization. No printable labels, batch export, or frontend integration.
-- **Sprint M4-BE3 (validated):** Asset lookup response enrichment — adds nullable `lastInspection`, `lastMaintenance`, and `preventivePlan` sections to `AssetContextResponse` for field context after QR scan. Read-only; reuses M4-BE1 authorization. No Android, frontend, or workflow changes.
-- **Sprint M4-BE4 (validated):** Asset lookup documents context — adds `documents` array of visible asset-owned operational document summaries with `downloadUrl` pointing to existing download endpoint. Reuses operational document authorization. Read-only. No Android, frontend, workflow, or new download endpoint changes.
-- **Sprint M4-BE4.1 (validated):** Mobile asset document visibility fix — field employees and contractors who can view asset context now see asset-owned reference documents and can download them via the existing download endpoint. Web listing, upload, and delete rules unchanged.
-- **Sprint DT-3 (validated):** Spring Boot **4.0.7** migration — framework and dependency upgrade only. JWT security, OpenAPI, Flyway, reporting exports, inspection/work-order workflows, Decision Engine, Preventive Engine, and Mobile API contracts unchanged. See [security.md](../05-deployment/security.md#spring-boot-platform-v24x-dt-3).
+### Mobile backend (M4)
+
+- **Sprint M4-BE1 (validated):** Backend asset lookup — `GET /api/mobile/assets/lookup?code={assetCode}`. Stable asset business code (`asset.code`), scoped `AssetContextResponse` (asset summary, open issues, active inspections, active work orders, `allowedActions`), role/department authorization. Backend only.
+- **Sprint M4-BE2 (validated):** QR code generation — `GET /api/assets/{assetId}/qr` returns PNG encoding `assetCode` only (ZXing, 512×512). Reuses `AssetAuthorizationService`.
+- **Sprint M4-BE3 (validated):** Asset context enrichment — nullable `lastInspection`, `lastMaintenance`, `preventivePlan` on lookup response.
+- **Sprint M4-BE4 (validated):** Asset documents context — `documents` array with `downloadUrl` for asset-owned operational documents.
+- **Sprint M4-BE4.1 (validated):** Field employee/contractor document visibility fix for asset-owned documents on mobile context.
+
+### Platform upgrade
+
+- **Sprint DT-3 (validated):** Spring Boot **4.0.7** migration (Tomcat **11.0.22**, Spring Framework **7.0.8**). No business logic or API contract changes. See [security.md](../05-deployment/security.md#spring-boot-platform-v24x-dt-3).
+
+### Reporting & frontend
+
+- **Sprint Security-2.1 (validated):** Unified **Export** menu (`ExportReportingMenu`) on reporting list pages with CSV/XLSX/PDF format selection and default last-30-day date range.
+- **Sprint Security-2 (validated):** Required `from`/`to` export parameters; 365-day maximum window enforced server-side.
+- **Sprint Security-1 (validated):** CSV/XLSX spreadsheet formula injection protection.
+
+### Security
+
+- **Sprint DT-2A / DT-2A.1 (validated):** Production Content Security Policy on frontend nginx.
+- **Sprint Security-3 (validated):** Disabled-user immediate JWT revocation via `UserAccountStatusService` (30-second cache, eviction on status change).
+- **Authorization architecture guard (validated):** `AuthorizationArchitectureTest` enforces controller authorization dependencies.
+
+### Technical debt
+
+- **Frontend modularization (validated):** Assets, Work Orders, and Inspections pages decomposed into presentational components; shared constants modules.
+- **Organizational Policy Engine (V2.3.x, validated):** BDR-004 foundations — Inspection Visibility, Notification, Dashboard, Reporting, and Approval policies.
 
 **Planned within this version family (not yet delivered):**
 
@@ -132,9 +154,9 @@ The KPI API is designed for reuse by the React web client, future Android applic
 - Android QR/barcode scanning UI consuming the M4-BE1 lookup endpoint
 - Inspection/work-order/issue-linked documents on the asset context screen
 - Full asset history on the asset context screen
-- Local cache, sync reconciliation (scope to be defined)
+- Local cache, sync reconciliation — architectural reference: [BDR-005](../03-architecture/bdr-005-offline-synchronization-architecture.md); implementation M5.1–M5.7 (see BDR §11)
 
-**Reference:** [Mobile API](../04-api/mobile-api.md)
+**Reference:** [v2.4.md](v2.4.md), [BDR-005 — Offline & Synchronization Architecture](../03-architecture/bdr-005-offline-synchronization-architecture.md), [Mobile API](../04-api/mobile-api.md), [Reporting API](../04-api/reporting-api.md), [security.md](../05-deployment/security.md)
 
 ---
 
@@ -208,6 +230,7 @@ The KPI API is designed for reuse by the React web client, future Android applic
 
 ## See also
 
+- [V2.4 release notes](v2.4.md)
 - [Platform Version History](platform-version-history.md)
-- [ADR-004 — Platform versioning strategy](../03-architecture/adr-004-platform-versioning-strategy.md)
+- [BDR-005 — Offline & Synchronization Architecture](../03-architecture/bdr-005-offline-synchronization-architecture.md)
 - [Glossary](../01-business-architecture/glossary.md)

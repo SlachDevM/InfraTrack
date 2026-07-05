@@ -41,8 +41,9 @@ Navigate product releases and planning:
 | **API Consumer Guide** | [api-consumer-guide.md](04-api/api-consumer-guide.md) — how clients should consume the API |
 | **Workflow Sequence Diagrams** | [workflow-sequence-diagrams.md](02-system-blueprint/workflow-sequence-diagrams.md) — visual workflow guides |
 | **Platform Version History** | [platform-version-history.md](06-release-notes/platform-version-history.md) — authoritative product versions |
-| **Validated baseline** | Version **2.0.1** artifact; foundations through **2.1.0** and **2.2.x** documented in version history |
+| **Validated baseline** | Product capability **V2.4** (see [v2.4.md](06-release-notes/v2.4.md)); Maven/npm artifact version **2.0.1** per ADR-004 |
 | **Roadmap** | [v2-roadmap.md](06-release-notes/v2-roadmap.md) — planned versions |
+| **V2.4 release notes** | [v2.4.md](06-release-notes/v2.4.md) — platform baseline consolidation |
 | **Release notes** | [06-release-notes/](06-release-notes/) — sprint and version reports |
 | **Architecture decisions** | [**ADR Index**](03-architecture/ADR-INDEX.md) · [ADR-004 Versioning](03-architecture/adr-004-platform-versioning-strategy.md) · [ADR-003 V2 workflow](03-architecture/adr-003-v2-domain-driven-workflow.md) · [all ADRs/BDRs](03-architecture/) |
 
@@ -50,7 +51,7 @@ Versioning rules: [ADR-004 — Platform Versioning Strategy](03-architecture/adr
 
 ---
 
-## Quick links (Version 2.0.0+)
+## Quick links (Version 2.4 baseline)
 
 | Topic | Document |
 |-------|----------|
@@ -64,6 +65,7 @@ Versioning rules: [ADR-004 — Platform Versioning Strategy](03-architecture/adr
 | Business Glossary | [glossary.md](01-business-architecture/glossary.md) |
 | V2 workflow architecture | [adr-003-v2-domain-driven-workflow.md](03-architecture/adr-003-v2-domain-driven-workflow.md) |
 | Version 2.0.0 sprint report | [v2-phase-a-b.md](06-release-notes/v2-phase-a-b.md) |
+| V2.4 release notes | [v2.4.md](06-release-notes/v2.4.md) |
 | Product Roadmap | [v2-roadmap.md](06-release-notes/v2-roadmap.md) |
 | V2 API endpoint groups | [v2-domain-engine-api.md](04-api/v2-domain-engine-api.md) |
 | Human-in-the-loop (BDR) | [bdr-001](03-architecture/bdr-001-human-in-the-loop-decision-engine.md) |
@@ -72,6 +74,7 @@ Versioning rules: [ADR-004 — Platform Versioning Strategy](03-architecture/adr
 | Security | [05-deployment/security.md](05-deployment/security.md) |
 | V2.0.1 hardening | [v2-0-1-security-hardening.md](06-release-notes/v2-0-1-security-hardening.md) |
 | Bearer token BDR | [bdr-003](03-architecture/bdr-003-bearer-token-architecture.md) |
+| Offline sync BDR | [bdr-005](03-architecture/bdr-005-offline-synchronization-architecture.md) |
 | CI / testing | [Testing (project README)](../README.md#testing) |
 
 ---
@@ -106,7 +109,9 @@ docs/
 │   ├── adr-004-platform-versioning-strategy.md
 │   ├── bdr-001-human-in-the-loop-decision-engine.md
 │   ├── bdr-002-preventive-candidates-before-automation.md
-│   └── bdr-003-bearer-token-architecture.md
+│   ├── bdr-003-bearer-token-architecture.md
+│   ├── bdr-004-configurable-organizational-policies.md
+│   └── bdr-005-offline-synchronization-architecture.md
 │
 ├── 04-api/
 │   ├── README.md
@@ -128,6 +133,7 @@ docs/
 │   ├── v2-sprint0.md
 │   ├── v2-phase-a-b.md
 │   ├── v2-0-1-security-hardening.md
+│   ├── v2.4.md
 │   └── v2-roadmap.md
 │
 ├── 07-business-architecture/
@@ -166,6 +172,7 @@ Architecture Decision Records (ADRs) and Business Decision Records (BDRs). **Sta
 - [BDR-002](03-architecture/bdr-002-preventive-candidates-before-automation.md) — Scheduler generates candidates only
 - [BDR-003](03-architecture/bdr-003-bearer-token-architecture.md) — Bearer token architecture
 - [BDR-004](03-architecture/bdr-004-configurable-organizational-policies.md) — Configurable organizational policies
+- [BDR-005](03-architecture/bdr-005-offline-synchronization-architecture.md) — Offline & synchronization architecture
 
 ### 04 — API
 
@@ -181,6 +188,7 @@ Product versions and sprint reports:
 
 - [platform-version-history.md](06-release-notes/platform-version-history.md) — **Platform version history** (authoritative)
 - [v2-roadmap.md](06-release-notes/v2-roadmap.md) — Product roadmap by version
+- [v2.4.md](06-release-notes/v2.4.md) — V2.4 platform baseline
 - [v2-0-1-security-hardening.md](06-release-notes/v2-0-1-security-hardening.md) — Version 2.0.1
 - [v2-phase-a-b.md](06-release-notes/v2-phase-a-b.md) — Version 2.0.0 (historical sprint report)
 - [v2-sprint0.md](06-release-notes/v2-sprint0.md) — V2 Sprint 0 technical baseline (Version 1.0.1)

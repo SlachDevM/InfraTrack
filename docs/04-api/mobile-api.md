@@ -1,6 +1,6 @@
 # Mobile API (V2.2.0 Sprint M1, extended V2.4.0 Sprint M4-BE1 / M4-BE2)
 
-Compact, read-only REST endpoints for the future Android field client. M1 is a **mobile API foundation only** — no Android app, offline sync, push notifications, or QR scanning in this sprint. V2.4.0 Sprint M4-BE1 adds the backend asset lookup endpoint that a future Android QR/barcode scanner will call. V2.4.0 Sprint M4-BE2 adds backend QR code generation (`GET /api/assets/{assetId}/qr`) encoding the asset business code only. V2.4.0 Sprint M4-BE3 enriches the asset lookup response with recent operational context (last inspection, last maintenance, preventive plan). V2.4.0 Sprint M4-BE4 adds visible asset-owned operational documents to the lookup response. Neither sprint adds an Android client, printable labels, or workflow changes.
+Compact, read-only REST endpoints for the future Android field client. **M1** is the mobile API foundation. **M4-BE** (V2.4) is the current backend milestone — asset lookup, asset context, QR foundation, documents, and allowed actions. No Android scanning UI, offline sync, or push delivery in M4-BE (backend only).
 
 ## Purpose
 
@@ -137,10 +137,14 @@ GET /api/assets/{assetId}/qr          → PNG QR encoding assetCode only
         ↓ (print label — future sprint)
 Android scans QR                      → reads assetCode (e.g. AST-1A2B3C4D)
         ↓
-GET /api/mobile/assets/lookup?code=…  → scoped asset context + allowedActions
+GET /api/mobile/assets/lookup?code=…  → AssetContextResponse (all sections below)
+        ↓
+GET /api/operational-documents/{id}/download  → authenticated document download
 ```
 
-### Response shape
+### Response shape (`AssetContextResponse`)
+
+All nine top-level fields are always present. Optional sections use `null`; `documents` is always an array (possibly empty).
 
 ```json
 {

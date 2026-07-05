@@ -1,6 +1,8 @@
-# Reporting API — CSV, XLSX, and PDF Exports (V2.2.x / V2.3.x)
+# Reporting API — CSV, XLSX, and PDF Exports (V2.2.x / V2.3.x / V2.4.x)
 
 Read-only CSV, XLSX, and PDF export endpoints for operational reporting. Reporting **observes** data only — it does not create, update, approve workflows, run the scheduler, or send notifications.
+
+V2.4 adds the unified web **Export** menu with required date range selection and security hardening (365-day window, formula injection protection on CSV/XLSX).
 
 PDF exports are simple tabular reports (title, timestamp, optional date range, table). They are not branded report templates.
 
@@ -125,7 +127,20 @@ Reporting export to date must not be before from date.
 Reporting exports cannot span more than 365 days.
 ```
 
-Applies equally to CSV, XLSX, and PDF exports.
+Applies equally to CSV, XLSX, and PDF exports. The server does not default to "last 365 days" or truncate results — callers must supply an explicit window.
+
+## Security protections (V2.4)
+
+| Protection | Scope | Implementation |
+|------------|-------|----------------|
+| Required date filters | All formats | `ReportingExportService.validateExportDateWindow()` |
+| 365-day maximum window | All formats | Same validation method |
+| Formula injection prefix | CSV, XLSX only | `ExportCellFormatter.sanitizeSpreadsheetText()` |
+| Role authorization | All formats | `ReportingAuthorizationService` |
+
+CSV and XLSX writers prefix cell values whose first significant character is `=`, `+`, `-`, `@`, or TAB with a single apostrophe ([CWE-1236](https://cwe.mitre.org/data/definitions/1236.html)). PDF exports are unchanged.
+
+See [security.md](../05-deployment/security.md#reporting-export-security).
 
 ## Export columns
 
@@ -159,9 +174,18 @@ Applies equally to CSV, XLSX, and PDF exports.
 - Work order date filtering uses `createdAt`, not completion time.
 - Preventive candidate date filtering uses `evaluatedAt`, not `createdAt`.
 
-## Frontend
+## Frontend (Export menu)
 
-List pages expose **Export CSV**, **Export XLSX**, and **Export PDF** buttons for Administrator, Manager, and Operational Coordinator. Field Employee and Contractor do not see the buttons; direct API calls return `403`.
+List pages (Assets, Inspections, Issues, Work Orders, Preventive Execution Candidates) expose a single **Export** dropdown (`ExportReportingMenu`) for Administrator, Manager, and Operational Coordinator. The menu offers:
+
+| Control | Behaviour |
+|---------|-----------|
+| Format | CSV, XLSX, or PDF |
+| From / To dates | Required; default last 30 days (inclusive) |
+| Validation | Client-side mirror of server rules before download |
+| Authorization | Hidden for Field Employee and Contractor; direct API calls return `403` |
+
+Implementation: `frontend/src/components/ExportReportingMenu.jsx`, `reportingExportDateRange.js`, `reportingExportHandlers.js`.
 
 ## Related documentation
 

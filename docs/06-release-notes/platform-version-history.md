@@ -165,9 +165,78 @@ Main capabilities:
 - Assets, Inspections, Issues, Work Orders, Preventive Execution Candidates
 - Department scoping consistent with Operations Intelligence
 
-**Deferred:** scheduled reports, PDF/XLSX exports, analytics summaries (see roadmap).
+**Deferred:** scheduled reports, analytics summaries (see roadmap). XLSX and PDF exports added in V2.3.x; export menu and security hardening in V2.4.x.
 
 **Reference:** [Mobile API](../04-api/mobile-api.md), [Reporting API](../04-api/reporting-api.md), [v2-roadmap.md](v2-roadmap.md)
+
+---
+
+## Version 2.3.x (foundation)
+
+**Policy Engine & Extended Reporting (Validated)**
+
+Internally validated foundation — **not** a production release.
+
+Main capabilities:
+
+### Organizational Policy Engine (BDR-004)
+
+- Inspection Visibility Policy — first BDR-004 implementation
+- Notification Policy — `NotificationPolicyService.getPolicy()`
+- Dashboard Policy — `DashboardPolicyService.getPolicy()`
+- Reporting Policy — `ReportingPolicyService.getPolicy()`
+- Approval Policy — `ApprovalPolicyService.getPolicy()`
+
+Default policies reproduce existing fixed behaviour exactly. No configurable admin UI yet.
+
+### Extended reporting formats
+
+- XLSX exports (`/api/reporting/exports/*.xlsx`) — Sprint C1
+- PDF exports (`/api/reporting/exports/*.pdf`) — Sprint C2
+
+**Reference:** [Domain Engine](../07-business-architecture/domain-engine.md), [BDR-004](../03-architecture/bdr-004-configurable-organizational-policies.md), [v2-roadmap.md](v2-roadmap.md)
+
+---
+
+## Version 2.4.x (partial)
+
+**Mobile Asset Context, Platform Upgrade & Security Hardening (Validated — partial)**
+
+Internally validated — **not** a production release. Offline sync and Android scanning UI remain planned.
+
+Main capabilities:
+
+### Mobile backend (M4-BE)
+
+- Asset business code (`AST-XXXXXXXX`) and lookup endpoint
+- QR code generation (`GET /api/assets/{assetId}/qr`)
+- Asset context enrichment (last inspection, maintenance, preventive plan, documents)
+- Backend-generated `allowedActions`
+
+### Platform upgrade
+
+- Spring Boot **4.0.7**, Tomcat **11.0.22**, Spring Framework **7.0.8**
+
+### Reporting security
+
+- Unified export menu with date range (default last 30 days)
+- Required `from`/`to` parameters; 365-day maximum window
+- CSV/XLSX formula injection protection
+
+### Security hardening
+
+- Frontend nginx Content Security Policy
+- Disabled-user JWT revocation (30-second cache with immediate eviction)
+- Authorization architecture guard
+
+### Frontend refactoring
+
+- Page modularization (Assets, Work Orders, Inspections)
+- Shared constants and export handlers
+
+**Artifact version:** Maven and npm packages remain `2.0.1` per ADR-004 until the next artifact bump sprint.
+
+**Reference:** [v2.4.md](v2.4.md), [Mobile API](../04-api/mobile-api.md), [security.md](../05-deployment/security.md)
 
 ---
 
@@ -179,9 +248,9 @@ The following are **roadmap milestones** not yet delivered. Scope and numbering 
 
 Native field client for inspections and maintenance execution.
 
-### Version 2.4.0 — Offline Synchronisation
+### Version 2.4.0 — Offline Synchronisation & Mobile Asset Lookup
 
-Field operations with offline-capable sync (scope to be defined).
+Field operations with offline-capable sync and QR/barcode-driven asset navigation. **Partially delivered** — mobile backend, platform upgrade, and security hardening validated; Android client and offline sync remain planned. See [v2.4.md](v2.4.md).
 
 ### Version 2.5.0 — Asset Intelligence
 

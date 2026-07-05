@@ -69,6 +69,7 @@ For visual workflow context, see also [Workflow Sequence Diagrams](../02-system-
 | [BDR-002](bdr-002-preventive-candidates-before-automation.md) | Preventive Candidates Before Automation | Accepted | Preventive automation stops at Execution Candidate generation; the scheduler does not create Inspections — Manager approval is required. |
 | [BDR-003](bdr-003-bearer-token-architecture.md) | Bearer Token Architecture | Accepted | JWT access tokens are sent via `Authorization: Bearer`; HttpOnly cookies are not used — intentional for SPA, API, and future Android clients. |
 | [BDR-004](bdr-004-configurable-organizational-policies.md) | Configurable Organizational Policies | Accepted | Business rules remain stable; organizations configure operational policies (visibility, approvals, notifications) without redefining the domain. |
+| [BDR-005](bdr-005-offline-synchronization-architecture.md) | Offline & Synchronization Architecture | Accepted | Backend remains source of truth; Android caches temporary working copies; deterministic sync with server-authoritative conflict resolution. Guides M5 implementation. |
 
 ---
 

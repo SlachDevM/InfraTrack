@@ -122,6 +122,8 @@ Return to login
 
 InfraTrack may return **403** for missing or invalid Bearer tokens on protected routes, depending on the security filter chain. **Treat both 401 and 403 on identity or bootstrap calls as session failure** — do not attempt to continue with a stale token.
 
+**Disabled accounts (V2.4 Security-3):** After an administrator deactivates a user, existing JWTs are rejected with HTTP `401` on the next request (account-status cache is evicted immediately on status change). Clients must clear the token and return to login — do not retry with the same token.
+
 After re-login, reload identity and navigation state from the server. Do not assume cached role or department data remains valid.
 
 ---
@@ -179,7 +181,27 @@ Avoid chaining multiple bundle calls to reconstruct one screen. If a screen need
 
 ### Asset context lookup (V2.4.0 Sprint M4-BE1, enriched M4-BE3/M4-BE4)
 
-`GET /api/mobile/assets/lookup?code={assetCode}` is a bundle-style endpoint for a future "Asset Context" screen reached by scanning a QR code or barcode. It returns the asset summary, optional recent context (`lastInspection`, `lastMaintenance`, `preventivePlan` — each nullable), visible asset-owned `documents` (empty array when none), scoped open issues, active inspections, active work orders, and `allowedActions` in one call. Android should render missing optional sections as “No recent inspection”, “No recent maintenance”, or “No preventive plan”. Document download uses the existing operational document download endpoint. Android scanning UI remains deferred; see [Mobile API — Asset lookup](mobile-api.md#asset-lookup-by-qr--barcode-v240-sprint-m4-be1-enriched-m4-be3m4-be4) for the full contract.
+`GET /api/mobile/assets/lookup?code={assetCode}` is a bundle-style endpoint for a future "Asset Context" screen reached by scanning a QR code or barcode. It returns all sections in one call:
+
+| Field | Nullable | Description |
+|-------|----------|-------------|
+| `asset` | No | Summary (id, code, name, category, department, location, status) |
+| `lastInspection` | Yes | Most recent completed inspection |
+| `lastMaintenance` | Yes | Most recent completed maintenance activity |
+| `preventivePlan` | Yes | Active preventive plan summary |
+| `documents` | No (array) | Visible asset-owned operational documents; empty when none |
+| `openIssues` | No (array) | Unresolved issues on the asset |
+| `activeInspections` | No (array) | Inspections with status `ASSIGNED` |
+| `activeWorkOrders` | No (array) | Work orders with status `CREATED` or `ASSIGNED` |
+| `allowedActions` | No | Backend-generated capability flags |
+
+Android should render `null` optional sections as “No recent inspection”, “No recent maintenance”, or “No preventive plan”. Document download uses `downloadUrl` from the `documents` array:
+
+```text
+GET /api/operational-documents/{id}/download
+```
+
+Android scanning UI remains deferred. See [Mobile API — Asset lookup](mobile-api.md#asset-lookup-by-qr--barcode-v240-sprint-m4-be1-enriched-m4-be3m4-be4) for the full JSON contract.
 
 ### Asset QR code generation (V2.4.0 Sprint M4-BE2)
 
@@ -190,7 +212,9 @@ GET /api/assets/{assetId}/qr   → PNG QR (512×512, high error correction)
         ↓
 Android scans QR             → reads assetCode
         ↓
-GET /api/mobile/assets/lookup?code={assetCode}   → operational context
+GET /api/mobile/assets/lookup?code={assetCode}   → AssetContextResponse
+        ↓
+GET /api/operational-documents/{id}/download   → authenticated file download
 ```
 
 ### When to use lists

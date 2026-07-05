@@ -13,5 +13,6 @@ Architecture Decision Records (ADRs) and Business Decision Records (BDRs) for In
 | [BDR-002 — Preventive Candidates Before Automation](bdr-002-preventive-candidates-before-automation.md) | Scheduler generates candidates only |
 | [BDR-003 — Bearer Token Architecture](bdr-003-bearer-token-architecture.md) | JWT Bearer tokens for web and mobile |
 | [BDR-004 — Configurable Organizational Policies](bdr-004-configurable-organizational-policies.md) | Business rules are stable; organizational policies are configurable |
+| [BDR-005 — Offline & Synchronization Architecture](bdr-005-offline-synchronization-architecture.md) | Offline field work; backend source of truth; deterministic sync |
 
 **Start here:** [ADR Index](ADR-INDEX.md)

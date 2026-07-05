@@ -1,6 +1,13 @@
 # Security Hardening
 
-Production security controls applied in InfraTrack V2 Sprint 0 and extended in V2.0.1.
+Production security controls applied in InfraTrack V2 Sprint 0, extended in V2.0.1, and consolidated through the **V2.4 platform baseline**. See [v2.4.md](../06-release-notes/v2.4.md) for the release summary.
+
+| Section | Topics |
+|---------|--------|
+| [Authentication](#authentication) | JWT Bearer, disabled-account revocation, account-status cache |
+| [Content Security Policy](#content-security-policy-csp) | Frontend nginx CSP, limitations, future tightening |
+| [Reporting export security](#reporting-export-security) | Formula injection, required date filters, 365-day window |
+| [Authorization](#authorization) | Per-domain services, architecture guard (ArchUnit-style) |
 
 ---
 
@@ -29,7 +36,11 @@ For local development, use:
 
 ---
 
-## JWT
+## Authentication
+
+InfraTrack uses **JWT Bearer tokens** for all authenticated API access. Clients send `Authorization: Bearer <token>` on every protected request. There are no refresh tokens, no HttpOnly cookies, and no server-side token blacklist — see [BDR-003](../03-architecture/bdr-003-bearer-token-architecture.md).
+
+### JWT configuration
 
 | Property | Environment variable | Default | Purpose |
 |----------|---------------------|---------|---------|
@@ -55,6 +66,23 @@ After signature and expiry validation, `JwtAuthenticationFilter` calls `UserAcco
 Without eviction, disabled users lose API access within the 30-second TTL. With eviction (implemented), access stops on the next request after status change.
 
 Login still rejects disabled accounts at `POST /api/auth/login`. This control closes the gap where an unexpired JWT continued to work after offboarding.
+
+### Account-status validation flow
+
+```text
+Request with Authorization: Bearer <token>
+        ↓
+JwtAuthenticationFilter — signature + expiry check
+        ↓
+UserAccountStatusService.isEnabled(userId)
+  ├── cache hit (≤30s) → return cached enabled flag
+  └── cache miss → UserRepository.existsByIdAndEnabledTrue(userId)
+        ↓
+enabled=false or user missing → HTTP 401, chain stops
+enabled=true → SecurityContext populated, request continues
+```
+
+**Immediate eviction:** `UserManagementService` (deactivate/reactivate) and `ActivationService` (activate account) call `evict(userId)` so the next request sees the updated status without waiting for TTL expiry.
 
 Bearer token storage in clients is an intentional architecture decision — see [BDR-003](../03-architecture/bdr-003-bearer-token-architecture.md).
 
@@ -163,6 +191,21 @@ After deploying the frontend container:
 4. Inspect response headers — `Content-Security-Policy` should be present on HTML and static asset responses from nginx.
 
 See [production-checklist.md](production-checklist.md) and [troubleshooting.md](troubleshooting.md#content-security-policy-csp).
+
+### Current limitations
+
+| Limitation | Rationale |
+|------------|-----------|
+| No `upgrade-insecure-requests` | HTTP deployments (local Docker Compose, staging) remain supported |
+| No API CSP | Spring Boot API serves JSON only; SPA CSP is on nginx |
+| `connect-src http://localhost:4000` | Local dev API origin from browser |
+| Vite dev server (`npm run dev`) | CSP not enforced — development unchanged |
+
+### Future tightening
+
+- Add `upgrade-insecure-requests` when all supported deployments mandate HTTPS (typically at the external reverse proxy).
+- Evaluate API response CSP if SPA and API are served from a single hardened origin.
+- Do not add `'unsafe-inline'`, `'unsafe-eval'`, or wildcard script sources without a documented security review.
 
 ---
 
@@ -329,7 +372,11 @@ Authorization uses `MaintenanceActivityAuthorizationService` for single-record c
 
 ---
 
-## Authorization architecture guard
+## Authorization
+
+Domain-specific `*AuthorizationService` classes enforce role and department rules before operational data is loaded or mutated. Controllers delegate to application services; services call authorization services at decision points.
+
+### Authorization architecture guard
 
 A backend architecture test (`AuthorizationArchitectureTest` in `backend/src/test/java/com/infratrack/architecture/`) scans all `@RestController` classes and verifies each one either:
 
@@ -340,6 +387,10 @@ A backend architecture test (`AuthorizationArchitectureTest` in `backend/src/tes
 The guard catches obvious regressions when a new protected controller is added without an authorization dependency path. It is **not** a replacement for endpoint-specific authorization tests or manual security review.
 
 New protected controllers should follow the `Controller → Service → AuthorizationService` pattern or be added to the allowlist with a clear justification (public endpoints, reference data, or documented interim admin checks).
+
+### ArchUnit-style protection
+
+`AuthorizationArchitectureTest` in `backend/src/test/java/com/infratrack/architecture/` performs a compile-time dependency scan equivalent to an ArchUnit rule: every `@RestController` must have a verifiable path to an `*AuthorizationService`. This runs in CI on every build.
 
 ---
 
@@ -395,7 +446,11 @@ The backend starts normally when Firebase is disabled.
 
 ---
 
-## Spreadsheet formula injection protection
+## Reporting export security
+
+Reporting exports can return user-controlled text and large datasets. V2.4 adds layered protections below.
+
+### Spreadsheet formula injection protection
 
 InfraTrack exports user-controlled text (asset names, issue descriptions, work order notes, and similar fields) as CSV and XLSX downloads. Spreadsheet applications may interpret cell values that begin with certain characters as formulas and execute them when the file is opened ([CWE-1236](https://cwe.mitre.org/data/definitions/1236.html) / CSV injection).
 
@@ -423,9 +478,7 @@ Example: `=HYPERLINK("https://evil.example")` is exported as `'=HYPERLINK("https
 
 Implementation is centralized in `ExportCellFormatter.sanitizeSpreadsheetText()` and applied automatically by `CsvExportWriter` and `XlsxExportWriter`. Business services, REST endpoints, DTOs, and API consumers are unchanged — protection is transparent at download time only.
 
----
-
-## Reporting export volume guard
+### Export volume guard
 
 Reporting exports can return large datasets. To prevent unbounded resource use, every CSV, XLSX, and PDF export request must include explicit `from` and `to` date filters (epoch millis).
 
@@ -437,6 +490,8 @@ Reporting exports can return large datasets. To prevent unbounded resource use, 
 | No default range | The server does not default to "last 365 days" or truncate results |
 
 Validation runs once in `ReportingExportService.validateExportDateWindow()` before any export data is loaded. Applies to all export domains (assets, inspections, issues, work orders, preventive candidates) and all formats.
+
+The React **Export** menu (`ExportReportingMenu`) defaults to the last 30 days and validates the date range client-side before calling the API. Server validation remains authoritative.
 
 ---
 

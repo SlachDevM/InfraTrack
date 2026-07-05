@@ -74,7 +74,7 @@ Organization Reporting Policy
 System Defaults (DefaultReportingPolicy)
 ```
 
-Current defaults: CSV export format; CSV, XLSX, and PDF enabled; `LAST_30_DAYS` default reporting period. Export endpoints still accept explicit `from` and `to` parameters; when omitted, exports remain unfiltered until policy-driven defaults are applied in a future sprint.
+Current defaults: CSV export format; CSV, XLSX, and PDF enabled; `LAST_30_DAYS` default reporting period for frontend export UI. Export REST endpoints **require** explicit `from` and `to` parameters (epoch millis); unfiltered exports are rejected with HTTP `400`. The 365-day maximum window is enforced in `ReportingExportService.validateExportDateWindow()`.
 
 No configurable reporting policy modes, properties, or admin UI exist yet. `DefaultReportingPolicy` reproduces existing behaviour exactly.
 
@@ -1267,7 +1267,7 @@ Authorization matches Sprint C1 (Administrator global; Manager and Operational C
 
 Reporting **never** mutates operational data, runs the scheduler, or sends notifications.
 
-The React web client adds lightweight **Export CSV** buttons on list pages for authorized roles.
+The React web client adds an **Export** dropdown menu (`ExportReportingMenu`) on reporting list pages for authorized roles. The menu offers CSV, XLSX, and PDF format selection with **from** and **to** date inputs (default last 30 days). Client-side validation mirrors server rules before download.
 
 ### Sprint C1 — XLSX Export Foundation (V2.3.x)
 
@@ -1281,9 +1281,7 @@ Version 2.3.x adds **read-only XLSX exports** for the same entities as CSV, shar
 | `GET /api/reporting/exports/work-orders.xlsx` | Work order list export |
 | `GET /api/reporting/exports/preventive-candidates.xlsx` | Preventive execution candidate export |
 
-CSV exports remain supported unchanged. Scheduled and email reports remain deferred.
-
-The React web client adds **Export XLSX** buttons alongside existing CSV buttons for authorized roles.
+CSV exports remain supported unchanged. Scheduled and email reports remain deferred. XLSX is available from the unified Export menu (see Sprint R1 frontend note above).
 
 ### Sprint C2 — PDF Export Foundation (V2.3.x)
 
@@ -1297,17 +1295,15 @@ Version 2.3.x adds **read-only PDF exports** for the same entities as CSV and XL
 | `GET /api/reporting/exports/work-orders.pdf` | Work order list export |
 | `GET /api/reporting/exports/preventive-candidates.pdf` | Preventive execution candidate export |
 
-PDF exports are simple tabular reports (title, timestamp, optional date range, table) — not branded report templates. CSV and XLSX exports remain supported unchanged. Scheduled and email reports remain deferred.
+PDF exports are simple tabular reports (title, timestamp, optional date range, table) — not branded report templates. CSV and XLSX exports remain supported unchanged. Scheduled and email reports remain deferred. PDF is available from the unified Export menu.
 
 ### Sprint B4 — Reporting Policy Foundation (V2.3.x)
 
-Version 2.3.x introduces the **Reporting Policy** organizational foundation (BDR-004). `DefaultReportingPolicy` defines CSV as the default export format, enables CSV/XLSX/PDF, and records `LAST_30_DAYS` as the default reporting period. `ReportingExportService` uses the policy for CSV export filenames. Enabled formats and default date range are not enforced yet — export behaviour is unchanged.
+Version 2.3.x introduces the **Reporting Policy** organizational foundation (BDR-004). `DefaultReportingPolicy` defines CSV as the default export format, enables CSV/XLSX/PDF, and records `LAST_30_DAYS` as the default reporting period. `ReportingExportService` uses the policy for CSV export filenames. Enabled formats and default date range inform frontend defaults; server-side export window validation is enforced separately (Security-2).
 
 ### Sprint B5 — Approval Policy Foundation (V2.3.x)
 
 Version 2.3.x introduces the **Approval Policy** organizational foundation (BDR-004). `DefaultApprovalPolicy` governs whether completion review, manager operational decisions, suggested action approval, and preventive candidate approval are required. Integrated services consult `ApprovalPolicyService.getPolicy()` at existing approval decision points. No configurable modes exist yet — workflow behaviour is unchanged.
-
-The React web client adds **Export PDF** buttons alongside existing CSV and XLSX buttons for authorized roles.
 
 ### Sprint C2 — Dashboard UI
 
@@ -1449,6 +1445,97 @@ Version 2.4.0 Sprint M4-BE4 adds a `documents` array to the existing asset looku
 **Authorization.** Outer M4-BE1 asset authorization runs first. **M4-BE4.1:** mobile asset context lists all ASSET-owned documents once department access is confirmed — field employees and contractors in the asset's department see reference documents alongside managers and coordinators. Web `GET /api/assets/{assetId}/documents` listing rules are unchanged. Forbidden asset lookup returns `403` before documents are queried.
 
 **Download.** No new download endpoint. Android calls `downloadUrl` (`GET /api/operational-documents/{id}/download`). For field employees and contractors, asset-owned downloads use the same department gate as mobile asset context; context-linked documents (inspection, work order, issue, maintenance) still require assignment-based authorization.
+
+---
+
+## V2.4 Platform Baseline — Architecture Summary
+
+The V2.4 documentation baseline (see [v2.4.md](../06-release-notes/v2.4.md)) reflects the cumulative architecture below.
+
+### Policy Engine (BDR-004)
+
+Five organizational policy foundations consult `*PolicyService.getPolicy()` before operational behaviour:
+
+```text
+InspectionVisibilityPolicyService
+NotificationPolicyService
+DashboardPolicyService
+ReportingPolicyService
+ApprovalPolicyService
+        ↓
+Default*Policy implementations (fixed behaviour today)
+        ↓
+Operational services (unchanged business rules)
+```
+
+Future configurable modes and admin UI remain deferred. Business rules (human-in-the-loop, scheduler candidates-only, immutable history) stay fixed.
+
+### Mobile API architecture
+
+```text
+Android (future) / Web QR download
+        ↓
+GET /api/assets/{assetId}/qr  →  PNG encoding assetCode
+        ↓
+GET /api/mobile/assets/lookup?code=  →  AssetContextResponse
+        ├── asset, lastInspection, lastMaintenance, preventivePlan
+        ├── documents[], openIssues[], activeInspections[], activeWorkOrders[]
+        └── allowedActions (MobileAuthorizationService)
+        ↓
+GET /api/operational-documents/{id}/download  (authenticated)
+```
+
+M1 bundle endpoints (`/api/mobile/me`, dashboard, my-inspections/work-orders, screen bundles) remain the foundation for assignment-based field workflows. M4-BE adds asset-centric navigation.
+
+Write operations continue through existing web APIs — mobile bundles are read-only context.
+
+### Reporting export pipeline
+
+```text
+ExportReportingMenu (React)  →  from/to date validation (client)
+        ↓
+GET /api/reporting/exports/*.{csv|xlsx|pdf}?from=&to=
+        ↓
+ReportingExportController
+        ↓
+ReportingExportService
+  ├── ReportingAuthorizationService (role + department)
+  ├── validateExportDateWindow() (required dates, 365-day max)
+  ├── ReportingPolicyService.getPolicy() (filenames, future defaults)
+  └── load*Export() (read-only repository queries)
+        ↓
+CsvExportWriter / XlsxExportWriter / PdfExportWriter
+  └── ExportCellFormatter.sanitizeSpreadsheetText() (CSV/XLSX only)
+```
+
+### Security hardening (V2.4)
+
+| Layer | Control |
+|-------|---------|
+| Authentication | JWT Bearer + `UserAccountStatusService` (30s cache, eviction on disable) |
+| Transport | HTTPS recommended; CSP on frontend nginx |
+| Authorization | Per-domain `*AuthorizationService`; architecture guard test |
+| Reporting | Required date window; formula injection prefix on CSV/XLSX |
+
+See [security.md](../05-deployment/security.md) for deployment detail.
+
+### Offline & synchronization (BDR-005)
+
+Version 2.4.0 offline scope is defined by [BDR-005 — Offline & Synchronization Architecture](../03-architecture/bdr-005-offline-synchronization-architecture.md). M4-BE delivered online mobile foundations (bundles, asset context, QR). M5 implements offline operation:
+
+```text
+Backend (source of truth)          Android (thin client)
+        ↓                                    ↓
+Validation, Policy Engine,          Room cache + pending queue
+Conflict detection, Audit                  ↓
+        ↓                            Sync on reconnect
+POST /api/mobile/sync/* (future)  ←── Idempotent upload
+GET  /api/mobile/sync/* (future)  ──→ Incremental download
+```
+
+**Philosophy:** No business rules offline. Cached entities are temporary mirrors; pending mutations are validated server-side. Conflict resolution is server-authoritative.
+
+**M5 roadmap:** M5.1 Offline Foundations → M5.2 Sync Engine → M5.3 Offline Inspections → M5.4 Offline Work Orders → M5.5 Conflict Resolution → M5.6 Cached Documents → M5.7 UX Polish (see BDR-005 §11).
 
 ---
 
