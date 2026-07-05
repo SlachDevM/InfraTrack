@@ -229,6 +229,22 @@ After a write operation, refresh the relevant list **and** reload the bundle if 
 
 See [Mobile API](mobile-api.md) for field definitions and sorting rules.
 
+### Offline sync handshake (M5.2-BE1 / M5.2-BE2)
+
+`POST /api/mobile/sync` is the protocol foundation for Android offline operation ([BDR-005](../03-architecture/bdr-005-offline-synchronization-architecture.md)). The client sends `clientId`, `clientVersion`, optionally the previous `syncToken`, and queued `pendingOperations`. **M5.2-BE2 does not process uploads or return populated deltas** — the response includes `protocolVersion: 1`, a new opaque `nextSyncToken`, and an empty `delta` envelope.
+
+```text
+Android (future M5.2+)
+        ↓
+POST /api/mobile/sync  { clientId, clientVersion, syncToken?, pendingOperations[] }
+        ↓
+M5.2-BE2 response      { protocolVersion: 1, serverTime, nextSyncToken, delta: {…:[]}, operations: [], conflicts: [], warnings: [] }
+```
+
+Store `nextSyncToken` opaquely; resubmit as `syncToken` on the next sync. Do not parse token contents client-side.
+
+Integrate cautiously: no workflow or cache effects occur until later backend phases implement upload processing and incremental download.
+
 ---
 
 ## 6. Permissions

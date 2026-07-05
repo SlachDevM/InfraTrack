@@ -160,13 +160,24 @@ The KPI API is designed for reuse by the React web client, future Android applic
 
 ---
 
-## ⬜ Version 2.5.0 — Asset Intelligence
+## ◐ Version 2.5.0 — Asset Intelligence & Mobile Offline Backend
 
-**Objective:** Deeper asset knowledge beyond operational records.
+**Objective:** Deeper asset knowledge beyond operational records, plus backend offline synchronization for Android.
 
-**Business value:** Link operational history, templates, and preventive plans into asset-level insight.
+**Business value:** Link operational history into asset-level insight; provide a stable sync contract for field offline work.
 
-**Major capabilities:** Asset health indicators, knowledge summaries, cross-workflow timelines (scope to be defined).
+**Status:** In progress — M5.2-BE1 (sync protocol foundation) validated.
+
+**Delivered capabilities:**
+
+- **Sprint M5.2-BE1 (validated):** `POST /api/mobile/sync` — sync protocol DTOs and empty response envelope. Pending operations accepted structurally but not applied. Extension points: `SyncOperationProcessor`, `SyncTokenService`, `SyncConflictResolver`. No database changes.
+
+**Planned within this version family (not yet delivered):**
+
+- Asset health indicators, knowledge summaries, cross-workflow timelines
+- Sync upload processing, delta download, conflict resolution (M5.2+ backend / M5 Android)
+
+**Reference:** [BDR-005](../03-architecture/bdr-005-offline-synchronization-architecture.md), [Mobile API](../04-api/mobile-api.md)
 
 ---
 

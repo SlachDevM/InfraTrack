@@ -45,6 +45,7 @@ Operational Coordinators do not have mobile API access in M1. Starting with M4-B
 | `GET` | `/api/mobile/my-work-orders` | Assigned work order summaries |
 | `GET` | `/api/mobile/work-orders/{workOrderId}/bundle` | Full work order screen payload |
 | `GET` | `/api/mobile/assets/lookup?code={assetCode}` | Asset operational context by scanned business code (M4-BE1, enriched M4-BE3/M4-BE4) |
+| `POST` | `/api/mobile/sync` | Offline synchronization protocol handshake (M5.2-BE1/BE2 — token + delta envelope; no mutations yet) |
 
 Live OpenAPI documentation: [Swagger UI](http://localhost:4000/swagger-ui/index.html) (tag: **Mobile API**).
 
@@ -233,13 +234,56 @@ Reuses existing role and department rules; no new Android-specific permissions w
 
 `canCreateInspection` is `true` only for Operational Coordinators in the asset's own department (matching the existing "assign inspection" rule). `canCreateIssue` is `true` only for Field Employees/Contractors in the asset's own department (matching the existing "record issue" role rule). Neither flag creates any new record — creation still goes through the existing `/api/inspections` and `/api/issues` endpoints, which enforce their own full preconditions.
 
+## Offline synchronization protocol (M5.2-BE1 / M5.2-BE2)
+
+`POST /api/mobile/sync` is the backend synchronization protocol foundation ([BDR-005](../03-architecture/bdr-005-offline-synchronization-architecture.md)). **M5.2-BE1** introduced the request/response envelope. **M5.2-BE2** adds opaque sync tokens, protocol versioning, typed operation/conflict/warning codes, and an empty delta container. Pending operations are accepted structurally but not applied; delta sections remain empty.
+
+### Authorization
+
+Same mobile role policy as M1 list/bundle endpoints (not asset lookup): Administrator, Manager, Field Employee, Contractor. Operational Coordinators receive `403`.
+
+### Request (`SyncRequest`)
+
+Required: `clientId`, `clientVersion`. Optional: `appVersion`, `syncToken` (opaque value from the previous `nextSyncToken`), `deviceTime`, `pendingOperations` (defaults to `[]`).
+
+Each `pendingOperations[]` entry requires `operationId`, `entityType`, and `operationType`. Optional: `payload`, `entityId`, `createdAt`.
+
+### Response (`SyncResponse`)
+
+| Field | M5.2-BE2 |
+|-------|----------|
+| `protocolVersion` | `1` — clients must ignore unknown fields on newer versions |
+| `serverTime` | Backend instant |
+| `nextSyncToken` | Opaque cursor issued on every successful sync; store and resubmit as `syncToken` on the next call. Android must not parse it. |
+| `delta` | `SyncDeltaResponse` with empty `assets`, `inspections`, `workOrders`, `documents`, `users`, `referenceData` arrays |
+| `operations` | `[]` — future per-operation outcomes use `SyncOperationStatus` |
+| `conflicts` | `[]` — future conflicts use `SyncConflictType` |
+| `warnings` | `[]` — future warnings use `SyncWarningCode` |
+| `requiresFullSync` | `false` |
+
+### Typed envelopes (future use)
+
+| Enum | Values |
+|------|--------|
+| `SyncOperationStatus` | `ACCEPTED`, `REJECTED`, `CONFLICT`, `RETRY`, `IGNORED` |
+| `SyncConflictType` | `ENTITY_MODIFIED`, `ENTITY_DELETED`, `WORKFLOW_COMPLETED`, `VERSION_MISMATCH`, `PERMISSION_DENIED`, `UNKNOWN` |
+| `SyncWarningCode` | `FULL_SYNC_REQUIRED`, `SYNC_TOKEN_EXPIRED`, `CLIENT_OUTDATED`, `PARTIAL_SYNC`, `UNKNOWN_WARNING` |
+
+### Protocol compatibility
+
+- `protocolVersion` increments only when additive JSON fields are insufficient.
+- Clients must tolerate unknown response fields and empty delta sections until download is implemented.
+- Backend may replace sync token encoding without Android changes; clients store the opaque string only.
+
+Android should not expect upload processing, populated delta sections, or workflow effects until later M5.2+ phases.
+
 ## Future phases (deferred)
 
 | Phase | Capability |
 |-------|------------|
 | M2+ | Mobile-optimised write endpoints if web APIs prove unsuitable |
 | V2.3.0 | Android field application |
-| V2.4.0 | Offline synchronisation |
+| V2.4.0 | Offline synchronisation (M5.2-BE1/BE2 sync protocol foundation delivered; upload/populated delta/conflicts deferred) |
 | V2.2.0+ | Push notification integration beyond FCM token registration |
 | M4 (later sprints) | Printable asset labels (PDF), Android QR scanning UI, inspection/work-order/issue-linked documents on the context screen, full asset history |
 
@@ -250,6 +294,14 @@ com.infratrack.mobile
 ├── MobileController
 ├── MobileService
 ├── MobileAuthorizationService
+├── sync/
+│   ├── MobileSyncController
+│   ├── MobileSyncService
+│   ├── SyncOperationProcessor (extension point)
+│   ├── SyncTokenService (opaque cursor issuance)
+│   ├── SyncToken / SyncProtocolVersion
+│   ├── SyncConflictResolver (extension point)
+│   └── dto.*
 └── dto.*
     ├── AssetContextResponse
     ├── AssetContextSummaryResponse

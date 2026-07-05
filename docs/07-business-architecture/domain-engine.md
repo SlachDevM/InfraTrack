@@ -1529,13 +1529,18 @@ Backend (source of truth)          Android (thin client)
 Validation, Policy Engine,          Room cache + pending queue
 Conflict detection, Audit                  ↓
         ↓                            Sync on reconnect
-POST /api/mobile/sync/* (future)  ←── Idempotent upload
+POST /api/mobile/sync (M5.2-BE1/BE2)  ←── Protocol handshake (token + empty delta)
+POST /api/mobile/sync (future)    ←── Idempotent upload processing
 GET  /api/mobile/sync/* (future)  ──→ Incremental download
 ```
 
 **Philosophy:** No business rules offline. Cached entities are temporary mirrors; pending mutations are validated server-side. Conflict resolution is server-authoritative.
 
 **M5 roadmap:** M5.1 Offline Foundations → M5.2 Sync Engine → M5.3 Offline Inspections → M5.4 Offline Work Orders → M5.5 Conflict Resolution → M5.6 Cached Documents → M5.7 UX Polish (see BDR-005 §11).
+
+**M5.2-BE1 (delivered):** `POST /api/mobile/sync` protocol foundation — accepts `SyncRequest` with optional `pendingOperations[]`, returns `SyncResponse`. No domain mutations, no delta download. Extension points: `SyncOperationProcessor`, `SyncTokenService`, `SyncConflictResolver`.
+
+**M5.2-BE2 (delivered):** Opaque `nextSyncToken` on every successful sync (`SyncToken` value object; Android stores only). `protocolVersion: 1`. Empty `SyncDeltaResponse` (`assets`, `inspections`, `workOrders`, `documents`, `users`, `referenceData`). Typed enums for future outcomes: `SyncOperationStatus`, `SyncConflictType`, `SyncWarningCode`. Upload processing, populated deltas, and conflict resolution remain deferred.
 
 ---
 

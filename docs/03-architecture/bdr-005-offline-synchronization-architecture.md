@@ -294,16 +294,20 @@ M5 requires **new backend sync capabilities**. No implementation exists at V2.4 
 
 | Capability | Purpose |
 |------------|---------|
-| **Sync cursor / token** | Opaque server-issued cursor marking last successful download position |
-| **Delta download endpoints** | `GET /api/mobile/sync/changes?since={cursor}` — assigned inspections, work orders, revocations |
-| **Batch upload endpoint** | `POST /api/mobile/sync/operations` — array of idempotent pending operations with outcomes per item |
-| **Operation result envelope** | Per-item: `ACCEPTED`, `REJECTED`, `CONFLICT`, `OVERWRITTEN` with server reason and current entity version |
+| **Sync cursor / token** | Opaque server-issued cursor (`nextSyncToken`) — **M5.2-BE2 delivered**; issued on every successful `POST /api/mobile/sync`. Android stores and resubmits; backend owns encoding. No business data in token. |
+| **Batch upload endpoint** | `POST /api/mobile/sync` — **M5.2-BE1/BE2 delivered (protocol only)**; accepts `SyncRequest` with optional `pendingOperations[]`, returns `SyncResponse` with `protocolVersion: 1`, opaque `nextSyncToken`, empty `delta`, and empty `operations`/`conflicts`/`warnings`. Upload processing deferred to M5.2+ |
+| **Delta download** | `SyncResponse.delta` — **M5.2-BE2 envelope delivered (empty sections)**; future sections: `assets`, `inspections`, `workOrders`, `documents`, `users`, `referenceData` |
+| **Delta download endpoints** | `GET /api/mobile/sync/changes?since={cursor}` — alternative/future path; primary delta container is `SyncResponse.delta` |
+| **Operation result envelope** | Per-item `SyncOperationStatus`: `ACCEPTED`, `REJECTED`, `CONFLICT`, `RETRY`, `IGNORED` (types defined M5.2-BE2; outcomes empty until upload phase) |
+| **Conflict classification** | `SyncConflictType`: `ENTITY_MODIFIED`, `ENTITY_DELETED`, `WORKFLOW_COMPLETED`, `VERSION_MISMATCH`, `PERMISSION_DENIED`, `UNKNOWN` (types defined M5.2-BE2; list empty until conflict phase) |
+| **Sync warnings** | `SyncWarningCode`: `FULL_SYNC_REQUIRED`, `SYNC_TOKEN_EXPIRED`, `CLIENT_OUTDATED`, `PARTIAL_SYNC`, `UNKNOWN_WARNING` (types defined M5.2-BE2; list empty) |
 | **Document caching support** | `ETag` or `contentVersion` on document metadata; conditional download |
 | **Entity version numbers** | Monotonic `version` or `updatedAt` on bundles for incremental merge decisions |
 
 ### Contract principles
 
-- Additive Mobile API extension under `/api/mobile/sync/*` — existing bundle endpoints remain for online-first clients.
+- Additive Mobile API extension under `/api/mobile/sync` — **M5.2-BE1/BE2:** `POST /api/mobile/sync` returns protocol envelope with `protocolVersion`, opaque `nextSyncToken`, empty `delta`, and typed empty outcome lists. Existing bundle endpoints remain for online-first clients.
+- **Protocol versioning:** `protocolVersion` starts at `1`. Clients must ignore unknown JSON fields. Backend increments version only when additive fields are insufficient; token encoding may change without client parsing.
 - Every upload item includes `clientOperationId`, `entityType`, `entityId`, `operationType`, and `payload` matching existing write DTOs where possible.
 - Server responses must be sufficient for Android to update Room without re-fetching full bundles (optimization) or trigger targeted bundle refresh (simplicity path).
 - Authorization, Policy Engine, and Decision Engine run inside sync handlers — same rules as existing write endpoints.
