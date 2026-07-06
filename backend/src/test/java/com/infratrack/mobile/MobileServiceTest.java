@@ -39,6 +39,8 @@ import com.infratrack.operationaldocument.OperationalDocumentOwnerType;
 import com.infratrack.operationaldocument.OperationalDocumentService;
 import com.infratrack.operationaldocument.OperationalDocumentType;
 import com.infratrack.mobile.dto.MobileInspectionBundleResponse;
+import com.infratrack.mobile.dto.MobileChoiceResponse;
+import com.infratrack.mobile.dto.MobileQuestionResponse;
 import com.infratrack.mobile.dto.MobileInspectionSummaryResponse;
 import com.infratrack.mobile.dto.MobileIssueSummaryResponse;
 import com.infratrack.mobile.dto.MobileMeResponse;
@@ -99,10 +101,7 @@ class MobileServiceTest {
     private InspectionAnswerRepository inspectionAnswerRepository;
 
     @Mock
-    private InspectionTemplateQuestionRepository questionRepository;
-
-    @Mock
-    private InspectionTemplateQuestionChoiceRepository choiceRepository;
+    private MobileInspectionChecklistLoader checklistLoader;
 
     @Mock
     private WorkOrderRepository workOrderRepository;
@@ -145,8 +144,7 @@ class MobileServiceTest {
                 assetRepository,
                 inspectionRepository,
                 inspectionAnswerRepository,
-                questionRepository,
-                choiceRepository,
+                checklistLoader,
                 issueRepository,
                 operationalDecisionRepository,
                 workOrderRepository,
@@ -261,10 +259,8 @@ class MobileServiceTest {
 
         when(userService.getById(20L)).thenReturn(fieldEmployee);
         when(inspectionRepository.findMobileBundleById(100L)).thenReturn(Optional.of(inspection));
-        when(questionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
-                .thenReturn(List.of(question));
-        when(choiceRepository.findByQuestionIdInOrderByQuestionIdAscDisplayOrderAsc(List.of(10L)))
-                .thenReturn(List.of(choice));
+        when(checklistLoader.loadMobileQuestions(50L))
+                .thenReturn(List.of(MobileQuestionResponse.from(question, List.of(MobileChoiceResponse.from(choice)))));
         when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
                 .thenReturn(List.of(answer));
 
@@ -323,10 +319,8 @@ class MobileServiceTest {
 
         when(userService.getById(20L)).thenReturn(fieldEmployee);
         when(inspectionRepository.findMobileBundleById(100L)).thenReturn(Optional.of(inspection));
-        when(questionRepository.findByInspectionTemplateIdOrderByDisplayOrderAsc(50L))
-                .thenReturn(List.of(question));
-        when(choiceRepository.findByQuestionIdInOrderByQuestionIdAscDisplayOrderAsc(List.of(10L)))
-                .thenReturn(List.of());
+        when(checklistLoader.loadMobileQuestions(50L))
+                .thenReturn(List.of(MobileQuestionResponse.from(question, List.of())));
         when(inspectionAnswerRepository.findByInspectionIdOrderByQuestionDisplayOrder(100L))
                 .thenReturn(List.of(progressiveAnswer));
 

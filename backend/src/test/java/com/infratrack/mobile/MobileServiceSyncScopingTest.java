@@ -49,10 +49,7 @@ class MobileServiceSyncScopingTest {
     private InspectionAnswerRepository inspectionAnswerRepository;
 
     @Mock
-    private InspectionTemplateQuestionRepository questionRepository;
-
-    @Mock
-    private InspectionTemplateQuestionChoiceRepository choiceRepository;
+    private MobileInspectionChecklistLoader checklistLoader;
 
     @Mock
     private WorkOrderRepository workOrderRepository;
@@ -95,8 +92,7 @@ class MobileServiceSyncScopingTest {
                 assetRepository,
                 inspectionRepository,
                 inspectionAnswerRepository,
-                questionRepository,
-                choiceRepository,
+                checklistLoader,
                 issueRepository,
                 operationalDecisionRepository,
                 workOrderRepository,

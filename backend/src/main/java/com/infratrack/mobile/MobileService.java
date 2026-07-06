@@ -10,10 +10,6 @@ import com.infratrack.inspection.InspectionAnswerRepository;
 import com.infratrack.inspection.InspectionPriority;
 import com.infratrack.inspection.InspectionRepository;
 import com.infratrack.inspection.InspectionStatus;
-import com.infratrack.inspectiontemplate.InspectionTemplateQuestion;
-import com.infratrack.inspectiontemplate.InspectionTemplateQuestionChoice;
-import com.infratrack.inspectiontemplate.InspectionTemplateQuestionChoiceRepository;
-import com.infratrack.inspectiontemplate.InspectionTemplateQuestionRepository;
 import com.infratrack.issue.Issue;
 import com.infratrack.issue.IssueRepository;
 import com.infratrack.maintenanceactivity.MaintenanceActivity;
@@ -28,7 +24,6 @@ import com.infratrack.mobile.dto.MobileAssetLastInspectionResponse;
 import com.infratrack.mobile.dto.MobileAssetLastMaintenanceResponse;
 import com.infratrack.mobile.dto.MobileAssetPreventivePlanResponse;
 import com.infratrack.mobile.dto.MobileAssetSummaryResponse;
-import com.infratrack.mobile.dto.MobileChoiceResponse;
 import com.infratrack.mobile.dto.MobileDashboardResponse;
 import com.infratrack.mobile.dto.MobileDecisionSummaryResponse;
 import com.infratrack.mobile.dto.MobileInspectionBundleResponse;
@@ -64,7 +59,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class MobileService {
@@ -74,8 +68,7 @@ public class MobileService {
     private final AssetRepository assetRepository;
     private final InspectionRepository inspectionRepository;
     private final InspectionAnswerRepository inspectionAnswerRepository;
-    private final InspectionTemplateQuestionRepository questionRepository;
-    private final InspectionTemplateQuestionChoiceRepository choiceRepository;
+    private final MobileInspectionChecklistLoader checklistLoader;
     private final IssueRepository issueRepository;
     private final OperationalDecisionRepository operationalDecisionRepository;
     private final WorkOrderRepository workOrderRepository;
@@ -90,8 +83,7 @@ public class MobileService {
             AssetRepository assetRepository,
             InspectionRepository inspectionRepository,
             InspectionAnswerRepository inspectionAnswerRepository,
-            InspectionTemplateQuestionRepository questionRepository,
-            InspectionTemplateQuestionChoiceRepository choiceRepository,
+            MobileInspectionChecklistLoader checklistLoader,
             IssueRepository issueRepository,
             OperationalDecisionRepository operationalDecisionRepository,
             WorkOrderRepository workOrderRepository,
@@ -104,8 +96,7 @@ public class MobileService {
         this.assetRepository = assetRepository;
         this.inspectionRepository = inspectionRepository;
         this.inspectionAnswerRepository = inspectionAnswerRepository;
-        this.questionRepository = questionRepository;
-        this.choiceRepository = choiceRepository;
+        this.checklistLoader = checklistLoader;
         this.issueRepository = issueRepository;
         this.operationalDecisionRepository = operationalDecisionRepository;
         this.workOrderRepository = workOrderRepository;
@@ -179,7 +170,7 @@ public class MobileService {
         List<MobileQuestionResponse> questions = List.of();
         if (inspection.getInspectionTemplate() != null) {
             template = MobileTemplateSummaryResponse.from(inspection.getInspectionTemplate());
-            questions = loadTemplateQuestions(inspection.getInspectionTemplate().getId());
+            questions = checklistLoader.loadMobileQuestions(inspection.getInspectionTemplate().getId());
         }
 
         List<MobileAnswerResponse> answers = inspectionAnswerRepository
@@ -397,34 +388,6 @@ public class MobileService {
                     .toList();
         }
         return workOrderRepository.findByAssignedToUserId(user.getId());
-    }
-
-    private List<MobileQuestionResponse> loadTemplateQuestions(Long templateId) {
-        List<InspectionTemplateQuestion> questions = questionRepository
-                .findByInspectionTemplateIdOrderByDisplayOrderAsc(templateId)
-                .stream()
-                .filter(InspectionTemplateQuestion::isActive)
-                .toList();
-        if (questions.isEmpty()) {
-            return List.of();
-        }
-
-        List<Long> questionIds = questions.stream().map(InspectionTemplateQuestion::getId).toList();
-        Map<Long, List<MobileChoiceResponse>> choicesByQuestionId = choiceRepository
-                .findByQuestionIdInOrderByQuestionIdAscDisplayOrderAsc(questionIds)
-                .stream()
-                .filter(InspectionTemplateQuestionChoice::isActive)
-                .collect(Collectors.groupingBy(
-                        choice -> choice.getQuestion().getId(),
-                        Collectors.mapping(MobileChoiceResponse::from, Collectors.toList())));
-
-        List<MobileQuestionResponse> responses = new ArrayList<>();
-        for (InspectionTemplateQuestion question : questions) {
-            List<MobileChoiceResponse> choices = choicesByQuestionId.getOrDefault(
-                    question.getId(), List.of());
-            responses.add(MobileQuestionResponse.from(question, choices));
-        }
-        return responses;
     }
 
     static Comparator<Inspection> inspectionListComparator(LocalDate today) {

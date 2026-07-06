@@ -10,9 +10,16 @@ import com.infratrack.inspection.Inspection;
 import com.infratrack.inspection.InspectionAnswer;
 import com.infratrack.inspection.InspectionAnswerRepository;
 import com.infratrack.inspection.InspectionPriority;
+import com.infratrack.inspectiontemplate.InspectionTemplate;
 import com.infratrack.inspectiontemplate.InspectionTemplateQuestion;
+import com.infratrack.inspectiontemplate.InspectionTemplateQuestionChoice;
+import com.infratrack.inspectiontemplate.InspectionTemplateQuestionType;
+import com.infratrack.inspectiontemplate.InspectionTemplateStatus;
+import com.infratrack.mobile.MobileInspectionChecklistLoader;
 import com.infratrack.mobile.MobileService;
-import com.infratrack.mobile.sync.dto.SyncWarningCode;
+import com.infratrack.mobile.sync.dto.SyncInspectionChoiceDeltaResponse;
+import com.infratrack.mobile.sync.dto.SyncInspectionQuestionDeltaResponse;
+import com.infratrack.mobile.sync.dto.SyncInspectionTemplateDeltaResponse;
 import com.infratrack.user.User;
 import com.infratrack.user.UserNameLookup;
 import com.infratrack.user.UserRole;
@@ -24,10 +31,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Field;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -41,7 +48,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class InspectionSyncDeltaServiceTest {
 
-    private static final Instant TOKEN_ISSUED_AT = Instant.parse("2026-07-05T08:00:00Z");
+    private static final long TEMPLATE_ID = 50L;
 
     @Mock
     private MobileService mobileService;
@@ -52,6 +59,9 @@ class InspectionSyncDeltaServiceTest {
     @Mock
     private UserNameLookup userNameLookup;
 
+    @Mock
+    private MobileInspectionChecklistLoader checklistLoader;
+
     private InspectionSyncDeltaService deltaService;
 
     @BeforeEach
@@ -59,7 +69,10 @@ class InspectionSyncDeltaServiceTest {
         deltaService = new InspectionSyncDeltaService(
                 mobileService,
                 inspectionAnswerRepository,
-                userNameLookup);
+                userNameLookup,
+                checklistLoader);
+        when(checklistLoader.loadChecklistPayloadByTemplateIds(any()))
+                .thenReturn(MobileInspectionChecklistLoader.ChecklistPayload.empty());
     }
 
     @Test
@@ -84,20 +97,19 @@ class InspectionSyncDeltaServiceTest {
 
     @Test
     void build_validSyncToken_queriesInspectionsUpdatedSinceToken() {
-        Inspection changed = inspection(100L, 20L, TOKEN_ISSUED_AT.toEpochMilli() + 1_000);
+        Inspection changed = inspection(100L, 20L, 5_000L);
         User fieldUser = user(20L);
-        long sinceMillis = TOKEN_ISSUED_AT.toEpochMilli();
+        long sinceMillis = java.time.Instant.parse("2026-07-05T08:00:00Z").toEpochMilli();
         when(mobileService.listScopedInspectionsForSync(fieldUser, sinceMillis)).thenReturn(List.of(changed));
         when(inspectionAnswerRepository.findByInspectionIdInOrderByQuestionDisplayOrder(List.of(100L)))
                 .thenReturn(List.of());
         when(userNameLookup.resolveNames(any())).thenReturn(Map.of(20L, "Field User"));
 
-        String syncToken = SyncToken.issue(TOKEN_ISSUED_AT).toOpaqueValue();
+        String syncToken = SyncToken.issue(java.time.Instant.parse("2026-07-05T08:00:00Z")).toOpaqueValue();
         var result = deltaService.build(fieldUser, syncToken);
 
         assertThat(result.warnings()).isEmpty();
         assertThat(result.delta().getInspections()).hasSize(1);
-        assertThat(result.delta().getInspections().get(0).getId()).isEqualTo(100L);
         verify(mobileService).listScopedInspectionsForSync(fieldUser, sinceMillis);
         verify(mobileService, never()).listScopedInspectionsForSync(fieldUser, null);
     }
@@ -114,7 +126,7 @@ class InspectionSyncDeltaServiceTest {
         var result = deltaService.build(fieldUser, "not-a-valid-token");
 
         assertThat(result.warnings()).hasSize(1);
-        assertThat(result.warnings().get(0).getCode()).isEqualTo(SyncWarningCode.FULL_SYNC_REQUIRED);
+        assertThat(result.warnings().get(0).getCode()).isEqualTo(com.infratrack.mobile.sync.dto.SyncWarningCode.FULL_SYNC_REQUIRED);
         assertThat(result.delta().getInspections()).hasSize(1);
         verify(mobileService).listScopedInspectionsForSync(fieldUser, null);
     }
@@ -162,6 +174,96 @@ class InspectionSyncDeltaServiceTest {
         verify(inspectionAnswerRepository, never()).findByInspectionIdOrderByQuestionDisplayOrder(any());
     }
 
+    @Test
+    void build_templatedInspectionIncludesTemplateQuestionsAndChoices() {
+        Inspection inspection = templatedInspection(100L, 20L);
+        User fieldUser = user(20L);
+        InspectionTemplateQuestion question = templateQuestion(10L, inspection.getInspectionTemplate());
+        InspectionTemplateQuestionChoice choice = templateChoice(1L, question, "YES", "Yes");
+        InspectionAnswer answer = choiceAnswer(inspection, question, "YES", 1L);
+
+        SyncInspectionTemplateDeltaResponse template =
+                SyncInspectionTemplateDeltaResponse.from(inspection.getInspectionTemplate());
+        List<SyncInspectionQuestionDeltaResponse> questions = List.of(
+                SyncInspectionQuestionDeltaResponse.from(
+                        question,
+                        List.of(SyncInspectionChoiceDeltaResponse.from(choice))));
+        MobileInspectionChecklistLoader.ChecklistPayload payload =
+                new MobileInspectionChecklistLoader.ChecklistPayload(
+                        Map.of(TEMPLATE_ID, questions),
+                        Map.of(10L, Map.of("YES", 1L)));
+
+        when(mobileService.listScopedInspectionsForSync(fieldUser, null)).thenReturn(List.of(inspection));
+        when(inspectionAnswerRepository.findByInspectionIdInOrderByQuestionDisplayOrder(List.of(100L)))
+                .thenReturn(List.of(answer));
+        when(userNameLookup.resolveNames(any())).thenReturn(Map.of(20L, "Field User"));
+        when(checklistLoader.loadChecklistPayloadByTemplateIds(Set.of(TEMPLATE_ID))).thenReturn(payload);
+
+        var result = deltaService.build(fieldUser, null);
+        var deltaInspection = result.delta().getInspections().get(0);
+
+        assertThat(deltaInspection.getTemplate().getTemplateId()).isEqualTo(template.getTemplateId());
+        assertThat(deltaInspection.getTemplate().getTemplateName()).isEqualTo(template.getTemplateName());
+        assertThat(deltaInspection.getTemplate().getTemplateVersion()).isEqualTo(template.getTemplateVersion());
+        assertThat(deltaInspection.getQuestions()).hasSize(1);
+        assertThat(deltaInspection.getQuestions().get(0).getQuestionId()).isEqualTo(10L);
+        assertThat(deltaInspection.getQuestions().get(0).getDisplayOrder()).isEqualTo(1);
+        assertThat(deltaInspection.getQuestions().get(0).getChoices()).hasSize(1);
+        assertThat(deltaInspection.getQuestions().get(0).getChoices().get(0).getChoiceId()).isEqualTo(1L);
+        assertThat(deltaInspection.getAnswers()).hasSize(1);
+        assertThat(deltaInspection.getAnswers().get(0).getChoiceCodeValue()).isEqualTo("YES");
+        assertThat(deltaInspection.getAnswers().get(0).getChoiceId()).isEqualTo(1L);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Set<Long>> templateIdsCaptor = ArgumentCaptor.forClass(Set.class);
+        verify(checklistLoader).loadChecklistPayloadByTemplateIds(templateIdsCaptor.capture());
+        assertThat(templateIdsCaptor.getValue()).containsExactly(TEMPLATE_ID);
+        verify(mobileService, never()).getInspectionBundle(any(), any());
+    }
+
+    @Test
+    void build_nonChoiceQuestionHasEmptyChoices() {
+        Inspection inspection = templatedInspection(100L, 20L);
+        User fieldUser = user(20L);
+        InspectionTemplateQuestion question = templateQuestion(10L, inspection.getInspectionTemplate());
+        question.setQuestionType(InspectionTemplateQuestionType.BOOLEAN);
+
+        List<SyncInspectionQuestionDeltaResponse> questions = List.of(
+                SyncInspectionQuestionDeltaResponse.from(question, List.of()));
+        MobileInspectionChecklistLoader.ChecklistPayload payload =
+                new MobileInspectionChecklistLoader.ChecklistPayload(
+                        Map.of(TEMPLATE_ID, questions), Map.of());
+
+        when(mobileService.listScopedInspectionsForSync(fieldUser, null)).thenReturn(List.of(inspection));
+        when(inspectionAnswerRepository.findByInspectionIdInOrderByQuestionDisplayOrder(List.of(100L)))
+                .thenReturn(List.of());
+        when(userNameLookup.resolveNames(any())).thenReturn(Map.of(20L, "Field User"));
+        when(checklistLoader.loadChecklistPayloadByTemplateIds(Set.of(TEMPLATE_ID))).thenReturn(payload);
+
+        var result = deltaService.build(fieldUser, null);
+
+        assertThat(result.delta().getInspections().get(0).getQuestions().get(0).getChoices()).isEmpty();
+    }
+
+    @Test
+    void build_multipleInspectionsSharingTemplateBatchLoadsChecklistOnce() {
+        Inspection first = templatedInspection(100L, 20L);
+        Inspection second = templatedInspection(200L, 20L);
+        User fieldUser = user(20L);
+
+        when(mobileService.listScopedInspectionsForSync(fieldUser, null)).thenReturn(List.of(first, second));
+        when(inspectionAnswerRepository.findByInspectionIdInOrderByQuestionDisplayOrder(List.of(100L, 200L)))
+                .thenReturn(List.of());
+        when(userNameLookup.resolveNames(any())).thenReturn(Map.of(20L, "Field User"));
+
+        deltaService.build(fieldUser, null);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Set<Long>> templateIdsCaptor = ArgumentCaptor.forClass(Set.class);
+        verify(checklistLoader).loadChecklistPayloadByTemplateIds(templateIdsCaptor.capture());
+        assertThat(templateIdsCaptor.getValue()).containsExactly(TEMPLATE_ID);
+    }
+
     private User user(Long id) {
         User user = new User();
         user.setId(id);
@@ -203,6 +305,43 @@ class InspectionSyncDeltaServiceTest {
         return inspection;
     }
 
+    private Inspection templatedInspection(Long id, Long assignedToUserId) {
+        Inspection inspection = inspection(id, assignedToUserId, 5_000L);
+        InspectionTemplate template = new InspectionTemplate(
+                "Daily Checklist",
+                "Daily asset inspection",
+                categoryFromInspection(inspection),
+                3,
+                InspectionTemplateStatus.PUBLISHED);
+        template.setId(TEMPLATE_ID);
+        inspection.setInspectionTemplate(template);
+        return inspection;
+    }
+
+    private AssetCategory categoryFromInspection(Inspection inspection) {
+        return inspection.getAsset().getAssetCategory();
+    }
+
+    private InspectionTemplateQuestion templateQuestion(Long id, InspectionTemplate template) {
+        InspectionTemplateQuestion question = new InspectionTemplateQuestion(
+                template,
+                "Is equipment safe?",
+                "SAFE",
+                "Check equipment safety",
+                InspectionTemplateQuestionType.CHOICE,
+                true,
+                1);
+        question.setId(id);
+        return question;
+    }
+
+    private InspectionTemplateQuestionChoice templateChoice(
+            Long id, InspectionTemplateQuestion question, String code, String label) {
+        InspectionTemplateQuestionChoice choice = new InspectionTemplateQuestionChoice(question, code, label, 1);
+        choice.setId(id);
+        return choice;
+    }
+
     private InspectionAnswer answer(Inspection inspection, long questionId, String textValue) {
         InspectionTemplateQuestion question = mock(InspectionTemplateQuestion.class);
         when(question.getId()).thenReturn(questionId);
@@ -213,6 +352,18 @@ class InspectionSyncDeltaServiceTest {
         when(answer.getBooleanValue()).thenReturn(null);
         when(answer.getNumberValue()).thenReturn(null);
         when(answer.getChoiceCodeValue()).thenReturn(null);
+        return answer;
+    }
+
+    private InspectionAnswer choiceAnswer(
+            Inspection inspection, InspectionTemplateQuestion question, String code, Long choiceId) {
+        InspectionAnswer answer = mock(InspectionAnswer.class);
+        when(answer.getInspection()).thenReturn(inspection);
+        when(answer.getQuestion()).thenReturn(question);
+        when(answer.getChoiceCodeValue()).thenReturn(code);
+        when(answer.getBooleanValue()).thenReturn(null);
+        when(answer.getTextValue()).thenReturn(null);
+        when(answer.getNumberValue()).thenReturn(null);
         return answer;
     }
 

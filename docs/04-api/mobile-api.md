@@ -236,7 +236,7 @@ Reuses existing role and department rules; no new Android-specific permissions w
 
 ## Offline synchronization protocol (M5.2-BE1 / M5.2-BE2 / M5.3-BE / M5.4-BE / M5.5-BE1 / M5.5-BE1.1)
 
-`POST /api/mobile/sync` is the backend synchronization protocol foundation ([BDR-005](../03-architecture/bdr-005-offline-synchronization-architecture.md)). **M5.2-BE1** introduced the request/response envelope. **M5.2-BE2** added opaque sync tokens, protocol versioning, typed operation/conflict/warning codes, and the delta container. **M5.3-BE** processes `SAVE_INSPECTION_PROGRESS` uploads. **M5.4-BE** populates `delta.inspections` with scoped inspection sync records. **M5.5-BE1** detects synchronization conflicts for `SAVE_INSPECTION_PROGRESS`. **M5.5-BE1.1** enriches `conflicts[]` with structured `serverState`, `clientState`, and `resolutionHint` (detection only — no automatic resolution). Other delta sections remain empty; tombstones are not produced yet.
+`POST /api/mobile/sync` is the backend synchronization protocol foundation ([BDR-005](../03-architecture/bdr-005-offline-synchronization-architecture.md)). **M5.2-BE1** introduced the request/response envelope. **M5.2-BE2** added opaque sync tokens, protocol versioning, typed operation/conflict/warning codes, and the delta container. **M5.3-BE** processes `SAVE_INSPECTION_PROGRESS` uploads. **M5.4-BE** populates `delta.inspections` with scoped inspection sync records. **M5.4.2-BE** embeds checklist template/question/choice definitions in each inspection delta so assigned inspections are renderable offline without a prior bundle fetch. **M5.5-BE1** detects synchronization conflicts for `SAVE_INSPECTION_PROGRESS`. **M5.5-BE1.1** enriches `conflicts[]` with structured `serverState`, `clientState`, and `resolutionHint` (detection only — no automatic resolution). Other delta sections remain empty; tombstones are not produced yet.
 
 ### Authorization
 
@@ -272,7 +272,15 @@ Example `payload` fields: `observedCondition`, `observations`, `issueIdentified`
 
 ### Inspection delta (`delta.inspections`)
 
-Each `SyncInspectionDeltaResponse` includes: `id`, `status`, `priority`, `assignedToUserId`, `assignedToName`, compact `asset` summary, draft `observedCondition` / `observations` / `issueIdentified`, `expectedCompletionDate`, `completedAt`, `updatedAt` (epoch millis), and `answers[]` (`questionId`, value fields).
+Each `SyncInspectionDeltaResponse` includes: `id`, `status`, `priority`, `assignedToUserId`, `assignedToName`, compact `asset` summary, draft `observedCondition` / `observations` / `issueIdentified`, `expectedCompletionDate`, `completedAt`, `updatedAt` (epoch millis), `answers[]` (`questionId`, value fields, optional additive `choiceId`), and — when the inspection uses a template — embedded checklist definitions:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `template` | `SyncInspectionTemplateDeltaResponse` | `templateId`, `templateName`, `templateVersion` |
+| `questions` | `SyncInspectionQuestionDeltaResponse[]` | Active questions only; stable `displayOrder`; same filtering as bundle endpoint |
+| `questions[].choices` | `SyncInspectionChoiceDeltaResponse[]` | Active choices for `CHOICE` questions; empty for other types |
+
+**M5.4.2-BE:** `delta.inspections` is self-contained for offline inspection rendering. Checklist definitions match `GET /api/mobile/inspections/{id}/bundle` mapping rules (via shared `MobileInspectionChecklistLoader`). Android does not fabricate checklist definitions; a prior online bundle fetch is not required to render an assigned inspection offline. Definitions are included only for inspections in the scoped delta — no separate template-wide sync section. Existing answer fields are unchanged; `choiceCodeValue` is retained; `choiceId` is additive.
 
 **Download strategy (M5.4):**
 

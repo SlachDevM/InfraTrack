@@ -9,6 +9,9 @@ public interface InspectionTemplateQuestionRepository extends JpaRepository<Insp
 
     List<InspectionTemplateQuestion> findByInspectionTemplateIdOrderByDisplayOrderAsc(Long inspectionTemplateId);
 
+    List<InspectionTemplateQuestion> findByInspectionTemplateIdInOrderByInspectionTemplateIdAscDisplayOrderAsc(
+            Iterable<Long> inspectionTemplateIds);
+
     Optional<InspectionTemplateQuestion> findByIdAndInspectionTemplateId(Long id, Long inspectionTemplateId);
 
     boolean existsByInspectionTemplateIdAndCode(Long inspectionTemplateId, String code);

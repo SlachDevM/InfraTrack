@@ -10,7 +10,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Compact inspection record for mobile sync delta download (M5.4-BE).
@@ -45,10 +47,17 @@ public class SyncInspectionDeltaResponse {
 
     private List<SyncInspectionAnswerDeltaResponse> answers = new ArrayList<>();
 
+    private SyncInspectionTemplateDeltaResponse template;
+
+    private List<SyncInspectionQuestionDeltaResponse> questions = new ArrayList<>();
+
     public static SyncInspectionDeltaResponse from(
             Inspection inspection,
             List<InspectionAnswer> answers,
-            String assignedToName) {
+            String assignedToName,
+            SyncInspectionTemplateDeltaResponse template,
+            List<SyncInspectionQuestionDeltaResponse> questions,
+            Map<Long, Map<String, Long>> choiceIdByQuestionAndCode) {
         SyncInspectionDeltaResponse response = new SyncInspectionDeltaResponse();
         response.setId(inspection.getId());
         response.setStatus(inspection.getStatus());
@@ -62,7 +71,9 @@ public class SyncInspectionDeltaResponse {
         response.setExpectedCompletionDate(inspection.getExpectedCompletionDate());
         response.setCompletedAt(inspection.getCompletedAt());
         response.setUpdatedAt(inspection.getUpdatedAt());
-        response.setAnswers(mapAnswers(answers));
+        response.setTemplate(template);
+        response.setQuestions(questions != null ? questions : List.of());
+        response.setAnswers(mapAnswers(answers, choiceIdByQuestionAndCode));
         return response;
     }
 
@@ -76,18 +87,27 @@ public class SyncInspectionDeltaResponse {
         return asset;
     }
 
-    private static List<SyncInspectionAnswerDeltaResponse> mapAnswers(List<InspectionAnswer> answers) {
+    private static List<SyncInspectionAnswerDeltaResponse> mapAnswers(
+            List<InspectionAnswer> answers,
+            Map<Long, Map<String, Long>> choiceIdByQuestionAndCode) {
         if (answers == null || answers.isEmpty()) {
             return List.of();
         }
+        Map<Long, Map<String, Long>> lookup =
+                choiceIdByQuestionAndCode != null ? choiceIdByQuestionAndCode : Map.of();
         List<SyncInspectionAnswerDeltaResponse> mapped = new ArrayList<>(answers.size());
         for (InspectionAnswer answer : answers) {
             SyncInspectionAnswerDeltaResponse item = new SyncInspectionAnswerDeltaResponse();
-            item.setQuestionId(answer.getQuestion().getId());
+            Long questionId = answer.getQuestion().getId();
+            item.setQuestionId(questionId);
             item.setBooleanValue(answer.getBooleanValue());
             item.setTextValue(answer.getTextValue());
             item.setNumberValue(answer.getNumberValue());
             item.setChoiceCodeValue(answer.getChoiceCodeValue());
+            if (answer.getChoiceCodeValue() != null) {
+                Long choiceId = lookup.getOrDefault(questionId, Map.of()).get(answer.getChoiceCodeValue());
+                item.setChoiceId(choiceId);
+            }
             mapped.add(item);
         }
         return mapped;
@@ -195,5 +215,21 @@ public class SyncInspectionDeltaResponse {
 
     public void setAnswers(List<SyncInspectionAnswerDeltaResponse> answers) {
         this.answers = answers != null ? answers : new ArrayList<>();
+    }
+
+    public SyncInspectionTemplateDeltaResponse getTemplate() {
+        return template;
+    }
+
+    public void setTemplate(SyncInspectionTemplateDeltaResponse template) {
+        this.template = template;
+    }
+
+    public List<SyncInspectionQuestionDeltaResponse> getQuestions() {
+        return questions;
+    }
+
+    public void setQuestions(List<SyncInspectionQuestionDeltaResponse> questions) {
+        this.questions = questions != null ? questions : new ArrayList<>();
     }
 }

@@ -18,6 +18,9 @@ public class SyncInspectionAnswerDeltaResponse {
     @Schema(description = "Selected choice business code when applicable")
     private String choiceCodeValue;
 
+    @Schema(description = "Selected choice identifier when applicable")
+    private Long choiceId;
+
     public Long getQuestionId() {
         return questionId;
     }
@@ -56,5 +59,13 @@ public class SyncInspectionAnswerDeltaResponse {
 
     public void setChoiceCodeValue(String choiceCodeValue) {
         this.choiceCodeValue = choiceCodeValue;
+    }
+
+    public Long getChoiceId() {
+        return choiceId;
+    }
+
+    public void setChoiceId(Long choiceId) {
+        this.choiceId = choiceId;
     }
 }

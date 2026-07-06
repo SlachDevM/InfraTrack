@@ -174,6 +174,7 @@ The KPI API is designed for reuse by the React web client, future Android applic
 - **Sprint M5.2-BE2 (validated):** Opaque `nextSyncToken`, `protocolVersion: 1`, `SyncDeltaResponse` envelope, typed operation/conflict/warning enums.
 - **Sprint M5.3-BE (validated):** `SAVE_INSPECTION_PROGRESS` upload processing via `InspectionService.saveInspectionProgress`. Per-operation outcomes.
 - **Sprint M5.4-BE (validated):** `delta.inspections` download — scoped inspection sync records with answers. Full delta on null/invalid token; incremental filter by `updatedAt` when token is valid. No tombstones; other delta sections empty.
+- **Sprint M5.4.2-BE (validated):** Inspection delta checklist definitions — embedded `template`, `questions`, and `choices` per inspection delta; batch-loaded; aligned with bundle endpoint mapping. `delta.inspections` self-contained for offline rendering. Additive `choiceId` on answers. No new endpoint; no Android changes.
 - **Sprint M5.4.1-BE (validated):** Sync limits (100 operations, 256 KB payload), Micrometer metrics, structured logging, `SyncDiagnostics` helper. No new sync capabilities.
 - **Sprint M5.5-BE1 (validated):** Conflict detection for `SAVE_INSPECTION_PROGRESS` — `CONFLICT` status plus `conflicts[]` with `SyncConflictType`. Metric `mobile.sync.operations.conflict`. No automatic resolution, tombstones, or Android changes.
 - **Sprint M5.5-BE1.1 (validated):** Enriched conflict payload — `SyncConflictServerState`, `SyncConflictClientState`, `SyncResolutionHint` on `conflicts[]`. Detection-only; no merge or resolution.

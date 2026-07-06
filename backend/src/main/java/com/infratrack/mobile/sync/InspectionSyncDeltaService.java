@@ -3,9 +3,13 @@ package com.infratrack.mobile.sync;
 import com.infratrack.inspection.Inspection;
 import com.infratrack.inspection.InspectionAnswer;
 import com.infratrack.inspection.InspectionAnswerRepository;
+import com.infratrack.inspectiontemplate.InspectionTemplate;
+import com.infratrack.mobile.MobileInspectionChecklistLoader;
 import com.infratrack.mobile.MobileService;
 import com.infratrack.mobile.sync.dto.SyncDeltaResponse;
 import com.infratrack.mobile.sync.dto.SyncInspectionDeltaResponse;
+import com.infratrack.mobile.sync.dto.SyncInspectionQuestionDeltaResponse;
+import com.infratrack.mobile.sync.dto.SyncInspectionTemplateDeltaResponse;
 import com.infratrack.mobile.sync.dto.SyncWarningCode;
 import com.infratrack.mobile.sync.dto.SyncWarningResponse;
 import com.infratrack.user.User;
@@ -15,8 +19,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,14 +39,17 @@ class InspectionSyncDeltaService {
     private final MobileService mobileService;
     private final InspectionAnswerRepository inspectionAnswerRepository;
     private final UserNameLookup userNameLookup;
+    private final MobileInspectionChecklistLoader checklistLoader;
 
     InspectionSyncDeltaService(
             MobileService mobileService,
             InspectionAnswerRepository inspectionAnswerRepository,
-            UserNameLookup userNameLookup) {
+            UserNameLookup userNameLookup,
+            MobileInspectionChecklistLoader checklistLoader) {
         this.mobileService = mobileService;
         this.inspectionAnswerRepository = inspectionAnswerRepository;
         this.userNameLookup = userNameLookup;
+        this.checklistLoader = checklistLoader;
     }
 
     @Transactional(readOnly = true)
@@ -54,17 +63,46 @@ class InspectionSyncDeltaService {
 
         Map<Long, List<InspectionAnswer>> answersByInspectionId = loadAnswersByInspectionId(inspectionsForDelta);
         Map<Long, String> assignedToNames = resolveAssignedToNames(inspectionsForDelta);
+        Set<Long> templateIds = resolveTemplateIds(inspectionsForDelta);
+        MobileInspectionChecklistLoader.ChecklistPayload checklistPayload =
+                checklistLoader.loadChecklistPayloadByTemplateIds(templateIds);
+        Map<Long, List<SyncInspectionQuestionDeltaResponse>> questionsByTemplateId =
+                checklistPayload.questionsByTemplateId();
+        Map<Long, Map<String, Long>> choiceIdByQuestionAndCode =
+                checklistPayload.choiceIdByQuestionAndCode();
+
         List<SyncInspectionDeltaResponse> inspectionDeltas = new ArrayList<>(inspectionsForDelta.size());
         for (Inspection inspection : inspectionsForDelta) {
             List<InspectionAnswer> answers = answersByInspectionId.getOrDefault(
                     inspection.getId(), Collections.emptyList());
             String assignedToName = assignedToNames.get(inspection.getAssignedToUserId());
-            inspectionDeltas.add(SyncInspectionDeltaResponse.from(inspection, answers, assignedToName));
+            InspectionTemplate inspectionTemplate = inspection.getInspectionTemplate();
+            SyncInspectionTemplateDeltaResponse template = inspectionTemplate != null
+                    ? SyncInspectionTemplateDeltaResponse.from(inspectionTemplate)
+                    : null;
+            List<SyncInspectionQuestionDeltaResponse> questions = inspectionTemplate != null
+                    ? questionsByTemplateId.getOrDefault(inspectionTemplate.getId(), List.of())
+                    : List.of();
+            inspectionDeltas.add(SyncInspectionDeltaResponse.from(
+                    inspection,
+                    answers,
+                    assignedToName,
+                    template,
+                    questions,
+                    choiceIdByQuestionAndCode));
         }
 
         SyncDeltaResponse delta = SyncDeltaResponse.empty();
         delta.setInspections(inspectionDeltas);
         return new SyncDeltaBuildResult(delta, warnings);
+    }
+
+    private Set<Long> resolveTemplateIds(List<Inspection> inspections) {
+        return inspections.stream()
+                .map(Inspection::getInspectionTemplate)
+                .filter(Objects::nonNull)
+                .map(InspectionTemplate::getId)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     private Long resolveUpdatedSinceMillis(
