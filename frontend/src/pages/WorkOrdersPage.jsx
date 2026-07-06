@@ -6,6 +6,11 @@ import CompleteMaintenanceForm from '../components/workorders/CompleteMaintenanc
 import WorkOrderList from '../components/workorders/WorkOrderList';
 import WorkOrderPageHeader from '../components/workorders/WorkOrderPageHeader';
 import CompletionReviewForm from '../components/workorders/CompletionReviewForm';
+import {
+  PageErrorMessage,
+  PageSuccessMessage,
+  ListLoadingIndicator,
+} from '../components/PageFeedback';
 import { canExportReporting } from '../constants/userRoles';
 import { ROUTES } from '../constants/routes';
 import { useAuth } from '../context/AuthContext';
@@ -19,7 +24,11 @@ export default function WorkOrdersPage() {
   const canExport = canExportReporting(auth?.user?.role);
 
   if (page.loading) {
-    return <div className="loading">Loading work orders...</div>;
+    return (
+      <div className="loading" role="status">
+        Loading work orders...
+      </div>
+    );
   }
 
   return (
@@ -27,23 +36,21 @@ export default function WorkOrdersPage() {
       <WorkOrderPageHeader
         canExport={canExport}
         onExportError={page.setError}
+        onExportSuccess={page.setSuccess}
         onNavigateHome={() => page.navigate(ROUTES.HOME)}
         onLogout={page.handleLogout}
       />
 
       <main className="reference-content work-orders-content">
-        {page.error && <div className="error-message">{page.error}</div>}
-        {page.success && (
-          <div className="success-message">
-            {page.success}
-            {page.showReworkDecisionLink && (
-              <>
-                {' '}
-                <Link to="/operational-decisions">Go to Operational Decisions</Link>
-              </>
-            )}
-          </div>
-        )}
+        <PageErrorMessage message={page.error} />
+        <PageSuccessMessage message={page.success}>
+          {page.showReworkDecisionLink && (
+            <>
+              {' '}
+              <Link to="/operational-decisions">Go to Operational Decisions</Link>
+            </>
+          )}
+        </PageSuccessMessage>
 
         {page.canCreate ? (
           <CreateWorkOrderForm
@@ -109,6 +116,7 @@ export default function WorkOrdersPage() {
           workOrders={page.workOrders}
           maintenanceActivities={page.maintenanceActivities}
         />
+        {page.listLoading && <ListLoadingIndicator />}
         <PaginationControls
           page={page.workOrdersPage}
           totalPages={page.workOrdersTotalPages}

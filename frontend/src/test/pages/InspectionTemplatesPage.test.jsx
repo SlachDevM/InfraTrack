@@ -100,7 +100,7 @@ describe('InspectionTemplatesPage', () => {
     expect(container.querySelector('.reference-content')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '← Back' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Notifications' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Logout' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Log out' })).toBeInTheDocument();
   });
 
   it('shows read-only view for manager', async () => {

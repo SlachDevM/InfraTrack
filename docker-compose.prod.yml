@@ -159,10 +159,14 @@ networks:
 
 # Production Deployment Notes:
 # 
-# 1. HTTPS/TLS:
-#    - Use a reverse proxy (nginx, Caddy, Traefik) on port 443
-#    - Terminate TLS at the proxy
-#    - Proxy to backend:4000 and frontend:80 internally
+# 1. HTTPS/TLS and trusted reverse proxy (INFRA-SEC-1):
+#    - Use a reverse proxy (nginx, Caddy, Traefik, HAProxy, cloud LB) on port 443
+#    - Terminate TLS at the proxy — do not expose backend:4000 publicly
+#    - Proxy to backend:4000 and frontend:80 on the internal Docker network only
+#    - Forward X-Forwarded-For and X-Forwarded-Proto from the real client connection
+#    - The backend trusts X-Forwarded-For for login rate limiting; the proxy is the trust boundary
+#    - Bind or remove published ports below; restrict backend access via firewall/security group
+#    - See docs/05-deployment/security.md and production-checklist.md
 # 
 # 2. Database Security:
 #    - Do NOT expose PostgreSQL port 5432 publicly (commented out)

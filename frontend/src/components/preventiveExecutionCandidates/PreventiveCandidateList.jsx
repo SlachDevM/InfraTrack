@@ -1,5 +1,7 @@
 import { getExecutionCandidateStatusLabel } from '../../constants/executionCandidateStatuses';
 import { getPlanTargetActionLabel } from '../../constants/planTargetActions';
+import { COMMON_MESSAGES } from '../../constants/messages';
+import { ListLoadingIndicator, TableEmptyRow } from '../PageFeedback';
 import { formatTimestamp } from '../../pages/preventiveExecutionCandidates/constants';
 
 function CandidateReviewActions({ candidate, canReview, onApprove, onReject, onDismiss }) {
@@ -32,60 +34,60 @@ export default function PreventiveCandidateList({
   onDismiss,
 }) {
   if (listLoading) {
-    return <p>Loading candidates...</p>;
+    return <ListLoadingIndicator message="Loading execution candidates..." />;
   }
 
   return (
-    <table className="reference-table">
-      <thead>
-        <tr>
-          <th>Plan Code</th>
-          <th>Plan Name</th>
-          <th>Asset</th>
-          <th>Trigger</th>
-          <th>Target Action</th>
-          <th>Status</th>
-          <th>Evaluated</th>
-          <th>Next Eligible</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {candidates.length === 0 ? (
+    <div className="table-scroll">
+      <table className="reference-table" aria-label="Preventive execution candidates">
+        <thead>
           <tr>
-            <td colSpan={9}>No execution candidates found.</td>
+            <th>Plan Code</th>
+            <th>Plan Name</th>
+            <th>Asset</th>
+            <th>Trigger</th>
+            <th>Target Action</th>
+            <th>Status</th>
+            <th>Evaluated</th>
+            <th>Next Eligible</th>
+            <th>Actions</th>
           </tr>
-        ) : (
-          candidates.map((candidate) => (
-            <tr key={candidate.id}>
-              <td>{candidate.planCodeSnapshot}</td>
-              <td>{candidate.planNameSnapshot}</td>
-              <td>{candidate.assetName}</td>
-              <td>{candidate.triggerType}</td>
-              <td>{getPlanTargetActionLabel(candidate.targetActionSnapshot)}</td>
-              <td>{getExecutionCandidateStatusLabel(candidate.candidateStatus)}</td>
-              <td>{formatTimestamp(candidate.evaluatedAt)}</td>
-              <td>{formatTimestamp(candidate.nextEligibleAt)}</td>
-              <td>
-                <button
-                  type="button"
-                  className="btn-link"
-                  onClick={() => onViewDetail(candidate.id)}
-                >
-                  View
-                </button>
-                <CandidateReviewActions
-                  candidate={candidate}
-                  canReview={canReview}
-                  onApprove={onApprove}
-                  onReject={onReject}
-                  onDismiss={onDismiss}
-                />
-              </td>
-            </tr>
-          ))
-        )}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {candidates.length === 0 ? (
+            <TableEmptyRow colSpan={9} message={COMMON_MESSAGES.NO_PREVENTIVE_CANDIDATES} />
+          ) : (
+            candidates.map((candidate) => (
+              <tr key={candidate.id}>
+                <td>{candidate.planCodeSnapshot}</td>
+                <td>{candidate.planNameSnapshot}</td>
+                <td>{candidate.assetName}</td>
+                <td>{candidate.triggerType}</td>
+                <td>{getPlanTargetActionLabel(candidate.targetActionSnapshot)}</td>
+                <td>{getExecutionCandidateStatusLabel(candidate.candidateStatus)}</td>
+                <td>{formatTimestamp(candidate.evaluatedAt)}</td>
+                <td>{formatTimestamp(candidate.nextEligibleAt)}</td>
+                <td>
+                  <button
+                    type="button"
+                    className="btn-link"
+                    onClick={() => onViewDetail(candidate.id)}
+                  >
+                    View
+                  </button>
+                  <CandidateReviewActions
+                    candidate={candidate}
+                    canReview={canReview}
+                    onApprove={onApprove}
+                    onReject={onReject}
+                    onDismiss={onDismiss}
+                  />
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
   );
 }

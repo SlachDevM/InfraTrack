@@ -7,6 +7,12 @@ import inspectionApi from '../services/inspectionApi';
 import NotificationButton from '../components/NotificationButton';
 import PaginationControls from '../components/PaginationControls';
 import ExportReportingMenu from '../components/ExportReportingMenu';
+import {
+  PageErrorMessage,
+  PageSuccessMessage,
+  ListLoadingIndicator,
+} from '../components/PageFeedback';
+import { COMMON_MESSAGES } from '../constants/messages';
 import { ROUTES } from '../constants/routes';
 import { REPORTING_EXPORT_TYPES } from '../constants/reportingExports';
 import {
@@ -251,7 +257,11 @@ export default function IssuesPage() {
   };
 
   if (loading) {
-    return <div className="loading">Loading issues...</div>;
+    return (
+      <div className="loading" role="status">
+        Loading issues...
+      </div>
+    );
   }
 
   return (
@@ -263,24 +273,33 @@ export default function IssuesPage() {
           color: 'white',
         }}
       >
-        <button type="button" className="back-btn" onClick={() => navigate(ROUTES.HOME)}>
+        <button
+          type="button"
+          className="back-btn"
+          onClick={() => navigate(ROUTES.HOME)}
+          aria-label="Back to home"
+        >
           ← Back
         </button>
         <h1>Issues</h1>
         <div className="user-header-actions">
           <NotificationButton />
           {canExport && (
-            <ExportReportingMenu exportType={REPORTING_EXPORT_TYPES.ISSUES} onError={setError} />
+            <ExportReportingMenu
+              exportType={REPORTING_EXPORT_TYPES.ISSUES}
+              onError={setError}
+              onSuccess={setSuccess}
+            />
           )}
-          <button type="button" className="logout-btn" onClick={handleLogout}>
+          <button type="button" className="logout-btn" onClick={handleLogout} aria-label="Log out">
             Logout
           </button>
         </div>
       </header>
 
       <main className="reference-content issues-content">
-        {error && <div className="error-message">{error}</div>}
-        {success && <div className="success-message">{success}</div>}
+        <PageErrorMessage message={error} />
+        <PageSuccessMessage message={success} />
 
         {canRecord ? (
           <section className="issue-form-section">
@@ -525,36 +544,41 @@ export default function IssuesPage() {
         <section className="issue-list-section">
           <h2>Recorded Issues</h2>
           {issues.length === 0 ? (
-            <p className="no-items">No issues recorded yet.</p>
+            <p className="empty-state no-items">{COMMON_MESSAGES.NO_ISSUES}</p>
           ) : (
-            <table className="reference-table issues-table">
-              <thead>
-                <tr>
-                  <th>Asset</th>
-                  <th>Inspection</th>
-                  <th>Description</th>
-                  <th>Severity</th>
-                  <th>Root Cause</th>
-                  <th>Lessons Learned</th>
-                  <th>Recorded</th>
-                </tr>
-              </thead>
-              <tbody>
-                {issues.map((issue) => (
-                  <tr key={issue.id}>
-                    <td>{issue.assetName}</td>
-                    <td>{issue.inspectionId ? `#${issue.inspectionId}` : '-'}</td>
-                    <td>{issue.description}</td>
-                    <td>{getIssueSeverityLabel(issue.severity)}</td>
-                    <td>{displayCapaValue(issue.rootCause)}</td>
-                    <td>{displayCapaValue(issue.lessonsLearned)}</td>
-                    <td>{issue.recordedAt ? new Date(issue.recordedAt).toLocaleString() : '-'}</td>
+            <div className="table-scroll">
+              <table className="reference-table issues-table" aria-label="Recorded issues">
+                <thead>
+                  <tr>
+                    <th>Asset</th>
+                    <th>Inspection</th>
+                    <th>Description</th>
+                    <th>Severity</th>
+                    <th>Root Cause</th>
+                    <th>Lessons Learned</th>
+                    <th>Recorded</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {issues.map((issue) => (
+                    <tr key={issue.id}>
+                      <td>{issue.assetName}</td>
+                      <td>{issue.inspectionId ? `#${issue.inspectionId}` : '-'}</td>
+                      <td>{issue.description}</td>
+                      <td>{getIssueSeverityLabel(issue.severity)}</td>
+                      <td>{displayCapaValue(issue.rootCause)}</td>
+                      <td>{displayCapaValue(issue.lessonsLearned)}</td>
+                      <td>
+                        {issue.recordedAt ? new Date(issue.recordedAt).toLocaleString() : '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </section>
+        {listLoading && <ListLoadingIndicator />}
         <PaginationControls
           page={issuesPage}
           totalPages={issuesTotalPages}

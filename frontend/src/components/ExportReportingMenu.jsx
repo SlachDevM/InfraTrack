@@ -14,6 +14,7 @@ import {
 export default function ExportReportingMenu({
   exportType,
   onError,
+  onSuccess,
   exportRange,
   className = 'export-csv-btn',
   menuClassName = 'navbar-more-menu',
@@ -76,6 +77,9 @@ export default function ExportReportingMenu({
       setExporting(true);
       const params = toExportDateRangeParams({ fromDate, toDate });
       await runReportingExport(exportType, auth?.token, params, format);
+      if (onSuccess) {
+        onSuccess(COMMON_MESSAGES.EXPORT_SUCCESS);
+      }
     } catch (err) {
       const message = isForbidden(err)
         ? COMMON_MESSAGES.EXPORT_FORBIDDEN

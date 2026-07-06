@@ -92,6 +92,19 @@ describe('ExportReportingMenu', () => {
     expect(onError).not.toHaveBeenCalled();
   });
 
+  it('calls onSuccess after a successful export', async () => {
+    const user = userEvent.setup();
+    const onSuccess = vi.fn();
+    renderExportMenu({ onSuccess });
+
+    await user.click(screen.getByRole('button', { name: 'Export' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Export as CSV' }));
+
+    await waitFor(() => {
+      expect(onSuccess).toHaveBeenCalledWith('Export downloaded successfully.');
+    });
+  });
+
   it('calls the XLSX endpoint with from and to params', async () => {
     const user = userEvent.setup();
     renderExportMenu();

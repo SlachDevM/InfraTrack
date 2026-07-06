@@ -223,7 +223,7 @@ describe('DashboardPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('hides attention alerts when all relevant values are zero', async () => {
+  it('shows attention empty state when all relevant values are zero', async () => {
     operationsIntelligenceApi.getKpis.mockResolvedValue(zeroAlertKpis);
 
     render(
@@ -233,7 +233,8 @@ describe('DashboardPage', () => {
     );
 
     await screen.findByText('Operational KPIs');
-    expect(screen.queryByText('Attention required')).not.toBeInTheDocument();
+    expect(screen.getByText('Attention required')).toBeInTheDocument();
+    expect(screen.getByText('No items require immediate attention.')).toBeInTheDocument();
   });
 
   it('displays quick navigation links according to role', async () => {

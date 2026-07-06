@@ -8,7 +8,7 @@ export default function AssetList({ assets }) {
         <p className="empty-state no-items">No assets registered yet.</p>
       ) : (
         <div className="table-scroll">
-          <table className="reference-table assets-table">
+          <table className="reference-table assets-table" aria-label="Registered assets">
             <thead>
               <tr>
                 <th>Name</th>

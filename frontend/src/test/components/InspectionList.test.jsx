@@ -30,4 +30,10 @@ describe('InspectionList', () => {
     expect(screen.getByText('ASSIGNED')).toBeInTheDocument();
     expect(screen.getByText('Alex Field')).toBeInTheDocument();
   });
+
+  it('shows empty state when no inspections are listed', () => {
+    render(<InspectionList inspections={[]} />);
+
+    expect(screen.getByText('No inspections match the current filters.')).toBeInTheDocument();
+  });
 });

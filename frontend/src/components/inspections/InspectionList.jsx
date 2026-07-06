@@ -2,6 +2,7 @@ import { getBusinessTriggerTypeLabel } from '../../constants/businessTriggerType
 import { getInspectionPriorityLabel } from '../../constants/inspectionPriorities';
 import { INSPECTION_STATUS } from '../../constants/statuses';
 import { getPhysicalConditionLabel } from '../../constants/physicalConditions';
+import { COMMON_MESSAGES } from '../../constants/messages';
 import RuleEvaluationReportPanel from './RuleEvaluationReportPanel';
 import DecisionAssistantPanel from './DecisionAssistantPanel';
 
@@ -15,10 +16,10 @@ export default function InspectionList({ inspections }) {
     <section className="inspection-list-section">
       <h2>Inspections</h2>
       {inspections.length === 0 ? (
-        <p className="empty-state no-items">No inspections assigned yet.</p>
+        <p className="empty-state no-items">{COMMON_MESSAGES.NO_INSPECTIONS}</p>
       ) : (
         <div className="table-scroll">
-          <table className="reference-table inspections-table">
+          <table className="reference-table inspections-table" aria-label="Inspections">
             <thead>
               <tr>
                 <th>Asset</th>

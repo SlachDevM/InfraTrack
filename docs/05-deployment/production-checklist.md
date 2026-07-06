@@ -30,6 +30,24 @@ Use this checklist before go-live and before each production release.
 
 ---
 
+## Trusted reverse proxy and network exposure (INFRA-SEC-1)
+
+The backend uses `X-Forwarded-For` for client IP extraction (login and activation rate limiting). This is correct **only** when the API sits behind a trusted reverse proxy. Verify before go-live:
+
+- [ ] Backend API is **not** publicly reachable on its container port (e.g. `4000`) from the Internet
+- [ ] Public HTTPS terminates at the reverse proxy or cloud load balancer
+- [ ] Reverse proxy forwards **`X-Forwarded-For`** (set from the real client connection, not passed through unchanged from untrusted clients)
+- [ ] Reverse proxy forwards **`X-Forwarded-Proto`** (`https` for TLS-terminated traffic)
+- [ ] Backend is reachable only from the internal network (Docker bridge, VPC private subnet, or equivalent)
+- [ ] Docker Compose production ports are bound to localhost or removed — not published `0.0.0.0` on the public host
+- [ ] Firewall or security group restricts inbound access to the backend; only the reverse proxy subnet or security group can reach the API
+- [ ] Frontend container port is internal or localhost-bound; public traffic enters through the reverse proxy on `443`
+- [ ] PostgreSQL and other data services remain on internal networks only (no public `5432`)
+
+See [security.md — Trusted reverse proxy](security.md#trusted-reverse-proxy-and-client-ip-infra-sec-1) for architecture rationale and example proxy headers.
+
+---
+
 ## Data and persistence
 
 - [ ] PostgreSQL volume (`pgdata`) on durable storage

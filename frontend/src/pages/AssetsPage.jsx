@@ -15,6 +15,11 @@ import AssetHistoryPanel from '../components/assets/AssetHistoryPanel';
 import OperationalDocumentsPanel from '../components/assets/OperationalDocumentsPanel';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ExportReportingMenu from '../components/ExportReportingMenu';
+import {
+  PageErrorMessage,
+  PageSuccessMessage,
+  ListLoadingIndicator,
+} from '../components/PageFeedback';
 import { ROUTES } from '../constants/routes';
 import { HTTP_STATUS } from '../constants/httpStatus';
 import { REPORTING_EXPORT_TYPES } from '../constants/reportingExports';
@@ -456,7 +461,11 @@ export default function AssetsPage() {
   const selectedAsset = assets.find((asset) => String(asset.id) === String(selectedAssetId));
 
   if (loading) {
-    return <div className="loading">Loading assets...</div>;
+    return (
+      <div className="loading" role="status">
+        Loading assets...
+      </div>
+    );
   }
 
   return (
@@ -468,24 +477,33 @@ export default function AssetsPage() {
           color: 'white',
         }}
       >
-        <button type="button" className="back-btn" onClick={() => navigate(ROUTES.HOME)}>
+        <button
+          type="button"
+          className="back-btn"
+          onClick={() => navigate(ROUTES.HOME)}
+          aria-label="Back to home"
+        >
           ← Back
         </button>
         <h1>Assets</h1>
         <div className="user-header-actions">
           <NotificationButton />
           {canExport && (
-            <ExportReportingMenu exportType={REPORTING_EXPORT_TYPES.ASSETS} onError={setError} />
+            <ExportReportingMenu
+              exportType={REPORTING_EXPORT_TYPES.ASSETS}
+              onError={setError}
+              onSuccess={setSuccess}
+            />
           )}
-          <button type="button" className="logout-btn" onClick={handleLogout}>
+          <button type="button" className="logout-btn" onClick={handleLogout} aria-label="Log out">
             Logout
           </button>
         </div>
       </header>
 
       <main className="reference-content assets-content">
-        {error && <div className="error-message">{error}</div>}
-        {success && <div className="success-message">{success}</div>}
+        <PageErrorMessage message={error} />
+        <PageSuccessMessage message={success} />
 
         {canRegister ? (
           <RegisterAssetForm
@@ -504,6 +522,7 @@ export default function AssetsPage() {
         )}
 
         <AssetList assets={assets} />
+        {listLoading && <ListLoadingIndicator />}
         <PaginationControls
           page={assetsPage}
           totalPages={assetsTotalPages}

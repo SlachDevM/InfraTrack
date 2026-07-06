@@ -8,6 +8,7 @@ Production security controls applied in InfraTrack V2 Sprint 0, extended in V2.0
 | [Content Security Policy](#content-security-policy-csp) | Frontend nginx CSP, limitations, future tightening |
 | [Reporting export security](#reporting-export-security) | Formula injection, required date filters, 365-day window |
 | [Authorization](#authorization) | Per-domain services, architecture guard (ArchUnit-style) |
+| [Trusted reverse proxy](#trusted-reverse-proxy-and-client-ip-infra-sec-1) | X-Forwarded-For trust boundary, deployment assumptions |
 
 ---
 
@@ -355,19 +356,61 @@ Swagger UI in development is served from the API origin (`localhost:4000`) and i
 
 ---
 
-## Reverse proxy and client IP
+## Trusted reverse proxy and client IP (INFRA-SEC-1)
 
-Rate limiting uses the client IP from `X-Forwarded-For` when present (first address in the list), otherwise `request.getRemoteAddr()`.
+InfraTrack extracts the client IP from the `X-Forwarded-For` request header when present (first address in the comma-separated list), otherwise from `request.getRemoteAddr()`. This behaviour is intentional and unchanged — the application **assumes trusted infrastructure** rather than attempting to detect or validate proxy hops at runtime.
 
-**Important:** The backend treats `X-Forwarded-For` as trustworthy. Deployments must place the API **behind a trusted reverse proxy** that:
+### Why the application trusts X-Forwarded-For
 
-- Terminates TLS (HTTPS)
-- Strips or overwrites untrusted `X-Forwarded-For` values from clients
-- Sets the header from the actual client connection
+| Consumer | Purpose |
+|----------|---------|
+| Login rate limiting | Per-IP attempt budget on `POST /api/auth/login` |
+| Activation rate limiting | Per-IP attempt budget on `POST /api/auth/activate-account` |
+| Audit and operational logging | Client IP may be recorded for security-relevant events |
+| Future IP-based controls | Additional infrastructure-layer protections may rely on the same client IP source |
 
-Common proxies: **Nginx**, **Traefik**, **Cloudflare** (when configured to pass the connecting client IP).
+The backend does **not** implement `ForwardedHeaderFilter`, proxy chain validation, or application-level proxy detection. Correctness depends on deployment: only a trusted reverse proxy should set or overwrite `X-Forwarded-For` before traffic reaches the API.
 
-Direct exposure of the Spring Boot port to the public internet without a proxy allows clients to spoof `X-Forwarded-For` and bypass IP-based rate limits.
+### Trusted reverse proxy requirement
+
+Public traffic must **terminate on a trusted reverse proxy** (Nginx, Traefik, HAProxy, Caddy, or a cloud load balancer). The reverse proxy is the **trust boundary** for client identity at the HTTP layer.
+
+| Requirement | Rationale |
+|-------------|-----------|
+| Backend containers must not be publicly exposed | Direct Internet access allows clients to forge `X-Forwarded-For` |
+| HTTPS terminated at the reverse proxy or load balancer | TLS and HSTS assumptions in production |
+| Only the reverse proxy forwards `X-Forwarded-For` | The proxy overwrites or appends from the actual client connection |
+| Reverse proxy forwards `X-Forwarded-Proto` | Downstream services can distinguish HTTPS from HTTP when needed |
+| Backend reachable only from internal network | Firewall, security group, or Docker network isolation |
+| Docker service ports not published to the Internet | Bind backend/frontend ports to localhost or internal interfaces only |
+
+Common proxies: **Nginx**, **Traefik**, **HAProxy**, **Caddy**, **AWS ALB/NLB**, **Azure Application Gateway**, **Google Cloud Load Balancing**. When using a CDN (e.g. Cloudflare), configure it to pass the connecting client IP and ensure the origin trusts only the CDN edge.
+
+### Risk when misconfigured
+
+If the Spring Boot port is exposed directly to the public Internet without a trusted proxy in front:
+
+- Clients can send arbitrary `X-Forwarded-For` values
+- IP-based rate limits may be weakened or bypassed
+- Audit logs may record incorrect client addresses
+
+This is an **infrastructure misconfiguration**, not an application vulnerability. Operators must enforce network placement and proxy configuration — see [production-checklist.md](production-checklist.md).
+
+### Example reverse proxy headers (Nginx)
+
+The proxy should set forwarding headers from the real client connection. Illustrative configuration only — adapt to your environment:
+
+```nginx
+proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_set_header Host              $host;
+```
+
+Do not forward client-supplied `X-Forwarded-For` unchanged from the public Internet to the backend without the proxy overwriting or validating the value.
+
+### Local development note
+
+`docker-compose.yml` publishes backend port `4000` and other service ports to the host for convenience. This layout is **development-only** and does not represent a production trust model. Local stacks typically have no reverse proxy; rate limiting falls back to `request.getRemoteAddr()` unless you manually send `X-Forwarded-For` (e.g. via curl). Production must use `docker-compose.prod.yml` behind an external reverse proxy with internal-only service exposure.
 
 ---
 

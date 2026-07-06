@@ -114,9 +114,15 @@ export default function OperationalDocumentsPanel({
                 ))}
               </select>
               {eligibleOwnersLoading && (
-                <p className="read-only-note">Loading eligible owners...</p>
+                <p className="read-only-note" role="status">
+                  Loading eligible owners...
+                </p>
               )}
-              {eligibleOwnersError && <p className="read-only-note">{eligibleOwnersError}</p>}
+              {eligibleOwnersError && (
+                <div className="error-message" role="alert">
+                  {eligibleOwnersError}
+                </div>
+              )}
               {!eligibleOwnersLoading && !eligibleOwnersError && eligibleOwners.length === 0 && (
                 <p className="read-only-note">No eligible records found for this owner type.</p>
               )}
@@ -165,14 +171,18 @@ export default function OperationalDocumentsPanel({
         </p>
       )}
 
-      {documentsLoading && <p className="read-only-note">Loading operational documents...</p>}
+      {documentsLoading && (
+        <p className="read-only-note" role="status">
+          Loading operational documents...
+        </p>
+      )}
 
       {!documentsLoading && selectedAssetId && assetDocuments.length === 0 && (
-        <p className="read-only-note">No operational documents uploaded for this asset.</p>
+        <p className="empty-state no-items">No operational documents uploaded for this asset.</p>
       )}
 
       {!documentsLoading && assetDocuments.length > 0 && (
-        <table className="reference-table assets-table">
+        <table className="reference-table assets-table" aria-label="Operational documents">
           <thead>
             <tr>
               <th>File Name</th>
@@ -205,6 +215,7 @@ export default function OperationalDocumentsPanel({
                       type="button"
                       className="action-btn delete-btn"
                       onClick={() => onDeleteClick(document)}
+                      aria-label={`Delete document ${document.originalFileName}`}
                     >
                       Delete
                     </button>

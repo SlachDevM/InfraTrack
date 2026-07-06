@@ -431,6 +431,10 @@ Integration tests require Docker for Testcontainers; they are skipped when Docke
 
 Production deployment uses `docker-compose.prod.yml` and `.env.example` as the configuration template. The frontend is served by nginx; the backend runs as a non-root container with health checks on both services.
 
+**Trusted reverse proxy required:** Do not expose the backend API directly to the Internet. Terminate HTTPS on a trusted reverse proxy (Nginx, Traefik, HAProxy, or a cloud load balancer) and keep backend containers on an internal network only. The proxy must forward `X-Forwarded-For` and `X-Forwarded-Proto` from the real client connection — the application uses `X-Forwarded-For` for login rate limiting and assumes trusted infrastructure. See [security hardening — trusted reverse proxy](docs/05-deployment/security.md#trusted-reverse-proxy-and-client-ip-infra-sec-1) and the [production checklist](docs/05-deployment/production-checklist.md#trusted-reverse-proxy-and-network-exposure-infra-sec-1).
+
+The default `docker-compose.yml` publishes ports `3000`, `4000`, and `5432` to the host for **local development only** — not for production.
+
 See [docs/README.md](docs/README.md) and [docs/05-deployment/README.md](docs/05-deployment/README.md) for deployment guides, backup/restore, troubleshooting, and secrets documentation.
 
 ---

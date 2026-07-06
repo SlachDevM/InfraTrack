@@ -204,7 +204,7 @@ describe('OperationalDocumentsPanel', () => {
       />
     );
 
-    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Delete document manual.pdf' })).toBeInTheDocument();
   });
 
   it('calls onDeleteClick when delete is pressed', async () => {
@@ -228,7 +228,7 @@ describe('OperationalDocumentsPanel', () => {
       />
     );
 
-    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await user.click(screen.getByRole('button', { name: 'Delete document manual.pdf' }));
 
     expect(onDeleteClick).toHaveBeenCalledWith(document);
   });

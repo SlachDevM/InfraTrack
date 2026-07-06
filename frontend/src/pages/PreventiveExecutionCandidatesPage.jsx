@@ -10,6 +10,11 @@ import { canExportReporting } from '../constants/userRoles';
 import { REPORTING_EXPORT_TYPES } from '../constants/reportingExports';
 import { useAuth } from '../context/AuthContext';
 import { usePreventiveExecutionCandidatesPage } from '../hooks/usePreventiveExecutionCandidatesPage';
+import {
+  PageErrorMessage,
+  PageSuccessMessage,
+  ListLoadingIndicator,
+} from '../components/PageFeedback';
 
 export default function PreventiveExecutionCandidatesPage() {
   const { auth } = useAuth();
@@ -17,7 +22,11 @@ export default function PreventiveExecutionCandidatesPage() {
   const canExport = canExportReporting(auth?.user?.role);
 
   if (page.loading) {
-    return <div className="loading">Loading preventive execution candidates...</div>;
+    return (
+      <div className="loading" role="status">
+        Loading preventive execution candidates...
+      </div>
+    );
   }
 
   return (
@@ -28,12 +37,13 @@ export default function PreventiveExecutionCandidatesPage() {
           <ExportReportingMenu
             exportType={REPORTING_EXPORT_TYPES.PREVENTIVE_CANDIDATES}
             onError={page.setError}
+            onSuccess={page.setSuccess}
           />
         ) : null
       }
     >
-      {page.error && <div className="error-message">{page.error}</div>}
-      {page.success && <div className="success-message">{page.success}</div>}
+      <PageErrorMessage message={page.error} />
+      <PageSuccessMessage message={page.success} />
 
       <PreventiveCandidateQueueSection
         canGenerate={page.canGenerate}
@@ -54,6 +64,7 @@ export default function PreventiveExecutionCandidatesPage() {
         onDismiss={page.openDismissDialog}
       />
 
+      {page.listLoading && <ListLoadingIndicator />}
       <PaginationControls
         page={page.candidatesPage}
         totalPages={page.candidatesTotalPages}

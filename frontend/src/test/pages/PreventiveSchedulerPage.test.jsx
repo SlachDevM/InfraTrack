@@ -93,7 +93,7 @@ describe('PreventiveSchedulerPage', () => {
     expect(container.querySelector('.reference-content')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '← Back' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Notifications' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Logout' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Log out' })).toBeInTheDocument();
   });
 
   it('shows Page 1 of 1 when run history is empty', async () => {

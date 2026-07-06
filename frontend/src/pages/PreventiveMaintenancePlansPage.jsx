@@ -4,18 +4,27 @@ import PreventivePlanFilters from '../components/preventiveMaintenancePlans/Prev
 import PreventivePlanForm from '../components/preventiveMaintenancePlans/PreventivePlanForm';
 import PreventivePlanList from '../components/preventiveMaintenancePlans/PreventivePlanList';
 import { usePreventiveMaintenancePlansPage } from '../hooks/usePreventiveMaintenancePlansPage';
+import {
+  PageErrorMessage,
+  PageSuccessMessage,
+  ListLoadingIndicator,
+} from '../components/PageFeedback';
 
 export default function PreventiveMaintenancePlansPage() {
   const page = usePreventiveMaintenancePlansPage();
 
   if (page.loading) {
-    return <div className="loading">Loading preventive maintenance plans...</div>;
+    return (
+      <div className="loading" role="status">
+        Loading preventive maintenance plans...
+      </div>
+    );
   }
 
   return (
     <ReferenceDataLayout title="Preventive Maintenance Plans">
-      {page.error && <div className="error-message">{page.error}</div>}
-      {page.success && <div className="success-message">{page.success}</div>}
+      <PageErrorMessage message={page.error} />
+      <PageSuccessMessage message={page.success} />
 
       {!page.canManage && (
         <p className="read-only-note">
@@ -57,6 +66,7 @@ export default function PreventiveMaintenancePlansPage() {
         onArchive={page.handleArchive}
       />
 
+      {page.listLoading && <ListLoadingIndicator />}
       <PaginationControls
         page={page.plansPage}
         totalPages={page.plansTotalPages}

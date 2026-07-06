@@ -44,7 +44,7 @@ describe('ReferenceDataLayout', () => {
     expect(screen.getByRole('heading', { name: 'Inspection Templates' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '← Back' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Notifications' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Logout' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Log out' })).toBeInTheDocument();
     expect(screen.getByText('Page body')).toBeInTheDocument();
     expect(container.querySelector('.reference-data-page')).toBeInTheDocument();
     expect(container.querySelector('.reference-header')).toBeInTheDocument();
@@ -65,7 +65,7 @@ describe('ReferenceDataLayout', () => {
     );
 
     await user.click(screen.getByRole('button', { name: '← Back' }));
-    await user.click(screen.getByRole('button', { name: 'Logout' }));
+    await user.click(screen.getByRole('button', { name: 'Log out' }));
 
     expect(mockNavigate).toHaveBeenCalledWith('/');
     expect(mockNavigate).toHaveBeenCalledWith('/login');

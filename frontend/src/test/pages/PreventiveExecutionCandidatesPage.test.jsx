@@ -174,7 +174,7 @@ describe('PreventiveExecutionCandidatesPage', () => {
     expect(container.querySelector('.reference-content')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '← Back' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Notifications' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Logout' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Log out' })).toBeInTheDocument();
   });
 
   it('shows Page 1 of 1 when candidate list is empty', async () => {
@@ -186,7 +186,9 @@ describe('PreventiveExecutionCandidatesPage', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByText('No execution candidates found.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('No execution candidates match the current filters.')
+    ).toBeInTheDocument();
     expect(screen.getByText('Page 1 of 1')).toBeInTheDocument();
     expect(screen.queryByText(/NaN/)).not.toBeInTheDocument();
   });

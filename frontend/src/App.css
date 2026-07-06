@@ -55,6 +55,15 @@
   font-size: 0.95rem;
 }
 
+.list-loading-indicator {
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.table-empty-cell {
+  text-align: left;
+}
+
 button:focus-visible,
 a:focus-visible,
 [role='menuitem']:focus-visible {

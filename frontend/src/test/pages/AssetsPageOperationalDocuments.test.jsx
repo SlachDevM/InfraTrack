@@ -386,22 +386,22 @@ describe('AssetsPage operational document owner selection', () => {
       expect(screen.getByText('manual.pdf')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await user.click(screen.getByRole('button', { name: 'Delete document manual.pdf' }));
     expect(
       screen.getByRole('heading', { name: 'Delete Operational Document' })
     ).toBeInTheDocument();
     expect(screen.getByText(/Delete document "manual.pdf"/)).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel confirmation' }));
     expect(
       screen.queryByRole('heading', { name: 'Delete Operational Document' })
     ).not.toBeInTheDocument();
     expect(screen.getByText('manual.pdf')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await user.click(screen.getByRole('button', { name: 'Delete document manual.pdf' }));
     await user.click(
       screen
-        .getAllByRole('button', { name: 'Delete' })
+        .getAllByRole('button', { name: 'Delete — destructive action' })
         .find((button) => button.classList.contains('btn-confirm'))
     );
 
@@ -439,10 +439,10 @@ describe('AssetsPage operational document owner selection', () => {
       expect(screen.getByText('manual.pdf')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await user.click(screen.getByRole('button', { name: 'Delete document manual.pdf' }));
     await user.click(
       screen
-        .getAllByRole('button', { name: 'Delete' })
+        .getAllByRole('button', { name: 'Delete — destructive action' })
         .find((button) => button.classList.contains('btn-confirm'))
     );
 

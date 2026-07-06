@@ -8,6 +8,8 @@ import {
 } from '../../constants/executionReportStatuses';
 import { getPlanTargetActionLabel } from '../../constants/planTargetActions';
 import { formatTimestamp } from '../../pages/preventiveExecutionCandidates/constants';
+import { COMMON_MESSAGES } from '../../constants/messages';
+import { ListLoadingIndicator } from '../PageFeedback';
 
 export default function PreventiveCandidateDetailPanel({
   selectedCandidate,
@@ -34,6 +36,8 @@ export default function PreventiveCandidateDetailPanel({
           type="button"
           role="tab"
           aria-selected={detailTab === 'candidate'}
+          aria-controls="candidate-detail-panel"
+          id="candidate-detail-tab"
           className={`detail-tab${detailTab === 'candidate' ? ' detail-tab-active' : ''}`}
           onClick={() => onTabChange('candidate')}
         >
@@ -43,6 +47,8 @@ export default function PreventiveCandidateDetailPanel({
           type="button"
           role="tab"
           aria-selected={detailTab === 'report'}
+          aria-controls="execution-report-detail-panel"
+          id="execution-report-detail-tab"
           className={`detail-tab${detailTab === 'report' ? ' detail-tab-active' : ''}`}
           onClick={() => onTabChange('report')}
         >
@@ -50,9 +56,14 @@ export default function PreventiveCandidateDetailPanel({
         </button>
       </div>
       {detailLoading ? (
-        <p>Loading detail...</p>
+        <ListLoadingIndicator message="Loading candidate detail..." />
       ) : detailTab === 'candidate' ? (
-        <dl className="detail-list">
+        <dl
+          className="detail-list"
+          id="candidate-detail-panel"
+          role="tabpanel"
+          aria-labelledby="candidate-detail-tab"
+        >
           <dt>Plan Code</dt>
           <dd>{selectedCandidate.planCodeSnapshot}</dd>
           <dt>Plan Name</dt>
@@ -110,7 +121,12 @@ export default function PreventiveCandidateDetailPanel({
           <dd>{formatTimestamp(selectedCandidate.createdAt)}</dd>
         </dl>
       ) : selectedReport ? (
-        <dl className="detail-list execution-report-detail">
+        <dl
+          className="detail-list execution-report-detail"
+          id="execution-report-detail-panel"
+          role="tabpanel"
+          aria-labelledby="execution-report-detail-tab"
+        >
           <dt>Report Status</dt>
           <dd>{getExecutionReportStatusLabel(selectedReport.reportStatus)}</dd>
           <dt>Decision Source</dt>
@@ -147,7 +163,9 @@ export default function PreventiveCandidateDetailPanel({
           <dd>{selectedReport.assetNameSnapshot}</dd>
         </dl>
       ) : (
-        <p>No execution report available.</p>
+        <p className="empty-state no-items" role="status">
+          {COMMON_MESSAGES.NO_EXECUTION_REPORT}
+        </p>
       )}
       {!detailLoading &&
         canReview &&

@@ -28,4 +28,10 @@ describe('WorkOrderList', () => {
     expect(screen.getByText('Alex Field')).toBeInTheDocument();
     expect(screen.getByText('Central Playground')).toBeInTheDocument();
   });
+
+  it('shows empty state when no work orders are listed', () => {
+    render(<WorkOrderList workOrders={[]} maintenanceActivities={[]} />);
+
+    expect(screen.getByText('No work orders found.')).toBeInTheDocument();
+  });
 });

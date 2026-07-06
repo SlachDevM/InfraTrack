@@ -1,3 +1,6 @@
+import { COMMON_MESSAGES } from '../../constants/messages';
+import { TableEmptyRow } from '../PageFeedback';
+
 export default function InspectionTemplateChoicePanel({
   questionCode,
   choices,
@@ -60,61 +63,71 @@ export default function InspectionTemplateChoicePanel({
           )}
         </div>
       </form>
-      <table className="reference-table">
-        <thead>
-          <tr>
-            <th>Order</th>
-            <th>Code</th>
-            <th>Label</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {choices.map((choice) => (
-            <tr key={choice.id}>
-              <td>{choice.displayOrder}</td>
-              <td>{choice.code}</td>
-              <td>{choice.label}</td>
-              <td>{choice.active ? 'Active' : 'Inactive'}</td>
-              <td>
-                {choice.active ? (
-                  <>
-                    <button type="button" className="btn-link" onClick={() => onEditChoice(choice)}>
-                      Edit
-                    </button>{' '}
-                    <button
-                      type="button"
-                      className="btn-link"
-                      onClick={() => onDeactivateChoice(choice.id)}
-                    >
-                      Deactivate
-                    </button>{' '}
-                    <button
-                      type="button"
-                      className="btn-link"
-                      disabled={choiceSubmitting}
-                      onClick={() => onMoveChoice(choice.id, 'up')}
-                    >
-                      Move Up
-                    </button>{' '}
-                    <button
-                      type="button"
-                      className="btn-link"
-                      disabled={choiceSubmitting}
-                      onClick={() => onMoveChoice(choice.id, 'down')}
-                    >
-                      Move Down
-                    </button>
-                  </>
-                ) : (
-                  '-'
-                )}
-              </td>
+      <div className="table-scroll">
+        <table className="reference-table" aria-label={`Choices for question ${questionCode}`}>
+          <thead>
+            <tr>
+              <th>Order</th>
+              <th>Code</th>
+              <th>Label</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {choices.length === 0 ? (
+              <TableEmptyRow colSpan={5} message={COMMON_MESSAGES.NO_TEMPLATE_CHOICES} />
+            ) : (
+              choices.map((choice) => (
+                <tr key={choice.id}>
+                  <td>{choice.displayOrder}</td>
+                  <td>{choice.code}</td>
+                  <td>{choice.label}</td>
+                  <td>{choice.active ? 'Active' : 'Inactive'}</td>
+                  <td>
+                    {choice.active ? (
+                      <>
+                        <button
+                          type="button"
+                          className="btn-link"
+                          onClick={() => onEditChoice(choice)}
+                        >
+                          Edit
+                        </button>{' '}
+                        <button
+                          type="button"
+                          className="btn-link"
+                          onClick={() => onDeactivateChoice(choice.id)}
+                        >
+                          Deactivate
+                        </button>{' '}
+                        <button
+                          type="button"
+                          className="btn-link"
+                          disabled={choiceSubmitting}
+                          onClick={() => onMoveChoice(choice.id, 'up')}
+                        >
+                          Move Up
+                        </button>{' '}
+                        <button
+                          type="button"
+                          className="btn-link"
+                          disabled={choiceSubmitting}
+                          onClick={() => onMoveChoice(choice.id, 'down')}
+                        >
+                          Move Down
+                        </button>
+                      </>
+                    ) : (
+                      '-'
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }

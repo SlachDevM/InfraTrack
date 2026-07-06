@@ -1,6 +1,12 @@
 name: infratrack
 
 # Local development stack — uses the dev Spring profile (see application.properties).
+#
+# DEVELOPMENT ONLY: ports below are published to the host for convenience (frontend 3000,
+# backend 4000, PostgreSQL 5432, Mailpit 8025/1025). Do not use this file as a production
+# deployment model. Production requires docker-compose.prod.yml behind a trusted reverse
+# proxy with backend/frontend ports internal-only. See docs/05-deployment/security.md
+# (INFRA-SEC-1) and docs/05-deployment/production-checklist.md.
 
 services:
   backend:
@@ -8,6 +14,7 @@ services:
       context: ./backend
       args:
         GIT_COMMIT: ${GIT_COMMIT:-unknown}
+    # Dev only — production must not expose backend port 4000 to the public Internet.
     ports:
       - '4000:4000'
     restart: unless-stopped
@@ -63,6 +70,7 @@ services:
   postgres:
     image: postgres:16
     restart: unless-stopped
+    # Dev only — production compose keeps PostgreSQL on the internal network (no public 5432).
     ports:
       - '5432:5432'
     environment:

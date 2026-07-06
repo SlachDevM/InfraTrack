@@ -1,5 +1,6 @@
 export const COMMON_MESSAGES = {
   LOADING: 'Loading...',
+  LOADING_PAGE: 'Loading page...',
   REQUEST_FAILED: 'Request failed.',
   UNAUTHORIZED_PAGE: 'You do not have permission to view this page.',
   UNABLE_TO_LOAD: 'Unable to load data.',
@@ -7,4 +8,15 @@ export const COMMON_MESSAGES = {
   EXPORT_FORBIDDEN: 'You do not have permission to export operational data.',
   EXPORT_FORBIDDEN_GENERIC: 'You do not have permission to export.',
   EXPORT_FAILED: 'Failed to export file.',
+  EXPORT_SUCCESS: 'Export downloaded successfully.',
+  NO_WORK_ORDERS: 'No work orders found.',
+  NO_INSPECTIONS: 'No inspections match the current filters.',
+  NO_ISSUES: 'No issues recorded yet.',
+  NO_PREVENTIVE_PLANS: 'No preventive maintenance plans found.',
+  NO_PREVENTIVE_CANDIDATES: 'No execution candidates match the current filters.',
+  NO_TEMPLATE_QUESTIONS: 'No checklist questions defined yet.',
+  NO_TEMPLATE_CHOICES: 'No choices defined for this question yet.',
+  NO_TEMPLATE_RULES: 'No decision rules defined yet.',
+  NO_ATTENTION_ITEMS: 'No items require immediate attention.',
+  NO_EXECUTION_REPORT: 'No execution report available for this candidate.',
 };

@@ -43,6 +43,7 @@ describe('PaginationControls', () => {
 
     expect(screen.getByTestId('pagination-previous')).toBeDisabled();
     expect(screen.getByTestId('pagination-next')).toBeDisabled();
+    expect(screen.getByText('Page 2 of 3 (loading)')).toBeInTheDocument();
   });
 
   it('shows Page 1 of 1 when totalPages is zero', () => {

@@ -1,16 +1,17 @@
 import { getOperationalDecisionOutcomeLabel } from '../../constants/operationalDecisionOutcomes';
 import { getWorkOrderPriorityLabel } from '../../constants/workOrderPriorities';
 import { getCompletionReviewDecisionLabel } from '../../constants/completionReviewDecisions';
+import { COMMON_MESSAGES } from '../../constants/messages';
 
 export default function WorkOrderList({ workOrders, maintenanceActivities }) {
   return (
     <section className="work-order-list-section">
       <h2>Work Orders</h2>
       {workOrders.length === 0 ? (
-        <p className="empty-state no-items">No work orders yet.</p>
+        <p className="empty-state no-items">{COMMON_MESSAGES.NO_WORK_ORDERS}</p>
       ) : (
         <div className="table-scroll">
-          <table className="reference-table work-orders-table">
+          <table className="reference-table work-orders-table" aria-label="Work orders">
             <thead>
               <tr>
                 <th>Asset</th>

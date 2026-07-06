@@ -41,7 +41,7 @@ export default function ReferenceDataLayout({
     <div className={pageClasses}>
       <header className="reference-header" style={headerStyle}>
         {showBackButton && (
-          <button type="button" className="back-btn" onClick={handleBack}>
+          <button type="button" className="back-btn" onClick={handleBack} aria-label={backLabel}>
             {backLabel}
           </button>
         )}
@@ -49,7 +49,7 @@ export default function ReferenceDataLayout({
         <div className="user-header-actions page-actions">
           <NotificationButton />
           {headerActions}
-          <button type="button" className="logout-btn" onClick={handleLogout}>
+          <button type="button" className="logout-btn" onClick={handleLogout} aria-label="Log out">
             Logout
           </button>
         </div>

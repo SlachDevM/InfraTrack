@@ -3,6 +3,8 @@ import {
   getActionTypeLabel,
   getOperatorLabel,
 } from '../../constants/decisionRules';
+import { COMMON_MESSAGES } from '../../constants/messages';
+import { TableEmptyRow } from '../PageFeedback';
 
 export default function InspectionTemplateRulePanel({
   questionCode,
@@ -187,62 +189,72 @@ export default function InspectionTemplateRulePanel({
           </div>
         </form>
       )}
-      <table className="reference-table">
-        <thead>
-          <tr>
-            <th>Code</th>
-            <th>Name</th>
-            <th>Condition</th>
-            <th>Operator</th>
-            <th>Comparison</th>
-            <th>Action</th>
-            <th>Status</th>
-            {canMutate && <th>Actions</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {rules.length === 0 ? (
+      <div className="table-scroll">
+        <table
+          className="reference-table"
+          aria-label={`Decision rules for question ${questionCode}`}
+        >
+          <thead>
             <tr>
-              <td colSpan={canMutate ? 8 : 7}>No decision rules defined yet.</td>
+              <th>Code</th>
+              <th>Name</th>
+              <th>Condition</th>
+              <th>Operator</th>
+              <th>Comparison</th>
+              <th>Action</th>
+              <th>Status</th>
+              {canMutate && <th>Actions</th>}
             </tr>
-          ) : (
-            rules.map((rule) => (
-              <tr key={rule.id}>
-                <td>{rule.ruleCode}</td>
-                <td>
-                  {rule.ruleName}
-                  {rule.description && <div className="help-text">{rule.description}</div>}
-                </td>
-                <td>{rule.conditionType}</td>
-                <td>{getOperatorLabel(rule.conditionType, rule.operator)}</td>
-                <td>{rule.comparisonValue ?? '—'}</td>
-                <td>{getActionTypeLabel(rule.actionType)}</td>
-                <td>{rule.active ? 'Active' : 'Inactive'}</td>
-                {canMutate && (
+          </thead>
+          <tbody>
+            {rules.length === 0 ? (
+              <TableEmptyRow
+                colSpan={canMutate ? 8 : 7}
+                message={COMMON_MESSAGES.NO_TEMPLATE_RULES}
+              />
+            ) : (
+              rules.map((rule) => (
+                <tr key={rule.id}>
+                  <td>{rule.ruleCode}</td>
                   <td>
-                    {rule.active ? (
-                      <>
-                        <button type="button" className="btn-link" onClick={() => onEditRule(rule)}>
-                          Edit
-                        </button>{' '}
-                        <button
-                          type="button"
-                          className="btn-link"
-                          onClick={() => onDeactivateRule(rule.id)}
-                        >
-                          Deactivate
-                        </button>
-                      </>
-                    ) : (
-                      '-'
-                    )}
+                    {rule.ruleName}
+                    {rule.description && <div className="help-text">{rule.description}</div>}
                   </td>
-                )}
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+                  <td>{rule.conditionType}</td>
+                  <td>{getOperatorLabel(rule.conditionType, rule.operator)}</td>
+                  <td>{rule.comparisonValue ?? '—'}</td>
+                  <td>{getActionTypeLabel(rule.actionType)}</td>
+                  <td>{rule.active ? 'Active' : 'Inactive'}</td>
+                  {canMutate && (
+                    <td>
+                      {rule.active ? (
+                        <>
+                          <button
+                            type="button"
+                            className="btn-link"
+                            onClick={() => onEditRule(rule)}
+                          >
+                            Edit
+                          </button>{' '}
+                          <button
+                            type="button"
+                            className="btn-link"
+                            onClick={() => onDeactivateRule(rule.id)}
+                          >
+                            Deactivate
+                          </button>
+                        </>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                  )}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }

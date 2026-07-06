@@ -172,7 +172,7 @@ Both backend and frontend containers define Docker `HEALTHCHECK` instructions. M
 curl http://localhost:4000/actuator/health
 ```
 
-In production, expose the API through a reverse proxy (HTTPS) and keep PostgreSQL internal.
+In production, expose the API through a **trusted reverse proxy** (HTTPS) only. Do not publish the backend port to the public Internet. The proxy must forward `X-Forwarded-For` and `X-Forwarded-Proto` — the application uses the forwarded client IP for rate limiting and assumes trusted infrastructure (INFRA-SEC-1). Keep PostgreSQL and other data services on internal networks. See [security.md — trusted reverse proxy](security.md#trusted-reverse-proxy-and-client-ip-infra-sec-1) and [production-checklist.md](production-checklist.md#trusted-reverse-proxy-and-network-exposure-infra-sec-1).
 
 ---
 

@@ -14,6 +14,11 @@ import AssignInspectionForm from '../components/inspections/AssignInspectionForm
 import CompleteInspectionForm from '../components/inspections/CompleteInspectionForm';
 import InspectionList from '../components/inspections/InspectionList';
 import ExportReportingMenu from '../components/ExportReportingMenu';
+import {
+  PageErrorMessage,
+  PageSuccessMessage,
+  ListLoadingIndicator,
+} from '../components/PageFeedback';
 import { INSPECTION_STATUS } from '../constants/statuses';
 import { REPORTING_EXPORT_TYPES } from '../constants/reportingExports';
 import { ROUTES } from '../constants/routes';
@@ -367,7 +372,11 @@ export default function InspectionsPage() {
   };
 
   if (loading) {
-    return <div className="loading">Loading inspections...</div>;
+    return (
+      <div className="loading" role="status">
+        Loading inspections...
+      </div>
+    );
   }
 
   return (
@@ -379,7 +388,12 @@ export default function InspectionsPage() {
           color: 'white',
         }}
       >
-        <button type="button" className="back-btn" onClick={() => navigate(ROUTES.HOME)}>
+        <button
+          type="button"
+          className="back-btn"
+          onClick={() => navigate(ROUTES.HOME)}
+          aria-label="Back to home"
+        >
           ← Back
         </button>
         <h1>Inspections</h1>
@@ -389,17 +403,18 @@ export default function InspectionsPage() {
             <ExportReportingMenu
               exportType={REPORTING_EXPORT_TYPES.INSPECTIONS}
               onError={setError}
+              onSuccess={setSuccess}
             />
           )}
-          <button type="button" className="logout-btn" onClick={handleLogout}>
+          <button type="button" className="logout-btn" onClick={handleLogout} aria-label="Log out">
             Logout
           </button>
         </div>
       </header>
 
       <main className="reference-content inspections-content">
-        {error && <div className="error-message">{error}</div>}
-        {success && <div className="success-message">{success}</div>}
+        <PageErrorMessage message={error} />
+        <PageSuccessMessage message={success} />
 
         {canAssign ? (
           <AssignInspectionForm
@@ -448,6 +463,7 @@ export default function InspectionsPage() {
         )}
 
         <InspectionList inspections={inspections} />
+        {listLoading && <ListLoadingIndicator />}
         <PaginationControls
           page={inspectionsPage}
           totalPages={inspectionsTotalPages}

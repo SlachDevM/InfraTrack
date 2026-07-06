@@ -7,13 +7,18 @@ import InspectionTemplateChoicePanel from '../components/inspectionTemplateQuest
 import InspectionTemplateRulePanel from '../components/inspectionTemplateQuestions/InspectionTemplateRulePanel';
 import { ROUTES } from '../constants/routes';
 import { useInspectionTemplateQuestionsPage } from '../hooks/useInspectionTemplateQuestionsPage';
+import { PageErrorMessage, PageSuccessMessage } from '../components/PageFeedback';
 
 export default function InspectionTemplateQuestionsPage() {
   const navigate = useNavigate();
   const page = useInspectionTemplateQuestionsPage();
 
   if (page.loading) {
-    return <div className="loading">Loading checklist questions...</div>;
+    return (
+      <div className="loading" role="status">
+        Loading checklist questions...
+      </div>
+    );
   }
 
   return (
@@ -22,8 +27,8 @@ export default function InspectionTemplateQuestionsPage() {
       backLabel="← Back to Templates"
       onBack={() => navigate(ROUTES.INSPECTION_TEMPLATES)}
     >
-      {page.error && <div className="error-message">{page.error}</div>}
-      {page.success && <div className="success-message">{page.success}</div>}
+      <PageErrorMessage message={page.error} />
+      <PageSuccessMessage message={page.success} />
 
       {page.template && (
         <InspectionTemplateQuestionHeader
