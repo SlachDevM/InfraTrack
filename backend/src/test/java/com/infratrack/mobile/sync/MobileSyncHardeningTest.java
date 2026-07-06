@@ -72,7 +72,9 @@ class MobileSyncHardeningTest {
                 authorizationService,
                 clock,
                 new DefaultSyncTokenService(clock),
-                new DefaultSyncOperationProcessor(List.of(handler)),
+                new DefaultSyncOperationProcessor(
+                        List.of(handler),
+                        SyncTestIdempotencySupport.passthroughService(clock)),
                 inspectionSyncDeltaService,
                 new SyncMetricsRecorder(meterRegistry));
 
@@ -152,10 +154,12 @@ class MobileSyncHardeningTest {
 
         assertThat(logAppender.list)
                 .anyMatch(event -> event.getFormattedMessage().startsWith("Sync completed")
-                        && event.getFormattedMessage().contains("user=20")
-                        && event.getFormattedMessage().contains("operations=1")
+                        && event.getFormattedMessage().contains("userId=20")
+                        && event.getFormattedMessage().contains("protocolVersion=1")
+                        && event.getFormattedMessage().contains("operationCount=1")
                         && event.getFormattedMessage().contains("accepted=1")
-                        && event.getFormattedMessage().contains("conflicts="));
+                        && event.getFormattedMessage().contains("duplicateOperations=0")
+                        && event.getFormattedMessage().contains("requiresFullSync=false"));
     }
 
     private static String oversizedPayload() {

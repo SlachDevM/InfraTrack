@@ -19,9 +19,13 @@ class DefaultSyncOperationProcessor implements SyncOperationProcessor {
     private static final String UNSUPPORTED_OPERATION_MESSAGE = "Unsupported sync operation type.";
 
     private final List<SyncOperationHandler> handlers;
+    private final ProcessedSyncOperationService processedSyncOperationService;
 
-    DefaultSyncOperationProcessor(List<SyncOperationHandler> handlers) {
+    DefaultSyncOperationProcessor(
+            List<SyncOperationHandler> handlers,
+            ProcessedSyncOperationService processedSyncOperationService) {
         this.handlers = handlers != null ? handlers : List.of();
+        this.processedSyncOperationService = processedSyncOperationService;
     }
 
     @Override
@@ -31,17 +35,24 @@ class DefaultSyncOperationProcessor implements SyncOperationProcessor {
         }
         List<SyncOperationResponse> operations = new ArrayList<>(pendingOperations.size());
         List<SyncConflictResponse> conflicts = new ArrayList<>();
+        int duplicateOperations = 0;
         for (PendingOperationRequest operation : pendingOperations) {
-            SyncOperationHandlerResult result = processOne(userId, operation);
+            SyncOperationHandlerResult result = processedSyncOperationService.processIdempotently(
+                    userId,
+                    operation,
+                    () -> executeOperation(userId, operation));
             operations.add(result.operation());
             if (result.conflict() != null) {
                 conflicts.add(result.conflict());
             }
+            if (result.duplicate()) {
+                duplicateOperations++;
+            }
         }
-        return new SyncOperationBatchResult(operations, conflicts);
+        return new SyncOperationBatchResult(operations, conflicts, duplicateOperations);
     }
 
-    private SyncOperationHandlerResult processOne(Long userId, PendingOperationRequest operation) {
+    private SyncOperationHandlerResult executeOperation(Long userId, PendingOperationRequest operation) {
         if (!SyncLimits.isPayloadWithinLimit(operation.getPayload())) {
             return SyncOperationHandlerResult.withoutConflict(rejectedPayloadTooLarge(operation));
         }

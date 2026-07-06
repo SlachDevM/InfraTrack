@@ -3,6 +3,7 @@ package com.infratrack.reporting;
 import com.infratrack.config.GlobalExceptionHandler;
 import com.infratrack.config.SecurityConfig;
 import com.infratrack.exception.ForbiddenOperationException;
+import com.infratrack.observability.ObservabilityTestConfiguration;
 import com.infratrack.security.JwtAuthenticationFilter;
 import com.infratrack.security.JwtTokenProvider;
 import com.infratrack.security.UserAccountStatusService;
@@ -30,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = ReportingExportController.class)
-@Import({GlobalExceptionHandler.class, SecurityConfig.class, JwtAuthenticationFilter.class, JwtTokenProvider.class})
+@Import({GlobalExceptionHandler.class, SecurityConfig.class, JwtAuthenticationFilter.class, JwtTokenProvider.class, ObservabilityTestConfiguration.class})
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class ReportingExportControllerTest {
@@ -56,9 +57,9 @@ class ReportingExportControllerTest {
     }
 
     @Test
-    void exportAssets_withoutToken_returnsForbidden() throws Exception {
+    void exportAssets_withoutToken_returnsUnauthorized() throws Exception {
         mockMvc.perform(get("/api/reporting/exports/assets.csv"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

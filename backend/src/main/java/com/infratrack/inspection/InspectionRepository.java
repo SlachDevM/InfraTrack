@@ -60,10 +60,27 @@ public interface InspectionRepository extends JpaRepository<Inspection, Long> {
     List<Inspection> findByAssignedToUserId(Long assignedToUserId);
 
     @EntityGraph(attributePaths = {"asset", "asset.assetCategory", "inspectionTemplate"})
+    List<Inspection> findByAssignedToUserIdAndUpdatedAtGreaterThanEqual(
+            Long assignedToUserId,
+            Long updatedAt);
+
+    @EntityGraph(attributePaths = {"asset", "asset.assetCategory", "inspectionTemplate"})
     List<Inspection> findByAsset_Department_Id(Long departmentId);
 
     @EntityGraph(attributePaths = {"asset", "asset.assetCategory", "inspectionTemplate"})
+    List<Inspection> findByAsset_Department_IdAndStatus(Long departmentId, InspectionStatus status);
+
+    @EntityGraph(attributePaths = {"asset", "asset.assetCategory", "inspectionTemplate"})
+    List<Inspection> findByAsset_Department_IdAndStatusAndUpdatedAtGreaterThanEqual(
+            Long departmentId,
+            InspectionStatus status,
+            Long updatedAt);
+
+    @EntityGraph(attributePaths = {"asset", "asset.assetCategory", "inspectionTemplate"})
     List<Inspection> findByStatus(InspectionStatus status);
+
+    @EntityGraph(attributePaths = {"asset", "asset.assetCategory", "inspectionTemplate"})
+    List<Inspection> findByStatusAndUpdatedAtGreaterThanEqual(InspectionStatus status, Long updatedAt);
 
     long countByAssignedToUserIdAndStatus(Long assignedToUserId, InspectionStatus status);
 

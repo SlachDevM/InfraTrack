@@ -10,20 +10,26 @@ final class SyncOperationHandlerResult {
 
     private final SyncOperationResponse operation;
     private final SyncConflictResponse conflict;
+    private final boolean duplicate;
 
-    SyncOperationHandlerResult(SyncOperationResponse operation, SyncConflictResponse conflict) {
+    SyncOperationHandlerResult(SyncOperationResponse operation, SyncConflictResponse conflict, boolean duplicate) {
         this.operation = operation;
         this.conflict = conflict;
+        this.duplicate = duplicate;
     }
 
     static SyncOperationHandlerResult withoutConflict(SyncOperationResponse operation) {
-        return new SyncOperationHandlerResult(operation, null);
+        return new SyncOperationHandlerResult(operation, null, false);
     }
 
     static SyncOperationHandlerResult withConflict(
             SyncOperationResponse operation,
             SyncConflictResponse conflict) {
-        return new SyncOperationHandlerResult(operation, conflict);
+        return new SyncOperationHandlerResult(operation, conflict, false);
+    }
+
+    static SyncOperationHandlerResult duplicate(SyncOperationResponse operation, SyncConflictResponse conflict) {
+        return new SyncOperationHandlerResult(operation, conflict, true);
     }
 
     SyncOperationResponse operation() {
@@ -32,5 +38,9 @@ final class SyncOperationHandlerResult {
 
     SyncConflictResponse conflict() {
         return conflict;
+    }
+
+    boolean duplicate() {
+        return duplicate;
     }
 }

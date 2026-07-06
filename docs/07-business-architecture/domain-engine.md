@@ -1555,6 +1555,12 @@ GET  /api/mobile/sync/* (future)  ──→ Incremental download
 
 **M5.5-BE2 (delivered):** Explicit conflict resolution engine — `POST /api/mobile/sync/conflicts/resolve` for `SAVE_INSPECTION_PROGRESS` / `INSPECTION`. Accepts `SyncConflictResolutionAction` (`SERVER_WINS`, `CLIENT_RETRY`, `MANUAL_REVIEW`, `DISCARD_CLIENT`); returns `SyncConflictResolutionStatus`. Stateless — no payload apply, no workflow mutation, no durable conflict history. Metrics: `mobile.sync.conflicts.resolved|retry_required|manual_review_required|rejected`.
 
+**DT-OFFLINE-1 (delivered):** Protocol-level idempotency — `mobile_sync_operation` table stores processed `operationId` outcomes (no payload). Lookup before handler execution; duplicates return stored `SyncOperationResponse` without business mutation. Failed handler transactions do not reserve `operationId`. Retention default 90 days (`mobile.sync.idempotency.retention-days`) with daily cleanup. Metric: `mobile.sync.operations.duplicate`.
+
+**V2.5-STAB-2 (delivered):** Sync scalability prep — incremental `delta.inspections` filtering moved to SQL (`updatedAt >= syncToken.issuedAt` with unchanged role scoping). Inspection answers batch-loaded in one query per sync. Indexes: `idx_inspections_assigned_to_user_id`, `idx_inspections_updated_at` (V30). No API, Android, or sync protocol changes.
+
+**V2.5-STAB-3 (delivered):** Production observability — authentication metrics (`mobile.auth.jwt.*`), extended sync metrics (delta/batch distributions, full-sync/invalid-token counters, protocol version tag), reporting export metrics, mobile endpoint timers, enriched sync structured logging. No API, behaviour, or schema changes.
+
 ---
 
 ## Authorization summary

@@ -3,6 +3,7 @@ package com.infratrack.mobile.sync;
 import com.infratrack.config.openapi.StandardApiResponses;
 import com.infratrack.mobile.sync.dto.SyncRequest;
 import com.infratrack.mobile.sync.dto.SyncResponse;
+import com.infratrack.observability.MobileEndpointMetricsRecorder;
 import com.infratrack.security.JwtAuthenticationToken;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -24,9 +25,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class MobileSyncController {
 
     private final MobileSyncService mobileSyncService;
+    private final MobileEndpointMetricsRecorder endpointMetrics;
 
-    public MobileSyncController(MobileSyncService mobileSyncService) {
+    public MobileSyncController(
+            MobileSyncService mobileSyncService,
+            MobileEndpointMetricsRecorder endpointMetrics) {
         this.mobileSyncService = mobileSyncService;
+        this.endpointMetrics = endpointMetrics;
     }
 
     @PostMapping("/sync")
@@ -39,6 +44,6 @@ public class MobileSyncController {
             Authentication authentication,
             @Valid @RequestBody SyncRequest request) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
-        return ResponseEntity.ok(mobileSyncService.sync(userId, request));
+        return ResponseEntity.ok(endpointMetrics.recordSync(() -> mobileSyncService.sync(userId, request)));
     }
 }

@@ -194,7 +194,7 @@ UI refresh — replace cached mirrors; surface conflicts or rejections to user
 
 The **backend resolves all business conflicts**. Android detects sync failures and presents outcomes — it never auto-merges workflow state or overrides server decisions.
 
-**Conflict resolution philosophy** — taxonomy, resolution hints (`SERVER_WINS`, `CLIENT_RETRY`, `MANUAL_REVIEW`), merge boundaries, and lifecycle — is defined in the companion document **[BDR-005 — Conflict Resolution Strategy](bdr-005-conflict-resolution-strategy.md)**. That document separates **detection** (delivered M5.5-BE1 / M5.5-BE1.1) from **resolution** (planned). This BDR remains the primary offline architecture reference; the companion does not replace it.
+**Conflict resolution philosophy** — taxonomy, resolution hints (`SERVER_WINS`, `CLIENT_RETRY`, `MANUAL_REVIEW`), merge boundaries, and lifecycle — is defined in the companion document **[BDR-005 — Conflict Resolution Strategy](bdr-005-conflict-resolution-strategy.md)**. That document separates **detection** (M5.5-BE1 / M5.5-BE1.1), **explicit resolution** (M5.5-BE2), and **protocol idempotency** (DT-OFFLINE-1) from automatic merge (deferred). This BDR remains the primary offline architecture reference; the companion does not replace it.
 
 ### Strategy by entity
 
@@ -298,7 +298,7 @@ M5 requires **new backend sync capabilities**. No implementation exists at V2.4 
 |------------|---------|
 | **Sync cursor / token** | Opaque server-issued cursor (`nextSyncToken`) — **M5.2-BE2 delivered**; issued on every successful `POST /api/mobile/sync`. Android stores and resubmits; backend owns encoding. No business data in token. |
 | **Batch upload endpoint** | `POST /api/mobile/sync` — **M5.3-BE delivered (first upload)**. **M5.4-BE delivered (first download)**. Returns per-operation outcomes plus `delta.inspections`. |
-| **Delta download** | `SyncResponse.delta.inspections` — **M5.4-BE delivered**. Compact `SyncInspectionDeltaResponse` records scoped like mobile inspection lists. Null/invalid token → full delta; valid token → `updatedAt >= issuedAt` filter. Other delta sections remain empty. |
+| **Delta download** | `SyncResponse.delta.inspections` — **M5.4-BE delivered**. Compact `SyncInspectionDeltaResponse` records scoped like mobile inspection lists. Null/invalid token → full delta; valid token → SQL filter `updatedAt >= issuedAt` (**V2.5-STAB-2**). Answers batch-loaded per sync (**V2.5-STAB-2**). Other delta sections remain empty. |
 | **Delta download endpoints** | `GET /api/mobile/sync/changes?since={cursor}` — alternative/future path; primary delta container is `SyncResponse.delta` |
 | **Operation result envelope** | Per-item `SyncOperationStatus`: `ACCEPTED`, `REJECTED`, `CONFLICT`, `RETRY`, `IGNORED` — **M5.3-BE:** `SAVE_INSPECTION_PROGRESS` returns `ACCEPTED` or `REJECTED`; unsupported types return `IGNORED`. **M5.5-BE1:** stale workflow, permission, or entity-state failures return `CONFLICT` plus a matching `conflicts[]` entry. Validation/malformed payloads remain `REJECTED`. One failure does not fail the whole sync. |
 | **Conflict classification** | `SyncConflictType`: … **M5.5-BE1.1:** enriched `conflicts[]` payload … **M5.5-BE2:** explicit resolution via `POST /api/mobile/sync/conflicts/resolve` — stateless, no payload apply, no automatic merge. |
@@ -310,11 +310,12 @@ M5 requires **new backend sync capabilities**. No implementation exists at V2.4 
 
 - Additive Mobile API extension under `/api/mobile/sync` — **M5.3-BE:** `POST /api/mobile/sync` returns protocol envelope with per-operation upload outcomes for supported operations. Existing bundle endpoints remain for online-first clients.
 - **Operation independence:** pending operations are processed individually; rejected items do not abort the sync handshake.
-- **Idempotency (interim):** `operationId` is the client idempotency key; durable server-side operation history is deferred. `SAVE_INSPECTION_PROGRESS` is safe to repeat because progress save is draft upsert semantics.
+- **Idempotency (DT-OFFLINE-1 delivered):** `operationId` is the client idempotency key. Processed operations are stored in `mobile_sync_operation` (outcome metadata only — no payload). Before handler execution, the backend looks up `operationId`; duplicates return the stored `SyncOperationResponse` without re-executing business services. Records are retained for **90 days** (configurable) with scheduled cleanup. Runtime handler failures roll back and do not reserve the `operationId`.
 - **Download correctness (M5.4):** prefer full delta over incorrect incremental sync. Invalid `syncToken` returns `FULL_SYNC_REQUIRED` warning and full inspection delta; sync handshake still succeeds.
 - **Deletion sync:** not implemented in M5.4 — loss of access to an inspection is not reflected as a tombstone in delta. **M5.5-BE1:** permission loss on upload is reported as `CONFLICT` / `PERMISSION_DENIED`, not a delta removal.
 - **Synchronization limits (M5.4.1):** max **100** pending operations per request (HTTP 400 if exceeded, no processing). Max **256 KB** UTF-8 payload per operation (operation-level `REJECTED`, sync continues).
-- **Observability (M5.4.1):** Micrometer metrics (`mobile.sync.requests`, `mobile.sync.operations.accepted|rejected|ignored|conflict`, `mobile.sync.delta.inspections`, `mobile.sync.duration`) and structured INFO logging per sync (user id and counts only — no JWT, payloads, or PII).
+- **Observability (M5.4.1 / DT-OFFLINE-1):** Micrometer metrics (`mobile.sync.requests`, `mobile.sync.operations.accepted|rejected|ignored|conflict|duplicate`, `mobile.sync.delta.inspections`, `mobile.sync.duration`) and structured INFO logging per sync (user id and counts only — no JWT, payloads, or PII).
+- **Sync scalability (V2.5-STAB-2):** Indexes on `inspections.assigned_to_user_id` and `inspections.updated_at` support mobile list and incremental delta queries. Incremental delta uses repository-level `updatedAt` filtering with unchanged administrator/manager/field scoping. Inspection answers are loaded in one batch query per sync handshake.
 - **Protocol versioning:** `protocolVersion` starts at `1`. Clients must ignore unknown JSON fields. Backend increments version only when additive fields are insufficient; token encoding may change without client parsing.
 - Every upload item includes `clientOperationId`, `entityType`, `entityId`, `operationType`, and `payload` matching existing write DTOs where possible.
 - Server responses must be sufficient for Android to update Room without re-fetching full bundles (optimization) or trigger targeted bundle refresh (simplicity path).
@@ -388,7 +389,9 @@ M5.5.1 — Conflict Payload Enrichment (M5.5-BE1.1 delivered)
         ↓ conflicts[] include serverState, clientState, resolutionHint for Android presentation; detection-only
 M5.5.2 — Explicit Conflict Resolution (M5.5-BE2 delivered)
         ↓ POST /api/mobile/sync/conflicts/resolve records client resolution decisions; no server mutation
-M5.5+ — Automatic Merge / Durable History (deferred)
+DT-OFFLINE-1 — Protocol Idempotency Store (delivered)
+        ↓ mobile_sync_operation table; duplicate operationId returns stored outcome without handler execution
+M5.5+ — Automatic Merge / Extended Sync History (deferred)
 M5.6 — Cached Documents
         ↓ Document metadata cache, binary download manager, offline viewing
 M5.7 — Offline UX Polish

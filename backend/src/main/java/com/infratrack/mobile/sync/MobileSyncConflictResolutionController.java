@@ -3,6 +3,7 @@ package com.infratrack.mobile.sync;
 import com.infratrack.config.openapi.StandardApiResponses;
 import com.infratrack.mobile.sync.dto.SyncConflictResolutionRequest;
 import com.infratrack.mobile.sync.dto.SyncConflictResolutionResponse;
+import com.infratrack.observability.MobileEndpointMetricsRecorder;
 import com.infratrack.security.JwtAuthenticationToken;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -24,9 +25,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class MobileSyncConflictResolutionController {
 
     private final SyncConflictResolutionService conflictResolutionService;
+    private final MobileEndpointMetricsRecorder endpointMetrics;
 
-    public MobileSyncConflictResolutionController(SyncConflictResolutionService conflictResolutionService) {
+    public MobileSyncConflictResolutionController(
+            SyncConflictResolutionService conflictResolutionService,
+            MobileEndpointMetricsRecorder endpointMetrics) {
         this.conflictResolutionService = conflictResolutionService;
+        this.endpointMetrics = endpointMetrics;
     }
 
     @PostMapping("/resolve")
@@ -39,6 +44,7 @@ public class MobileSyncConflictResolutionController {
             Authentication authentication,
             @Valid @RequestBody SyncConflictResolutionRequest request) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
-        return ResponseEntity.ok(conflictResolutionService.resolve(userId, request));
+        return ResponseEntity.ok(endpointMetrics.recordSyncConflictResolve(
+                () -> conflictResolutionService.resolve(userId, request)));
     }
 }

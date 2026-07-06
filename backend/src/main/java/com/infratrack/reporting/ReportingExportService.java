@@ -52,6 +52,7 @@ public class ReportingExportService {
     private final OperationalDecisionRepository operationalDecisionRepository;
     private final UserNameLookup userNameLookup;
     private final ReportingPolicyService reportingPolicyService;
+    private final ReportingExportMetricsRecorder exportMetrics;
 
     public ReportingExportService(
             ReportingAuthorizationService authorizationService,
@@ -62,7 +63,8 @@ public class ReportingExportService {
             PreventiveExecutionCandidateRepository preventiveExecutionCandidateRepository,
             OperationalDecisionRepository operationalDecisionRepository,
             UserNameLookup userNameLookup,
-            ReportingPolicyService reportingPolicyService) {
+            ReportingPolicyService reportingPolicyService,
+            ReportingExportMetricsRecorder exportMetrics) {
         this.authorizationService = authorizationService;
         this.assetRepository = assetRepository;
         this.inspectionRepository = inspectionRepository;
@@ -72,85 +74,101 @@ public class ReportingExportService {
         this.operationalDecisionRepository = operationalDecisionRepository;
         this.userNameLookup = userNameLookup;
         this.reportingPolicyService = reportingPolicyService;
+        this.exportMetrics = exportMetrics;
     }
 
     @Transactional(readOnly = true)
     public CsvExportResponse exportAssets(Long userId, Long from, Long to) {
-        return buildCsvResponse(ExportType.ASSETS, loadAssetsExport(userId, from, to));
+        return exportMetrics.recordExport(ExportType.ASSETS, ReportingExportFormat.CSV,
+                () -> buildCsvResponse(ExportType.ASSETS, loadAssetsExport(userId, from, to)));
     }
 
     @Transactional(readOnly = true)
     public ExportFileResponse exportAssetsXlsx(Long userId, Long from, Long to) {
-        return buildXlsxResponse(ExportType.ASSETS, loadAssetsExport(userId, from, to));
+        return exportMetrics.recordExport(ExportType.ASSETS, ReportingExportFormat.XLSX,
+                () -> buildXlsxResponse(ExportType.ASSETS, loadAssetsExport(userId, from, to)));
     }
 
     @Transactional(readOnly = true)
     public ExportFileResponse exportAssetsPdf(Long userId, Long from, Long to) {
-        return buildPdfResponse(ExportType.ASSETS, loadAssetsExport(userId, from, to), from, to);
+        return exportMetrics.recordExport(ExportType.ASSETS, ReportingExportFormat.PDF,
+                () -> buildPdfResponse(ExportType.ASSETS, loadAssetsExport(userId, from, to), from, to));
     }
 
     @Transactional(readOnly = true)
     public CsvExportResponse exportInspections(Long userId, Long from, Long to) {
-        return buildCsvResponse(ExportType.INSPECTIONS, loadInspectionsExport(userId, from, to));
+        return exportMetrics.recordExport(ExportType.INSPECTIONS, ReportingExportFormat.CSV,
+                () -> buildCsvResponse(ExportType.INSPECTIONS, loadInspectionsExport(userId, from, to)));
     }
 
     @Transactional(readOnly = true)
     public ExportFileResponse exportInspectionsXlsx(Long userId, Long from, Long to) {
-        return buildXlsxResponse(ExportType.INSPECTIONS, loadInspectionsExport(userId, from, to));
+        return exportMetrics.recordExport(ExportType.INSPECTIONS, ReportingExportFormat.XLSX,
+                () -> buildXlsxResponse(ExportType.INSPECTIONS, loadInspectionsExport(userId, from, to)));
     }
 
     @Transactional(readOnly = true)
     public ExportFileResponse exportInspectionsPdf(Long userId, Long from, Long to) {
-        return buildPdfResponse(ExportType.INSPECTIONS, loadInspectionsExport(userId, from, to), from, to);
+        return exportMetrics.recordExport(ExportType.INSPECTIONS, ReportingExportFormat.PDF,
+                () -> buildPdfResponse(ExportType.INSPECTIONS, loadInspectionsExport(userId, from, to), from, to));
     }
 
     @Transactional(readOnly = true)
     public CsvExportResponse exportIssues(Long userId, Long from, Long to) {
-        return buildCsvResponse(ExportType.ISSUES, loadIssuesExport(userId, from, to));
+        return exportMetrics.recordExport(ExportType.ISSUES, ReportingExportFormat.CSV,
+                () -> buildCsvResponse(ExportType.ISSUES, loadIssuesExport(userId, from, to)));
     }
 
     @Transactional(readOnly = true)
     public ExportFileResponse exportIssuesXlsx(Long userId, Long from, Long to) {
-        return buildXlsxResponse(ExportType.ISSUES, loadIssuesExport(userId, from, to));
+        return exportMetrics.recordExport(ExportType.ISSUES, ReportingExportFormat.XLSX,
+                () -> buildXlsxResponse(ExportType.ISSUES, loadIssuesExport(userId, from, to)));
     }
 
     @Transactional(readOnly = true)
     public ExportFileResponse exportIssuesPdf(Long userId, Long from, Long to) {
-        return buildPdfResponse(ExportType.ISSUES, loadIssuesExport(userId, from, to), from, to);
+        return exportMetrics.recordExport(ExportType.ISSUES, ReportingExportFormat.PDF,
+                () -> buildPdfResponse(ExportType.ISSUES, loadIssuesExport(userId, from, to), from, to));
     }
 
     @Transactional(readOnly = true)
     public CsvExportResponse exportWorkOrders(Long userId, Long from, Long to) {
-        return buildCsvResponse(ExportType.WORK_ORDERS, loadWorkOrdersExport(userId, from, to));
+        return exportMetrics.recordExport(ExportType.WORK_ORDERS, ReportingExportFormat.CSV,
+                () -> buildCsvResponse(ExportType.WORK_ORDERS, loadWorkOrdersExport(userId, from, to)));
     }
 
     @Transactional(readOnly = true)
     public ExportFileResponse exportWorkOrdersXlsx(Long userId, Long from, Long to) {
-        return buildXlsxResponse(ExportType.WORK_ORDERS, loadWorkOrdersExport(userId, from, to));
+        return exportMetrics.recordExport(ExportType.WORK_ORDERS, ReportingExportFormat.XLSX,
+                () -> buildXlsxResponse(ExportType.WORK_ORDERS, loadWorkOrdersExport(userId, from, to)));
     }
 
     @Transactional(readOnly = true)
     public ExportFileResponse exportWorkOrdersPdf(Long userId, Long from, Long to) {
-        return buildPdfResponse(ExportType.WORK_ORDERS, loadWorkOrdersExport(userId, from, to), from, to);
+        return exportMetrics.recordExport(ExportType.WORK_ORDERS, ReportingExportFormat.PDF,
+                () -> buildPdfResponse(ExportType.WORK_ORDERS, loadWorkOrdersExport(userId, from, to), from, to));
     }
 
     @Transactional(readOnly = true)
     public CsvExportResponse exportPreventiveCandidates(Long userId, Long from, Long to) {
-        return buildCsvResponse(ExportType.PREVENTIVE_CANDIDATES, loadPreventiveCandidatesExport(userId, from, to));
+        return exportMetrics.recordExport(ExportType.PREVENTIVE_CANDIDATES, ReportingExportFormat.CSV,
+                () -> buildCsvResponse(ExportType.PREVENTIVE_CANDIDATES, loadPreventiveCandidatesExport(userId, from, to)));
     }
 
     @Transactional(readOnly = true)
     public ExportFileResponse exportPreventiveCandidatesXlsx(Long userId, Long from, Long to) {
-        return buildXlsxResponse(ExportType.PREVENTIVE_CANDIDATES, loadPreventiveCandidatesExport(userId, from, to));
+        return exportMetrics.recordExport(ExportType.PREVENTIVE_CANDIDATES, ReportingExportFormat.XLSX,
+                () -> buildXlsxResponse(ExportType.PREVENTIVE_CANDIDATES, loadPreventiveCandidatesExport(userId, from, to)));
     }
 
     @Transactional(readOnly = true)
     public ExportFileResponse exportPreventiveCandidatesPdf(Long userId, Long from, Long to) {
-        return buildPdfResponse(
-                ExportType.PREVENTIVE_CANDIDATES,
-                loadPreventiveCandidatesExport(userId, from, to),
-                from,
-                to);
+        return exportMetrics.recordExport(ExportType.PREVENTIVE_CANDIDATES, ReportingExportFormat.PDF,
+                () -> buildPdfResponse(
+                        ExportType.PREVENTIVE_CANDIDATES,
+                        loadPreventiveCandidatesExport(userId, from, to),
+                        from,
+                        to));
     }
 
     private TabularExport loadAssetsExport(Long userId, Long from, Long to) {

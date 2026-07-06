@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,6 +17,15 @@ public interface InspectionAnswerRepository extends JpaRepository<InspectionAnsw
             ORDER BY q.displayOrder ASC
             """)
     List<InspectionAnswer> findByInspectionIdOrderByQuestionDisplayOrder(@Param("inspectionId") Long inspectionId);
+
+    @Query("""
+            SELECT a FROM InspectionAnswer a
+            JOIN FETCH a.question q
+            WHERE a.inspection.id IN :inspectionIds
+            ORDER BY a.inspection.id ASC, q.displayOrder ASC
+            """)
+    List<InspectionAnswer> findByInspectionIdInOrderByQuestionDisplayOrder(
+            @Param("inspectionIds") Collection<Long> inspectionIds);
 
     boolean existsByInspectionIdAndQuestionId(Long inspectionId, Long questionId);
 

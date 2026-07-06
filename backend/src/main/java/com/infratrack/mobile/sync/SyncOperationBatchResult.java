@@ -10,9 +10,10 @@ import java.util.List;
  */
 record SyncOperationBatchResult(
         List<SyncOperationResponse> operations,
-        List<SyncConflictResponse> conflicts) {
+        List<SyncConflictResponse> conflicts,
+        int duplicateOperations) {
 
     static SyncOperationBatchResult empty() {
-        return new SyncOperationBatchResult(List.of(), List.of());
+        return new SyncOperationBatchResult(List.of(), List.of(), 0);
     }
 }

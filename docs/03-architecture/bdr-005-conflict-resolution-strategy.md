@@ -34,6 +34,7 @@ These are independent concerns:
 |---------|----------------|-----------|
 | Detection | Classify conflict type; return enriched payload | **Delivered** (M5.5-BE1 / M5.5-BE1.1) |
 | Resolution | Accept explicit client decisions; return outcome status | **Delivered** (M5.5-BE2 — stateless, no merge) |
+| Protocol idempotency | Deduplicate `operationId` before handler execution | **Delivered** (DT-OFFLINE-1) |
 | Automatic merge | Apply or merge client payload server-side | **Planned** |
 
 Separating them allows Android to integrate sync incrementally: clients can handle `CONFLICT` outcomes and display enriched payloads before any resolution endpoint or merge logic exists. The backend can evolve resolution policies without changing detection semantics.
@@ -215,7 +216,9 @@ No recommendation. Treat as `MANUAL_REVIEW` from a safety perspective until poli
 | `VERSION_MISMATCH` | `CLIENT_RETRY` |
 | `UNKNOWN` | `UNKNOWN` |
 
-These mappings are returned in `conflicts[].resolutionHint` today (M5.5-BE1.1). They guide Android UX and future resolution endpoints; they are not server-side automatic actions.
+These mappings are returned in `conflicts[].resolutionHint` today (M5.5-BE1.1). They guide Android UX and the explicit resolution endpoint (M5.5-BE2); they are not server-side automatic actions.
+
+**Idempotency (DT-OFFLINE-1):** Conflict detection and explicit resolution both operate on idempotent sync operations. Re-submitting the same `operationId` returns the stored sync outcome without re-executing handlers — Android may safely retry sync after timeout before or after recording a resolution decision.
 
 ---
 

@@ -4,6 +4,7 @@ import com.infratrack.config.GlobalExceptionHandler;
 import com.infratrack.config.SecurityConfig;
 import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.mobile.sync.dto.SyncResponse;
+import com.infratrack.observability.ObservabilityTestConfiguration;
 import com.infratrack.security.JwtAuthenticationFilter;
 import com.infratrack.security.JwtTokenProvider;
 import com.infratrack.security.UserAccountStatusService;
@@ -28,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = MobileSyncController.class)
-@Import({GlobalExceptionHandler.class, SecurityConfig.class, JwtAuthenticationFilter.class, JwtTokenProvider.class})
+@Import({GlobalExceptionHandler.class, SecurityConfig.class, JwtAuthenticationFilter.class, JwtTokenProvider.class, ObservabilityTestConfiguration.class})
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class MobileSyncControllerTest {
@@ -54,11 +55,11 @@ class MobileSyncControllerTest {
     }
 
     @Test
-    void sync_withoutToken_returnsForbidden() throws Exception {
+    void sync_withoutToken_returnsUnauthorized() throws Exception {
         mockMvc.perform(post("/api/mobile/sync")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validSyncRequestJson()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

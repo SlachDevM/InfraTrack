@@ -6,6 +6,7 @@ import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.mobile.sync.dto.SyncConflictResolutionAction;
 import com.infratrack.mobile.sync.dto.SyncConflictResolutionResponse;
 import com.infratrack.mobile.sync.dto.SyncConflictResolutionStatus;
+import com.infratrack.observability.ObservabilityTestConfiguration;
 import com.infratrack.security.JwtAuthenticationFilter;
 import com.infratrack.security.JwtTokenProvider;
 import com.infratrack.security.UserAccountStatusService;
@@ -30,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = MobileSyncConflictResolutionController.class)
-@Import({GlobalExceptionHandler.class, SecurityConfig.class, JwtAuthenticationFilter.class, JwtTokenProvider.class})
+@Import({GlobalExceptionHandler.class, SecurityConfig.class, JwtAuthenticationFilter.class, JwtTokenProvider.class, ObservabilityTestConfiguration.class})
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class MobileSyncConflictResolutionControllerTest {
@@ -57,11 +58,11 @@ class MobileSyncConflictResolutionControllerTest {
     }
 
     @Test
-    void resolve_withoutToken_returnsForbidden() throws Exception {
+    void resolve_withoutToken_returnsUnauthorized() throws Exception {
         mockMvc.perform(post("/api/mobile/sync/conflicts/resolve")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validRequestJson("SERVER_WINS")))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

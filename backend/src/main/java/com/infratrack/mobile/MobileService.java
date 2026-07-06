@@ -159,8 +159,13 @@ public class MobileService {
 
     @Transactional(readOnly = true)
     public List<Inspection> listScopedInspectionsForSync(User user) {
+        return listScopedInspectionsForSync(user, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Inspection> listScopedInspectionsForSync(User user, Long updatedSinceMillis) {
         authorizationService.requireMobileUser(user.getId());
-        return loadScopedInspections(user);
+        return loadScopedInspectionsForSync(user, updatedSinceMillis);
     }
 
     @Transactional(readOnly = true)
@@ -349,6 +354,33 @@ public class MobileService {
                     .toList();
         }
         return inspectionRepository.findByAssignedToUserId(user.getId());
+    }
+
+    private List<Inspection> loadScopedInspectionsForSync(User user, Long updatedSinceMillis) {
+        if (user.getRole().isAdministrator()) {
+            if (updatedSinceMillis == null) {
+                return inspectionRepository.findByStatus(InspectionStatus.ASSIGNED);
+            }
+            return inspectionRepository.findByStatusAndUpdatedAtGreaterThanEqual(
+                    InspectionStatus.ASSIGNED, updatedSinceMillis);
+        }
+        if (user.getRole().isManager()) {
+            if (user.getDepartment() == null) {
+                return List.of();
+            }
+            Long departmentId = user.getDepartment().getId();
+            if (updatedSinceMillis == null) {
+                return inspectionRepository.findByAsset_Department_IdAndStatus(
+                        departmentId, InspectionStatus.ASSIGNED);
+            }
+            return inspectionRepository.findByAsset_Department_IdAndStatusAndUpdatedAtGreaterThanEqual(
+                    departmentId, InspectionStatus.ASSIGNED, updatedSinceMillis);
+        }
+        if (updatedSinceMillis == null) {
+            return inspectionRepository.findByAssignedToUserId(user.getId());
+        }
+        return inspectionRepository.findByAssignedToUserIdAndUpdatedAtGreaterThanEqual(
+                user.getId(), updatedSinceMillis);
     }
 
     private List<WorkOrder> loadScopedWorkOrders(User user) {

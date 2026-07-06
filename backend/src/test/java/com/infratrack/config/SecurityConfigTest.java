@@ -17,7 +17,9 @@ class SecurityConfigTest {
 
     @BeforeEach
     void setUp() {
-        securityConfig = new SecurityConfig(mock(JwtAuthenticationFilter.class));
+        securityConfig = new SecurityConfig(
+                mock(JwtAuthenticationFilter.class),
+                mock(com.infratrack.security.JwtAuthenticationEntryPoint.class));
         ReflectionTestUtils.setField(securityConfig, "allowedOrigins", "http://localhost:3000");
         ReflectionTestUtils.setField(securityConfig, "swaggerUiEnabled", true);
         ReflectionTestUtils.setField(securityConfig, "apiDocsEnabled", true);

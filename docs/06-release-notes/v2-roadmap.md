@@ -166,23 +166,26 @@ The KPI API is designed for reuse by the React web client, future Android applic
 
 **Business value:** Link operational history into asset-level insight; provide a stable sync contract for field offline work.
 
-**Status:** In progress — M5.5-BE2 (explicit conflict resolution) validated.
+**Status:** In progress — DT-OFFLINE-1, V2.5-STAB-2, and V2.5-STAB-3 validated.
 
 **Delivered capabilities:**
 
 - **Sprint M5.2-BE1 (validated):** `POST /api/mobile/sync` — sync protocol DTOs and response envelope. Extension points: `SyncOperationProcessor`, `SyncTokenService`, `SyncConflictResolver`. No database changes.
 - **Sprint M5.2-BE2 (validated):** Opaque `nextSyncToken`, `protocolVersion: 1`, `SyncDeltaResponse` envelope, typed operation/conflict/warning enums.
-- **Sprint M5.3-BE (validated):** `SAVE_INSPECTION_PROGRESS` upload processing via `InspectionService.saveInspectionProgress`. Per-operation outcomes. No durable idempotency store.
+- **Sprint M5.3-BE (validated):** `SAVE_INSPECTION_PROGRESS` upload processing via `InspectionService.saveInspectionProgress`. Per-operation outcomes.
 - **Sprint M5.4-BE (validated):** `delta.inspections` download — scoped inspection sync records with answers. Full delta on null/invalid token; incremental filter by `updatedAt` when token is valid. No tombstones; other delta sections empty.
 - **Sprint M5.4.1-BE (validated):** Sync limits (100 operations, 256 KB payload), Micrometer metrics, structured logging, `SyncDiagnostics` helper. No new sync capabilities.
 - **Sprint M5.5-BE1 (validated):** Conflict detection for `SAVE_INSPECTION_PROGRESS` — `CONFLICT` status plus `conflicts[]` with `SyncConflictType`. Metric `mobile.sync.operations.conflict`. No automatic resolution, tombstones, or Android changes.
 - **Sprint M5.5-BE1.1 (validated):** Enriched conflict payload — `SyncConflictServerState`, `SyncConflictClientState`, `SyncResolutionHint` on `conflicts[]`. Detection-only; no merge or resolution.
 - **Sprint M5.5-BE2 (validated):** Explicit conflict resolution — `POST /api/mobile/sync/conflicts/resolve` for `SAVE_INSPECTION_PROGRESS`. Stateless outcomes (`RESOLVED`, `RETRY_REQUIRED`, `MANUAL_REVIEW_REQUIRED`, `REJECTED`). No payload apply; no automatic merge.
+- **Sprint DT-OFFLINE-1 (validated):** Protocol-level idempotency — `mobile_sync_operation` store; duplicate `operationId` returns stored outcome without handler execution. 90-day retention with scheduled cleanup. Prerequisite for future non-idempotent sync operations (work orders, issues).
+- **Sprint V2.5-STAB-2 (validated):** Sync scalability prep — SQL-level incremental inspection delta filtering (`updatedAt >= syncToken.issuedAt`), batch answer loading for `delta.inspections`, indexes on `inspections.assigned_to_user_id` and `inspections.updated_at`. No API, Android, or sync protocol changes.
+- **Sprint V2.5-STAB-3 (validated):** Production observability — authentication, sync, reporting, and endpoint metrics; enriched sync structured logging; Prometheus-friendly naming. No API, behaviour, or schema changes.
 
 **Planned within this version family (not yet delivered):**
 
 - Asset health indicators, knowledge summaries, cross-workflow timelines
-- Automatic merge, tombstones, durable sync history, additional delta/upload types (M5.6+ backend / M5 Android)
+- Automatic merge, tombstones, extended sync audit history, additional delta/upload types (M5.6+ backend / M5 Android)
 
 **Reference:** [BDR-005](../03-architecture/bdr-005-offline-synchronization-architecture.md), [Mobile API](../04-api/mobile-api.md)
 

@@ -4,6 +4,8 @@ import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.mobile.MobileAuthorizationService;
 import com.infratrack.mobile.sync.dto.SyncRequest;
 import com.infratrack.mobile.sync.dto.SyncResponse;
+import com.infratrack.mobile.sync.dto.SyncWarningCode;
+import com.infratrack.mobile.sync.dto.SyncWarningResponse;
 import com.infratrack.user.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,9 +51,13 @@ public class MobileSyncService {
         validateBatchSize(request);
 
         SyncDiagnostics diagnostics = SyncDiagnostics.start();
+        diagnostics.recordBatchSize(pendingOperationCount(request));
+        diagnostics.recordProtocolVersion(SyncProtocolVersion.CURRENT);
+        diagnostics.recordInvalidToken(hasInvalidSyncToken(request.getSyncToken()));
 
         SyncOperationBatchResult operationBatch =
                 syncOperationProcessor.process(userId, request.getPendingOperations());
+        diagnostics.recordDuplicateOperations(operationBatch.duplicateOperations());
 
         SyncResponse response = new SyncResponse();
         response.setProtocolVersion(SyncProtocolVersion.CURRENT);
@@ -66,21 +72,29 @@ public class MobileSyncService {
                 ? Collections.emptyList()
                 : List.copyOf(deltaResult.warnings()));
         response.setNextSyncToken(syncTokenService.resolveNextSyncToken(userId, request.getSyncToken()));
+
+        boolean requiresFullSync = requiresFullSync(deltaResult.warnings());
         response.setRequiresFullSync(false);
+        diagnostics.recordRequiresFullSync(requiresFullSync);
 
         diagnostics.recordOperations(response.getOperations());
         diagnostics.recordDeltaInspections(response.getDelta().getInspections().size());
         syncMetricsRecorder.record(diagnostics);
         log.info(
-                "Sync completed user={} operations={} accepted={} rejected={} ignored={} conflicts={} deltaInspections={} durationMs={}",
+                "Sync completed userId={} protocolVersion={} operationCount={} accepted={} rejected={} "
+                        + "conflicts={} ignored={} duplicateOperations={} deltaInspectionCount={} durationMs={} "
+                        + "requiresFullSync={}",
                 userId,
+                diagnostics.protocolVersion(),
                 diagnostics.processed(),
                 diagnostics.accepted(),
                 diagnostics.rejected(),
-                diagnostics.ignored(),
                 diagnostics.conflicts(),
+                diagnostics.ignored(),
+                diagnostics.duplicateOperations(),
                 diagnostics.deltaInspections(),
-                diagnostics.elapsedMillis());
+                diagnostics.elapsedMillis(),
+                diagnostics.requiresFullSync());
 
         return response;
     }
@@ -90,5 +104,21 @@ public class MobileSyncService {
         if (pendingOperations != null && pendingOperations.size() > SyncLimits.MAX_PENDING_OPERATIONS) {
             throw new BusinessValidationException(SyncLimits.BATCH_LIMIT_MESSAGE);
         }
+    }
+
+    private static int pendingOperationCount(SyncRequest request) {
+        List<?> pendingOperations = request.getPendingOperations();
+        return pendingOperations == null ? 0 : pendingOperations.size();
+    }
+
+    private static boolean hasInvalidSyncToken(String syncToken) {
+        return syncToken != null
+                && !syncToken.isBlank()
+                && SyncToken.tryFromOpaqueValue(syncToken).isEmpty();
+    }
+
+    private static boolean requiresFullSync(List<SyncWarningResponse> warnings) {
+        return warnings.stream()
+                .anyMatch(warning -> warning.getCode() == SyncWarningCode.FULL_SYNC_REQUIRED);
     }
 }

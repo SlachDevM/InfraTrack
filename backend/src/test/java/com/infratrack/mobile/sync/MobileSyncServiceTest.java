@@ -11,6 +11,8 @@ import com.infratrack.mobile.sync.dto.SyncInspectionDeltaResponse;
 import com.infratrack.mobile.sync.dto.SyncOperationStatus;
 import com.infratrack.mobile.sync.dto.SyncRequest;
 import com.infratrack.mobile.sync.dto.SyncResponse;
+import com.infratrack.mobile.sync.dto.SyncWarningCode;
+import com.infratrack.mobile.sync.dto.SyncWarningResponse;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,7 +69,9 @@ class MobileSyncServiceTest {
                 authorizationService,
                 clock,
                 new DefaultSyncTokenService(clock),
-                new DefaultSyncOperationProcessor(List.of(handler)),
+                new DefaultSyncOperationProcessor(
+                        List.of(handler),
+                        SyncTestIdempotencySupport.passthroughService(clock)),
                 inspectionSyncDeltaService,
                 new SyncMetricsRecorder(meterRegistry));
         lenient().when(inspectionSyncDeltaService.build(any(User.class), any()))
@@ -161,6 +165,26 @@ class MobileSyncServiceTest {
         assertThatThrownBy(() -> mobileSyncService.sync(FIELD_USER_ID, validRequest()))
                 .isInstanceOf(ForbiddenOperationException.class)
                 .hasMessage("Mobile API access is not available for this role.");
+    }
+
+    @Test
+    void sync_invalidSyncToken_recordsInvalidTokenAndFullSyncMetrics() {
+        User fieldUser = user(UserRole.FIELD_EMPLOYEE);
+        when(authorizationService.requireMobileUser(FIELD_USER_ID)).thenReturn(fieldUser);
+        when(inspectionSyncDeltaService.build(fieldUser, "bad-token"))
+                .thenReturn(new InspectionSyncDeltaService.SyncDeltaBuildResult(
+                        SyncDeltaResponse.empty(),
+                        List.of(new SyncWarningResponse(
+                                SyncWarningCode.FULL_SYNC_REQUIRED,
+                                "Sync token is invalid; returning full inspection delta."))));
+
+        SyncRequest request = validRequest();
+        request.setSyncToken("bad-token");
+
+        mobileSyncService.sync(FIELD_USER_ID, request);
+
+        assertThat(meterRegistry.get("mobile.sync.invalid_token").counter().count()).isEqualTo(1.0);
+        assertThat(meterRegistry.get("mobile.sync.full_sync_required").counter().count()).isEqualTo(1.0);
     }
 
     private SyncRequest validRequest() {

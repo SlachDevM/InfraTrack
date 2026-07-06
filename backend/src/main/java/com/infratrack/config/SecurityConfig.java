@@ -1,5 +1,6 @@
 package com.infratrack.config;
 
+import com.infratrack.security.JwtAuthenticationEntryPoint;
 import com.infratrack.security.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -34,6 +35,7 @@ public class SecurityConfig {
     );
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:80,http://localhost}")
     private String allowedOrigins;
@@ -47,8 +49,11 @@ public class SecurityConfig {
     @Value("${spring.profiles.active:dev}")
     private String activeProfile;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
     }
 
     @Bean
@@ -105,6 +110,7 @@ public class SecurityConfig {
 
                     authz.anyRequest().authenticated();
                 })
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

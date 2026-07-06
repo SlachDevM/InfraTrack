@@ -8,6 +8,7 @@ import com.infratrack.exception.NotFoundException;
 import com.infratrack.inspection.dto.InspectionAnswerResponse;
 import com.infratrack.inspection.dto.InspectionResponse;
 import com.infratrack.inspectiontemplate.DecisionRuleEvaluationService;
+import com.infratrack.observability.ObservabilityTestConfiguration;
 import com.infratrack.security.JwtAuthenticationFilter;
 import com.infratrack.security.JwtTokenProvider;
 import com.infratrack.security.UserAccountStatusService;
@@ -36,7 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = InspectionController.class)
-@Import({GlobalExceptionHandler.class, SecurityConfig.class, JwtAuthenticationFilter.class, JwtTokenProvider.class})
+@Import({GlobalExceptionHandler.class, SecurityConfig.class, JwtAuthenticationFilter.class, JwtTokenProvider.class, ObservabilityTestConfiguration.class})
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class InspectionControllerTest {
@@ -64,11 +65,11 @@ class InspectionControllerTest {
     }
 
     @Test
-    void saveInspectionAnswers_withoutToken_returnsForbidden() throws Exception {
+    void saveInspectionAnswers_withoutToken_returnsUnauthorized() throws Exception {
         mockMvc.perform(put("/api/inspections/100/answers")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validPayload()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -134,11 +135,11 @@ class InspectionControllerTest {
     }
 
     @Test
-    void saveInspectionProgress_withoutToken_returnsForbidden() throws Exception {
+    void saveInspectionProgress_withoutToken_returnsUnauthorized() throws Exception {
         mockMvc.perform(put("/api/inspections/100/progress")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validProgressPayload()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

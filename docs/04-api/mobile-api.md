@@ -360,9 +360,9 @@ See [BDR-005 Conflict Resolution Strategy](../03-architecture/bdr-005-conflict-r
 - Keep or surface `REJECTED` operations according to UX rules (malformed or invalid payload).
 - `IGNORED` applies only when the operation type is obsolete or unsupported.
 
-### Idempotency (M5.3)
+### Idempotency (M5.3 / DT-OFFLINE-1)
 
-`operationId` is the conceptual idempotency key. Durable sync operation history is **not** persisted yet — repeated uploads are safe for `SAVE_INSPECTION_PROGRESS` because the underlying service uses draft upsert semantics.
+`operationId` is the client idempotency key. **DT-OFFLINE-1:** the backend persists processed outcomes in `mobile_sync_operation` and returns the stored `SyncOperationResponse` when the same `operationId` is submitted again — handlers and business services are not re-executed. Retention default **90 days** (`mobile.sync.idempotency.retention-days`). Duplicate metric: `mobile.sync.operations.duplicate`.
 
 ### Typed envelopes
 

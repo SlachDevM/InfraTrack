@@ -100,6 +100,8 @@ Future reporting policy modes may include `OPERATIONAL`, `MANAGEMENT`, `EXECUTIV
 
 **Approval Policy** is the fifth organizational policy foundation. An `ApprovalPolicy` abstraction and `DefaultApprovalPolicy` now govern whether approval steps are required for completion review, manager operational decisions, suggested action approval, and preventive candidate approval. Integrated workflow services consult `ApprovalPolicyService.getPolicy()` at existing approval decision points. No configurable modes, properties, persistence, or admin UI exist yet — `DefaultApprovalPolicy` preserves existing behaviour exactly.
 
+> **Architectural constraint (BDR-001 alignment):** Approval Policies may customize organizational approval behaviour but must **never bypass the mandatory human validation** defined by [BDR-001 — Human-in-the-Loop Decision Engine](bdr-001-human-in-the-loop-decision-engine.md) unless a future BDR explicitly supersedes that requirement. Policies may add stricter gates; they must not auto-create Issues, Operational Decisions, or Work Orders from rule evaluation.
+
 Future approval policy modes may include `STANDARD`, `SIMPLIFIED`, and `STRICT` (documentation only).
 
 Inspection visibility may eventually support modes such as:

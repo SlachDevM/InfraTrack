@@ -55,6 +55,18 @@ JWT Bearer authentication is unchanged — no refresh tokens, no HttpOnly cookie
 
 After signature and expiry validation, `JwtAuthenticationFilter` calls `UserAccountStatusService` to confirm the account is still enabled. Disabled or missing users receive HTTP `401 Unauthorized`; the filter chain does not continue and controllers are not reached.
 
+### Authentication metrics (V2.5-STAB-3)
+
+Micrometer counters support production monitoring of JWT outcomes (no JWT content is logged):
+
+| Metric | When incremented |
+|--------|------------------|
+| `mobile.auth.jwt.invalid` | Bearer token present but signature, format, or expiry validation fails |
+| `mobile.auth.jwt.disabled_user` | Valid JWT rejected because the account is disabled |
+| `mobile.auth.jwt.missing` | Protected endpoint accessed without authentication (`AuthenticationEntryPoint`) |
+
+Tags use fixed metric names only — no `userId` or token identifiers.
+
 | Control | Setting |
 |---------|---------|
 | Cache | Caffeine, per-user enabled flag |
@@ -113,9 +125,9 @@ Bearer token storage in clients is an intentional architecture decision — see 
 
 These limits reduce abuse and accidental overload before M5.5 conflict resolution.
 
-### Mobile sync observability (M5.4.1)
+### Mobile sync observability (M5.4.1, V2.5-STAB-3)
 
-Micrometer counters and a timer are emitted per successful sync handshake (via Spring Boot Actuator metrics registry):
+Micrometer counters, distribution summaries, timers, and structured INFO logging are emitted per successful sync handshake:
 
 | Metric | Purpose |
 |--------|---------|
@@ -123,10 +135,25 @@ Micrometer counters and a timer are emitted per successful sync handshake (via S
 | `mobile.sync.operations.accepted` | Accepted pending operations |
 | `mobile.sync.operations.rejected` | Rejected pending operations |
 | `mobile.sync.operations.ignored` | Ignored pending operations |
-| `mobile.sync.delta.inspections` | Inspection records in delta |
+| `mobile.sync.operations.conflict` | Conflict pending operations |
+| `mobile.sync.operations.duplicate` | Idempotent duplicate replays (DT-OFFLINE-1) |
+| `mobile.sync.delta.inspections` | Inspection records in delta (counter) |
+| `mobile.sync.delta.size` | Inspection delta size distribution (V2.5-STAB-3) |
+| `mobile.sync.batch.size` | Pending operation batch size distribution (V2.5-STAB-3) |
+| `mobile.sync.full_sync_required` | Responses that included `FULL_SYNC_REQUIRED` warning |
+| `mobile.sync.invalid_token` | Requests with unparseable sync token |
+| `mobile.sync.protocol_version` | Counter tagged `version=<n>` (low cardinality) |
 | `mobile.sync.duration` | End-to-end sync duration |
 
-Structured **INFO** logging records one line per sync: user id, operation counts, delta inspection count, and duration. Logs exclude JWTs, operation payloads, inspection answers, document names, and user-entered text.
+Endpoint timers (V2.5-STAB-3): `mobile.endpoint.sync`, `mobile.endpoint.sync.conflicts.resolve`, `mobile.endpoint.dashboard`, `mobile.endpoint.my_inspections`, `mobile.endpoint.assets.lookup`.
+
+Reporting export metrics (V2.5-STAB-3): `reporting.export.csv|xlsx|pdf`, `reporting.export.failure`, `reporting.export.duration` tagged by `entity` and `format` (enum names only).
+
+Structured **INFO** logging records one line per sync with: `userId`, `protocolVersion`, `operationCount`, `accepted`, `rejected`, `conflicts`, `ignored`, `duplicateOperations`, `deltaInspectionCount`, `durationMs`, `requiresFullSync`. Logs exclude JWTs, operation payloads, inspection answers, document names, and user-entered text.
+
+### Prometheus readiness (V2.5-STAB-3)
+
+Metrics use dot-separated names and low-cardinality tags (`version`, `entity`, `format`). No `userId`, `assetId`, or `operationId` labels. Enable Prometheus scraping via `management.endpoints.web.exposure.include` when operational monitoring is deployed.
 
 ### Dependency changes (summary)
 

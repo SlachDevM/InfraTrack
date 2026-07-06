@@ -8,6 +8,7 @@ import com.infratrack.mobile.dto.MobileInspectionSummaryResponse;
 import com.infratrack.mobile.dto.MobileMeResponse;
 import com.infratrack.mobile.dto.MobileWorkOrderBundleResponse;
 import com.infratrack.mobile.dto.MobileWorkOrderSummaryResponse;
+import com.infratrack.observability.MobileEndpointMetricsRecorder;
 import com.infratrack.security.JwtAuthenticationToken;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -32,9 +33,11 @@ import java.util.List;
 public class MobileController {
 
     private final MobileService mobileService;
+    private final MobileEndpointMetricsRecorder endpointMetrics;
 
-    public MobileController(MobileService mobileService) {
+    public MobileController(MobileService mobileService, MobileEndpointMetricsRecorder endpointMetrics) {
         this.mobileService = mobileService;
+        this.endpointMetrics = endpointMetrics;
     }
 
     @GetMapping("/me")
@@ -50,7 +53,7 @@ public class MobileController {
     @ApiResponse(responseCode = "200", description = "Personal assignment counts")
     public ResponseEntity<MobileDashboardResponse> getDashboard(Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
-        return ResponseEntity.ok(mobileService.getDashboard(userId));
+        return ResponseEntity.ok(endpointMetrics.recordDashboard(() -> mobileService.getDashboard(userId)));
     }
 
     @GetMapping("/my-inspections")
@@ -58,7 +61,7 @@ public class MobileController {
     @ApiResponse(responseCode = "200", description = "Inspection summaries scoped to the authenticated user")
     public ResponseEntity<List<MobileInspectionSummaryResponse>> getMyInspections(Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
-        return ResponseEntity.ok(mobileService.getMyInspections(userId));
+        return ResponseEntity.ok(endpointMetrics.recordMyInspections(() -> mobileService.getMyInspections(userId)));
     }
 
     @GetMapping("/inspections/{inspectionId}/bundle")
@@ -101,6 +104,6 @@ public class MobileController {
             @Parameter(description = "Scanned asset business code (e.g. AST-1A2B3C4D)")
             @RequestParam String code) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
-        return ResponseEntity.ok(mobileService.getAssetContext(userId, code));
+        return ResponseEntity.ok(endpointMetrics.recordAssetLookup(() -> mobileService.getAssetContext(userId, code)));
     }
 }

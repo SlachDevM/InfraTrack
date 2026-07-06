@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -47,7 +48,9 @@ class DefaultSyncOperationProcessorTest {
                 inspectionService,
                 new ObjectMapper(),
                 clock);
-        processor = new DefaultSyncOperationProcessor(List.of(handler));
+        processor = new DefaultSyncOperationProcessor(
+                List.of(handler),
+                SyncTestIdempotencySupport.passthroughService(clock));
     }
 
     @Test
@@ -146,6 +149,45 @@ class DefaultSyncOperationProcessorTest {
         assertThat(batch.operations().get(0).getStatus()).isEqualTo(SyncOperationStatus.REJECTED);
         assertThat(batch.operations().get(0).getMessage()).isEqualTo(SyncLimits.PAYLOAD_SIZE_MESSAGE);
         assertThat(batch.conflicts()).isEmpty();
+    }
+
+    @Test
+    void process_duplicateOperationId_returnsStoredResponseWithoutCallingHandler() {
+        ProcessedSyncOperationRepository repository = org.mockito.Mockito.mock(ProcessedSyncOperationRepository.class);
+        java.util.Map<String, ProcessedSyncOperation> store = new java.util.HashMap<>();
+        when(repository.findById(org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(invocation -> java.util.Optional.ofNullable(store.get(invocation.getArgument(0))));
+        when(repository.save(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> {
+            ProcessedSyncOperation saved = invocation.getArgument(0);
+            store.put(saved.getOperationId(), saved);
+            return saved;
+        });
+
+        Clock clock = Clock.fixed(FIXED_INSTANT, ZoneOffset.UTC);
+        io.micrometer.core.instrument.simple.SimpleMeterRegistry meterRegistry =
+                new io.micrometer.core.instrument.simple.SimpleMeterRegistry();
+        ProcessedSyncOperationService idempotencyService = new ProcessedSyncOperationService(
+                repository,
+                clock,
+                new SyncMetricsRecorder(meterRegistry));
+        InspectionProgressSyncOperationHandler handler = new InspectionProgressSyncOperationHandler(
+                inspectionService,
+                new ObjectMapper(),
+                clock);
+        DefaultSyncOperationProcessor idempotentProcessor =
+                new DefaultSyncOperationProcessor(List.of(handler), idempotencyService);
+
+        when(inspectionService.saveInspectionProgress(eq(123L), org.mockito.ArgumentMatchers.any(), eq(USER_ID)))
+                .thenReturn(new InspectionResponse());
+
+        PendingOperationRequest operation = progressOperation("op-dup", 123L);
+        idempotentProcessor.process(USER_ID, List.of(operation));
+        SyncOperationBatchResult second = idempotentProcessor.process(USER_ID, List.of(operation));
+
+        verify(inspectionService, times(1))
+                .saveInspectionProgress(eq(123L), org.mockito.ArgumentMatchers.any(), eq(USER_ID));
+        assertThat(second.operations().get(0).getStatus()).isEqualTo(SyncOperationStatus.ACCEPTED);
+        assertThat(meterRegistry.get("mobile.sync.operations.duplicate").counter().count()).isEqualTo(1.0);
     }
 
     private static String oversizedPayload() {

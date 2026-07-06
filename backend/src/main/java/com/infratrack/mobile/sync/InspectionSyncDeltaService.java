@@ -13,8 +13,8 @@ import com.infratrack.user.UserNameLookup;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -46,32 +46,18 @@ class InspectionSyncDeltaService {
     @Transactional(readOnly = true)
     SyncDeltaBuildResult build(User user, String previousSyncToken) {
         List<SyncWarningResponse> warnings = new ArrayList<>();
-        List<Inspection> scoped = mobileService.listScopedInspectionsForSync(user);
-
         Optional<SyncToken> previousToken = SyncToken.tryFromOpaqueValue(previousSyncToken);
-        List<Inspection> inspectionsForDelta;
-        if (previousSyncToken == null || previousSyncToken.isBlank()) {
-            inspectionsForDelta = scoped;
-        } else if (previousToken.isEmpty()) {
-            inspectionsForDelta = scoped;
-            warnings.add(new SyncWarningResponse(SyncWarningCode.FULL_SYNC_REQUIRED, INVALID_TOKEN_MESSAGE));
-        } else if (previousToken.get().getVersion() != SyncProtocolVersion.CURRENT) {
-            inspectionsForDelta = scoped;
-            warnings.add(new SyncWarningResponse(
-                    SyncWarningCode.FULL_SYNC_REQUIRED,
-                    "Sync token protocol version is unsupported; returning full inspection delta."));
-        } else {
-            long sinceMillis = previousToken.get().getIssuedAt().toEpochMilli();
-            inspectionsForDelta = scoped.stream()
-                    .filter(inspection -> inspection.getUpdatedAt() >= sinceMillis)
-                    .toList();
-        }
+        Long updatedSinceMillis = resolveUpdatedSinceMillis(previousSyncToken, previousToken, warnings);
 
+        List<Inspection> inspectionsForDelta =
+                mobileService.listScopedInspectionsForSync(user, updatedSinceMillis);
+
+        Map<Long, List<InspectionAnswer>> answersByInspectionId = loadAnswersByInspectionId(inspectionsForDelta);
         Map<Long, String> assignedToNames = resolveAssignedToNames(inspectionsForDelta);
         List<SyncInspectionDeltaResponse> inspectionDeltas = new ArrayList<>(inspectionsForDelta.size());
         for (Inspection inspection : inspectionsForDelta) {
-            List<InspectionAnswer> answers = inspectionAnswerRepository
-                    .findByInspectionIdOrderByQuestionDisplayOrder(inspection.getId());
+            List<InspectionAnswer> answers = answersByInspectionId.getOrDefault(
+                    inspection.getId(), Collections.emptyList());
             String assignedToName = assignedToNames.get(inspection.getAssignedToUserId());
             inspectionDeltas.add(SyncInspectionDeltaResponse.from(inspection, answers, assignedToName));
         }
@@ -79,6 +65,36 @@ class InspectionSyncDeltaService {
         SyncDeltaResponse delta = SyncDeltaResponse.empty();
         delta.setInspections(inspectionDeltas);
         return new SyncDeltaBuildResult(delta, warnings);
+    }
+
+    private Long resolveUpdatedSinceMillis(
+            String previousSyncToken,
+            Optional<SyncToken> previousToken,
+            List<SyncWarningResponse> warnings) {
+        if (previousSyncToken == null || previousSyncToken.isBlank()) {
+            return null;
+        }
+        if (previousToken.isEmpty()) {
+            warnings.add(new SyncWarningResponse(SyncWarningCode.FULL_SYNC_REQUIRED, INVALID_TOKEN_MESSAGE));
+            return null;
+        }
+        if (previousToken.get().getVersion() != SyncProtocolVersion.CURRENT) {
+            warnings.add(new SyncWarningResponse(
+                    SyncWarningCode.FULL_SYNC_REQUIRED,
+                    "Sync token protocol version is unsupported; returning full inspection delta."));
+            return null;
+        }
+        return previousToken.get().getIssuedAt().toEpochMilli();
+    }
+
+    private Map<Long, List<InspectionAnswer>> loadAnswersByInspectionId(List<Inspection> inspections) {
+        if (inspections.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Long> inspectionIds = inspections.stream().map(Inspection::getId).toList();
+        return inspectionAnswerRepository.findByInspectionIdInOrderByQuestionDisplayOrder(inspectionIds)
+                .stream()
+                .collect(Collectors.groupingBy(answer -> answer.getInspection().getId()));
     }
 
     private Map<Long, String> resolveAssignedToNames(List<Inspection> inspections) {

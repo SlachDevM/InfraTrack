@@ -1,6 +1,7 @@
 package com.infratrack.security;
 
 import jakarta.servlet.FilterChain;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,8 @@ class JwtAuthenticationFilterTest {
     private FilterChain filterChain;
 
     private JwtTokenProvider tokenProvider;
+    private SimpleMeterRegistry meterRegistry;
+    private AuthMetricsRecorder authMetricsRecorder;
     private JwtAuthenticationFilter filter;
 
     @BeforeEach
@@ -41,7 +44,9 @@ class JwtAuthenticationFilterTest {
         ReflectionTestUtils.setField(tokenProvider, "jwtExpirationMs", 3_600_000);
         tokenProvider.initializeSigningKey();
 
-        filter = new JwtAuthenticationFilter(tokenProvider, userAccountStatusService);
+        meterRegistry = new SimpleMeterRegistry();
+        authMetricsRecorder = new AuthMetricsRecorder(meterRegistry);
+        filter = new JwtAuthenticationFilter(tokenProvider, userAccountStatusService, authMetricsRecorder);
     }
 
     @AfterEach
@@ -64,6 +69,8 @@ class JwtAuthenticationFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
         assertThat(((JwtAuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getUserId())
                 .isEqualTo(USER_ID);
+        assertThat(meterRegistry.get("mobile.auth.jwt.invalid").counter().count()).isZero();
+        assertThat(meterRegistry.get("mobile.auth.jwt.disabled_user").counter().count()).isZero();
     }
 
     @Test
@@ -79,6 +86,7 @@ class JwtAuthenticationFilterTest {
         verify(filterChain, never()).doFilter(any(), any());
         assertThat(response.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        assertThat(meterRegistry.get("mobile.auth.jwt.disabled_user").counter().count()).isEqualTo(1.0);
     }
 
     @Test
@@ -105,6 +113,7 @@ class JwtAuthenticationFilterTest {
         verify(filterChain).doFilter(request, response);
         verify(userAccountStatusService, never()).isEnabled(any());
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        assertThat(meterRegistry.get("mobile.auth.jwt.invalid").counter().count()).isEqualTo(1.0);
     }
 
     @Test
@@ -117,6 +126,7 @@ class JwtAuthenticationFilterTest {
         verify(filterChain).doFilter(request, response);
         verify(userAccountStatusService, never()).isEnabled(any());
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        assertThat(meterRegistry.get("mobile.auth.jwt.missing").counter().count()).isZero();
     }
 
     private static MockHttpServletRequest authorizedRequest(String token) {

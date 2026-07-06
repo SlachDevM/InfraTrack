@@ -6,7 +6,7 @@ import com.infratrack.mobile.sync.dto.SyncOperationStatus;
 import java.util.List;
 
 /**
- * Per-request sync counters and timing for metrics and logging (M5.4.1-BE).
+ * Per-request sync counters and timing for metrics and logging (M5.4.1-BE, V2.5-STAB-3).
  */
 final class SyncDiagnostics {
 
@@ -17,6 +17,11 @@ final class SyncDiagnostics {
     private int ignored;
     private int conflicts;
     private int deltaInspections;
+    private int batchSize;
+    private int duplicateOperations;
+    private int protocolVersion;
+    private boolean requiresFullSync;
+    private boolean invalidToken;
 
     private SyncDiagnostics(long startNanos) {
         this.startNanos = startNanos;
@@ -46,8 +51,28 @@ final class SyncDiagnostics {
         }
     }
 
+    void recordBatchSize(int count) {
+        batchSize = Math.max(0, count);
+    }
+
+    void recordDuplicateOperations(int count) {
+        duplicateOperations = Math.max(0, count);
+    }
+
     void recordDeltaInspections(int count) {
         deltaInspections = Math.max(0, count);
+    }
+
+    void recordProtocolVersion(int version) {
+        protocolVersion = version;
+    }
+
+    void recordRequiresFullSync(boolean value) {
+        requiresFullSync = value;
+    }
+
+    void recordInvalidToken(boolean value) {
+        invalidToken = value;
     }
 
     long elapsedMillis() {
@@ -76,5 +101,25 @@ final class SyncDiagnostics {
 
     int deltaInspections() {
         return deltaInspections;
+    }
+
+    int batchSize() {
+        return batchSize;
+    }
+
+    int duplicateOperations() {
+        return duplicateOperations;
+    }
+
+    int protocolVersion() {
+        return protocolVersion;
+    }
+
+    boolean requiresFullSync() {
+        return requiresFullSync;
+    }
+
+    boolean invalidToken() {
+        return invalidToken;
     }
 }

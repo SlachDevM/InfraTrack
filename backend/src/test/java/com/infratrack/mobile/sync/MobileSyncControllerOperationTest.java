@@ -7,6 +7,7 @@ import com.infratrack.inspection.dto.InspectionResponse;
 import com.infratrack.mobile.MobileAuthorizationService;
 import com.infratrack.mobile.sync.dto.SyncDeltaResponse;
 import com.infratrack.mobile.sync.dto.SyncInspectionDeltaResponse;
+import com.infratrack.observability.ObservabilityTestConfiguration;
 import com.infratrack.security.JwtAuthenticationFilter;
 import com.infratrack.security.JwtTokenProvider;
 import com.infratrack.security.UserAccountStatusService;
@@ -25,12 +26,11 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -46,11 +46,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         MobileSyncService.class,
         DefaultSyncTokenService.class,
         DefaultSyncOperationProcessor.class,
+        ProcessedSyncOperationService.class,
+        MobileSyncIdempotencyConfiguration.class,
         InspectionProgressSyncOperationHandler.class,
         InspectionSyncDeltaService.class,
         SyncMetricsRecorder.class,
-        MobileSyncControllerOperationTest.FixedClockConfig.class,
-        MobileSyncControllerOperationTest.MetricsConfig.class
+        ObservabilityTestConfiguration.class,
+        MobileSyncControllerOperationTest.FixedClockConfig.class
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -77,8 +79,13 @@ class MobileSyncControllerOperationTest {
     @MockitoBean
     private InspectionService inspectionService;
 
+    @MockitoBean
+    private ProcessedSyncOperationRepository processedSyncOperationRepository;
+
     @BeforeEach
     void setUp() {
+        when(processedSyncOperationRepository.findById(any())).thenReturn(java.util.Optional.empty());
+        when(processedSyncOperationRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(userAccountStatusService.isEnabled(org.mockito.ArgumentMatchers.any())).thenReturn(true);
         User fieldUser = new User();
         fieldUser.setId(FIELD_USER_ID);
@@ -134,11 +141,11 @@ class MobileSyncControllerOperationTest {
     }
 
     @Test
-    void sync_withoutToken_returnsForbidden() throws Exception {
+    void sync_withoutToken_returnsUnauthorized() throws Exception {
         mockMvc.perform(post("/api/mobile/sync")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(syncRequestWithPendingOperationJson()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     private String syncRequestWithPendingOperationJson() {
@@ -170,14 +177,6 @@ class MobileSyncControllerOperationTest {
         @Bean
         Clock clock() {
             return Clock.fixed(FIXED_INSTANT, ZoneOffset.UTC);
-        }
-    }
-
-    @TestConfiguration
-    static class MetricsConfig {
-        @Bean
-        MeterRegistry meterRegistry() {
-            return new SimpleMeterRegistry();
         }
     }
 }

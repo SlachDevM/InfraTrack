@@ -22,8 +22,12 @@ class SyncMetricsRecorderTest {
     }
 
     @Test
-    void record_incrementsCountersAndTimer() {
+    void record_incrementsCountersTimerAndSummaries() {
         SyncDiagnostics diagnostics = SyncDiagnostics.start();
+        diagnostics.recordBatchSize(4);
+        diagnostics.recordProtocolVersion(1);
+        diagnostics.recordInvalidToken(true);
+        diagnostics.recordRequiresFullSync(true);
         diagnostics.recordOperations(List.of(
                 operation(SyncOperationStatus.ACCEPTED),
                 operation(SyncOperationStatus.CONFLICT),
@@ -39,12 +43,24 @@ class SyncMetricsRecorderTest {
         assertThat(meterRegistry.get("mobile.sync.operations.ignored").counter().count()).isEqualTo(1.0);
         assertThat(meterRegistry.get("mobile.sync.operations.conflict").counter().count()).isEqualTo(1.0);
         assertThat(meterRegistry.get("mobile.sync.delta.inspections").counter().count()).isEqualTo(3.0);
+        assertThat(meterRegistry.get("mobile.sync.delta.size").summary().totalAmount()).isEqualTo(3.0);
+        assertThat(meterRegistry.get("mobile.sync.batch.size").summary().totalAmount()).isEqualTo(4.0);
+        assertThat(meterRegistry.get("mobile.sync.full_sync_required").counter().count()).isEqualTo(1.0);
+        assertThat(meterRegistry.get("mobile.sync.invalid_token").counter().count()).isEqualTo(1.0);
+        assertThat(meterRegistry.get("mobile.sync.protocol_version").tag("version", "1").counter().count())
+                .isEqualTo(1.0);
         assertThat(meterRegistry.get("mobile.sync.duration").timer().count()).isEqualTo(1);
     }
 
-    private static com.infratrack.mobile.sync.dto.SyncOperationResponse operation(SyncOperationStatus status) {
-        com.infratrack.mobile.sync.dto.SyncOperationResponse response =
-                new com.infratrack.mobile.sync.dto.SyncOperationResponse();
+    @Test
+    void recordDuplicateOperation_incrementsDuplicateCounter() {
+        recorder.recordDuplicateOperation();
+
+        assertThat(meterRegistry.get("mobile.sync.operations.duplicate").counter().count()).isEqualTo(1.0);
+    }
+
+    private static SyncOperationResponse operation(SyncOperationStatus status) {
+        SyncOperationResponse response = new SyncOperationResponse();
         response.setStatus(status);
         return response;
     }

@@ -94,7 +94,8 @@ class ReportingExportServiceTest {
                 preventiveExecutionCandidateRepository,
                 operationalDecisionRepository,
                 userNameLookup,
-                reportingPolicyService);
+                reportingPolicyService,
+                new ReportingExportMetricsRecorder(new io.micrometer.core.instrument.simple.SimpleMeterRegistry()));
     }
 
     @Test

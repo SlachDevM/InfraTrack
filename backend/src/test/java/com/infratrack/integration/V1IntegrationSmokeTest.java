@@ -140,7 +140,7 @@ class V1IntegrationSmokeTest {
     @Test
     void protectedEndpoint_withoutToken_isRejected() throws Exception {
         mockMvc.perform(get("/api/assets"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
