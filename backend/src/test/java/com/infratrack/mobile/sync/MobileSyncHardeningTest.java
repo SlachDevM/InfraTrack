@@ -85,7 +85,7 @@ class MobileSyncHardeningTest {
 
         User fieldUser = user();
         lenient().when(authorizationService.requireMobileUser(FIELD_USER_ID)).thenReturn(fieldUser);
-        lenient().when(inspectionSyncDeltaService.build(any(User.class), any()))
+        lenient().when(inspectionSyncDeltaService.build(any(User.class), any(), any()))
                 .thenReturn(new InspectionSyncDeltaService.SyncDeltaBuildResult(
                         SyncDeltaResponse.empty(),
                         List.of()));
@@ -140,7 +140,7 @@ class MobileSyncHardeningTest {
 
         SyncDeltaResponse delta = SyncDeltaResponse.empty();
         delta.setInspections(List.of());
-        when(inspectionSyncDeltaService.build(any(User.class), any()))
+        when(inspectionSyncDeltaService.build(any(User.class), any(), any()))
                 .thenReturn(new InspectionSyncDeltaService.SyncDeltaBuildResult(delta, List.of()));
 
         SyncRequest request = validRequest();

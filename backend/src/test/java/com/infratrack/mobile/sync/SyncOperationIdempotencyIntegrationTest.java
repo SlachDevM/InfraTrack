@@ -46,6 +46,11 @@ class SyncOperationIdempotencyIntegrationTest {
     void setUp() {
         Map<String, ProcessedSyncOperation> store = new HashMap<>();
         when(repository.findById(any())).thenAnswer(invocation -> Optional.ofNullable(store.get(invocation.getArgument(0))));
+        when(repository.saveAndFlush(any())).thenAnswer(invocation -> {
+            ProcessedSyncOperation saved = invocation.getArgument(0);
+            store.put(saved.getOperationId(), saved);
+            return saved;
+        });
         when(repository.save(any())).thenAnswer(invocation -> {
             ProcessedSyncOperation saved = invocation.getArgument(0);
             store.put(saved.getOperationId(), saved);

@@ -81,15 +81,26 @@ class MobileSyncControllerTokenTest {
 
     @BeforeEach
     void setUp() {
-        when(processedSyncOperationRepository.findById(any())).thenReturn(java.util.Optional.empty());
-        when(processedSyncOperationRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        java.util.Map<String, ProcessedSyncOperation> store = new java.util.HashMap<>();
+        when(processedSyncOperationRepository.findById(any())).thenAnswer(invocation ->
+                java.util.Optional.ofNullable(store.get(invocation.getArgument(0))));
+        when(processedSyncOperationRepository.saveAndFlush(any())).thenAnswer(invocation -> {
+            ProcessedSyncOperation saved = invocation.getArgument(0);
+            store.put(saved.getOperationId(), saved);
+            return saved;
+        });
+        when(processedSyncOperationRepository.save(any())).thenAnswer(invocation -> {
+            ProcessedSyncOperation saved = invocation.getArgument(0);
+            store.put(saved.getOperationId(), saved);
+            return saved;
+        });
         when(userAccountStatusService.isEnabled(org.mockito.ArgumentMatchers.any())).thenReturn(true);
         User fieldUser = new User();
         fieldUser.setId(FIELD_USER_ID);
         fieldUser.setEmail("field@test.com");
         fieldUser.setRole(UserRole.FIELD_EMPLOYEE);
         when(authorizationService.requireMobileUser(FIELD_USER_ID)).thenReturn(fieldUser);
-        when(inspectionSyncDeltaService.build(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+        when(inspectionSyncDeltaService.build(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(new InspectionSyncDeltaService.SyncDeltaBuildResult(
                         SyncDeltaResponse.empty(),
                         java.util.List.of()));

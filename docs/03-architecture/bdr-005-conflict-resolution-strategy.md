@@ -34,7 +34,7 @@ These are independent concerns:
 |---------|----------------|-----------|
 | Detection | Classify conflict type; return enriched payload | **Delivered** (M5.5-BE1 / M5.5-BE1.1) |
 | Resolution | Accept explicit client decisions; return outcome status | **Delivered** (M5.5-BE2 — stateless, no merge) |
-| Protocol idempotency | Deduplicate `operationId` before handler execution | **Delivered** (DT-OFFLINE-1) |
+| Protocol idempotency | Atomically reserve `operationId` before handler execution; duplicates receive recorded outcome | **Delivered** (DT-OFFLINE-1 / RC-FIX-BE-1) |
 | Automatic merge | Apply or merge client payload server-side | **Planned** |
 
 Separating them allows Android to integrate sync incrementally: clients can handle `CONFLICT` outcomes and display enriched payloads before any resolution endpoint or merge logic exists. The backend can evolve resolution policies without changing detection semantics.

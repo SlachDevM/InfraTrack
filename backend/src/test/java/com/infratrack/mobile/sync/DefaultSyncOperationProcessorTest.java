@@ -157,6 +157,11 @@ class DefaultSyncOperationProcessorTest {
         java.util.Map<String, ProcessedSyncOperation> store = new java.util.HashMap<>();
         when(repository.findById(org.mockito.ArgumentMatchers.any()))
                 .thenAnswer(invocation -> java.util.Optional.ofNullable(store.get(invocation.getArgument(0))));
+        when(repository.saveAndFlush(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> {
+            ProcessedSyncOperation saved = invocation.getArgument(0);
+            store.put(saved.getOperationId(), saved);
+            return saved;
+        });
         when(repository.save(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> {
             ProcessedSyncOperation saved = invocation.getArgument(0);
             store.put(saved.getOperationId(), saved);

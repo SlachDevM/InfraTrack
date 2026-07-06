@@ -3,6 +3,7 @@ package com.infratrack.mobile.sync;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
+import java.time.Instant;
 
 /**
  * Issues opaque sync tokens for successful sync handshakes (M5.2-BE2).
@@ -18,7 +19,8 @@ class DefaultSyncTokenService implements SyncTokenService {
     }
 
     @Override
-    public String resolveNextSyncToken(Long userId, String previousSyncToken) {
-        return SyncToken.issue(clock.instant()).toOpaqueValue();
+    public String resolveNextSyncToken(Long userId, String previousSyncToken, Instant watermark) {
+        Instant issuedAt = watermark != null ? watermark : clock.instant();
+        return SyncToken.issue(issuedAt).toOpaqueValue();
     }
 }

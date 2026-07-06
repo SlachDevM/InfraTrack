@@ -39,6 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -473,7 +474,7 @@ class InspectionServiceTest {
 
         when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
         when(userService.getById(20L)).thenReturn(fieldEmployee);
-        when(inspectionRepository.save(any(Inspection.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(inspectionRepository.saveAndFlush(any(Inspection.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = inspectionService.completeInspection(100L, request, 20L);
 
@@ -499,7 +500,7 @@ class InspectionServiceTest {
 
         when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
         when(userService.getById(30L)).thenReturn(contractor);
-        when(inspectionRepository.save(any(Inspection.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(inspectionRepository.saveAndFlush(any(Inspection.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = inspectionService.completeInspection(100L, request, 30L);
 
@@ -515,12 +516,13 @@ class InspectionServiceTest {
 
         when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
         when(userService.getById(20L)).thenReturn(fieldEmployee);
-        when(inspectionRepository.save(any(Inspection.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(inspectionRepository.saveAndFlush(any(Inspection.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = inspectionService.completeInspection(100L, request, 20L);
 
         assertThat(response.isIssueIdentified()).isTrue();
-        verify(inspectionRepository, times(2)).save(argThat(saved ->
+        verify(inspectionRepository).save(argThat(saved -> saved.isIssueIdentified()));
+        verify(inspectionRepository).saveAndFlush(argThat(saved ->
                 saved.getStatus() == InspectionStatus.COMPLETED && saved.isIssueIdentified()));
     }
 
@@ -599,6 +601,25 @@ class InspectionServiceTest {
     }
 
     @Test
+    void completeInspection_optimisticLockFailure_rejectsWithAssignedOnlyMessage() {
+        CompleteInspectionRequest request = validCompleteRequest();
+        Inspection inspection = assignedInspection(100L, 20L);
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.saveAndFlush(any(Inspection.class)))
+                .thenThrow(new ObjectOptimisticLockingFailureException(Inspection.class, 100L));
+
+        assertThatThrownBy(() -> inspectionService.completeInspection(100L, request, 20L))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Only assigned inspections can be completed");
+
+        verify(ruleEvaluationReportService, never()).createReportIfApplicable(any());
+        verify(assetHistoryEventRepository, never()).save(any());
+    }
+
+    @Test
     void completeInspection_shouldRejectMissingObservations() {
         CompleteInspectionRequest request = validCompleteRequest();
         request.setObservations("  ");
@@ -635,7 +656,7 @@ class InspectionServiceTest {
 
         when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
         when(userService.getById(20L)).thenReturn(fieldEmployee);
-        when(inspectionRepository.save(any(Inspection.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(inspectionRepository.saveAndFlush(any(Inspection.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = inspectionService.completeInspection(100L, request, 20L);
 
@@ -651,7 +672,7 @@ class InspectionServiceTest {
 
         when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
         when(userService.getById(20L)).thenReturn(fieldEmployee);
-        when(inspectionRepository.save(any(Inspection.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(inspectionRepository.saveAndFlush(any(Inspection.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = inspectionService.completeInspection(100L, request, 20L);
 

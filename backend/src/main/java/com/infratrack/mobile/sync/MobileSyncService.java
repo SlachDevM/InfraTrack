@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 
@@ -59,22 +60,25 @@ public class MobileSyncService {
                 syncOperationProcessor.process(userId, request.getPendingOperations());
         diagnostics.recordDuplicateOperations(operationBatch.duplicateOperations());
 
+        Instant watermark = clock.instant();
+
         SyncResponse response = new SyncResponse();
         response.setProtocolVersion(SyncProtocolVersion.CURRENT);
-        response.setServerTime(clock.instant());
+        response.setServerTime(watermark);
         response.setOperations(operationBatch.operations());
         response.setConflicts(operationBatch.conflicts());
 
         InspectionSyncDeltaService.SyncDeltaBuildResult deltaResult =
-                inspectionSyncDeltaService.build(user, request.getSyncToken());
+                inspectionSyncDeltaService.build(user, request.getSyncToken(), watermark);
         response.setDelta(deltaResult.delta());
         response.setWarnings(deltaResult.warnings().isEmpty()
                 ? Collections.emptyList()
                 : List.copyOf(deltaResult.warnings()));
-        response.setNextSyncToken(syncTokenService.resolveNextSyncToken(userId, request.getSyncToken()));
+        response.setNextSyncToken(
+                syncTokenService.resolveNextSyncToken(userId, request.getSyncToken(), watermark));
 
         boolean requiresFullSync = requiresFullSync(deltaResult.warnings());
-        response.setRequiresFullSync(false);
+        response.setRequiresFullSync(requiresFullSync);
         diagnostics.recordRequiresFullSync(requiresFullSync);
 
         diagnostics.recordOperations(response.getOperations());

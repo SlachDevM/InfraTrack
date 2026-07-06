@@ -17,6 +17,7 @@ import com.infratrack.user.UserNameLookup;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -54,12 +55,18 @@ class InspectionSyncDeltaService {
 
     @Transactional(readOnly = true)
     SyncDeltaBuildResult build(User user, String previousSyncToken) {
+        return build(user, previousSyncToken, null);
+    }
+
+    @Transactional(readOnly = true)
+    SyncDeltaBuildResult build(User user, String previousSyncToken, Instant watermark) {
         List<SyncWarningResponse> warnings = new ArrayList<>();
         Optional<SyncToken> previousToken = SyncToken.tryFromOpaqueValue(previousSyncToken);
         Long updatedSinceMillis = resolveUpdatedSinceMillis(previousSyncToken, previousToken, warnings);
+        Long updatedUntilMillis = watermark != null ? watermark.toEpochMilli() : null;
 
         List<Inspection> inspectionsForDelta =
-                mobileService.listScopedInspectionsForSync(user, updatedSinceMillis);
+                mobileService.listScopedInspectionsForSync(user, updatedSinceMillis, updatedUntilMillis);
 
         Map<Long, List<InspectionAnswer>> answersByInspectionId = loadAnswersByInspectionId(inspectionsForDelta);
         Map<Long, String> assignedToNames = resolveAssignedToNames(inspectionsForDelta);

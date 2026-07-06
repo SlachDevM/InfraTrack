@@ -31,6 +31,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Field;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -79,7 +80,7 @@ class InspectionSyncDeltaServiceTest {
     void build_nullSyncToken_returnsFullInspectionDelta() {
         Inspection inspection = inspection(100L, 20L, 5_000L);
         User fieldUser = user(20L);
-        when(mobileService.listScopedInspectionsForSync(fieldUser, null)).thenReturn(List.of(inspection));
+        when(mobileService.listScopedInspectionsForSync(fieldUser, null, null)).thenReturn(List.of(inspection));
         when(inspectionAnswerRepository.findByInspectionIdInOrderByQuestionDisplayOrder(List.of(100L)))
                 .thenReturn(List.of());
         when(userNameLookup.resolveNames(any())).thenReturn(Map.of(20L, "Field User"));
@@ -92,7 +93,7 @@ class InspectionSyncDeltaServiceTest {
         assertThat(result.delta().getInspections().get(0).getAssignedToName()).isEqualTo("Field User");
         assertThat(result.delta().getAssets()).isEmpty();
         assertThat(result.delta().getWorkOrders()).isEmpty();
-        verify(mobileService).listScopedInspectionsForSync(fieldUser, null);
+        verify(mobileService).listScopedInspectionsForSync(fieldUser, null, null);
     }
 
     @Test
@@ -100,7 +101,7 @@ class InspectionSyncDeltaServiceTest {
         Inspection changed = inspection(100L, 20L, 5_000L);
         User fieldUser = user(20L);
         long sinceMillis = java.time.Instant.parse("2026-07-05T08:00:00Z").toEpochMilli();
-        when(mobileService.listScopedInspectionsForSync(fieldUser, sinceMillis)).thenReturn(List.of(changed));
+        when(mobileService.listScopedInspectionsForSync(fieldUser, sinceMillis, null)).thenReturn(List.of(changed));
         when(inspectionAnswerRepository.findByInspectionIdInOrderByQuestionDisplayOrder(List.of(100L)))
                 .thenReturn(List.of());
         when(userNameLookup.resolveNames(any())).thenReturn(Map.of(20L, "Field User"));
@@ -110,15 +111,15 @@ class InspectionSyncDeltaServiceTest {
 
         assertThat(result.warnings()).isEmpty();
         assertThat(result.delta().getInspections()).hasSize(1);
-        verify(mobileService).listScopedInspectionsForSync(fieldUser, sinceMillis);
-        verify(mobileService, never()).listScopedInspectionsForSync(fieldUser, null);
+        verify(mobileService).listScopedInspectionsForSync(fieldUser, sinceMillis, null);
+        verify(mobileService, never()).listScopedInspectionsForSync(fieldUser, null, null);
     }
 
     @Test
     void build_invalidSyncToken_returnsFullDeltaWithWarning() {
         Inspection inspection = inspection(100L, 20L, 5_000L);
         User fieldUser = user(20L);
-        when(mobileService.listScopedInspectionsForSync(fieldUser, null)).thenReturn(List.of(inspection));
+        when(mobileService.listScopedInspectionsForSync(fieldUser, null, null)).thenReturn(List.of(inspection));
         when(inspectionAnswerRepository.findByInspectionIdInOrderByQuestionDisplayOrder(List.of(100L)))
                 .thenReturn(List.of());
         when(userNameLookup.resolveNames(any())).thenReturn(Map.of(20L, "Field User"));
@@ -128,14 +129,14 @@ class InspectionSyncDeltaServiceTest {
         assertThat(result.warnings()).hasSize(1);
         assertThat(result.warnings().get(0).getCode()).isEqualTo(com.infratrack.mobile.sync.dto.SyncWarningCode.FULL_SYNC_REQUIRED);
         assertThat(result.delta().getInspections()).hasSize(1);
-        verify(mobileService).listScopedInspectionsForSync(fieldUser, null);
+        verify(mobileService).listScopedInspectionsForSync(fieldUser, null, null);
     }
 
     @Test
     void build_onlyIncludesScopedInspectionsFromMobileService() {
         Inspection visible = inspection(100L, 20L, 5_000L);
         User fieldUser = user(20L);
-        when(mobileService.listScopedInspectionsForSync(fieldUser, null)).thenReturn(List.of(visible));
+        when(mobileService.listScopedInspectionsForSync(fieldUser, null, null)).thenReturn(List.of(visible));
         when(inspectionAnswerRepository.findByInspectionIdInOrderByQuestionDisplayOrder(List.of(100L)))
                 .thenReturn(List.of());
         when(userNameLookup.resolveNames(any())).thenReturn(Map.of(20L, "Field User"));
@@ -153,7 +154,7 @@ class InspectionSyncDeltaServiceTest {
         InspectionAnswer firstAnswer = answer(first, 1L, "value");
         InspectionAnswer secondAnswer = answer(second, 2L, "other");
 
-        when(mobileService.listScopedInspectionsForSync(eq(fieldUser), isNull()))
+        when(mobileService.listScopedInspectionsForSync(eq(fieldUser), isNull(), isNull()))
                 .thenReturn(List.of(first, second));
         when(inspectionAnswerRepository.findByInspectionIdInOrderByQuestionDisplayOrder(List.of(100L, 200L)))
                 .thenReturn(List.of(firstAnswer, secondAnswer));
@@ -193,7 +194,7 @@ class InspectionSyncDeltaServiceTest {
                         Map.of(TEMPLATE_ID, questions),
                         Map.of(10L, Map.of("YES", 1L)));
 
-        when(mobileService.listScopedInspectionsForSync(fieldUser, null)).thenReturn(List.of(inspection));
+        when(mobileService.listScopedInspectionsForSync(fieldUser, null, null)).thenReturn(List.of(inspection));
         when(inspectionAnswerRepository.findByInspectionIdInOrderByQuestionDisplayOrder(List.of(100L)))
                 .thenReturn(List.of(answer));
         when(userNameLookup.resolveNames(any())).thenReturn(Map.of(20L, "Field User"));
@@ -234,7 +235,7 @@ class InspectionSyncDeltaServiceTest {
                 new MobileInspectionChecklistLoader.ChecklistPayload(
                         Map.of(TEMPLATE_ID, questions), Map.of());
 
-        when(mobileService.listScopedInspectionsForSync(fieldUser, null)).thenReturn(List.of(inspection));
+        when(mobileService.listScopedInspectionsForSync(fieldUser, null, null)).thenReturn(List.of(inspection));
         when(inspectionAnswerRepository.findByInspectionIdInOrderByQuestionDisplayOrder(List.of(100L)))
                 .thenReturn(List.of());
         when(userNameLookup.resolveNames(any())).thenReturn(Map.of(20L, "Field User"));
@@ -251,7 +252,7 @@ class InspectionSyncDeltaServiceTest {
         Inspection second = templatedInspection(200L, 20L);
         User fieldUser = user(20L);
 
-        when(mobileService.listScopedInspectionsForSync(fieldUser, null)).thenReturn(List.of(first, second));
+        when(mobileService.listScopedInspectionsForSync(fieldUser, null, null)).thenReturn(List.of(first, second));
         when(inspectionAnswerRepository.findByInspectionIdInOrderByQuestionDisplayOrder(List.of(100L, 200L)))
                 .thenReturn(List.of());
         when(userNameLookup.resolveNames(any())).thenReturn(Map.of(20L, "Field User"));
@@ -262,6 +263,22 @@ class InspectionSyncDeltaServiceTest {
         ArgumentCaptor<Set<Long>> templateIdsCaptor = ArgumentCaptor.forClass(Set.class);
         verify(checklistLoader).loadChecklistPayloadByTemplateIds(templateIdsCaptor.capture());
         assertThat(templateIdsCaptor.getValue()).containsExactly(TEMPLATE_ID);
+    }
+
+    @Test
+    void build_passesWatermarkUpperBoundToMobileService() {
+        Inspection inspection = inspection(100L, 20L, 5_000L);
+        User fieldUser = user(20L);
+        Instant watermark = java.time.Instant.parse("2026-07-05T10:00:00Z");
+        when(mobileService.listScopedInspectionsForSync(fieldUser, null, watermark.toEpochMilli()))
+                .thenReturn(List.of(inspection));
+        when(inspectionAnswerRepository.findByInspectionIdInOrderByQuestionDisplayOrder(List.of(100L)))
+                .thenReturn(List.of());
+        when(userNameLookup.resolveNames(any())).thenReturn(Map.of(20L, "Field User"));
+
+        deltaService.build(fieldUser, null, watermark);
+
+        verify(mobileService).listScopedInspectionsForSync(fieldUser, null, watermark.toEpochMilli());
     }
 
     private User user(Long id) {

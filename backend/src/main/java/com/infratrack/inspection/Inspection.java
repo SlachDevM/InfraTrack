@@ -72,6 +72,10 @@ public class Inspection {
     @Column(name = "updated_at", nullable = false)
     private Long updatedAt;
 
+    @Version
+    @Column(nullable = false)
+    private Long version;
+
     protected Inspection() {
     }
 
@@ -93,6 +97,7 @@ public class Inspection {
         long now = System.currentTimeMillis();
         this.createdAt = now;
         this.updatedAt = now;
+        this.version = 0L;
     }
 
     public void complete(
@@ -205,5 +210,9 @@ public class Inspection {
 
     public Long getUpdatedAt() {
         return updatedAt;
+    }
+
+    public Long getVersion() {
+        return version;
     }
 }

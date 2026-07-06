@@ -9,5 +9,5 @@ public interface SyncTokenService {
      * Issues the next opaque sync token for the client after a successful sync handshake.
      * The client stores the value only; the backend owns interpretation.
      */
-    String resolveNextSyncToken(Long userId, String previousSyncToken);
+    String resolveNextSyncToken(Long userId, String previousSyncToken, java.time.Instant watermark);
 }

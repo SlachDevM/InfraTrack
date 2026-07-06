@@ -132,6 +132,23 @@ class MobileServiceSyncScopingTest {
     }
 
     @Test
+    void listScopedInspectionsForSync_administratorIncrementalUsesWatermarkWindow() {
+        User admin = user(1L, UserRole.ADMINISTRATOR, null);
+        Inspection inspection = inspection(100L, 20L);
+        long updatedUntil = UPDATED_SINCE + 1_000L;
+        when(userService.getById(1L)).thenReturn(admin);
+        when(inspectionRepository.findByStatusAndUpdatedAtGreaterThanEqualAndUpdatedAtLessThanEqual(
+                InspectionStatus.ASSIGNED, UPDATED_SINCE, updatedUntil))
+                .thenReturn(List.of(inspection));
+
+        List<Inspection> result = mobileService.listScopedInspectionsForSync(admin, UPDATED_SINCE, updatedUntil);
+
+        assertThat(result).hasSize(1);
+        verify(inspectionRepository).findByStatusAndUpdatedAtGreaterThanEqualAndUpdatedAtLessThanEqual(
+                InspectionStatus.ASSIGNED, UPDATED_SINCE, updatedUntil);
+    }
+
+    @Test
     void listScopedInspectionsForSync_managerUsesDepartmentAssignedScope() {
         Department department = department(5L);
         User manager = user(2L, UserRole.MANAGER, department);

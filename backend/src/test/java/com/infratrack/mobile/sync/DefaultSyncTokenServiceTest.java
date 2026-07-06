@@ -24,7 +24,7 @@ class DefaultSyncTokenServiceTest {
 
     @Test
     void resolveNextSyncToken_returnsOpaqueValue() {
-        String token = syncTokenService.resolveNextSyncToken(USER_ID, null);
+        String token = syncTokenService.resolveNextSyncToken(USER_ID, null, FIXED_INSTANT);
 
         assertThat(token).isNotBlank();
         SyncToken decoded = SyncToken.fromOpaqueValue(token);
@@ -33,9 +33,18 @@ class DefaultSyncTokenServiceTest {
     }
 
     @Test
+    void resolveNextSyncToken_usesProvidedWatermark() {
+        Instant watermark = Instant.parse("2026-07-05T09:15:00Z");
+
+        String token = syncTokenService.resolveNextSyncToken(USER_ID, null, watermark);
+
+        assertThat(SyncToken.fromOpaqueValue(token).getIssuedAt()).isEqualTo(watermark);
+    }
+
+    @Test
     void resolveNextSyncToken_ignoresPreviousTokenForNow() {
-        String first = syncTokenService.resolveNextSyncToken(USER_ID, null);
-        String second = syncTokenService.resolveNextSyncToken(USER_ID, first);
+        String first = syncTokenService.resolveNextSyncToken(USER_ID, null, FIXED_INSTANT);
+        String second = syncTokenService.resolveNextSyncToken(USER_ID, first, FIXED_INSTANT);
 
         assertThat(second).isNotEqualTo(first);
     }

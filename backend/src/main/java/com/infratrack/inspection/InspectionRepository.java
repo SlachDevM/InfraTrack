@@ -65,6 +65,15 @@ public interface InspectionRepository extends JpaRepository<Inspection, Long> {
             Long updatedAt);
 
     @EntityGraph(attributePaths = {"asset", "asset.assetCategory", "inspectionTemplate"})
+    List<Inspection> findByAssignedToUserIdAndUpdatedAtLessThanEqual(Long assignedToUserId, Long updatedAt);
+
+    @EntityGraph(attributePaths = {"asset", "asset.assetCategory", "inspectionTemplate"})
+    List<Inspection> findByAssignedToUserIdAndUpdatedAtGreaterThanEqualAndUpdatedAtLessThanEqual(
+            Long assignedToUserId,
+            Long updatedAtSince,
+            Long updatedAtUntil);
+
+    @EntityGraph(attributePaths = {"asset", "asset.assetCategory", "inspectionTemplate"})
     List<Inspection> findByAsset_Department_Id(Long departmentId);
 
     @EntityGraph(attributePaths = {"asset", "asset.assetCategory", "inspectionTemplate"})
@@ -77,10 +86,32 @@ public interface InspectionRepository extends JpaRepository<Inspection, Long> {
             Long updatedAt);
 
     @EntityGraph(attributePaths = {"asset", "asset.assetCategory", "inspectionTemplate"})
+    List<Inspection> findByAsset_Department_IdAndStatusAndUpdatedAtLessThanEqual(
+            Long departmentId,
+            InspectionStatus status,
+            Long updatedAt);
+
+    @EntityGraph(attributePaths = {"asset", "asset.assetCategory", "inspectionTemplate"})
+    List<Inspection> findByAsset_Department_IdAndStatusAndUpdatedAtGreaterThanEqualAndUpdatedAtLessThanEqual(
+            Long departmentId,
+            InspectionStatus status,
+            Long updatedAtSince,
+            Long updatedAtUntil);
+
+    @EntityGraph(attributePaths = {"asset", "asset.assetCategory", "inspectionTemplate"})
     List<Inspection> findByStatus(InspectionStatus status);
 
     @EntityGraph(attributePaths = {"asset", "asset.assetCategory", "inspectionTemplate"})
     List<Inspection> findByStatusAndUpdatedAtGreaterThanEqual(InspectionStatus status, Long updatedAt);
+
+    @EntityGraph(attributePaths = {"asset", "asset.assetCategory", "inspectionTemplate"})
+    List<Inspection> findByStatusAndUpdatedAtLessThanEqual(InspectionStatus status, Long updatedAt);
+
+    @EntityGraph(attributePaths = {"asset", "asset.assetCategory", "inspectionTemplate"})
+    List<Inspection> findByStatusAndUpdatedAtGreaterThanEqualAndUpdatedAtLessThanEqual(
+            InspectionStatus status,
+            Long updatedAtSince,
+            Long updatedAtUntil);
 
     long countByAssignedToUserIdAndStatus(Long assignedToUserId, InspectionStatus status);
 

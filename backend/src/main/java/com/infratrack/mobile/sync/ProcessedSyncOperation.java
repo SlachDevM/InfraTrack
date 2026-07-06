@@ -2,6 +2,8 @@ package com.infratrack.mobile.sync;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
@@ -14,6 +16,8 @@ import java.time.Instant;
 @Entity
 @Table(name = "mobile_sync_operation")
 class ProcessedSyncOperation {
+
+    private static final String PROCESSING_STATUS = "PROCESSING";
 
     @Id
     @Column(name = "operation_id", nullable = false, length = 128)
@@ -52,10 +56,35 @@ class ProcessedSyncOperation {
     @Column(name = "conflict_message", length = 1024)
     private String conflictMessage;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "record_state", nullable = false, length = 16)
+    private ProcessedSyncOperationRecordState recordState;
+
     protected ProcessedSyncOperation() {
     }
 
-    ProcessedSyncOperation(
+    static ProcessedSyncOperation processing(
+            String operationId,
+            Long userId,
+            String entityType,
+            Long entityId,
+            String operationType,
+            int protocolVersion,
+            Instant processedAt) {
+        ProcessedSyncOperation entity = new ProcessedSyncOperation();
+        entity.operationId = operationId;
+        entity.userId = userId;
+        entity.entityType = entityType;
+        entity.entityId = entityId;
+        entity.operationType = operationType;
+        entity.protocolVersion = protocolVersion;
+        entity.processedAt = processedAt;
+        entity.responseStatus = PROCESSING_STATUS;
+        entity.recordState = ProcessedSyncOperationRecordState.PROCESSING;
+        return entity;
+    }
+
+    static ProcessedSyncOperation recorded(
             String operationId,
             Long userId,
             String entityType,
@@ -68,18 +97,45 @@ class ProcessedSyncOperation {
             Instant serverUpdatedAt,
             String conflictType,
             String conflictMessage) {
-        this.operationId = operationId;
-        this.userId = userId;
-        this.entityType = entityType;
-        this.entityId = entityId;
-        this.operationType = operationType;
-        this.protocolVersion = protocolVersion;
+        ProcessedSyncOperation entity = new ProcessedSyncOperation();
+        entity.operationId = operationId;
+        entity.userId = userId;
+        entity.entityType = entityType;
+        entity.entityId = entityId;
+        entity.operationType = operationType;
+        entity.protocolVersion = protocolVersion;
+        entity.processedAt = processedAt;
+        entity.responseStatus = responseStatus;
+        entity.responseMessage = responseMessage;
+        entity.serverUpdatedAt = serverUpdatedAt;
+        entity.conflictType = conflictType;
+        entity.conflictMessage = conflictMessage;
+        entity.recordState = ProcessedSyncOperationRecordState.RECORDED;
+        return entity;
+    }
+
+    void finalizeRecord(
+            Instant processedAt,
+            String responseStatus,
+            String responseMessage,
+            Instant serverUpdatedAt,
+            String conflictType,
+            String conflictMessage) {
         this.processedAt = processedAt;
         this.responseStatus = responseStatus;
         this.responseMessage = responseMessage;
         this.serverUpdatedAt = serverUpdatedAt;
         this.conflictType = conflictType;
         this.conflictMessage = conflictMessage;
+        this.recordState = ProcessedSyncOperationRecordState.RECORDED;
+    }
+
+    boolean isRecorded() {
+        return recordState == ProcessedSyncOperationRecordState.RECORDED;
+    }
+
+    boolean isProcessing() {
+        return recordState == ProcessedSyncOperationRecordState.PROCESSING;
     }
 
     String getOperationId() {
@@ -128,5 +184,9 @@ class ProcessedSyncOperation {
 
     String getConflictMessage() {
         return conflictMessage;
+    }
+
+    ProcessedSyncOperationRecordState getRecordState() {
+        return recordState;
     }
 }

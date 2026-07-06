@@ -32,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
@@ -74,7 +75,7 @@ class MobileSyncServiceTest {
                         SyncTestIdempotencySupport.passthroughService(clock)),
                 inspectionSyncDeltaService,
                 new SyncMetricsRecorder(meterRegistry));
-        lenient().when(inspectionSyncDeltaService.build(any(User.class), any()))
+        lenient().when(inspectionSyncDeltaService.build(any(User.class), any(), any()))
                 .thenReturn(new InspectionSyncDeltaService.SyncDeltaBuildResult(
                         SyncDeltaResponse.empty(),
                         List.of()));
@@ -110,7 +111,7 @@ class MobileSyncServiceTest {
         deltaInspection.setId(123L);
         SyncDeltaResponse delta = SyncDeltaResponse.empty();
         delta.setInspections(List.of(deltaInspection));
-        when(inspectionSyncDeltaService.build(fieldUser, null))
+        when(inspectionSyncDeltaService.build(eq(fieldUser), isNull(), eq(FIXED_INSTANT)))
                 .thenReturn(new InspectionSyncDeltaService.SyncDeltaBuildResult(delta, List.of()));
 
         SyncRequest request = validRequest();
@@ -134,7 +135,7 @@ class MobileSyncServiceTest {
         mobileSyncService.sync(FIELD_USER_ID, request);
 
         InOrder order = inOrder(inspectionSyncDeltaService);
-        order.verify(inspectionSyncDeltaService).build(fieldUser, null);
+        order.verify(inspectionSyncDeltaService).build(fieldUser, null, FIXED_INSTANT);
     }
 
     @Test
@@ -171,7 +172,7 @@ class MobileSyncServiceTest {
     void sync_invalidSyncToken_recordsInvalidTokenAndFullSyncMetrics() {
         User fieldUser = user(UserRole.FIELD_EMPLOYEE);
         when(authorizationService.requireMobileUser(FIELD_USER_ID)).thenReturn(fieldUser);
-        when(inspectionSyncDeltaService.build(fieldUser, "bad-token"))
+        when(inspectionSyncDeltaService.build(eq(fieldUser), eq("bad-token"), eq(FIXED_INSTANT)))
                 .thenReturn(new InspectionSyncDeltaService.SyncDeltaBuildResult(
                         SyncDeltaResponse.empty(),
                         List.of(new SyncWarningResponse(
@@ -185,6 +186,36 @@ class MobileSyncServiceTest {
 
         assertThat(meterRegistry.get("mobile.sync.invalid_token").counter().count()).isEqualTo(1.0);
         assertThat(meterRegistry.get("mobile.sync.full_sync_required").counter().count()).isEqualTo(1.0);
+    }
+
+    @Test
+    void sync_invalidSyncToken_setsRequiresFullSyncTrue() {
+        User fieldUser = user(UserRole.FIELD_EMPLOYEE);
+        when(authorizationService.requireMobileUser(FIELD_USER_ID)).thenReturn(fieldUser);
+        when(inspectionSyncDeltaService.build(eq(fieldUser), eq("bad-token"), eq(FIXED_INSTANT)))
+                .thenReturn(new InspectionSyncDeltaService.SyncDeltaBuildResult(
+                        SyncDeltaResponse.empty(),
+                        List.of(new SyncWarningResponse(
+                                SyncWarningCode.FULL_SYNC_REQUIRED,
+                                "Sync token is invalid; returning full inspection delta."))));
+
+        SyncRequest request = validRequest();
+        request.setSyncToken("bad-token");
+
+        SyncResponse response = mobileSyncService.sync(FIELD_USER_ID, request);
+
+        assertThat(response.isRequiresFullSync()).isTrue();
+        assertThat(SyncToken.fromOpaqueValue(response.getNextSyncToken()).getIssuedAt()).isEqualTo(FIXED_INSTANT);
+    }
+
+    @Test
+    void sync_validSyncToken_setsRequiresFullSyncFalse() {
+        User fieldUser = user(UserRole.FIELD_EMPLOYEE);
+        when(authorizationService.requireMobileUser(FIELD_USER_ID)).thenReturn(fieldUser);
+
+        SyncResponse response = mobileSyncService.sync(FIELD_USER_ID, validRequest());
+
+        assertThat(response.isRequiresFullSync()).isFalse();
     }
 
     private SyncRequest validRequest() {

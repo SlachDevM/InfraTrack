@@ -150,13 +150,19 @@ public class MobileService {
 
     @Transactional(readOnly = true)
     public List<Inspection> listScopedInspectionsForSync(User user) {
-        return listScopedInspectionsForSync(user, null);
+        return listScopedInspectionsForSync(user, null, null);
     }
 
     @Transactional(readOnly = true)
     public List<Inspection> listScopedInspectionsForSync(User user, Long updatedSinceMillis) {
+        return listScopedInspectionsForSync(user, updatedSinceMillis, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Inspection> listScopedInspectionsForSync(
+            User user, Long updatedSinceMillis, Long updatedUntilMillis) {
         authorizationService.requireMobileUser(user.getId());
-        return loadScopedInspectionsForSync(user, updatedSinceMillis);
+        return loadScopedInspectionsForSync(user, updatedSinceMillis, updatedUntilMillis);
     }
 
     @Transactional(readOnly = true)
@@ -347,13 +353,22 @@ public class MobileService {
         return inspectionRepository.findByAssignedToUserId(user.getId());
     }
 
-    private List<Inspection> loadScopedInspectionsForSync(User user, Long updatedSinceMillis) {
+    private List<Inspection> loadScopedInspectionsForSync(
+            User user, Long updatedSinceMillis, Long updatedUntilMillis) {
         if (user.getRole().isAdministrator()) {
             if (updatedSinceMillis == null) {
-                return inspectionRepository.findByStatus(InspectionStatus.ASSIGNED);
+                if (updatedUntilMillis == null) {
+                    return inspectionRepository.findByStatus(InspectionStatus.ASSIGNED);
+                }
+                return inspectionRepository.findByStatusAndUpdatedAtLessThanEqual(
+                        InspectionStatus.ASSIGNED, updatedUntilMillis);
             }
-            return inspectionRepository.findByStatusAndUpdatedAtGreaterThanEqual(
-                    InspectionStatus.ASSIGNED, updatedSinceMillis);
+            if (updatedUntilMillis == null) {
+                return inspectionRepository.findByStatusAndUpdatedAtGreaterThanEqual(
+                        InspectionStatus.ASSIGNED, updatedSinceMillis);
+            }
+            return inspectionRepository.findByStatusAndUpdatedAtGreaterThanEqualAndUpdatedAtLessThanEqual(
+                    InspectionStatus.ASSIGNED, updatedSinceMillis, updatedUntilMillis);
         }
         if (user.getRole().isManager()) {
             if (user.getDepartment() == null) {
@@ -361,17 +376,33 @@ public class MobileService {
             }
             Long departmentId = user.getDepartment().getId();
             if (updatedSinceMillis == null) {
-                return inspectionRepository.findByAsset_Department_IdAndStatus(
-                        departmentId, InspectionStatus.ASSIGNED);
+                if (updatedUntilMillis == null) {
+                    return inspectionRepository.findByAsset_Department_IdAndStatus(
+                            departmentId, InspectionStatus.ASSIGNED);
+                }
+                return inspectionRepository.findByAsset_Department_IdAndStatusAndUpdatedAtLessThanEqual(
+                        departmentId, InspectionStatus.ASSIGNED, updatedUntilMillis);
             }
-            return inspectionRepository.findByAsset_Department_IdAndStatusAndUpdatedAtGreaterThanEqual(
-                    departmentId, InspectionStatus.ASSIGNED, updatedSinceMillis);
+            if (updatedUntilMillis == null) {
+                return inspectionRepository.findByAsset_Department_IdAndStatusAndUpdatedAtGreaterThanEqual(
+                        departmentId, InspectionStatus.ASSIGNED, updatedSinceMillis);
+            }
+            return inspectionRepository.findByAsset_Department_IdAndStatusAndUpdatedAtGreaterThanEqualAndUpdatedAtLessThanEqual(
+                    departmentId, InspectionStatus.ASSIGNED, updatedSinceMillis, updatedUntilMillis);
         }
         if (updatedSinceMillis == null) {
-            return inspectionRepository.findByAssignedToUserId(user.getId());
+            if (updatedUntilMillis == null) {
+                return inspectionRepository.findByAssignedToUserId(user.getId());
+            }
+            return inspectionRepository.findByAssignedToUserIdAndUpdatedAtLessThanEqual(
+                    user.getId(), updatedUntilMillis);
         }
-        return inspectionRepository.findByAssignedToUserIdAndUpdatedAtGreaterThanEqual(
-                user.getId(), updatedSinceMillis);
+        if (updatedUntilMillis == null) {
+            return inspectionRepository.findByAssignedToUserIdAndUpdatedAtGreaterThanEqual(
+                    user.getId(), updatedSinceMillis);
+        }
+        return inspectionRepository.findByAssignedToUserIdAndUpdatedAtGreaterThanEqualAndUpdatedAtLessThanEqual(
+                user.getId(), updatedSinceMillis, updatedUntilMillis);
     }
 
     private List<WorkOrder> loadScopedWorkOrders(User user) {

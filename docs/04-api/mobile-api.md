@@ -268,7 +268,7 @@ Example `payload` fields: `observedCondition`, `observations`, `issueIdentified`
 | `operations` | One `SyncOperationResponse` per pending operation (in request order) |
 | `conflicts` | Populated when an operation returns `CONFLICT` — see below |
 | `warnings` | May include `FULL_SYNC_REQUIRED` when `syncToken` is invalid; sync still succeeds |
-| `requiresFullSync` | `false` |
+| `requiresFullSync` | `true` when `warnings` contains `FULL_SYNC_REQUIRED`; otherwise `false` (**RC-FIX-BE-1**) |
 
 ### Inspection delta (`delta.inspections`)
 
@@ -291,6 +291,8 @@ Each `SyncInspectionDeltaResponse` includes: `id`, `status`, `priority`, `assign
 | Invalid token | `FULL_SYNC_REQUIRED` warning + full inspection delta (sync does not fail) |
 
 Inspections are scoped identically to `GET /api/mobile/my-inspections` (administrator / manager department / assigned field user). **Removals and tombstones are not synchronized yet** — records the user loses access to may remain in local cache until a later sprint.
+
+**Synchronization watermark (RC-FIX-BE-1):** After pending operations are processed, the backend captures a single server `watermark` instant. The inspection delta includes only records with `updatedAt <= watermark`. `nextSyncToken` is issued with `issuedAt = watermark`, so the token exactly represents the snapshot returned. Updates committed after the watermark appear on the next sync. Token encoding remains opaque; no API contract change.
 
 ### Per-operation outcomes (`SyncOperationResponse`)
 
@@ -370,7 +372,7 @@ See [BDR-005 Conflict Resolution Strategy](../03-architecture/bdr-005-conflict-r
 
 ### Idempotency (M5.3 / DT-OFFLINE-1)
 
-`operationId` is the client idempotency key. **DT-OFFLINE-1:** the backend persists processed outcomes in `mobile_sync_operation` and returns the stored `SyncOperationResponse` when the same `operationId` is submitted again — handlers and business services are not re-executed. Retention default **90 days** (`mobile.sync.idempotency.retention-days`). Duplicate metric: `mobile.sync.operations.duplicate`.
+`operationId` is the client idempotency key. **DT-OFFLINE-1 / RC-FIX-BE-1:** the backend atomically reserves `operationId` in `mobile_sync_operation` (`PROCESSING` → `RECORDED`) before handler execution. Concurrent duplicates wait for or receive the recorded `SyncOperationResponse` without re-executing business services. Runtime handler failures release the reservation so the client may retry. Retention default **90 days** (`mobile.sync.idempotency.retention-days`). Duplicate metric: `mobile.sync.operations.duplicate`.
 
 ### Typed envelopes
 

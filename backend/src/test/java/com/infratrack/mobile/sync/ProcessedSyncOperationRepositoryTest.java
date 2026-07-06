@@ -38,7 +38,7 @@ class ProcessedSyncOperationRepositoryTest {
     @Test
     void saveAndFind_persistsRecord() {
         Instant processedAt = Instant.parse("2026-07-05T10:00:00Z");
-        ProcessedSyncOperation record = new ProcessedSyncOperation(
+        ProcessedSyncOperation record = ProcessedSyncOperation.recorded(
                 "op-repo-1",
                 20L,
                 "INSPECTION",
@@ -63,9 +63,9 @@ class ProcessedSyncOperationRepositoryTest {
     void deleteByProcessedAtBefore_removesExpiredRecords() {
         Instant old = Instant.parse("2026-01-01T00:00:00Z");
         Instant recent = Instant.parse("2026-07-05T00:00:00Z");
-        repository.save(new ProcessedSyncOperation(
+        repository.save(ProcessedSyncOperation.recorded(
                 "op-old", 20L, "INSPECTION", 1L, "SAVE_INSPECTION_PROGRESS", 1, old, "ACCEPTED", null, old, null, null));
-        repository.save(new ProcessedSyncOperation(
+        repository.save(ProcessedSyncOperation.recorded(
                 "op-new", 20L, "INSPECTION", 2L, "SAVE_INSPECTION_PROGRESS", 1, recent, "ACCEPTED", null, recent, null, null));
 
         int deleted = repository.deleteByProcessedAtBefore(recent.minus(1, ChronoUnit.DAYS));

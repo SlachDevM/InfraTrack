@@ -35,6 +35,7 @@ import com.infratrack.organization.policy.notification.NotificationPolicyService
 import com.infratrack.user.User;
 import com.infratrack.user.UserNameLookup;
 import com.infratrack.user.UserService;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -350,7 +351,11 @@ public class InspectionService {
         int answerCount = inspectionAnswerService.saveAnswers(inspection, List.of());
 
         inspection.complete(observedCondition, observations, issueIdentified, completedAt, performer.getId());
-        inspectionRepository.save(inspection);
+        try {
+            inspectionRepository.saveAndFlush(inspection);
+        } catch (ObjectOptimisticLockingFailureException exception) {
+            throw new BusinessValidationException("Only assigned inspections can be completed");
+        }
 
         RuleEvaluationReport evaluationReport = ruleEvaluationReportService.createReportIfApplicable(inspectionId);
 
