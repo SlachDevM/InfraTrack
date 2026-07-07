@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import apiClient from '../services/apiClient';
 import { API_ENDPOINTS } from '../constants/apiEndpoints';
 import { canViewOperationsDashboard } from '../constants/userRoles';
 import { ROUTES } from '../constants/routes';
+import { COMMON_MESSAGES } from '../constants/messages';
 import { getApiErrorMessage } from '../utils/apiError';
 import '../styles/Login.css';
 
@@ -12,10 +13,13 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(
+    location.state?.sessionExpired ? COMMON_MESSAGES.SESSION_EXPIRED : ''
+  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();

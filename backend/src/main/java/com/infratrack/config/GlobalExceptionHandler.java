@@ -74,6 +74,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<String> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body("Request conflicts with existing data");
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(DataIntegrityViolationMessageResolver.resolveMessage(ex));
     }
 }

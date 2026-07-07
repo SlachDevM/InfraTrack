@@ -1,6 +1,7 @@
 import API_CONFIG from '../config/apiConfig';
 import { HTTP_STATUS } from '../constants/httpStatus';
 import { COMMON_MESSAGES } from '../constants/messages';
+import { notifyUnauthorized } from '../services/unauthorizedHandler';
 
 /**
  * Download a file via authenticated GET and trigger a browser save.
@@ -24,6 +25,17 @@ export async function downloadAttachment(url, token, params = {}, defaultFilenam
   const response = await fetch(fullUrl, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
+
+  if (response.status === HTTP_STATUS.UNAUTHORIZED) {
+    if (token) {
+      notifyUnauthorized();
+    }
+    const text = await response.text();
+    const error = new Error(text || COMMON_MESSAGES.SESSION_EXPIRED);
+    error.status = HTTP_STATUS.UNAUTHORIZED;
+    error.type = 'UNAUTHORIZED';
+    throw error;
+  }
 
   if (response.status === HTTP_STATUS.FORBIDDEN) {
     const text = await response.text();

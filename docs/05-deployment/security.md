@@ -7,6 +7,7 @@ Production security controls applied in InfraTrack V2 Sprint 0, extended in V2.0
 | [Authentication](#authentication) | JWT Bearer, disabled-account revocation, account-status cache |
 | [Content Security Policy](#content-security-policy-csp) | Frontend nginx CSP, limitations, future tightening |
 | [Reporting export security](#reporting-export-security) | Formula injection, required date filters, 365-day window |
+| [Single application instance](#single-application-instance) | In-memory caches, rate limiting, scheduled jobs |
 | [Authorization](#authorization) | Per-domain services, architecture guard (ArchUnit-style) |
 | [Trusted reverse proxy](#trusted-reverse-proxy-and-client-ip-infra-sec-1) | X-Forwarded-For trust boundary, deployment assumptions |
 
@@ -587,7 +588,37 @@ Reporting exports can return large datasets. To prevent unbounded resource use, 
 
 Validation runs once in `ReportingExportService.validateExportDateWindow()` before any export data is loaded. Applies to all export domains (assets, inspections, issues, work orders, preventive candidates) and all formats.
 
+**Memory and throughput (RC-FIX-BE-2 review):** Exports assemble one in-memory `TabularExport` for the validated date window, then write CSV, XLSX, or PDF bytes. This is acceptable for the current design because:
+
+- Every request requires explicit `from` and `to` filters with a maximum 365-day inclusive window.
+- Results are scoped to the caller's reporting department (or organization-wide for administrators).
+- Validation runs before any repository query; there is no unbounded default range.
+
+Streaming or chunked writers would require a reporting redesign. No API or export-format changes are planned for V2.5. Monitor export duration and row counts in production; tighten the window operationally if needed.
+
 The React **Export** menu (`ExportReportingMenu`) defaults to the last 30 days and validates the date range client-side before calling the API. Server validation remains authoritative.
+
+---
+
+## Single application instance
+
+InfraTrack V2.5 assumes **one active Spring Boot application instance** per environment. The backend does not use Redis, distributed locks, or a clustered cache manager.
+
+| Component | Behaviour | Multi-instance risk |
+|-----------|-----------|---------------------|
+| Reference-data cache (`CacheConfig`) | Caffeine in-process cache for departments and asset categories (1-hour TTL) | Stale reads until TTL expiry after reference-data changes |
+| Account-status cache (`UserAccountStatusService`) | Caffeine per-user enabled flag (30-second TTL) with explicit eviction on status change | Eviction is local to the instance that performed the change; other instances rely on TTL |
+| Login rate limiter (`LoginRateLimiter`) | Caffeine token buckets per client IP and email | Limits are per instance, not global |
+| Preventive scheduler (`PreventiveSchedulerJob`) | `@Scheduled` cron when `PREVENTIVE_SCHEDULER_ENABLED=true` | Duplicate candidate generation if multiple instances run the job concurrently |
+| Mobile sync idempotency cleanup (`MobileSyncIdempotencyCleanupJob`) | `@Scheduled` purge of aged `mobile_sync_operation` rows | Duplicate cleanup work only; idempotent SQL |
+
+**Deployment guidance:**
+
+- Run a **single backend replica** in production unless you add external coordination (not part of V2.5).
+- If you must scale horizontally before distributed locking is introduced, keep `PREVENTIVE_SCHEDULER_ENABLED=false` and run scheduled jobs on one designated instance only.
+- Load-balancing multiple stateless replicas is not a supported production topology in V2.5 because of the in-memory controls above.
+
+This is documentation only — no clustering changes are introduced in the V2.5 release family.
 
 ---
 

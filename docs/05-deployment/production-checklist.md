@@ -27,6 +27,7 @@ Use this checklist before go-live and before each production release.
 - [ ] HTTPS terminated at reverse proxy
 - [ ] Frontend nginx sends `Content-Security-Policy` (V2.4.x DT-2A) — login and API calls work; no CSP violations in browser console
 - [ ] Backend built on Spring Boot **4.0.7** (V2.4.x DT-3) — `mvn clean test` passes; Docker backend image builds
+- [ ] Production runs **one active backend instance** per environment (V2.5 in-memory caches and scheduled jobs) — see [security.md — single application instance](security.md#single-application-instance)
 
 ---
 

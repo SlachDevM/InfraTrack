@@ -5,11 +5,14 @@ import com.infratrack.exception.ConflictException;
 import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.exception.NotFoundException;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+
+import java.sql.SQLException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -73,6 +76,30 @@ class GlobalExceptionHandlerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).isEqualTo("Validation failed");
+    }
+
+    @Test
+    void handleDataIntegrityViolationException_returns409WithBusinessMessage() {
+        SQLException sqlException = new SQLException(
+                "duplicate key value violates unique constraint \"uk_issues_inspection_id\"");
+        DataIntegrityViolationException exception = new DataIntegrityViolationException("persist failed", sqlException);
+
+        ResponseEntity<String> response = handler.handleDataIntegrityViolationException(exception);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody()).isEqualTo("An issue has already been recorded for this inspection");
+    }
+
+    @Test
+    void handleDataIntegrityViolationException_returns409WithFallbackForUnknownConstraint() {
+        DataIntegrityViolationException exception = new DataIntegrityViolationException(
+                "persist failed",
+                new SQLException("duplicate key value violates unique constraint \"uk_unknown\""));
+
+        ResponseEntity<String> response = handler.handleDataIntegrityViolationException(exception);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody()).isEqualTo("Request conflicts with existing data");
     }
 }
 

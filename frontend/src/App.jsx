@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import ApiAuthBridge from './components/ApiAuthBridge';
 import PrivateRoute from './components/PrivateRoute';
 import Login from './pages/Login';
 import ActivationPage from './pages/ActivationPage';
@@ -29,6 +30,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+        <ApiAuthBridge />
         <NotificationProvider>
           <Routes>
             <Route path={ROUTES.LOGIN} element={<Login />} />

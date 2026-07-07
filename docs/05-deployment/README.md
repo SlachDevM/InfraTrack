@@ -136,6 +136,7 @@ The **Controlled Preventive Scheduler** (Version 2.0.0) generates execution cand
 - Scheduled execution is **disabled by default** in all profiles.
 - Manual run (`POST /api/preventive-scheduler/run`) remains available to Administrator and Manager when authenticated.
 - Cron is configured via environment or `application.properties` only — not from the UI.
+- **Single backend instance** is the supported V2.5 production topology. In-memory Caffeine caches, login rate limiting, and `@Scheduled` jobs assume one active application instance per environment. See [security.md — single application instance](security.md#single-application-instance).
 - Multi-instance deployments should plan for distributed locking before enabling scheduled runs in production.
 
 See [Domain Engine — B5](../07-business-architecture/domain-engine.md) and [BDR-002](../03-architecture/bdr-002-preventive-candidates-before-automation.md).

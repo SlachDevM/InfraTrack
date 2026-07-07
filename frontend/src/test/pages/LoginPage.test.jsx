@@ -137,4 +137,14 @@ describe('Login page', () => {
       expect(screen.getByText('Email or password is incorrect.')).toBeInTheDocument();
     });
   });
+
+  it('displays session expired message when redirected after unauthorized API response', () => {
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/login', state: { sessionExpired: true } }]}>
+        <Login />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Your session has expired. Please sign in again.')).toBeInTheDocument();
+  });
 });

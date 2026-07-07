@@ -2,6 +2,7 @@ export const COMMON_MESSAGES = {
   LOADING: 'Loading...',
   LOADING_PAGE: 'Loading page...',
   REQUEST_FAILED: 'Request failed.',
+  SESSION_EXPIRED: 'Your session has expired. Please sign in again.',
   UNAUTHORIZED_PAGE: 'You do not have permission to view this page.',
   UNABLE_TO_LOAD: 'Unable to load data.',
   NO_RESULTS: 'No results found.',

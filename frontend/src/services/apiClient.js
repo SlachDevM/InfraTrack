@@ -1,5 +1,6 @@
 import API_CONFIG from '../config/apiConfig';
 import { HTTP_STATUS } from '../constants/httpStatus';
+import { notifyUnauthorized } from './unauthorizedHandler';
 
 function isFormDataBody(body) {
   return typeof FormData !== 'undefined' && body instanceof FormData;
@@ -38,6 +39,9 @@ class ApiClient {
 
       if (response.status === HTTP_STATUS.UNAUTHORIZED) {
         error.type = 'UNAUTHORIZED';
+        if (this.token) {
+          notifyUnauthorized();
+        }
       } else if (response.status === HTTP_STATUS.FORBIDDEN) {
         error.type = 'FORBIDDEN';
       } else if (response.status === HTTP_STATUS.NOT_FOUND) {
