@@ -1,6 +1,7 @@
 package com.infratrack.workorder;
 
 import com.infratrack.asset.Asset;
+import com.infratrack.delegatedauthority.DelegatedAuthorityService;
 import com.infratrack.asset.AssetHistoryEventRepository;
 import com.infratrack.asset.AssetStatus;
 import com.infratrack.assetcategory.AssetCategory;
@@ -67,13 +68,17 @@ class WorkOrderServiceNotificationTest {
     @Mock
     private MaintenanceActivityRepository maintenanceActivityRepository;
 
+    @Mock
+    private DelegatedAuthorityService delegatedAuthorityService;
+
     private WorkOrderService workOrderService;
 
     @BeforeEach
     void setUp() {
         OperationalEventNotificationService operationalEventNotificationService =
                 new OperationalEventNotificationService(notificationService, userRepository);
-        WorkOrderAuthorizationService authorizationService = new WorkOrderAuthorizationService(userService);
+        WorkOrderAuthorizationService authorizationService =
+                new WorkOrderAuthorizationService(userService, delegatedAuthorityService);
         WorkOrderHistoryRecorder historyRecorder = new WorkOrderHistoryRecorder(assetHistoryEventRepository);
         workOrderService = new WorkOrderService(
                 workOrderRepository,
@@ -146,7 +151,8 @@ class WorkOrderServiceNotificationTest {
     private WorkOrderService serviceWithNotificationPolicy(String mode) {
         OperationalEventNotificationService operationalEventNotificationService =
                 new OperationalEventNotificationService(notificationService, userRepository);
-        WorkOrderAuthorizationService authorizationService = new WorkOrderAuthorizationService(userService);
+        WorkOrderAuthorizationService authorizationService =
+                new WorkOrderAuthorizationService(userService, delegatedAuthorityService);
         WorkOrderHistoryRecorder historyRecorder = new WorkOrderHistoryRecorder(assetHistoryEventRepository);
         return new WorkOrderService(
                 workOrderRepository,

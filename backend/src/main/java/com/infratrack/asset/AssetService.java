@@ -33,18 +33,21 @@ public class AssetService {
     private final DepartmentRepository departmentRepository;
     private final AssetCategoryRepository assetCategoryRepository;
     private final UserService userService;
+    private final AssetAuthorizationService assetAuthorizationService;
 
     public AssetService(
             AssetRepository assetRepository,
             AssetHistoryEventRepository assetHistoryEventRepository,
             DepartmentRepository departmentRepository,
             AssetCategoryRepository assetCategoryRepository,
-            UserService userService) {
+            UserService userService,
+            AssetAuthorizationService assetAuthorizationService) {
         this.assetRepository = assetRepository;
         this.assetHistoryEventRepository = assetHistoryEventRepository;
         this.departmentRepository = departmentRepository;
         this.assetCategoryRepository = assetCategoryRepository;
         this.userService = userService;
+        this.assetAuthorizationService = assetAuthorizationService;
     }
 
     @Transactional(readOnly = true)
@@ -80,8 +83,11 @@ public class AssetService {
     }
 
     @Transactional(readOnly = true)
-    public AssetResponse getById(Long id) {
-        return AssetResponse.from(findAssetOrThrow(id));
+    public AssetResponse getById(Long id, Long userId) {
+        Asset asset = findAssetOrThrow(id);
+        User user = userService.getById(userId);
+        assetAuthorizationService.requireCanViewAsset(user, asset);
+        return AssetResponse.from(asset);
     }
 
     @Transactional

@@ -1570,6 +1570,42 @@ class InspectionServiceTest {
         return inspection;
     }
 
+    @Test
+    void getById_shouldReturnInspectionWhenAuthorized() {
+        User fieldEmployee = userInDepartment(20L, UserRole.FIELD_EMPLOYEE, 1L);
+        Inspection inspection = assignedInspection(100L, 20L);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        var response = inspectionService.getById(100L, 20L);
+
+        assertThat(response.getId()).isEqualTo(100L);
+    }
+
+    @Test
+    void getById_shouldReturn404WhenInspectionNotFound() {
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> inspectionService.getById(100L, 20L))
+                .isInstanceOf(NotFoundException.class);
+
+        verify(userService, never()).getById(anyLong());
+    }
+
+    @Test
+    void getById_shouldReturn403WhenUserCannotViewInspection() {
+        User fieldEmployee = userInDepartment(20L, UserRole.FIELD_EMPLOYEE, 2L);
+        Inspection inspection = assignedInspection(100L, 99L);
+
+        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        assertThatThrownBy(() -> inspectionService.getById(100L, 20L))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You may only view inspections for assets in your own department.");
+    }
+
     private AssignInspectionRequest validRequest() {
         AssignInspectionRequest request = new AssignInspectionRequest();
         request.setBusinessTriggerId(1L);
@@ -1613,5 +1649,13 @@ class InspectionServiceTest {
         department.setId(1L);
         user.setDepartment(department);
         return user;
+    }
+
+    private User userInDepartment(Long id, UserRole role, Long departmentId) {
+        User worker = user(id, role);
+        Department department = new Department("Department " + departmentId);
+        department.setId(departmentId);
+        worker.setDepartment(department);
+        return worker;
     }
 }

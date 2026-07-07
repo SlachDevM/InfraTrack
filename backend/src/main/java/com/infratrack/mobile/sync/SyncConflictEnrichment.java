@@ -61,7 +61,7 @@ final class SyncConflictEnrichment {
             return null;
         }
         try {
-            InspectionResponse inspection = inspectionService.getById(entityId);
+            InspectionResponse inspection = inspectionService.getByIdForConflictSnapshot(entityId);
             if (inspection == null) {
                 return null;
             }
@@ -79,7 +79,7 @@ final class SyncConflictEnrichment {
             return null;
         }
         try {
-            WorkOrderResponse workOrder = workOrderService.getById(entityId);
+            WorkOrderResponse workOrder = workOrderService.getByIdForConflictSnapshot(entityId);
             if (workOrder == null) {
                 return null;
             }

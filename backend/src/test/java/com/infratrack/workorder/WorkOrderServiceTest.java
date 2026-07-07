@@ -1,5 +1,6 @@
 package com.infratrack.workorder;
 
+import com.infratrack.delegatedauthority.DelegatedAuthorityService;
 import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.exception.NotFoundException;
@@ -80,11 +81,15 @@ class WorkOrderServiceTest {
     @Mock
     private MaintenanceActivityRepository maintenanceActivityRepository;
 
+    @Mock
+    private DelegatedAuthorityService delegatedAuthorityService;
+
     private WorkOrderService workOrderService;
 
     @BeforeEach
     void setUp() {
-        WorkOrderAuthorizationService authorizationService = new WorkOrderAuthorizationService(userService);
+        WorkOrderAuthorizationService authorizationService =
+                new WorkOrderAuthorizationService(userService, delegatedAuthorityService);
         WorkOrderHistoryRecorder historyRecorder = new WorkOrderHistoryRecorder(assetHistoryEventRepository);
         workOrderService = new WorkOrderService(
                 workOrderRepository,
@@ -921,6 +926,42 @@ class WorkOrderServiceTest {
         department.setId(departmentId);
         coordinator.setDepartment(department);
         return coordinator;
+    }
+
+    @Test
+    void getById_shouldReturnWorkOrderWhenAuthorized() {
+        User fieldEmployee = userInDepartment(20L, UserRole.FIELD_EMPLOYEE, 1L);
+        WorkOrder workOrder = assignedWorkOrder(1000L, 20L, WorkType.INTERNAL_MAINTENANCE);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.of(workOrder));
+
+        var response = workOrderService.getById(1000L, 20L);
+
+        assertThat(response.getId()).isEqualTo(1000L);
+    }
+
+    @Test
+    void getById_shouldReturn404WhenWorkOrderNotFound() {
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> workOrderService.getById(1000L, 20L))
+                .isInstanceOf(NotFoundException.class);
+
+        verify(userService, never()).getById(anyLong());
+    }
+
+    @Test
+    void getById_shouldReturn403WhenUserCannotViewWorkOrder() {
+        User fieldEmployee = userInDepartment(21L, UserRole.FIELD_EMPLOYEE, 2L);
+        WorkOrder workOrder = assignedWorkOrder(1000L, 20L, WorkType.INTERNAL_MAINTENANCE);
+
+        when(userService.getById(21L)).thenReturn(fieldEmployee);
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.of(workOrder));
+
+        assertThatThrownBy(() -> workOrderService.getById(1000L, 21L))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You may only view work orders assigned to you.");
     }
 
     private User userInDepartment(Long id, UserRole role, Long departmentId) {

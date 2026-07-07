@@ -92,7 +92,7 @@ class DefaultSyncOperationProcessorTest {
         InspectionResponse completedInspection = mock(InspectionResponse.class);
         when(completedInspection.getId()).thenReturn(456L);
         when(completedInspection.getStatus()).thenReturn(InspectionStatus.COMPLETED);
-        when(inspectionService.getById(456L)).thenReturn(completedInspection);
+        when(inspectionService.getByIdForConflictSnapshot(456L)).thenReturn(completedInspection);
         doThrow(new BusinessValidationException("Question ID is required for each answer"))
                 .when(inspectionService)
                 .saveInspectionProgress(eq(999L), org.mockito.ArgumentMatchers.any(), eq(USER_ID));
@@ -159,7 +159,7 @@ class DefaultSyncOperationProcessorTest {
         WorkOrderResponse conflictWorkOrder = mock(WorkOrderResponse.class);
         when(conflictWorkOrder.getId()).thenReturn(200L);
         when(conflictWorkOrder.getStatus()).thenReturn(assigned);
-        when(workOrderService.getById(200L)).thenReturn(conflictWorkOrder);
+        when(workOrderService.getByIdForConflictSnapshot(200L)).thenReturn(conflictWorkOrder);
         doThrow(new BusinessValidationException("Completion notes must not exceed 4000 characters"))
                 .when(workOrderService)
                 .saveWorkOrderProgress(eq(300L), org.mockito.ArgumentMatchers.any(), eq(USER_ID));

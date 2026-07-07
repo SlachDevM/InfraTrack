@@ -152,7 +152,7 @@ class InspectionProgressSyncOperationHandlerTest {
         when(inspection.getId()).thenReturn(INSPECTION_ID);
         when(inspection.getStatus()).thenReturn(InspectionStatus.COMPLETED);
         when(inspection.getUpdatedAt()).thenReturn(1_700_000_000_000L);
-        when(inspectionService.getById(INSPECTION_ID)).thenReturn(inspection);
+        when(inspectionService.getByIdForConflictSnapshot(INSPECTION_ID)).thenReturn(inspection);
         doThrow(new ConflictException("Inspection progress cannot be modified after completion"))
                 .when(inspectionService)
                 .saveInspectionProgress(eq(INSPECTION_ID), org.mockito.ArgumentMatchers.any(), eq(USER_ID));
@@ -192,7 +192,7 @@ class InspectionProgressSyncOperationHandlerTest {
         InspectionResponse inspection = mock(InspectionResponse.class);
         when(inspection.getId()).thenReturn(INSPECTION_ID);
         when(inspection.getStatus()).thenReturn(InspectionStatus.ASSIGNED);
-        when(inspectionService.getById(INSPECTION_ID)).thenReturn(inspection);
+        when(inspectionService.getByIdForConflictSnapshot(INSPECTION_ID)).thenReturn(inspection);
         doThrow(new ForbiddenOperationException("Only the assigned user can save inspection answers"))
                 .when(inspectionService)
                 .saveInspectionProgress(eq(INSPECTION_ID), org.mockito.ArgumentMatchers.any(), eq(USER_ID));
@@ -210,7 +210,7 @@ class InspectionProgressSyncOperationHandlerTest {
         InspectionResponse inspection = mock(InspectionResponse.class);
         when(inspection.getId()).thenReturn(INSPECTION_ID);
         when(inspection.getStatus()).thenReturn(InspectionStatus.ASSIGNED);
-        when(inspectionService.getById(INSPECTION_ID)).thenReturn(inspection);
+        when(inspectionService.getByIdForConflictSnapshot(INSPECTION_ID)).thenReturn(inspection);
         doThrow(new ConflictException("Duplicate answer submitted for the same checklist question"))
                 .when(inspectionService)
                 .saveInspectionProgress(eq(INSPECTION_ID), org.mockito.ArgumentMatchers.any(), eq(USER_ID));

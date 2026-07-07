@@ -63,8 +63,11 @@ public class WorkOrderController {
     @GetMapping("/{id}")
     @Operation(summary = "Get work order by ID")
     @ApiResponse(responseCode = "200", description = "Work order details")
-    public ResponseEntity<WorkOrderResponse> getWorkOrder(@PathVariable Long id) {
-        return ResponseEntity.ok(workOrderService.getById(id));
+    public ResponseEntity<WorkOrderResponse> getWorkOrder(
+            @PathVariable Long id,
+            Authentication authentication) {
+        Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+        return ResponseEntity.ok(workOrderService.getById(id, userId));
     }
 
     @PostMapping

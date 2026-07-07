@@ -1,8 +1,9 @@
 package com.infratrack.issue;
 
 import com.infratrack.exception.BusinessValidationException;
-import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.exception.ConflictException;
+import com.infratrack.exception.ForbiddenOperationException;
+import com.infratrack.exception.NotFoundException;
 import com.infratrack.asset.Asset;
 import com.infratrack.asset.AssetHistoryEvent;
 import com.infratrack.asset.AssetHistoryEventRepository;
@@ -80,6 +81,9 @@ class IssueServiceTest {
 
     @Mock
     private WorkflowClock workflowClock;
+
+    @Mock
+    private IssueAuthorizationService issueAuthorizationService;
 
     @InjectMocks
     private IssueService issueService;
@@ -479,6 +483,49 @@ class IssueServiceTest {
         when(userService.getById(20L)).thenReturn(fieldEmployee);
 
         assertThatThrownBy(() -> issueService.listEligibleForOperationalDecisionPage(20L, PageRequest.of(0, 20)))
+                .isInstanceOf(ForbiddenOperationException.class);
+    }
+
+    @Test
+    void getById_shouldReturnIssueWhenAuthorized() {
+        User manager = managerInDepartment(30L, 1L);
+        Issue issue = issue(50L);
+
+        when(userService.getById(30L)).thenReturn(manager);
+        when(issueRepository.findDetailedById(50L)).thenReturn(Optional.of(issue));
+
+        IssueResponse response = issueService.getById(50L, 30L);
+
+        assertThat(response.getId()).isEqualTo(50L);
+        verify(issueAuthorizationService).requireCanViewIssue(manager, issue);
+    }
+
+    @Test
+    void getById_shouldReturn404WhenIssueNotFound() {
+        when(issueRepository.findDetailedById(50L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> issueService.getById(50L, 30L))
+                .isInstanceOf(NotFoundException.class);
+
+        verify(issueAuthorizationService, never()).requireCanViewIssue(any(), any());
+        verify(userService, never()).getById(anyLong());
+    }
+
+    @Test
+    void getById_shouldReturn403WhenUserCannotViewIssue() {
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        Department department = new Department("Department 2");
+        department.setId(2L);
+        fieldEmployee.setDepartment(department);
+        Issue issue = issue(50L);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(issueRepository.findDetailedById(50L)).thenReturn(Optional.of(issue));
+        doThrow(new ForbiddenOperationException(
+                "You may only view asset history for assets in your own department."))
+                .when(issueAuthorizationService).requireCanViewIssue(fieldEmployee, issue);
+
+        assertThatThrownBy(() -> issueService.getById(50L, 20L))
                 .isInstanceOf(ForbiddenOperationException.class);
     }
 

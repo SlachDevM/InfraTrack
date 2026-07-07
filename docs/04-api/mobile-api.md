@@ -2,7 +2,7 @@
 
 Compact, read-only REST endpoints for the future Android field client. **M1** is the mobile API foundation. **M4-BE** (V2.4) is the current backend milestone — asset lookup, asset context, QR foundation, documents, and allowed actions. No Android scanning UI, offline sync, or push delivery in M4-BE (backend only).
 
-**V2.2.x contract hardening:** JSON response shapes are locked by `MobileControllerContractTest` and `MobileApiReadOnlyRegressionTest`. Android M2 should treat these contracts as stable.
+**V2.2.x contract hardening:** JSON response shapes are locked by backend regression tests including `MobileServiceTest`, `MobileSyncHardeningTest`, `MobileSyncControllerTest`, and `MobileSyncControllerOperationTest`. Android M2 should treat these contracts as stable.
 
 ## Purpose
 
@@ -13,7 +13,13 @@ Field users need one backend call per mobile screen instead of orchestrating mul
 - preserves backend authorization (Bearer JWT);
 - does **not** change existing web APIs or business workflows.
 
-Write operations (complete inspection, save inspection answers progressively, complete maintenance, upload documents) continue to use existing `/api/*` endpoints. Gaps for mobile-specific writes are deferred to M2.
+Write operations use a mix of web and mobile endpoints:
+
+- Progressive inspection save and completion: existing `/api/inspections/*` endpoints
+- Offline sync upload (pending operations): `POST /api/mobile/sync`
+- Document upload: existing `/api/assets/{assetId}/documents`
+
+Gaps for other mobile-specific writes are deferred to M2.
 
 ## Authentication
 
@@ -23,7 +29,7 @@ All mobile endpoints require a valid JWT from `POST /api/auth/login`.
 Authorization: Bearer <token>
 ```
 
-Unauthenticated requests receive `403 Forbidden` (project security behaviour). Forbidden scoping receives `403` with a plain-text message.
+Unauthenticated requests receive `401 Unauthorized`. Authenticated but unauthorized requests receive `403 Forbidden` with a plain-text message.
 
 ## Primary users
 
@@ -47,7 +53,7 @@ Operational Coordinators do not have mobile API access in M1. Starting with M4-B
 | `GET` | `/api/mobile/my-work-orders` | Assigned work order summaries |
 | `GET` | `/api/mobile/work-orders/{workOrderId}/bundle` | Full work order screen payload |
 | `GET` | `/api/mobile/assets/lookup?code={assetCode}` | Asset operational context by scanned business code (M4-BE1, enriched M4-BE3/M4-BE4) |
-| `POST` | `/api/mobile/sync` | Offline synchronization (M5.3 upload + M5.4 inspection delta download) |
+| `POST` | `/api/mobile/sync` | Offline synchronization: upload pending operations (M5.3) and download scoped deltas (M5.4+) |
 
 Live OpenAPI documentation: [Swagger UI](http://localhost:4000/swagger-ui/index.html) (tag: **Mobile API**).
 
@@ -83,6 +89,22 @@ The inspection bundle reflects whatever is persisted in the backend — reload t
 `PUT /api/inspections/{id}/answers` remains supported as a compatibility endpoint for saving answers only.
 
 Legacy inspections without a template return empty `questions` and `answers`.
+
+### Checklist field mapping (bundle vs sync delta)
+
+The inspection **bundle** and **sync delta** expose the same checklist data with different field names. Android must map both shapes — do not assume one JSON schema.
+
+| Bundle (`GET …/bundle` → `questions[]`) | Sync (`POST /api/mobile/sync` → `delta.inspections[].questions[]`) |
+|----------------------------------------|---------------------------------------------------------------------|
+| `id` | `questionId` |
+| `questionText` | `label` |
+| `type` | `questionType` |
+| `unitSymbol` | `unit` (symbol) and `unitLabel` (display name) |
+| `choices[].id` | `choices[].choiceId` |
+| `choices[].label` | `choices[].label` (same) |
+| `choices[].code` | `choices[].code` (same) |
+
+Shared fields (`code`, `helpText`, `required`, `displayOrder`, `minValue`, `maxValue`, `decimalPlaces`) use the same names in both payloads.
 
 ### Work order bundle
 
@@ -463,6 +485,18 @@ Example work order `payload` fields: `completionNotes` (draft maintenance notes 
 | `requiresFullSync` | `true` when `warnings` contains `FULL_SYNC_REQUIRED`; otherwise `false` (**RC-FIX-BE-1**) |
 
 ### Inspection delta (`delta.inspections`)
+
+### Sync timestamp formats
+
+The sync response uses multiple timestamp representations by design. Do not normalize them client-side without explicit mapping.
+
+| Representation | Example fields | Format |
+|----------------|----------------|--------|
+| ISO-8601 instant | `serverTime` (top-level sync response), `serverUpdatedAt` (operation results), conflict `serverTime` | `Instant` serialized as ISO-8601 UTC string |
+| Epoch milliseconds | `delta.inspections[].updatedAt`, `delta.workOrders[].createdAt` / `updatedAt`, `delta.dashboard.generatedAt`, `delta.referenceData.generatedAt`, most entity `createdAt` / `updatedAt` on mobile/web DTOs | JSON number (milliseconds since Unix epoch) |
+| Local date/time | `delta.inspections[].completedAt`, `delta.workOrders[].assignedAt`, business dates such as `expectedCompletionDate` | ISO local date or date-time string without timezone offset |
+
+Technical audit fields (`createdAt`, `updatedAt`, `serverTime`) are not business dates. Business workflow dates (`expectedCompletionDate`, `completedAt` where used as business completion time) follow the project date-handling rules.
 
 Each `SyncInspectionDeltaResponse` includes: `id`, `status`, `priority`, `assignedToUserId`, `assignedToName`, compact `asset` summary, draft `observedCondition` / `observations` / `issueIdentified`, `expectedCompletionDate`, `completedAt`, `updatedAt` (epoch millis), `answers[]` (`questionId`, value fields, optional additive `choiceId`), and — when the inspection uses a template — embedded checklist definitions:
 

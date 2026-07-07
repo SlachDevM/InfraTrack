@@ -94,7 +94,19 @@ public class WorkOrderService {
     }
 
     @Transactional(readOnly = true)
-    public WorkOrderResponse getById(Long id) {
+    public WorkOrderResponse getById(Long id, Long userId) {
+        WorkOrder workOrder = findWorkOrderOrThrow(id);
+        User user = userService.getById(userId);
+        authorizationService.requireCanViewWorkOrder(user, workOrder);
+        return toResponse(workOrder);
+    }
+
+    /**
+     * Internal snapshot load for mobile sync conflict enrichment.
+     * Authorization is enforced when the pending operation is processed.
+     */
+    @Transactional(readOnly = true)
+    public WorkOrderResponse getByIdForConflictSnapshot(Long id) {
         return toResponse(findWorkOrderOrThrow(id));
     }
 

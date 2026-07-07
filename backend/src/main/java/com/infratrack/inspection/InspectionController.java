@@ -79,8 +79,11 @@ public class InspectionController {
     @GetMapping("/{id}")
     @Operation(summary = "Get inspection by ID")
     @ApiResponse(responseCode = "200", description = "Inspection details")
-    public ResponseEntity<InspectionResponse> getInspection(@PathVariable Long id) {
-        return ResponseEntity.ok(inspectionService.getById(id));
+    public ResponseEntity<InspectionResponse> getInspection(
+            @PathVariable Long id,
+            Authentication authentication) {
+        Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+        return ResponseEntity.ok(inspectionService.getById(id, userId));
     }
 
     @GetMapping("/{id}/rule-evaluation")

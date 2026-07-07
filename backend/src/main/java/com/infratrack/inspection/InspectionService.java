@@ -128,7 +128,19 @@ public class InspectionService {
     }
 
     @Transactional(readOnly = true)
-    public InspectionResponse getById(Long id) {
+    public InspectionResponse getById(Long id, Long userId) {
+        Inspection inspection = findInspectionOrThrow(id);
+        User user = userService.getById(userId);
+        authorizationService.requireCanViewInspection(user, inspection);
+        return toResponse(inspection);
+    }
+
+    /**
+     * Internal snapshot load for mobile sync conflict enrichment.
+     * Authorization is enforced when the pending operation is processed.
+     */
+    @Transactional(readOnly = true)
+    public InspectionResponse getByIdForConflictSnapshot(Long id) {
         return toResponse(findInspectionOrThrow(id));
     }
 

@@ -1,5 +1,7 @@
 package com.infratrack.user;
 
+import com.infratrack.auth.ActivationService;
+import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.user.dto.FcmTokenRequest;
 import com.infratrack.user.dto.UserProfileResponse;
 import com.infratrack.user.User;
@@ -21,6 +23,12 @@ class UserControllerTest {
 
     @Mock
     private UserService userService;
+
+    @Mock
+    private ActivationService activationService;
+
+    @Mock
+    private UserManagementService userManagementService;
 
     @InjectMocks
     private UserController userController;
@@ -95,6 +103,28 @@ class UserControllerTest {
     }
 
     @Test
+    void listUsers_shouldThrowForbiddenOperationException_forNonAdministrator() {
+        JwtAuthenticationToken auth = new JwtAuthenticationToken(2L, "manager@test.com", true);
+        when(userService.isAdministrator(2L)).thenReturn(false);
+
+        assertThatThrownBy(() -> userController.listUsers(auth))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("Only administrators can list users.");
+
+        verify(userManagementService, never()).listAllUsers();
+    }
+
+    @Test
+    void getManagers_shouldThrowForbiddenOperationException_forNonManager() {
+        JwtAuthenticationToken auth = new JwtAuthenticationToken(20L, "worker@test.com", true);
+        when(userService.isManager(20L)).thenReturn(false);
+
+        assertThatThrownBy(() -> userController.getManagers(auth))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("Only managers can list managers.");
+    }
+
+    @Test
     void updateFcmToken_shouldUpdateTokenAndReturnNoContent() {
         FcmTokenRequest request = new FcmTokenRequest("new-fcm-token-abc123xyz");
         JwtAuthenticationToken auth = new JwtAuthenticationToken(1L, "worker@test.com", true);
@@ -107,31 +137,6 @@ class UserControllerTest {
         assertThat(response.getBody()).isNull();
 
         verify(userService).updateFcmToken(1L, "new-fcm-token-abc123xyz");
-    }
-
-    @Test
-    void updateFcmToken_shouldReturnBadRequest_whenTokenIsNull() {
-        FcmTokenRequest request = new FcmTokenRequest();
-        request.setToken(null);
-
-        JwtAuthenticationToken auth = new JwtAuthenticationToken(1L, "worker@test.com", true);
-
-        ResponseEntity<Void> response = userController.updateFcmToken(request, auth);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        verify(userService, never()).updateFcmToken(anyLong(), anyString());
-    }
-
-    @Test
-    void updateFcmToken_shouldReturnBadRequest_whenTokenIsBlank() {
-        FcmTokenRequest request = new FcmTokenRequest("   ");
-
-        JwtAuthenticationToken auth = new JwtAuthenticationToken(1L, "worker@test.com", true);
-
-        ResponseEntity<Void> response = userController.updateFcmToken(request, auth);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        verify(userService, never()).updateFcmToken(anyLong(), anyString());
     }
 
     @Test

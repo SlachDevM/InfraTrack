@@ -37,18 +37,21 @@ public class IssueService {
     private final AssetHistoryEventRepository assetHistoryEventRepository;
     private final UserService userService;
     private final WorkflowClock workflowClock;
+    private final IssueAuthorizationService issueAuthorizationService;
 
     public IssueService(
             IssueRepository issueRepository,
             InspectionRepository inspectionRepository,
             AssetHistoryEventRepository assetHistoryEventRepository,
             UserService userService,
-            WorkflowClock workflowClock) {
+            WorkflowClock workflowClock,
+            IssueAuthorizationService issueAuthorizationService) {
         this.issueRepository = issueRepository;
         this.inspectionRepository = inspectionRepository;
         this.assetHistoryEventRepository = assetHistoryEventRepository;
         this.userService = userService;
         this.workflowClock = workflowClock;
+        this.issueAuthorizationService = issueAuthorizationService;
     }
 
     @Transactional(readOnly = true)
@@ -72,8 +75,11 @@ public class IssueService {
     }
 
     @Transactional(readOnly = true)
-    public IssueResponse getById(Long id) {
-        return IssueResponse.from(findIssueOrThrow(id));
+    public IssueResponse getById(Long id, Long userId) {
+        Issue issue = findIssueOrThrow(id);
+        User user = userService.getById(userId);
+        issueAuthorizationService.requireCanViewIssue(user, issue);
+        return IssueResponse.from(issue);
     }
 
     @Transactional

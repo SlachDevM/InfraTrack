@@ -107,7 +107,7 @@ class SyncOperationIdempotencyIntegrationTest {
         WorkOrderResponse workOrder = mock(WorkOrderResponse.class);
         when(workOrder.getId()).thenReturn(456L);
         when(workOrder.getStatus()).thenReturn(WorkOrderStatus.COMPLETED);
-        when(workOrderService.getById(456L)).thenReturn(workOrder);
+        when(workOrderService.getByIdForConflictSnapshot(456L)).thenReturn(workOrder);
         doThrow(new ConflictException("Work order is no longer editable."))
                 .when(workOrderService)
                 .saveWorkOrderProgress(eq(456L), any(), eq(USER_ID));

@@ -1,8 +1,9 @@
 package com.infratrack.asset;
 
 import com.infratrack.exception.BusinessValidationException;
-import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.exception.ConflictException;
+import com.infratrack.exception.ForbiddenOperationException;
+import com.infratrack.exception.NotFoundException;
 import com.infratrack.asset.dto.RegisterAssetRequest;
 import com.infratrack.assetcategory.AssetCategory;
 import com.infratrack.assetcategory.AssetCategoryRepository;
@@ -43,6 +44,9 @@ class AssetServiceTest {
 
     @Mock
     private UserService userService;
+
+    @Mock
+    private AssetAuthorizationService assetAuthorizationService;
 
     @InjectMocks
     private AssetService assetService;
@@ -271,6 +275,61 @@ class AssetServiceTest {
 
         verify(assetRepository, never()).save(any());
         verify(assetHistoryEventRepository, never()).save(any());
+    }
+
+    @Test
+    void getById_shouldReturnAssetWhenAuthorized() {
+        Asset asset = assetEntity(100L, 1L);
+        User manager = userWithDepartment(30L, UserRole.MANAGER, 1L);
+
+        when(assetRepository.findById(100L)).thenReturn(Optional.of(asset));
+        when(userService.getById(30L)).thenReturn(manager);
+
+        var response = assetService.getById(100L, 30L);
+
+        assertThat(response.getId()).isEqualTo(100L);
+        verify(assetAuthorizationService).requireCanViewAsset(manager, asset);
+    }
+
+    @Test
+    void getById_shouldReturn404WhenAssetNotFound() {
+        when(assetRepository.findById(100L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> assetService.getById(100L, 30L))
+                .isInstanceOf(NotFoundException.class);
+
+        verify(assetAuthorizationService, never()).requireCanViewAsset(any(), any());
+        verify(userService, never()).getById(anyLong());
+    }
+
+    @Test
+    void getById_shouldReturn403WhenUserCannotViewAsset() {
+        Asset asset = assetEntity(100L, 1L);
+        User fieldEmployee = userWithDepartment(20L, UserRole.FIELD_EMPLOYEE, 2L);
+
+        when(assetRepository.findById(100L)).thenReturn(Optional.of(asset));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        doThrow(new ForbiddenOperationException(
+                "You may only view asset history for assets in your own department."))
+                .when(assetAuthorizationService).requireCanViewAsset(fieldEmployee, asset);
+
+        assertThatThrownBy(() -> assetService.getById(100L, 20L))
+                .isInstanceOf(ForbiddenOperationException.class);
+    }
+
+    private Asset assetEntity(Long id, Long departmentId) {
+        Department department = department(departmentId, "Department " + departmentId);
+        AssetCategory category = category(2L, "Playground");
+        Asset asset = new Asset(
+                "Central Playground",
+                department,
+                category,
+                "Memorial Park",
+                AssetStatus.ACTIVE,
+                LocalDate.of(2026, 6, 25),
+                10L);
+        asset.setId(id);
+        return asset;
     }
 
     private RegisterAssetRequest validRequest() {

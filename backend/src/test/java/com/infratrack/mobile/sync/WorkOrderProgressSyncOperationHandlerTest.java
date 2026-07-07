@@ -141,7 +141,7 @@ class WorkOrderProgressSyncOperationHandlerTest {
         when(workOrder.getId()).thenReturn(WORK_ORDER_ID);
         when(workOrder.getStatus()).thenReturn(WorkOrderStatus.COMPLETED);
         when(workOrder.getUpdatedAt()).thenReturn(1_700_000_000_000L);
-        when(workOrderService.getById(WORK_ORDER_ID)).thenReturn(workOrder);
+        when(workOrderService.getByIdForConflictSnapshot(WORK_ORDER_ID)).thenReturn(workOrder);
         doThrow(new ConflictException("Work order is no longer editable."))
                 .when(workOrderService)
                 .saveWorkOrderProgress(eq(WORK_ORDER_ID), org.mockito.ArgumentMatchers.any(), eq(USER_ID));
@@ -177,7 +177,7 @@ class WorkOrderProgressSyncOperationHandlerTest {
         when(workOrder.getId()).thenReturn(WORK_ORDER_ID);
         when(workOrder.getStatus()).thenReturn(WorkOrderStatus.CANCELLED);
         when(workOrder.getUpdatedAt()).thenReturn(1_700_000_000_000L);
-        when(workOrderService.getById(WORK_ORDER_ID)).thenReturn(workOrder);
+        when(workOrderService.getByIdForConflictSnapshot(WORK_ORDER_ID)).thenReturn(workOrder);
         doThrow(new ConflictException("Work order is no longer editable."))
                 .when(workOrderService)
                 .saveWorkOrderProgress(eq(WORK_ORDER_ID), org.mockito.ArgumentMatchers.any(), eq(USER_ID));
@@ -195,7 +195,7 @@ class WorkOrderProgressSyncOperationHandlerTest {
         when(workOrder.getId()).thenReturn(WORK_ORDER_ID);
         when(workOrder.getStatus()).thenReturn(WorkOrderStatus.ASSIGNED);
         when(workOrder.getUpdatedAt()).thenReturn(1_700_000_000_000L);
-        when(workOrderService.getById(WORK_ORDER_ID)).thenReturn(workOrder);
+        when(workOrderService.getByIdForConflictSnapshot(WORK_ORDER_ID)).thenReturn(workOrder);
         doThrow(new ConflictException("Work order is no longer editable."))
                 .when(workOrderService)
                 .saveWorkOrderProgress(eq(WORK_ORDER_ID), org.mockito.ArgumentMatchers.any(), eq(USER_ID));
@@ -213,7 +213,7 @@ class WorkOrderProgressSyncOperationHandlerTest {
         WorkOrderResponse workOrder = mock(WorkOrderResponse.class);
         when(workOrder.getId()).thenReturn(WORK_ORDER_ID);
         when(workOrder.getStatus()).thenReturn(WorkOrderStatus.ASSIGNED);
-        when(workOrderService.getById(WORK_ORDER_ID)).thenReturn(workOrder);
+        when(workOrderService.getByIdForConflictSnapshot(WORK_ORDER_ID)).thenReturn(workOrder);
         doThrow(new ForbiddenOperationException(
                 "Only the assigned worker may save maintenance progress for this work order"))
                 .when(workOrderService)

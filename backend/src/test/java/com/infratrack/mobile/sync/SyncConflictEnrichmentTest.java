@@ -44,7 +44,7 @@ class SyncConflictEnrichmentTest {
     @Test
     void buildServerState_workflowCompleted_containsInspectionSnapshot() {
         InspectionResponse inspection = inspectionResponse(InspectionStatus.COMPLETED);
-        when(inspectionService.getById(INSPECTION_ID)).thenReturn(inspection);
+        when(inspectionService.getByIdForConflictSnapshot(INSPECTION_ID)).thenReturn(inspection);
 
         var serverState = SyncConflictEnrichment.buildServerState(
                 inspectionService, "INSPECTION", INSPECTION_ID, SyncConflictType.WORKFLOW_COMPLETED);
@@ -62,7 +62,7 @@ class SyncConflictEnrichmentTest {
     @Test
     void buildServerState_workOrderWorkflowCompleted_containsWorkOrderSnapshot() {
         WorkOrderResponse workOrder = workOrderResponse(WorkOrderStatus.COMPLETED);
-        when(workOrderService.getById(88L)).thenReturn(workOrder);
+        when(workOrderService.getByIdForConflictSnapshot(88L)).thenReturn(workOrder);
 
         var serverState = SyncConflictEnrichment.buildServerState(
                 null, workOrderService, "WORK_ORDER", 88L, SyncConflictType.WORKFLOW_COMPLETED);
@@ -129,7 +129,7 @@ class SyncConflictEnrichmentTest {
 
     @Test
     void buildServerState_missingInspection_returnsNull() {
-        when(inspectionService.getById(INSPECTION_ID))
+        when(inspectionService.getByIdForConflictSnapshot(INSPECTION_ID))
                 .thenThrow(new NotFoundException("Inspection not found"));
 
         var serverState = SyncConflictEnrichment.buildServerState(

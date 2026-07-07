@@ -2,6 +2,7 @@ package com.infratrack.user;
 
 import com.infratrack.auth.ActivationService;
 import com.infratrack.config.openapi.StandardApiResponses;
+import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.security.JwtAuthenticationToken;
 import com.infratrack.user.dto.CreateEmployeeRequest;
 import com.infratrack.user.dto.FcmTokenRequest;
@@ -55,7 +56,7 @@ public class UserController {
     public ResponseEntity<List<UserManagementResponse>> listUsers(Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         if (!userService.isAdministrator(userId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            throw new ForbiddenOperationException("Only administrators can list users.");
         }
         return ResponseEntity.ok(userManagementService.listAllUsers());
     }
@@ -69,7 +70,7 @@ public class UserController {
             Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         if (!userService.isAdministrator(userId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            throw new ForbiddenOperationException("Only administrators can view user details.");
         }
         return ResponseEntity.ok(userManagementService.getUserById(id));
     }
@@ -167,7 +168,8 @@ public class UserController {
         if (!userService.isAdministrator(userId)
                 && !userService.isManager(userId)
                 && !userService.isOperationalCoordinator(userId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            throw new ForbiddenOperationException(
+                    "Only administrators, managers and operational coordinators can list workers.");
         }
         if (departmentId != null || role != null) {
             return ResponseEntity.ok(userService.getEligibleWorkersForAssignment(userId, departmentId, role));
@@ -182,7 +184,7 @@ public class UserController {
     public ResponseEntity<List<UserSummary>> getManagers(Authentication authentication) {
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         if (!userService.isManager(userId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            throw new ForbiddenOperationException("Only managers can list managers.");
         }
         return ResponseEntity.ok(userService.getManagers());
     }
@@ -194,10 +196,6 @@ public class UserController {
     public ResponseEntity<Void> updateFcmToken(
             @Valid @RequestBody FcmTokenRequest request,
             Authentication authentication) {
-        if (request.getToken() == null || request.getToken().isBlank()) {
-            return ResponseEntity.badRequest().build();
-        }
-
         Long userId = ((JwtAuthenticationToken) authentication).getUserId();
         userService.updateFcmToken(userId, request.getToken());
         return ResponseEntity.noContent().build();

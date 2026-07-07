@@ -63,8 +63,11 @@ public class IssueController {
     @GetMapping("/{id}")
     @Operation(summary = "Get issue by ID")
     @ApiResponse(responseCode = "200", description = "Issue details")
-    public ResponseEntity<IssueResponse> getIssue(@PathVariable Long id) {
-        return ResponseEntity.ok(issueService.getById(id));
+    public ResponseEntity<IssueResponse> getIssue(
+            @PathVariable Long id,
+            Authentication authentication) {
+        Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+        return ResponseEntity.ok(issueService.getById(id, userId));
     }
 
     @PostMapping

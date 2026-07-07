@@ -69,8 +69,11 @@ public class AssetController {
     @GetMapping("/{id}")
     @Operation(summary = "Get asset by ID", description = "Returns full asset details.")
     @ApiResponse(responseCode = "200", description = "Asset details")
-    public ResponseEntity<AssetResponse> getAsset(@PathVariable Long id) {
-        return ResponseEntity.ok(assetService.getById(id));
+    public ResponseEntity<AssetResponse> getAsset(
+            @PathVariable Long id,
+            Authentication authentication) {
+        Long userId = ((JwtAuthenticationToken) authentication).getUserId();
+        return ResponseEntity.ok(assetService.getById(id, userId));
     }
 
     @GetMapping(value = "/{id}/qr", produces = MediaType.IMAGE_PNG_VALUE)

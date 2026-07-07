@@ -4,6 +4,7 @@ import com.infratrack.asset.Asset;
 import com.infratrack.asset.AssetStatus;
 import com.infratrack.assetcategory.AssetCategory;
 import com.infratrack.department.Department;
+import com.infratrack.delegatedauthority.DelegatedAuthorityService;
 import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.user.User;
@@ -19,6 +20,8 @@ import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -26,6 +29,9 @@ class WorkOrderAuthorizationServiceTest {
 
     @Mock
     private UserService userService;
+
+    @Mock
+    private DelegatedAuthorityService delegatedAuthorityService;
 
     @InjectMocks
     private WorkOrderAuthorizationService authorizationService;
@@ -155,6 +161,68 @@ class WorkOrderAuthorizationServiceTest {
         assertThatThrownBy(() -> authorizationService.requireEligibleAssignee(
                 40L, WorkType.INTERNAL_MAINTENANCE, asset))
                 .isInstanceOf(BusinessValidationException.class);
+    }
+
+    @Test
+    void requireCanViewWorkOrder_shouldAllowAdministrator() {
+        User administrator = user(1L, UserRole.ADMINISTRATOR);
+        WorkOrder workOrder = workOrderInDepartment(100L, 20L, 1L);
+
+        authorizationService.requireCanViewWorkOrder(administrator, workOrder);
+    }
+
+    @Test
+    void requireCanViewWorkOrder_shouldAllowAssignedFieldEmployee() {
+        User fieldEmployee = userInDepartment(20L, UserRole.FIELD_EMPLOYEE, 1L);
+        WorkOrder workOrder = workOrderInDepartment(100L, 20L, 1L);
+
+        authorizationService.requireCanViewWorkOrder(fieldEmployee, workOrder);
+    }
+
+    @Test
+    void requireCanViewWorkOrder_shouldRejectUnassignedFieldEmployee() {
+        User fieldEmployee = userInDepartment(21L, UserRole.FIELD_EMPLOYEE, 1L);
+        WorkOrder workOrder = workOrderInDepartment(100L, 20L, 1L);
+
+        assertThatThrownBy(() -> authorizationService.requireCanViewWorkOrder(fieldEmployee, workOrder))
+                .isInstanceOf(ForbiddenOperationException.class)
+                .hasMessage("You may only view work orders assigned to you.");
+    }
+
+    @Test
+    void requireCanViewWorkOrder_shouldRejectCrossDepartmentCoordinator() {
+        User coordinator = userInDepartment(40L, UserRole.OPERATIONAL_COORDINATOR, 2L);
+        WorkOrder workOrder = workOrderInDepartment(100L, 20L, 1L);
+
+        assertThatThrownBy(() -> authorizationService.requireCanViewWorkOrder(coordinator, workOrder))
+                .isInstanceOf(ForbiddenOperationException.class);
+    }
+
+    @Test
+    void requireCanViewWorkOrder_shouldAllowManagerWithDelegation() {
+        User manager = userInDepartment(30L, UserRole.MANAGER, 2L);
+        WorkOrder workOrder = workOrderInDepartment(100L, 20L, 1L);
+        when(delegatedAuthorityService.canManagerActForAssetDepartment(
+                eq(manager), eq(workOrder.getAsset().getDepartment()), any(java.time.LocalDateTime.class)))
+                .thenReturn(true);
+
+        authorizationService.requireCanViewWorkOrder(manager, workOrder);
+    }
+
+    private WorkOrder workOrderInDepartment(Long id, Long assignedToUserId, Long departmentId) {
+        WorkOrder workOrder = new WorkOrder(
+                null,
+                assetInDepartment(departmentId),
+                WorkType.INTERNAL_MAINTENANCE,
+                "Replace damaged swing chain",
+                WorkOrderPriority.HIGH,
+                40L,
+                java.time.LocalDateTime.now().minusHours(1));
+        workOrder.setId(id);
+        if (assignedToUserId != null) {
+            workOrder.assign(assignedToUserId, 40L, java.time.LocalDateTime.now().minusMinutes(30));
+        }
+        return workOrder;
     }
 
     private User user(Long id, UserRole role) {

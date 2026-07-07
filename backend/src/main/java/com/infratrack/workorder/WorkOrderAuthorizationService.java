@@ -1,12 +1,16 @@
 package com.infratrack.workorder;
 
 import com.infratrack.asset.Asset;
+import com.infratrack.delegatedauthority.DelegatedAuthorityService;
 import com.infratrack.department.Department;
 import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.user.User;
+import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 /**
  * Enforces role, department and assignee eligibility rules for work order operations.
@@ -15,9 +19,41 @@ import org.springframework.stereotype.Service;
 public class WorkOrderAuthorizationService {
 
     private final UserService userService;
+    private final DelegatedAuthorityService delegatedAuthorityService;
 
-    public WorkOrderAuthorizationService(UserService userService) {
+    public WorkOrderAuthorizationService(
+            UserService userService,
+            DelegatedAuthorityService delegatedAuthorityService) {
         this.userService = userService;
+        this.delegatedAuthorityService = delegatedAuthorityService;
+    }
+
+    public void requireCanViewWorkOrder(User user, WorkOrder workOrder) {
+        UserRole role = user.getRole();
+        if (role == null) {
+            throw forbidden();
+        }
+        if (role.isAdministrator()) {
+            return;
+        }
+
+        Asset asset = workOrder.getAsset();
+        if (role.isManager()) {
+            if (!delegatedAuthorityService.canManagerActForAssetDepartment(
+                    user, asset.getDepartment(), LocalDateTime.now())) {
+                throw crossDepartmentDenied();
+            }
+            return;
+        }
+        if (role.isOperationalCoordinator()) {
+            requireSameDepartment(user, asset);
+            return;
+        }
+        if (role.isFieldEmployee() || role.isContractor()) {
+            requireAssignedWorkOrder(user, workOrder);
+            return;
+        }
+        throw forbidden();
     }
 
     public User requireOperationalCoordinator(Long userId) {
@@ -76,5 +112,31 @@ public class WorkOrderAuthorizationService {
             throw new ForbiddenOperationException(
                     "Assigned worker must belong to the work order asset department.");
         }
+    }
+
+    private void requireAssignedWorkOrder(User user, WorkOrder workOrder) {
+        if (workOrder.getAssignedToUserId() == null
+                || !workOrder.getAssignedToUserId().equals(user.getId())) {
+            throw new ForbiddenOperationException(
+                    "You may only view work orders assigned to you.");
+        }
+    }
+
+    private void requireSameDepartment(User user, Asset asset) {
+        Department userDepartment = user.getDepartment();
+        Department assetDepartment = asset.getDepartment();
+        if (userDepartment == null || assetDepartment == null
+                || !userDepartment.getId().equals(assetDepartment.getId())) {
+            throw crossDepartmentDenied();
+        }
+    }
+
+    private static ForbiddenOperationException crossDepartmentDenied() {
+        return new ForbiddenOperationException(
+                "You may only view work orders for assets in your own department.");
+    }
+
+    private static ForbiddenOperationException forbidden() {
+        return new ForbiddenOperationException("You are not authorized to view work orders.");
     }
 }
