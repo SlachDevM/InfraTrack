@@ -13,13 +13,7 @@ import {
 } from '../constants/schedulerRunStatuses';
 import { getApiErrorMessage, isForbidden } from '../utils/apiError';
 import { DEFAULT_PAGE, getPageNumber, getTotalPages, unwrapPageContent } from '../utils/pagination';
-
-function formatTimestamp(timestamp) {
-  if (!timestamp) {
-    return '-';
-  }
-  return new Date(timestamp).toLocaleString();
-}
+import { formatTimestamp } from '../utils/dateTime';
 
 export default function PreventiveSchedulerPage() {
   const navigate = useNavigate();

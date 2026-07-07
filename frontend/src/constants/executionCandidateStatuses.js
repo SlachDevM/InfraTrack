@@ -1,3 +1,11 @@
+export const EXECUTION_CANDIDATE_STATUS = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  DISMISSED: 'DISMISSED',
+  EXECUTED: 'EXECUTED',
+};
+
 export const EXECUTION_CANDIDATE_STATUS_OPTIONS = [
   { value: '', label: 'All statuses' },
   { value: 'PENDING', label: 'Pending' },

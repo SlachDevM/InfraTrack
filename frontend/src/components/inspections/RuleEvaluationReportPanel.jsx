@@ -2,13 +2,7 @@ import { useEffect, useState } from 'react';
 import ruleEvaluationReportApi from '../../services/ruleEvaluationReportApi';
 import { HTTP_STATUS } from '../../constants/httpStatus';
 import { getApiErrorMessage } from '../../utils/apiError';
-
-function formatTimestamp(value) {
-  if (!value) {
-    return '-';
-  }
-  return new Date(value).toLocaleString();
-}
+import { formatTimestamp } from '../../utils/dateTime';
 
 export default function RuleEvaluationReportPanel({ inspectionId, assetName }) {
   const [report, setReport] = useState(null);

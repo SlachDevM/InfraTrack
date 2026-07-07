@@ -5,18 +5,7 @@ import { canReviewSuggestedActions } from '../../constants/userRoles';
 import { SUGGESTED_ACTION_STATUS } from '../../constants/statuses';
 import { ISSUE_SEVERITIES } from '../../constants/issueSeverities';
 import { getApiErrorMessage } from '../../utils/apiError';
-
-function formatTimestamp(value) {
-  if (!value) {
-    return '-';
-  }
-  return new Date(value).toLocaleString();
-}
-
-function toDateTimeLocalValue(date = new Date()) {
-  const pad = (value) => String(value).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
+import { formatTimestamp, toDateTimeLocalValue } from '../../utils/dateTime';
 
 function mapSeverityToIssueSeverity(severity) {
   if (!severity) {

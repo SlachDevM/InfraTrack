@@ -8,6 +8,7 @@ import { getPhysicalConditionLabel } from '../../constants/physicalConditions';
 import { COMMON_MESSAGES } from '../../constants/messages';
 import RuleEvaluationReportPanel from './RuleEvaluationReportPanel';
 import DecisionAssistantPanel from './DecisionAssistantPanel';
+import { formatDateTime } from '../../utils/dateTime';
 
 function formatAssignedUser(inspection) {
   if (inspection.assignedToUserName?.trim()) {
@@ -17,10 +18,6 @@ function formatAssignedUser(inspection) {
     return `User #${inspection.assignedToUserId}`;
   }
   return 'Unassigned';
-}
-
-function formatDateTime(value) {
-  return value ? new Date(value).toLocaleString() : '—';
 }
 
 export default function InspectionList({ inspections }) {

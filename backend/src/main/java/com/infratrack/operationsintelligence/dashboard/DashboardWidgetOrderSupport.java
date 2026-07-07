@@ -2,16 +2,14 @@ package com.infratrack.operationsintelligence.dashboard;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.validation.JsonPayloadSupport;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 
 final class DashboardWidgetOrderSupport {
-
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private DashboardWidgetOrderSupport() {
     }
@@ -22,7 +20,7 @@ final class DashboardWidgetOrderSupport {
 
     static String serialize(List<DashboardWidgetType> order) {
         try {
-            return OBJECT_MAPPER.writeValueAsString(order.stream().map(Enum::name).toList());
+            return JsonPayloadSupport.objectMapper().writeValueAsString(order.stream().map(Enum::name).toList());
         } catch (JsonProcessingException ex) {
             throw new BusinessValidationException("Unable to persist widget order.");
         }
@@ -48,7 +46,7 @@ final class DashboardWidgetOrderSupport {
 
     static List<DashboardWidgetType> parseStored(String widgetOrderJson) {
         try {
-            List<String> values = OBJECT_MAPPER.readValue(widgetOrderJson, new TypeReference<>() {
+            List<String> values = JsonPayloadSupport.objectMapper().readValue(widgetOrderJson, new TypeReference<>() {
             });
             return parseAndNormalize(values);
         } catch (JsonProcessingException ex) {

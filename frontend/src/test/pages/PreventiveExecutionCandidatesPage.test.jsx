@@ -9,6 +9,7 @@ import assetApi from '../../services/assetApi';
 import inspectionApi from '../../services/inspectionApi';
 import userApi from '../../services/userApi';
 import { USER_ROLES } from '../../constants/userRoles';
+import { formatTimestamp } from '../../utils/dateTime';
 
 const mockNavigate = vi.fn();
 
@@ -436,7 +437,7 @@ describe('PreventiveExecutionCandidatesPage', () => {
 
     expect(await screen.findByText('PUMP_MONTHLY')).toBeInTheDocument();
     const cells = screen.getAllByRole('cell');
-    const formatted = new Date(1712678400000).toLocaleString();
+    const formatted = formatTimestamp(1712678400000);
     expect(cells.some((cell) => cell.textContent === formatted)).toBe(true);
   });
 

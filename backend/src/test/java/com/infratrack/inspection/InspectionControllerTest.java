@@ -98,14 +98,14 @@ class InspectionControllerTest {
     @Test
     void saveInspectionAnswers_unknownInspection_returnsNotFound() throws Exception {
         when(inspectionService.saveInspectionAnswers(eq(999L), org.mockito.ArgumentMatchers.any(), eq(FIELD_USER_ID)))
-                .thenThrow(new NotFoundException("Inspection not found."));
+                .thenThrow(new NotFoundException("Inspection not found"));
 
         mockMvc.perform(put("/api/inspections/999/answers")
                         .header("Authorization", bearerToken(FIELD_USER_ID))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validPayload()))
                 .andExpect(status().isNotFound())
-                .andExpect(content().string("Inspection not found."));
+                .andExpect(content().string("Inspection not found"));
     }
 
     @Test
@@ -170,14 +170,14 @@ class InspectionControllerTest {
     @Test
     void saveInspectionProgress_unknownInspection_returnsNotFound() throws Exception {
         when(inspectionService.saveInspectionProgress(eq(999L), org.mockito.ArgumentMatchers.any(), eq(FIELD_USER_ID)))
-                .thenThrow(new NotFoundException("Inspection not found."));
+                .thenThrow(new NotFoundException("Inspection not found"));
 
         mockMvc.perform(put("/api/inspections/999/progress")
                         .header("Authorization", bearerToken(FIELD_USER_ID))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validProgressPayload()))
                 .andExpect(status().isNotFound())
-                .andExpect(content().string("Inspection not found."));
+                .andExpect(content().string("Inspection not found"));
     }
 
     @Test

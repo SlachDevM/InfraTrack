@@ -11,10 +11,4 @@ public final class TriggerDefinitionSummaryBuilder {
     public static TriggerSummary buildSummary(PlanTriggerType triggerType, String configurationJson) {
         return TriggerDefinitionFactory.from(triggerType, configurationJson).buildSummary();
     }
-
-    /** @deprecated use {@link #buildSummary(PlanTriggerType, String)} */
-    @Deprecated
-    public static String build(PlanTriggerType triggerType, String configurationJson) {
-        return buildSummary(triggerType, configurationJson).getTitle();
-    }
 }

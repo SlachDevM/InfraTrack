@@ -28,6 +28,7 @@ import {
 } from '../constants/businessTriggerTypes';
 import '../styles/ReferenceDataPage.css';
 import '../styles/BusinessTriggersPage.css';
+import { formatTimestamp } from '../utils/dateTime';
 
 export default function BusinessTriggersPage() {
   const navigate = useNavigate();
@@ -293,7 +294,7 @@ export default function BusinessTriggersPage() {
                     <td>{trigger.reason}</td>
                     <td>{trigger.urgent ? 'Yes' : 'No'}</td>
                     <td>
-                      {trigger.createdAt ? new Date(trigger.createdAt).toLocaleString() : '-'}
+                      {formatTimestamp(trigger.createdAt)}
                     </td>
                   </tr>
                 ))}

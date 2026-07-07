@@ -1,15 +1,13 @@
 package com.infratrack.suggestedaction;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.infratrack.inspectiontemplate.DecisionRuleActionType;
+import com.infratrack.validation.JsonPayloadSupport;
 
 /**
  * Tolerant interpretation of decision rule action payloads for suggested actions (A3.4).
  */
 public final class SuggestedActionPayloadInterpreter {
-
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private SuggestedActionPayloadInterpreter() {
     }
@@ -25,7 +23,7 @@ public final class SuggestedActionPayloadInterpreter {
 
         if (actionPayload != null && !actionPayload.isBlank()) {
             try {
-                JsonNode root = OBJECT_MAPPER.readTree(actionPayload);
+                JsonNode root = JsonPayloadSupport.objectMapper().readTree(actionPayload);
                 title = textOrNull(root.get("title"));
                 message = textOrNull(root.get("message"));
                 severity = textOrNull(root.get("severity"));

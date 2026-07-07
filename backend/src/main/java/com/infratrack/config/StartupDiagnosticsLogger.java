@@ -79,20 +79,15 @@ public class StartupDiagnosticsLogger {
 
     private String resolveDatabaseDescription() {
         try (Connection connection = dataSource.getConnection()) {
-            return sanitizeJdbcUrl(connection.getMetaData().getURL());
+            var metadata = connection.getMetaData();
+            String product = metadata.getDatabaseProductName();
+            String catalog = connection.getCatalog();
+            if (catalog != null && !catalog.isBlank()) {
+                return product + " (" + catalog + ")";
+            }
+            return product;
         } catch (Exception ex) {
             return "unavailable";
         }
-    }
-
-    private String sanitizeJdbcUrl(String jdbcUrl) {
-        if (jdbcUrl == null || jdbcUrl.isBlank()) {
-            return "unavailable";
-        }
-        int queryIndex = jdbcUrl.indexOf('?');
-        if (queryIndex >= 0) {
-            return jdbcUrl.substring(0, queryIndex);
-        }
-        return jdbcUrl;
     }
 }

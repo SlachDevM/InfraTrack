@@ -19,12 +19,7 @@ export const DEFAULT_FORM = {
   triggerActive: true,
 };
 
-export function formatTimestamp(timestamp) {
-  if (!timestamp) {
-    return '-';
-  }
-  return new Date(timestamp).toLocaleString();
-}
+export { formatTimestamp } from '../../utils/dateTime';
 
 export function buildPayload(formData, editing) {
   const payload = {

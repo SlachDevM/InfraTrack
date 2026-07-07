@@ -13,12 +13,8 @@ import { FIELD_LIMITS } from '../constants/limits';
 import { TIME } from '../constants/time';
 import { getApiErrorMessage } from '../utils/apiError';
 import { DEFAULT_PAGE, getPageNumber, getTotalPages, unwrapPageContent } from '../utils/pagination';
+import { formatTimestamp, toDateTimeLocalValue } from '../utils/dateTime';
 import '../styles/ReferenceDataPage.css';
-
-function toDateTimeLocalValue(date = new Date()) {
-  const pad = (value) => String(value).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
 
 function defaultDelegationValidUntil() {
   const days = FIELD_LIMITS.DEFAULT_DELEGATION_VALIDITY_DAYS;
@@ -314,8 +310,8 @@ export default function DelegatedAuthoritiesPage() {
                     <td>{authority.delegateManagerUserId}</td>
                     <td>{authority.sourceDepartmentName}</td>
                     <td>{authority.targetDepartmentName}</td>
-                    <td>{new Date(authority.validFrom).toLocaleString()}</td>
-                    <td>{new Date(authority.validUntil).toLocaleString()}</td>
+                    <td>{formatTimestamp(authority.validFrom)}</td>
+                    <td>{formatTimestamp(authority.validUntil)}</td>
                     <td>{authority.revoked ? 'Revoked' : 'Active'}</td>
                     <td>{authority.reason}</td>
                     {canManage && (

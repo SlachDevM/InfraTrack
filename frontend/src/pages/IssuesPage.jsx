@@ -36,11 +36,7 @@ import {
 } from '../constants/issueSeverities';
 import '../styles/ReferenceDataPage.css';
 import '../styles/IssuesPage.css';
-
-function toDateTimeLocalValue(date = new Date()) {
-  const pad = (value) => String(value).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
+import { formatTimestamp, toDateTimeLocalValue } from '../utils/dateTime';
 
 function appendOptionalCapaFields(payload, formData) {
   if (formData.rootCause.trim()) {
@@ -331,10 +327,7 @@ export default function IssuesPage() {
                   <br />
                   <strong>Inspection observations:</strong> {selectedInspection.observations}
                   <br />
-                  <strong>Completed:</strong>{' '}
-                  {selectedInspection.completedAt
-                    ? new Date(selectedInspection.completedAt).toLocaleString()
-                    : '-'}
+                  <strong>Completed:</strong> {formatTimestamp(selectedInspection.completedAt)}
                 </div>
               )}
 
@@ -569,7 +562,7 @@ export default function IssuesPage() {
                       <td>{displayCapaValue(issue.rootCause)}</td>
                       <td>{displayCapaValue(issue.lessonsLearned)}</td>
                       <td>
-                        {issue.recordedAt ? new Date(issue.recordedAt).toLocaleString() : '-'}
+                        {formatTimestamp(issue.recordedAt)}
                       </td>
                     </tr>
                   ))}

@@ -1,5 +1,6 @@
 import { COMPLETION_REVIEW_DECISION_OPTIONS } from '../../constants/completionReviewDecisions';
 import { ISSUE_SEVERITY_OPTIONS } from '../../constants/issueSeverities';
+import { formatTimestamp } from '../../utils/dateTime';
 
 export default function CompletionReviewForm({
   reviewFormData,
@@ -39,10 +40,7 @@ export default function CompletionReviewForm({
             <br />
             <strong>Completion Notes:</strong> {selectedReviewActivity.completionNotes}
             <br />
-            <strong>Completed:</strong>{' '}
-            {selectedReviewActivity.completedAt
-              ? new Date(selectedReviewActivity.completedAt).toLocaleString()
-              : '-'}
+            <strong>Completed:</strong> {formatTimestamp(selectedReviewActivity.completedAt)}
           </div>
         )}
 

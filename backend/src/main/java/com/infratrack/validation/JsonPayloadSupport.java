@@ -17,6 +17,10 @@ public final class JsonPayloadSupport {
     private JsonPayloadSupport() {
     }
 
+    public static ObjectMapper objectMapper() {
+        return OBJECT_MAPPER;
+    }
+
     public static JsonNode parse(String json, String invalidMessage) {
         try {
             return OBJECT_MAPPER.readTree(json);

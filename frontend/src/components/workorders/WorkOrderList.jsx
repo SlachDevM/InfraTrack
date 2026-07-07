@@ -3,13 +3,10 @@ import { getWorkOrderPriorityLabel } from '../../constants/workOrderPriorities';
 import { getWorkOrderStatusLabel } from '../../constants/workOrderStatuses';
 import { getCompletionReviewDecisionLabel } from '../../constants/completionReviewDecisions';
 import { COMMON_MESSAGES } from '../../constants/messages';
+import { formatDateTime } from '../../utils/dateTime';
 
 function formatAssignedUser(name) {
   return name?.trim() ? name.trim() : 'Unassigned';
-}
-
-function formatDateTime(value) {
-  return value ? new Date(value).toLocaleString() : '—';
 }
 
 export default function WorkOrderList({ workOrders, maintenanceActivities }) {

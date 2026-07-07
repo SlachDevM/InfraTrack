@@ -9,6 +9,7 @@ import { getApiErrorMessage } from '../utils/apiError';
 import { ROUTES } from '../constants/routes';
 import { DEFAULT_PAGE, getPageNumber, getTotalPages, unwrapPageContent } from '../utils/pagination';
 import '../styles/NotificationPage.css';
+import { formatTimestamp } from '../utils/dateTime';
 
 export default function NotificationPage() {
   const navigate = useNavigate();
@@ -137,7 +138,7 @@ export default function NotificationPage() {
                   <div className="notification-header-row">
                     {notif.title && <span className="notification-title">{notif.title}</span>}
                     <span className="notification-time">
-                      {new Date(notif.createdAt).toLocaleString()}
+                      {formatTimestamp(notif.createdAt)}
                     </span>
                   </div>
                   <p className="notification-message">{notif.message}</p>

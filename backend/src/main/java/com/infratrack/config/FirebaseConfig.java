@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Path;
 
 @Configuration
 @Slf4j
@@ -37,9 +38,10 @@ public class FirebaseConfig {
 
             return FirebaseMessaging.getInstance();
         } catch (IOException exception) {
+            String credentialFileName = Path.of(serviceAccountPath).getFileName().toString();
             log.error(
                     "Failed to load Firebase credentials from {}: {}. FCM push notifications are disabled.",
-                    serviceAccountPath,
+                    credentialFileName,
                     exception.getMessage()
             );
             return null;

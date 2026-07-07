@@ -4,12 +4,7 @@ export const EMPTY_APPROVE_FORM = {
   notes: '',
 };
 
-export function formatTimestamp(timestamp) {
-  if (!timestamp) {
-    return '-';
-  }
-  return new Date(timestamp).toLocaleString();
-}
+export { formatTimestamp } from '../../utils/dateTime';
 
 export function dateInputToPlannedAt(value) {
   if (!value) {

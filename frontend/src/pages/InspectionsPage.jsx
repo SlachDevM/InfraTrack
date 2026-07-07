@@ -46,11 +46,7 @@ import {
 } from '../utils/pagination';
 import '../styles/ReferenceDataPage.css';
 import '../styles/InspectionsPage.css';
-
-function toDateTimeLocalValue(date = new Date()) {
-  const pad = (value) => String(value).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
+import { toDateTimeLocalValue } from '../utils/dateTime';
 
 export default function InspectionsPage() {
   const navigate = useNavigate();

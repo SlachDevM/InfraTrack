@@ -24,11 +24,7 @@ import {
 } from '../constants/operationalDecisionOutcomes';
 import '../styles/ReferenceDataPage.css';
 import '../styles/OperationalDecisionsPage.css';
-
-function toDateTimeLocalValue(date = new Date()) {
-  const pad = (value) => String(value).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
+import { formatTimestamp, toDateTimeLocalValue } from '../utils/dateTime';
 
 export default function OperationalDecisionsPage() {
   const navigate = useNavigate();
@@ -203,10 +199,7 @@ export default function OperationalDecisionsPage() {
                   <br />
                   <strong>Issue:</strong> {selectedIssue.description}
                   <br />
-                  <strong>Recorded:</strong>{' '}
-                  {selectedIssue.recordedAt
-                    ? new Date(selectedIssue.recordedAt).toLocaleString()
-                    : '-'}
+                  <strong>Recorded:</strong> {formatTimestamp(selectedIssue.recordedAt)}
                 </div>
               )}
 
@@ -295,7 +288,7 @@ export default function OperationalDecisionsPage() {
                     <td>{getOperationalDecisionOutcomeLabel(decision.outcome)}</td>
                     <td>{decision.rationale}</td>
                     <td>
-                      {decision.decidedAt ? new Date(decision.decidedAt).toLocaleString() : '-'}
+                      {formatTimestamp(decision.decidedAt)}
                     </td>
                   </tr>
                 ))}

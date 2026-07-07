@@ -1,13 +1,7 @@
 import { useEffect, useState } from 'react';
 import suggestedActionApi from '../../services/suggestedActionApi';
 import { getApiErrorMessage } from '../../utils/apiError';
-
-function formatTimestamp(value) {
-  if (!value) {
-    return '-';
-  }
-  return new Date(value).toLocaleString();
-}
+import { formatTimestamp } from '../../utils/dateTime';
 
 export default function SuggestedActionsPanel({ inspectionId }) {
   const [suggestions, setSuggestions] = useState([]);

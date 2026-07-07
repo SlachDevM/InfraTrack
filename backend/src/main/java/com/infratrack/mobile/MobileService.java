@@ -190,7 +190,7 @@ public class MobileService {
     public MobileInspectionBundleResponse getInspectionBundle(Long userId, Long inspectionId) {
         User user = authorizationService.requireMobileUser(userId);
         Inspection inspection = inspectionRepository.findMobileBundleById(inspectionId)
-                .orElseThrow(() -> new NotFoundException("Inspection not found."));
+                .orElseThrow(() -> new NotFoundException("Inspection not found"));
         authorizationService.requireCanViewInspectionBundle(user, inspection);
 
         MobileTemplateSummaryResponse template = null;
@@ -235,7 +235,7 @@ public class MobileService {
     public MobileWorkOrderBundleResponse getWorkOrderBundle(Long userId, Long workOrderId) {
         User user = authorizationService.requireMobileUser(userId);
         WorkOrder workOrder = workOrderRepository.findMobileBundleById(workOrderId)
-                .orElseThrow(() -> new NotFoundException("Work order not found."));
+                .orElseThrow(() -> new NotFoundException("Work order not found"));
         authorizationService.requireCanViewWorkOrderBundle(user, workOrder);
 
         MobileIssueSummaryResponse issue = MobileIssueSummaryResponse.from(
