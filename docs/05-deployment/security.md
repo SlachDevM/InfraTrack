@@ -127,7 +127,7 @@ Bearer token storage in clients is an intentional architecture decision — see 
 
 These limits reduce abuse and accidental overload before M5.5 conflict resolution.
 
-### Mobile sync observability (M5.4.1, V2.5-STAB-3)
+### Mobile sync observability (M5.4.1, V2.5-STAB-3, M6.5-STAB-1)
 
 Micrometer counters, distribution summaries, timers, and structured INFO logging are emitted per successful sync handshake:
 
@@ -140,7 +140,13 @@ Micrometer counters, distribution summaries, timers, and structured INFO logging
 | `mobile.sync.operations.conflict` | Conflict pending operations |
 | `mobile.sync.operations.duplicate` | Idempotent duplicate replays (DT-OFFLINE-1) |
 | `mobile.sync.delta.inspections` | Inspection records in delta (counter) |
-| `mobile.sync.delta.size` | Inspection delta size distribution (V2.5-STAB-3) |
+| `mobile.sync.delta.work_orders` | Work order records in delta (counter) |
+| `mobile.sync.delta.assets` | Asset context records in delta (counter) |
+| `mobile.sync.delta.reference_data` | Reference data snapshot included (counter, 1 per sync) |
+| `mobile.sync.delta.dashboard` | Dashboard snapshot included (counter, 1 per sync) |
+| `mobile.sync.delta.size` | Inspection + work order record count distribution (V2.5-STAB-3) |
+| `mobile.sync.delta.section.duration` | Per-section delta generation duration; tag `section` = `inspections`, `work_orders`, `assets`, `dashboard`, `reference_data` |
+| `mobile.sync.response.size.bytes` | UTF-8 JSON size of sync response body (distribution summary) |
 | `mobile.sync.batch.size` | Pending operation batch size distribution (V2.5-STAB-3) |
 | `mobile.sync.full_sync_required` | Responses that included `FULL_SYNC_REQUIRED` warning |
 | `mobile.sync.invalid_token` | Requests with unparseable sync token |
@@ -151,11 +157,13 @@ Endpoint timers (V2.5-STAB-3): `mobile.endpoint.sync`, `mobile.endpoint.sync.con
 
 Reporting export metrics (V2.5-STAB-3): `reporting.export.csv|xlsx|pdf`, `reporting.export.failure`, `reporting.export.duration` tagged by `entity` and `format` (enum names only).
 
-Structured **INFO** logging records one line per sync with: `userId`, `protocolVersion`, `operationCount`, `accepted`, `rejected`, `conflicts`, `ignored`, `duplicateOperations`, `deltaInspectionCount`, `durationMs`, `requiresFullSync`. Logs exclude JWTs, operation payloads, inspection answers, document names, and user-entered text.
+Structured **INFO** logging records one line per sync with: `userId`, `protocolVersion`, `operationCount`, `accepted`, `rejected`, `conflicts`, `ignored`, `duplicateOperations`, `deltaInspectionCount`, `deltaWorkOrderCount`, `deltaAssetCount`, `referenceDataIncluded`, `dashboardIncluded`, `durationMs`, `requiresFullSync`. Logs exclude JWTs, operation payloads, inspection answers, work order notes, document names, and user-entered text.
 
-### Prometheus readiness (V2.5-STAB-3)
+**Performance note (M6.5-STAB-1):** Asset delta enrichment loads assets in one batch (`findByIdIn`) but still performs per-asset context queries (open issues, active inspections/work orders). Acceptable for typical field-user scope; batch enrichment is a future optimisation if sync latency grows.
 
-Metrics use dot-separated names and low-cardinality tags (`version`, `entity`, `format`). No `userId`, `assetId`, or `operationId` labels. Enable Prometheus scraping via `management.endpoints.web.exposure.include` when operational monitoring is deployed.
+### Prometheus readiness (V2.5-STAB-3, M6.5-STAB-1)
+
+Metrics use dot-separated names and low-cardinality tags (`version`, `section`, `entity`, `format`). No `userId`, `assetId`, `operationId`, `inspectionId`, or `workOrderId` labels. Enable Prometheus scraping via `management.endpoints.web.exposure.include` when operational monitoring is deployed.
 
 ### Dependency changes (summary)
 

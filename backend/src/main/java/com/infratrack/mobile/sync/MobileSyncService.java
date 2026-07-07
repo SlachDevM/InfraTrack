@@ -1,5 +1,7 @@
 package com.infratrack.mobile.sync;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.mobile.MobileAuthorizationService;
 import com.infratrack.mobile.sync.dto.SyncDeltaResponse;
@@ -19,6 +21,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * Mobile synchronization service (M5.2+). Accepts sync requests, processes supported pending
@@ -31,6 +34,7 @@ public class MobileSyncService {
 
     private final MobileAuthorizationService authorizationService;
     private final Clock clock;
+    private final ObjectMapper objectMapper;
     private final SyncTokenService syncTokenService;
     private final SyncOperationProcessor syncOperationProcessor;
     private final InspectionSyncDeltaService inspectionSyncDeltaService;
@@ -43,6 +47,7 @@ public class MobileSyncService {
     public MobileSyncService(
             MobileAuthorizationService authorizationService,
             Clock clock,
+            ObjectMapper objectMapper,
             SyncTokenService syncTokenService,
             SyncOperationProcessor syncOperationProcessor,
             InspectionSyncDeltaService inspectionSyncDeltaService,
@@ -53,6 +58,7 @@ public class MobileSyncService {
             SyncMetricsRecorder syncMetricsRecorder) {
         this.authorizationService = authorizationService;
         this.clock = clock;
+        this.objectMapper = objectMapper;
         this.syncTokenService = syncTokenService;
         this.syncOperationProcessor = syncOperationProcessor;
         this.inspectionSyncDeltaService = inspectionSyncDeltaService;
@@ -84,15 +90,30 @@ public class MobileSyncService {
                 SyncDeltaTokenSupport.resolveUpdatedSinceMillis(request.getSyncToken(), warnings);
 
         SyncDeltaResponse delta = SyncDeltaResponse.empty();
-        List<SyncInspectionDeltaResponse> inspectionDeltas = inspectionSyncDeltaService.buildDeltaRecords(
-                user, updatedSinceMillis, updatedUntilMillis);
-        List<SyncWorkOrderDeltaResponse> workOrderDeltas = workOrderSyncDeltaService.buildDeltaRecords(
-                user, updatedSinceMillis, updatedUntilMillis);
+        List<SyncInspectionDeltaResponse> inspectionDeltas = timed(
+                diagnostics,
+                SyncDeltaSections.INSPECTIONS,
+                () -> inspectionSyncDeltaService.buildDeltaRecords(
+                        user, updatedSinceMillis, updatedUntilMillis));
+        List<SyncWorkOrderDeltaResponse> workOrderDeltas = timed(
+                diagnostics,
+                SyncDeltaSections.WORK_ORDERS,
+                () -> workOrderSyncDeltaService.buildDeltaRecords(
+                        user, updatedSinceMillis, updatedUntilMillis));
         delta.setInspections(inspectionDeltas);
         delta.setWorkOrders(workOrderDeltas);
-        delta.setDashboard(dashboardSyncDeltaService.buildSnapshot(user, watermark));
-        delta.setAssets(assetSyncDeltaService.buildDeltaRecords(user, inspectionDeltas, workOrderDeltas));
-        delta.setReferenceData(referenceDataSyncDeltaService.buildSnapshot(watermark));
+        delta.setDashboard(timed(
+                diagnostics,
+                SyncDeltaSections.DASHBOARD,
+                () -> dashboardSyncDeltaService.buildSnapshot(user, watermark)));
+        delta.setAssets(timed(
+                diagnostics,
+                SyncDeltaSections.ASSETS,
+                () -> assetSyncDeltaService.buildDeltaRecords(user, inspectionDeltas, workOrderDeltas)));
+        delta.setReferenceData(timed(
+                diagnostics,
+                SyncDeltaSections.REFERENCE_DATA,
+                () -> referenceDataSyncDeltaService.buildSnapshot(watermark)));
 
         SyncResponse response = new SyncResponse();
         response.setProtocolVersion(SyncProtocolVersion.CURRENT);
@@ -111,11 +132,16 @@ public class MobileSyncService {
         diagnostics.recordOperations(response.getOperations());
         diagnostics.recordDeltaInspections(response.getDelta().getInspections().size());
         diagnostics.recordDeltaWorkOrders(response.getDelta().getWorkOrders().size());
+        diagnostics.recordDeltaAssets(response.getDelta().getAssets().size());
+        diagnostics.recordDashboardIncluded(response.getDelta().getDashboard() != null);
+        diagnostics.recordReferenceDataIncluded(response.getDelta().getReferenceData() != null);
+        recordResponseSize(diagnostics, response);
         syncMetricsRecorder.record(diagnostics);
         log.info(
                 "Sync completed userId={} protocolVersion={} operationCount={} accepted={} rejected={} "
                         + "conflicts={} ignored={} duplicateOperations={} deltaInspectionCount={} "
-                        + "deltaWorkOrderCount={} durationMs={} requiresFullSync={}",
+                        + "deltaWorkOrderCount={} deltaAssetCount={} referenceDataIncluded={} "
+                        + "dashboardIncluded={} durationMs={} requiresFullSync={}",
                 userId,
                 diagnostics.protocolVersion(),
                 diagnostics.processed(),
@@ -126,6 +152,9 @@ public class MobileSyncService {
                 diagnostics.duplicateOperations(),
                 diagnostics.deltaInspections(),
                 diagnostics.deltaWorkOrders(),
+                diagnostics.deltaAssets(),
+                diagnostics.referenceDataIncluded(),
+                diagnostics.dashboardIncluded(),
                 diagnostics.elapsedMillis(),
                 diagnostics.requiresFullSync());
 
@@ -153,5 +182,22 @@ public class MobileSyncService {
     private static boolean requiresFullSync(List<SyncWarningResponse> warnings) {
         return warnings.stream()
                 .anyMatch(warning -> warning.getCode() == SyncWarningCode.FULL_SYNC_REQUIRED);
+    }
+
+    private static <T> T timed(SyncDiagnostics diagnostics, String section, Supplier<T> supplier) {
+        long startNanos = System.nanoTime();
+        try {
+            return supplier.get();
+        } finally {
+            diagnostics.recordSectionDuration(section, (System.nanoTime() - startNanos) / 1_000_000L);
+        }
+    }
+
+    private void recordResponseSize(SyncDiagnostics diagnostics, SyncResponse response) {
+        try {
+            diagnostics.recordResponseSizeBytes(objectMapper.writeValueAsBytes(response).length);
+        } catch (JsonProcessingException ex) {
+            log.debug("Could not measure sync response size", ex);
+        }
     }
 }

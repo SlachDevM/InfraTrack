@@ -6,10 +6,11 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Micrometer instrumentation for mobile sync (M5.4.1-BE, V2.5-STAB-3).
+ * Micrometer instrumentation for mobile sync (M5.4.1-BE, V2.5-STAB-3, M6.5-STAB-1).
  */
 @Component
 class SyncMetricsRecorder {
@@ -23,10 +24,14 @@ class SyncMetricsRecorder {
     private final Counter operationsDuplicate;
     private final Counter deltaInspections;
     private final Counter deltaWorkOrders;
+    private final Counter deltaAssets;
+    private final Counter deltaReferenceData;
+    private final Counter deltaDashboard;
     private final Counter fullSyncRequired;
     private final Counter invalidToken;
     private final DistributionSummary deltaSize;
     private final DistributionSummary batchSize;
+    private final DistributionSummary responseSize;
     private final Timer duration;
 
     SyncMetricsRecorder(MeterRegistry meterRegistry) {
@@ -55,6 +60,15 @@ class SyncMetricsRecorder {
         this.deltaWorkOrders = Counter.builder("mobile.sync.delta.work_orders")
                 .description("Work order records returned in sync delta")
                 .register(meterRegistry);
+        this.deltaAssets = Counter.builder("mobile.sync.delta.assets")
+                .description("Asset context records returned in sync delta")
+                .register(meterRegistry);
+        this.deltaReferenceData = Counter.builder("mobile.sync.delta.reference_data")
+                .description("Reference data snapshots returned in sync delta")
+                .register(meterRegistry);
+        this.deltaDashboard = Counter.builder("mobile.sync.delta.dashboard")
+                .description("Dashboard snapshots returned in sync delta")
+                .register(meterRegistry);
         this.fullSyncRequired = Counter.builder("mobile.sync.full_sync_required")
                 .description("Sync responses that requested a full sync")
                 .register(meterRegistry);
@@ -62,10 +76,14 @@ class SyncMetricsRecorder {
                 .description("Sync requests with an invalid sync token")
                 .register(meterRegistry);
         this.deltaSize = DistributionSummary.builder("mobile.sync.delta.size")
-                .description("Number of inspection records returned in sync delta")
+                .description("Number of inspection and work order records returned in sync delta")
                 .register(meterRegistry);
         this.batchSize = DistributionSummary.builder("mobile.sync.batch.size")
                 .description("Number of pending operations received per sync request")
+                .register(meterRegistry);
+        this.responseSize = DistributionSummary.builder("mobile.sync.response.size.bytes")
+                .description("UTF-8 JSON size of sync response body")
+                .baseUnit("bytes")
                 .register(meterRegistry);
         this.duration = Timer.builder("mobile.sync.duration")
                 .description("Mobile sync handshake duration")
@@ -92,8 +110,21 @@ class SyncMetricsRecorder {
         if (diagnostics.deltaWorkOrders() > 0) {
             deltaWorkOrders.increment(diagnostics.deltaWorkOrders());
         }
+        if (diagnostics.deltaAssets() > 0) {
+            deltaAssets.increment(diagnostics.deltaAssets());
+        }
+        if (diagnostics.referenceDataIncluded()) {
+            deltaReferenceData.increment();
+        }
+        if (diagnostics.dashboardIncluded()) {
+            deltaDashboard.increment();
+        }
         deltaSize.record(diagnostics.deltaInspections() + diagnostics.deltaWorkOrders());
         batchSize.record(diagnostics.batchSize());
+        if (diagnostics.responseSizeBytes() >= 0) {
+            responseSize.record(diagnostics.responseSizeBytes());
+        }
+        recordSectionDurations(diagnostics.sectionDurationMillis());
         if (diagnostics.requiresFullSync()) {
             fullSyncRequired.increment();
         }
@@ -110,5 +141,15 @@ class SyncMetricsRecorder {
 
     void recordDuplicateOperation() {
         operationsDuplicate.increment();
+    }
+
+    private void recordSectionDurations(Map<String, Long> sectionDurationMillis) {
+        for (Map.Entry<String, Long> entry : sectionDurationMillis.entrySet()) {
+            meterRegistry.timer(
+                            "mobile.sync.delta.section.duration",
+                            "section",
+                            entry.getKey())
+                    .record(entry.getValue(), TimeUnit.MILLISECONDS);
+        }
     }
 }

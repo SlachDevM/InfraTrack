@@ -77,12 +77,13 @@ class MobileSyncHardeningTest {
         Clock clock = Clock.fixed(FIXED_INSTANT, ZoneOffset.UTC);
         InspectionProgressSyncOperationHandler handler = new InspectionProgressSyncOperationHandler(
                 inspectionService,
-                new ObjectMapper(),
+                new ObjectMapper().findAndRegisterModules(),
                 clock);
         meterRegistry = new SimpleMeterRegistry();
         mobileSyncService = new MobileSyncService(
                 authorizationService,
                 clock,
+                new ObjectMapper().findAndRegisterModules(),
                 new DefaultSyncTokenService(clock),
                 new DefaultSyncOperationProcessor(
                         List.of(handler),
@@ -181,6 +182,14 @@ class MobileSyncHardeningTest {
         assertThat(meterRegistry.get("mobile.sync.requests").counter().count()).isEqualTo(1.0);
         assertThat(meterRegistry.get("mobile.sync.operations.accepted").counter().count()).isEqualTo(1.0);
         assertThat(meterRegistry.get("mobile.sync.duration").timer().count()).isEqualTo(1);
+        assertThat(meterRegistry.get("mobile.sync.delta.dashboard").counter().count()).isEqualTo(1.0);
+        assertThat(meterRegistry.get("mobile.sync.delta.reference_data").counter().count()).isEqualTo(1.0);
+        assertThat(meterRegistry.get("mobile.sync.response.size.bytes").summary().count()).isEqualTo(1);
+        assertThat(meterRegistry.get("mobile.sync.delta.section.duration")
+                .tag("section", SyncDeltaSections.INSPECTIONS)
+                .timer()
+                .count())
+                .isEqualTo(1);
 
         assertThat(logAppender.list)
                 .anyMatch(event -> event.getFormattedMessage().startsWith("Sync completed")
@@ -190,7 +199,31 @@ class MobileSyncHardeningTest {
                         && event.getFormattedMessage().contains("accepted=1")
                         && event.getFormattedMessage().contains("duplicateOperations=0")
                         && event.getFormattedMessage().contains("deltaWorkOrderCount=0")
+                        && event.getFormattedMessage().contains("deltaAssetCount=0")
+                        && event.getFormattedMessage().contains("referenceDataIncluded=true")
+                        && event.getFormattedMessage().contains("dashboardIncluded=true")
                         && event.getFormattedMessage().contains("requiresFullSync=false"));
+    }
+
+    @Test
+    void sync_structuredLog_excludesSensitiveFields() {
+        PendingOperationRequest operation = progressOperation("op-sensitive");
+        operation.setPayload("{\"completionNotes\":\"SECRET_MAINTENANCE_NOTE\"}");
+
+        SyncRequest request = validRequest();
+        request.setPendingOperations(List.of(operation));
+        request.setSyncToken("not-a-valid-jwt.eyJhbGciOiJIUzI1NiJ9.payload.signature");
+
+        mobileSyncService.sync(FIELD_USER_ID, request);
+
+        String logMessages = logAppender.list.stream()
+                .map(ILoggingEvent::getFormattedMessage)
+                .reduce("", String::concat);
+
+        assertThat(logMessages).contains("Sync completed");
+        assertThat(logMessages).doesNotContain("SECRET_MAINTENANCE_NOTE");
+        assertThat(logMessages).doesNotContain("eyJhbGciOiJIUzI1NiJ9");
+        assertThat(logMessages).doesNotContain("{\"answers\"");
     }
 
     private static String oversizedPayload() {

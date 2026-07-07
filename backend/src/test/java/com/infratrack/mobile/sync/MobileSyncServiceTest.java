@@ -80,11 +80,12 @@ class MobileSyncServiceTest {
         meterRegistry = new SimpleMeterRegistry();
         InspectionProgressSyncOperationHandler handler = new InspectionProgressSyncOperationHandler(
                 inspectionService,
-                new com.fasterxml.jackson.databind.ObjectMapper(),
+                new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules(),
                 clock);
         mobileSyncService = new MobileSyncService(
                 authorizationService,
                 clock,
+                new ObjectMapper(),
                 new DefaultSyncTokenService(clock),
                 new DefaultSyncOperationProcessor(
                         List.of(handler),
