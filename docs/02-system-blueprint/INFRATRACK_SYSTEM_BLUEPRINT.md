@@ -1,4 +1,11 @@
-# INFRATRACK_SYSTEM_BLUEPRINT.md (V1 Skeleton)
+# InfraTrack System Blueprint
+
+## Document Information
+
+| Field    | Value                |
+| -------- | -------------------- |
+| Status   | Living Document      |
+| Audience | Developers, AI assistants, technical reviewers |
 
 ## Purpose
 
@@ -66,7 +73,7 @@ Business Discovery ↓ Use Case ↓ Architecture ↓ Implementation ↓ Testing
 
 ## Notes
 
-This is intentionally a Version 1 skeleton.
+This is the Version 1 engineering handbook for InfraTrack.
 
 Each chapter will be expanded carefully, following the same philosophy
 used to build the MRRG blueprint, while adapting every section to

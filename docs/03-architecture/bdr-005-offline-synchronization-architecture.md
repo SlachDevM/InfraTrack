@@ -50,7 +50,7 @@ Never: business decisions, policy evaluation, or authorization logic
 - [BDR-003](bdr-003-bearer-token-architecture.md) — JWT Bearer authentication applies online; offline session rules are defined in §7.
 - [BDR-004](bdr-004-configurable-organizational-policies.md) — Policies are evaluated on the server during sync validation, not cached as rules on the device.
 - [Mobile API](../04-api/mobile-api.md) — Bundles define the online contract; offline extends download and queues writes through future sync endpoints.
-- [System Blueprint — Offline First Philosophy](../02-system-blueprint/INFRATRACK_SYSTEM_BLUEPRINT_V1_SKELETON.md#11-offline-first-philosophy) — Historical product intent; this BDR is the authoritative architecture reference for M5 implementation.
+- [System Blueprint — Offline First Philosophy](../02-system-blueprint/INFRATRACK_SYSTEM_BLUEPRINT.md#11-offline-first-philosophy) — Historical product intent; this BDR is the authoritative architecture reference for M5 implementation.
 
 ---
 
@@ -194,7 +194,7 @@ UI refresh — replace cached mirrors; surface conflicts or rejections to user
 
 The **backend resolves all business conflicts**. Android detects sync failures and presents outcomes — it never auto-merges workflow state or overrides server decisions.
 
-**Conflict resolution philosophy** — taxonomy, resolution hints (`SERVER_WINS`, `CLIENT_RETRY`, `MANUAL_REVIEW`), merge boundaries, and lifecycle — is defined in the companion document **[BDR-005 — Conflict Resolution Strategy](bdr-005-conflict-resolution-strategy.md)**. That document separates **detection** (M5.5-BE1 / M5.5-BE1.1), **explicit resolution** (M5.5-BE2), and **protocol idempotency** (DT-OFFLINE-1) from automatic merge (deferred). This BDR remains the primary offline architecture reference; the companion does not replace it.
+**Conflict resolution philosophy** — taxonomy, resolution hints (`SERVER_WINS`, `CLIENT_RETRY`, `MANUAL_REVIEW`), merge boundaries, and lifecycle — is defined in the companion document **[BDR-006 — Conflict Resolution Strategy](bdr-006-conflict-resolution-strategy.md)**. That document separates **detection** (M5.5-BE1 / M5.5-BE1.1), **explicit resolution** (M5.5-BE2), and **protocol idempotency** (DT-OFFLINE-1) from automatic merge (deferred). This BDR remains the primary offline architecture reference; the companion does not replace it.
 
 ### Strategy by entity
 
@@ -441,7 +441,7 @@ All M5 implementation sprints must reference this BDR. Changes to conflict strat
 
 ## See also
 
-- [BDR-005 — Conflict Resolution Strategy](bdr-005-conflict-resolution-strategy.md) — conflict taxonomy, resolution policies, merge boundaries (companion)
+- **[BDR-006 — Conflict Resolution Strategy](bdr-006-conflict-resolution-strategy.md)** — conflict taxonomy, resolution policies, merge boundaries (companion)
 - [V2.4 release notes](../06-release-notes/v2.4.md) — current platform baseline
 - [Mobile API](../04-api/mobile-api.md) — online bundle contracts
 - [API Consumer Guide](../04-api/api-consumer-guide.md) — client integration principles

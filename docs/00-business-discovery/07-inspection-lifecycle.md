@@ -7,7 +7,7 @@
 | Project  | InfraTrack           |
 | Document | Inspection Lifecycle |
 | Version  | 1.0                  |
-| Status   | Draft                |
+| Status   | Accepted             |
 | Phase    | Business Discovery   |
 
 ---

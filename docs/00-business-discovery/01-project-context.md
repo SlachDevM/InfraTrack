@@ -7,7 +7,7 @@
 | Project  | InfraTrack         |
 | Document | Project Context    |
 | Version  | 1.0                |
-| Status   | Draft              |
+| Status   | Reference Baseline |
 | Phase    | Business Discovery |
 
 ---

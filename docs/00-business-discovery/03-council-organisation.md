@@ -7,7 +7,7 @@
 | Project  | InfraTrack           |
 | Document | Council Organisation |
 | Version  | 1.0                  |
-| Status   | Draft                |
+| Status   | Living Document      |
 | Phase    | Business Discovery   |
 
 ---

@@ -635,7 +635,7 @@ Unsupported operation/entity scope returns `status: REJECTED` (HTTP 200). Loss o
 
 Resolution is **stateless** — no durable conflict history table. Android retains the pending queue. No client payload is applied during resolution.
 
-See [BDR-005 Conflict Resolution Strategy](../03-architecture/bdr-005-conflict-resolution-strategy.md).
+See [BDR-006 Conflict Resolution Strategy](../03-architecture/bdr-006-conflict-resolution-strategy.md).
 
 ### Client queue guidance (Android)
 

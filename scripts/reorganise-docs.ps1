@@ -31,8 +31,8 @@ $srcFunc = Join-Path $base 'functional-use-case.md'
 $dstFunc = Join-Path (Join-Path $base '01-business-architecture') 'functional-use-cases.md'
 if (Test-Path $srcFunc) { Move-Item -Force $srcFunc $dstFunc }
 
-$srcBp = Join-Path $base 'INFRATRACK_SYSTEM_BLUEPRINT_V1_SKELETON.md'
-$dstBp = Join-Path (Join-Path $base '02-system-blueprint') 'INFRATRACK_SYSTEM_BLUEPRINT_V1_SKELETON.md'
+$srcBp = Join-Path $base 'INFRATRACK_SYSTEM_BLUEPRINT.md'
+$dstBp = Join-Path (Join-Path $base '02-system-blueprint') 'INFRATRACK_SYSTEM_BLUEPRINT.md'
 if (Test-Path $srcBp) { Move-Item -Force $srcBp $dstBp }
 
 foreach ($d in @('03-architecture','04-api','05-deployment')) {

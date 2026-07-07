@@ -75,7 +75,7 @@ Versioning rules: [ADR-004 — Platform Versioning Strategy](03-architecture/adr
 | V2.0.1 hardening | [v2-0-1-security-hardening.md](06-release-notes/v2-0-1-security-hardening.md) |
 | Bearer token BDR | [bdr-003](03-architecture/bdr-003-bearer-token-architecture.md) |
 | Offline sync BDR | [bdr-005](03-architecture/bdr-005-offline-synchronization-architecture.md) |
-| Conflict resolution strategy (BDR-005 companion) | [bdr-005-conflict-resolution-strategy](03-architecture/bdr-005-conflict-resolution-strategy.md) |
+| Conflict resolution strategy (BDR-006) | [bdr-006-conflict-resolution-strategy](03-architecture/bdr-006-conflict-resolution-strategy.md) |
 | CI / testing | [Testing (project README)](../README.md#testing) |
 
 ---
@@ -99,7 +99,7 @@ docs/
 ├── 02-system-blueprint/
 │   ├── README.md
 │   ├── workflow-sequence-diagrams.md
-│   └── INFRATRACK_SYSTEM_BLUEPRINT_V1_SKELETON.md
+│   └── INFRATRACK_SYSTEM_BLUEPRINT.md
 │
 ├── 03-architecture/
 │   ├── README.md
@@ -112,7 +112,8 @@ docs/
 │   ├── bdr-002-preventive-candidates-before-automation.md
 │   ├── bdr-003-bearer-token-architecture.md
 │   ├── bdr-004-configurable-organizational-policies.md
-│   └── bdr-005-offline-synchronization-architecture.md
+│   ├── bdr-005-offline-synchronization-architecture.md
+│   └── bdr-006-conflict-resolution-strategy.md
 │
 ├── 04-api/
 │   ├── README.md
@@ -159,7 +160,7 @@ Defines the long-term business architecture and translates business discovery in
 
 ### 02 — System Blueprint
 
-Engineering handbook and visual workflow guides. See [02-system-blueprint/README.md](02-system-blueprint/README.md), [workflow-sequence-diagrams.md](02-system-blueprint/workflow-sequence-diagrams.md), and [INFRATRACK_SYSTEM_BLUEPRINT_V1_SKELETON.md](02-system-blueprint/INFRATRACK_SYSTEM_BLUEPRINT_V1_SKELETON.md).
+Engineering handbook and visual workflow guides. See [02-system-blueprint/README.md](02-system-blueprint/README.md), [workflow-sequence-diagrams.md](02-system-blueprint/workflow-sequence-diagrams.md), and [INFRATRACK_SYSTEM_BLUEPRINT.md](02-system-blueprint/INFRATRACK_SYSTEM_BLUEPRINT.md).
 
 ### 03 — Architecture
 
@@ -174,7 +175,7 @@ Architecture Decision Records (ADRs) and Business Decision Records (BDRs). **Sta
 - [BDR-003](03-architecture/bdr-003-bearer-token-architecture.md) — Bearer token architecture
 - [BDR-004](03-architecture/bdr-004-configurable-organizational-policies.md) — Configurable organizational policies
 - [BDR-005](03-architecture/bdr-005-offline-synchronization-architecture.md) — Offline & synchronization architecture
-- [BDR-005 — Conflict Resolution Strategy](03-architecture/bdr-005-conflict-resolution-strategy.md) — Conflict taxonomy and resolution philosophy (companion to offline BDR-005)
+- [BDR-006 — Conflict Resolution Strategy](03-architecture/bdr-006-conflict-resolution-strategy.md) — Conflict taxonomy and resolution philosophy (companion to offline BDR-005)
 
 ### 04 — API
 

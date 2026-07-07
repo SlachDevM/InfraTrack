@@ -7,7 +7,7 @@
 | Project  | InfraTrack         |
 | Document | Domain Overview    |
 | Version  | 1.0                |
-| Status   | Draft              |
+| Status   | Living Document    |
 | Phase    | Business Discovery |
 
 ---

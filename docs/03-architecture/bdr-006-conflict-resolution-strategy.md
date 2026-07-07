@@ -1,4 +1,4 @@
-# BDR-005 — Conflict Resolution Strategy
+# BDR-006 — Conflict Resolution Strategy
 
 **Status:** Accepted  
 **Date:** July 2026  

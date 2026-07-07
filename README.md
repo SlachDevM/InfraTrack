@@ -78,7 +78,7 @@ See [Functional Use Cases](docs/01-business-architecture/functional-use-cases.md
 | [ADR Index](docs/03-architecture/ADR-INDEX.md) | Architecture decisions |
 | [BDR-004](docs/03-architecture/bdr-004-configurable-organizational-policies.md) | Configurable organizational policies principle |
 | [BDR-005](docs/03-architecture/bdr-005-offline-synchronization-architecture.md) | Offline & synchronization architecture (M5) |
-| [BDR-005 — Conflict Resolution Strategy](docs/03-architecture/bdr-005-conflict-resolution-strategy.md) | Conflict taxonomy, resolution hints, merge boundaries (companion to BDR-005) |
+| [BDR-006 — Conflict Resolution Strategy](docs/03-architecture/bdr-006-conflict-resolution-strategy.md) | Conflict taxonomy, resolution hints, merge boundaries (companion to offline BDR-005) |
 
 ---
 

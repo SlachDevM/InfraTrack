@@ -7,7 +7,7 @@
 | Project  | InfraTrack         |
 | Document | Asset Status Model |
 | Version  | 1.0                |
-| Status   | Draft              |
+| Status   | Accepted           |
 | Phase    | Business Discovery |
 
 ---

@@ -280,7 +280,7 @@ Use this vision as the starting point; drill into the documents below for detail
 
 | Document | Description |
 |----------|-------------|
-| [System Blueprint](02-system-blueprint/INFRATRACK_SYSTEM_BLUEPRINT_V1_SKELETON.md) | Engineering standards and workflow |
+| [System Blueprint](02-system-blueprint/INFRATRACK_SYSTEM_BLUEPRINT.md) | Engineering standards and workflow |
 | [Project README](../README.md) | Quick start, testing, and API developer guide |
 
 ---

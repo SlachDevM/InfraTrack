@@ -2,18 +2,56 @@
 
 Architecture Decision Records (ADRs) and Business Decision Records (BDRs) for InfraTrack.
 
-| Document | Description |
-| -------- | ----------- |
-| [**ADR Index**](ADR-INDEX.md) | Entry point — all ADRs and BDRs with summaries and reading guidance |
-| [ADR-001 — Asset History Starts with Registration](ADR-001-asset-history-starts-with-registration.md) | First history event at asset registration |
-| [ADR-002 — Inspection Produces At Most One Issue (V1)](ADR-002-inspection-produces-at-most-one-issue-v1.md) | Zero or one Issue per Inspection in V1 |
-| [ADR-003 — V2 Domain-Driven Workflow](adr-003-v2-domain-driven-workflow.md) | V2 layer model and human validation |
-| [ADR-004 — Platform Versioning Strategy](adr-004-platform-versioning-strategy.md) | Product semantic versioning rules |
-| [BDR-001 — Human-in-the-Loop Decision Engine](bdr-001-human-in-the-loop-decision-engine.md) | Rules suggest; managers decide |
-| [BDR-002 — Preventive Candidates Before Automation](bdr-002-preventive-candidates-before-automation.md) | Scheduler generates candidates only |
-| [BDR-003 — Bearer Token Architecture](bdr-003-bearer-token-architecture.md) | JWT Bearer tokens for web and mobile |
-| [BDR-004 — Configurable Organizational Policies](bdr-004-configurable-organizational-policies.md) | Business rules are stable; organizational policies are configurable |
-| [BDR-005 — Offline & Synchronization Architecture](bdr-005-offline-synchronization-architecture.md) | Offline field work; backend source of truth; deterministic sync |
-| [BDR-005 — Conflict Resolution Strategy](bdr-005-conflict-resolution-strategy.md) | Conflict taxonomy, resolution policies, merge boundaries; companion to BDR-005 |
+## Purpose
+
+This folder records **why** important technical and product constraints exist. ADRs capture implementation structure; BDRs capture workflow governance and product promises.
+
+## Audience
+
+- Developers implementing features
+- Architects reviewing changes
+- Product owners validating scope
+- Contributors preparing ADRs or BDRs
+
+## Recommended reading order
+
+1. [**ADR Index**](ADR-INDEX.md) — complete list, summaries, and when to create new records
+2. [ADR-003 — V2 Domain-Driven Workflow](adr-003-v2-domain-driven-workflow.md) — V2 layer model
+3. [BDR-001](bdr-001-human-in-the-loop-decision-engine.md) and [BDR-002](bdr-002-preventive-candidates-before-automation.md) — human validation philosophy
+4. [BDR-005 — Offline & Synchronization](bdr-005-offline-synchronization-architecture.md) with [BDR-006 — Conflict Resolution](bdr-006-conflict-resolution-strategy.md) — mobile offline platform
+5. [Domain Engine](../07-business-architecture/domain-engine.md) — authoritative behaviour (read alongside ADRs/BDRs)
+
+## Normative documents (Accepted)
+
+| ID | Document |
+|----|----------|
+| ADR-001 | [Asset History Starts with Registration](ADR-001-asset-history-starts-with-registration.md) |
+| ADR-002 | [Inspection Produces At Most One Issue (V1)](ADR-002-inspection-produces-at-most-one-issue-v1.md) |
+| ADR-003 | [V2 Domain-Driven Workflow](adr-003-v2-domain-driven-workflow.md) |
+| ADR-004 | [Platform Versioning Strategy](adr-004-platform-versioning-strategy.md) |
+| BDR-001 | [Human-in-the-Loop Decision Engine](bdr-001-human-in-the-loop-decision-engine.md) |
+| BDR-002 | [Preventive Candidates Before Automation](bdr-002-preventive-candidates-before-automation.md) |
+| BDR-003 | [Bearer Token Architecture](bdr-003-bearer-token-architecture.md) |
+| BDR-004 | [Configurable Organizational Policies](bdr-004-configurable-organizational-policies.md) |
+| BDR-005 | [Offline & Synchronization Architecture](bdr-005-offline-synchronization-architecture.md) |
+| BDR-006 | [Conflict Resolution Strategy](bdr-006-conflict-resolution-strategy.md) — companion to BDR-005 |
+
+## Reference documents
+
+| Document | Role |
+| -------- | ---- |
+| [ADR Index](ADR-INDEX.md) | Navigation and evolution policy (Living Document) |
+| [Workflow Sequence Diagrams](../02-system-blueprint/workflow-sequence-diagrams.md) | Visual workflow context |
+
+## Historical documents
+
+Superseded records (when marked) remain for audit trail. Do not delete Accepted ADRs/BDRs — create successors per [ADR Index — Evolution](ADR-INDEX.md#evolution).
+
+## Before modifying or adding records
+
+- **New technical constraint** → create an ADR (see [When to Create a New ADR](ADR-INDEX.md#when-to-create-a-new-adr))
+- **New product/workflow constraint** → create a BDR (see [When to Create a New BDR](ADR-INDEX.md#when-to-create-a-new-bdr))
+- **Offline sync or conflict semantics** → amend BDR-005 / BDR-006 together; update [Mobile API](../04-api/mobile-api.md) and [Domain Engine](../07-business-architecture/domain-engine.md) delivery notes
+- **Do not** change Accepted ADR/BDR substance in place without a successor record
 
 **Start here:** [ADR Index](ADR-INDEX.md)
