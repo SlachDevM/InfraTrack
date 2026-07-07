@@ -93,7 +93,7 @@ class SyncDtoSerializationTest {
         assertThat(roundTripped.getDelta().getWorkOrders()).isEmpty();
         assertThat(roundTripped.getDelta().getDocuments()).isEmpty();
         assertThat(roundTripped.getDelta().getUsers()).isEmpty();
-        assertThat(roundTripped.getDelta().getReferenceData()).isEmpty();
+        assertThat(roundTripped.getDelta().getReferenceData()).isNull();
         assertThat(roundTripped.getOperations()).isEmpty();
         assertThat(roundTripped.getConflicts()).isEmpty();
         assertThat(roundTripped.getWarnings()).isEmpty();
@@ -114,7 +114,45 @@ class SyncDtoSerializationTest {
         assertThat(response.getDelta().getWorkOrders()).isEmpty();
         assertThat(response.getDelta().getDocuments()).isEmpty();
         assertThat(response.getDelta().getUsers()).isEmpty();
-        assertThat(response.getDelta().getReferenceData()).isEmpty();
+        assertThat(response.getDelta().getReferenceData()).isNull();
+    }
+
+    @Test
+    void syncReferenceDataDeltaResponse_serializesExpectedShape() throws Exception {
+        com.infratrack.mobile.sync.dto.SyncReferenceDataDeltaResponse referenceData =
+                new com.infratrack.mobile.sync.dto.SyncReferenceDataDeltaResponse();
+        referenceData.setGeneratedAt(1_751_700_000_000L);
+        referenceData.setSchemaVersion(1);
+        referenceData.setAssetCategories(List.of(new com.infratrack.mobile.sync.dto.SyncReferenceItemResponse(1L, "Playground")));
+        referenceData.setDepartments(List.of(new com.infratrack.mobile.sync.dto.SyncReferenceItemResponse(3L, "Parks")));
+        referenceData.setWorkOrderTypes(List.of(new com.infratrack.mobile.sync.dto.SyncEnumItemResponse(
+                "INTERNAL_MAINTENANCE", "Internal Maintenance")));
+        referenceData.setInspectionStatuses(List.of(new com.infratrack.mobile.sync.dto.SyncEnumItemResponse(
+                "ASSIGNED", "Assigned")));
+
+        SyncDeltaResponse delta = SyncDeltaResponse.empty();
+        delta.setReferenceData(referenceData);
+
+        SyncResponse response = new SyncResponse();
+        response.setDelta(delta);
+
+        String json = objectMapper.writeValueAsString(response);
+
+        assertThat(json).contains("\"referenceData\"");
+        assertThat(json).contains("\"generatedAt\":1751700000000");
+        assertThat(json).contains("\"schemaVersion\":1");
+        assertThat(json).contains("\"assetCategories\"");
+        assertThat(json).contains("\"departments\"");
+        assertThat(json).contains("\"workOrderTypes\"");
+        assertThat(json).contains("\"inspectionStatuses\"");
+        assertThat(json).contains("\"INTERNAL_MAINTENANCE\"");
+        assertThat(json).contains("\"Assigned\"");
+
+        SyncResponse roundTripped = objectMapper.readValue(json, SyncResponse.class);
+        assertThat(roundTripped.getDelta().getReferenceData().getSchemaVersion()).isEqualTo(1);
+        assertThat(roundTripped.getDelta().getReferenceData().getAssetCategories()).hasSize(1);
+        assertThat(roundTripped.getDelta().getReferenceData().getAssetCategories().get(0).getLabel())
+                .isEqualTo("Playground");
     }
 
     @Test

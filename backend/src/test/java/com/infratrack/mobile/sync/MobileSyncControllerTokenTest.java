@@ -80,6 +80,9 @@ class MobileSyncControllerTokenTest {
     private AssetSyncDeltaService assetSyncDeltaService;
 
     @MockitoBean
+    private ReferenceDataSyncDeltaService referenceDataSyncDeltaService;
+
+    @MockitoBean
     private InspectionService inspectionService;
 
     @MockitoBean
@@ -120,6 +123,12 @@ class MobileSyncControllerTokenTest {
                 .thenReturn(new com.infratrack.mobile.sync.dto.SyncDashboardDeltaResponse());
         when(assetSyncDeltaService.buildDeltaRecords(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(java.util.List.of());
+        com.infratrack.mobile.sync.dto.SyncReferenceDataDeltaResponse referenceData =
+                new com.infratrack.mobile.sync.dto.SyncReferenceDataDeltaResponse();
+        referenceData.setGeneratedAt(FIXED_INSTANT.toEpochMilli());
+        referenceData.setSchemaVersion(1);
+        when(referenceDataSyncDeltaService.buildSnapshot(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(referenceData);
     }
 
     @Test
@@ -139,7 +148,8 @@ class MobileSyncControllerTokenTest {
                 .andExpect(jsonPath("$.delta.dashboard").exists())
                 .andExpect(jsonPath("$.delta.assets").isArray())
                 .andExpect(jsonPath("$.delta.users").isEmpty())
-                .andExpect(jsonPath("$.delta.referenceData").isEmpty())
+                .andExpect(jsonPath("$.delta.referenceData.generatedAt").value(FIXED_INSTANT.toEpochMilli()))
+                .andExpect(jsonPath("$.delta.referenceData.schemaVersion").value(1))
                 .andExpect(jsonPath("$.operations").isEmpty())
                 .andExpect(jsonPath("$.conflicts").isEmpty())
                 .andExpect(jsonPath("$.warnings").isEmpty())

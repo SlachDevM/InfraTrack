@@ -22,14 +22,14 @@ public class SyncDeltaResponse {
     @Schema(description = "Server-computed mobile dashboard snapshot (M6.2-BE1+)")
     private SyncDashboardDeltaResponse dashboard;
 
+    @Schema(description = "Server-authoritative reference data snapshot (M6.5-BE1+)")
+    private SyncReferenceDataDeltaResponse referenceData;
+
     @Schema(description = "Changed document metadata (future)")
     private List<Object> documents = new ArrayList<>();
 
     @Schema(description = "Changed user profile data (future)")
     private List<Object> users = new ArrayList<>();
-
-    @Schema(description = "Changed reference data snapshots (future)")
-    private List<Object> referenceData = new ArrayList<>();
 
     public static SyncDeltaResponse empty() {
         return new SyncDeltaResponse();
@@ -67,6 +67,14 @@ public class SyncDeltaResponse {
         this.dashboard = dashboard;
     }
 
+    public SyncReferenceDataDeltaResponse getReferenceData() {
+        return referenceData;
+    }
+
+    public void setReferenceData(SyncReferenceDataDeltaResponse referenceData) {
+        this.referenceData = referenceData;
+    }
+
     public List<Object> getDocuments() {
         return documents;
     }
@@ -81,13 +89,5 @@ public class SyncDeltaResponse {
 
     public void setUsers(List<Object> users) {
         this.users = users != null ? users : new ArrayList<>();
-    }
-
-    public List<Object> getReferenceData() {
-        return referenceData;
-    }
-
-    public void setReferenceData(List<Object> referenceData) {
-        this.referenceData = referenceData != null ? referenceData : new ArrayList<>();
     }
 }

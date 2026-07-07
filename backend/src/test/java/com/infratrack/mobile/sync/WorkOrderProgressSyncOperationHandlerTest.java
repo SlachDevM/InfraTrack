@@ -172,6 +172,43 @@ class WorkOrderProgressSyncOperationHandlerTest {
     }
 
     @Test
+    void process_cancelledWorkOrder_returnsConflictWorkflowCompleted() {
+        WorkOrderResponse workOrder = mock(WorkOrderResponse.class);
+        when(workOrder.getId()).thenReturn(WORK_ORDER_ID);
+        when(workOrder.getStatus()).thenReturn(WorkOrderStatus.CANCELLED);
+        when(workOrder.getUpdatedAt()).thenReturn(1_700_000_000_000L);
+        when(workOrderService.getById(WORK_ORDER_ID)).thenReturn(workOrder);
+        doThrow(new ConflictException("Work order is no longer editable."))
+                .when(workOrderService)
+                .saveWorkOrderProgress(eq(WORK_ORDER_ID), org.mockito.ArgumentMatchers.any(), eq(USER_ID));
+
+        SyncOperationHandlerResult result = handler.process(progressOperation(), USER_ID);
+
+        assertThat(result.operation().getStatus()).isEqualTo(SyncOperationStatus.CONFLICT);
+        assertThat(result.conflict().getConflictType()).isEqualTo(SyncConflictType.WORKFLOW_COMPLETED);
+        assertThat(result.conflict().getServerState().getStatus()).isEqualTo("CANCELLED");
+    }
+
+    @Test
+    void process_maintenanceAlreadyExists_returnsConflictWorkflowCompleted() {
+        WorkOrderResponse workOrder = mock(WorkOrderResponse.class);
+        when(workOrder.getId()).thenReturn(WORK_ORDER_ID);
+        when(workOrder.getStatus()).thenReturn(WorkOrderStatus.ASSIGNED);
+        when(workOrder.getUpdatedAt()).thenReturn(1_700_000_000_000L);
+        when(workOrderService.getById(WORK_ORDER_ID)).thenReturn(workOrder);
+        doThrow(new ConflictException("Work order is no longer editable."))
+                .when(workOrderService)
+                .saveWorkOrderProgress(eq(WORK_ORDER_ID), org.mockito.ArgumentMatchers.any(), eq(USER_ID));
+
+        SyncOperationHandlerResult result = handler.process(progressOperation(), USER_ID);
+
+        assertThat(result.operation().getStatus()).isEqualTo(SyncOperationStatus.CONFLICT);
+        assertThat(result.conflict().getConflictType()).isEqualTo(SyncConflictType.WORKFLOW_COMPLETED);
+        assertThat(result.conflict().getResolutionHint()).isEqualTo(SyncResolutionHint.SERVER_WINS);
+        assertThat(result.conflict().getClientState().getOperationType()).isEqualTo("SAVE_WORK_ORDER_PROGRESS");
+    }
+
+    @Test
     void process_forbidden_returnsConflictPermissionDenied() {
         WorkOrderResponse workOrder = mock(WorkOrderResponse.class);
         when(workOrder.getId()).thenReturn(WORK_ORDER_ID);

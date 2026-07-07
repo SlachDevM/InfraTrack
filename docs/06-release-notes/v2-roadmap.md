@@ -200,19 +200,21 @@ The KPI API is designed for reuse by the React web client, future Android applic
 
 **Business value:** Field workers can queue maintenance notes while offline; server remains authoritative for completion.
 
-**Status:** In progress — M6.1 and M6.2-BE1 delivered.
+**Status:** In progress — M6.1 through M6.5-BE1 delivered.
 
 **Delivered capabilities:**
 
-- **Sprint M6.1-BE1 (validated):** `SAVE_WORK_ORDER_PROGRESS` on `WORK_ORDER` through existing `POST /api/mobile/sync`. Payload: `SaveWorkOrderProgressRequest` (`completionNotes` draft only, max 4000 characters). Stored on `work_orders.draft_completion_notes`. Reuses V2.5 idempotency store, conflict detection/enrichment, and metrics. No Android or React changes.
+- **Sprint M6.1-BE1 (validated):** `SAVE_WORK_ORDER_PROGRESS` on `WORK_ORDER` through existing `POST /api/mobile/sync`. Payload: `SaveWorkOrderProgressRequest` (`completionNotes` draft only, max 4000 characters). Stored on `work_orders.draft_completion_notes`. Reuses V2.5 idempotency store, conflict classification/enrichment infrastructure, and sync metrics. No Android or React changes.
 - **Sprint M6.1-BE2 (validated):** Work order delta download — `delta.workOrders` populated with scoped `SyncWorkOrderDeltaResponse` records (including `draftCompletionNotes` and `completionEligible`). Same sync token semantics as inspections: null/invalid token → full delta + optional `FULL_SYNC_REQUIRED`; valid token → SQL filter `updatedAt >= issuedAt` with watermark upper bound. Reuses existing `POST /api/mobile/sync`; no new endpoint. Offline completion sync (`COMPLETE_MAINTENANCE`) remains future work.
 - **Sprint M6.2-BE1 (validated):** Dashboard sync contract — `delta.dashboard` populated on every successful sync with a server-computed `SyncDashboardDeltaResponse` snapshot matching `GET /api/mobile/dashboard` counters. Always returned (not token-incremental). Android must store and display the snapshot; must not recompute counters locally. No new endpoint; no dashboard business rule changes.
 - **Sprint M6.3-BE1 (validated):** Asset context delta — `delta.assets` populated with compact `SyncAssetDeltaResponse` records for assets linked to scoped inspections/work orders in the same sync response. Reuses `MobileService.buildAssetContext` (aligned with `GET /api/mobile/assets/lookup`). Document metadata only; no binary sync; no public/citizen portal. No new endpoint.
+- **Sprint M6.4-BE1 (validated):** Work order progress conflict detection — `SAVE_WORK_ORDER_PROGRESS` on `WORK_ORDER` classified via existing `SyncConflictType` taxonomy (`WORKFLOW_COMPLETED`, `ENTITY_DELETED`, `PERMISSION_DENIED`, `VERSION_MISMATCH`, `UNKNOWN`). Enriched `conflicts[]` payload mirrors inspection strategy (`serverState`, `clientState`, `resolutionHint`). No automatic resolution; no offline completion; Android retains conflicting work order pending operations. No new endpoint; no Android/React changes.
+- **Sprint M6.5-BE1 (validated):** Reference data offline delta — `delta.referenceData` with `SyncReferenceDataDeltaResponse` on every successful sync. Asset categories, departments, work order types, and mobile enum dictionaries with server-authoritative labels. Always-returned full snapshot (`generatedAt` = watermark, `schemaVersion` = 1). Reuses `AssetCategoryService` / `DepartmentService.listAll`. No offline mutation; no users/policies/documents/citizen options. No new endpoint; no Android/React changes.
 
 **Planned within this version family (not yet delivered):**
 
-- Queued maintenance completion sync
-- Extended conflict resolution scope for work orders
+- Queued maintenance completion sync (`COMPLETE_MAINTENANCE`)
+- Extended conflict resolution endpoint scope for work orders
 
 **Reference:** [BDR-005](../03-architecture/bdr-005-offline-synchronization-architecture.md), [Mobile API](../04-api/mobile-api.md)
 

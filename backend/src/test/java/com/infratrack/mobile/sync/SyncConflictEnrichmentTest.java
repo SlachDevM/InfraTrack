@@ -72,6 +72,22 @@ class SyncConflictEnrichmentTest {
         assertThat(serverState.getEntityType()).isEqualTo("WORK_ORDER");
         assertThat(serverState.getStatus()).isEqualTo("COMPLETED");
         assertThat(serverState.getAssignedTo()).isEqualTo(20L);
+        assertThat(serverState.getAssignedToName()).isEqualTo("Field User");
+        assertThat(serverState.getUpdatedAt()).isEqualTo(1_700_000_000_000L);
+    }
+
+    @Test
+    void buildClientState_workOrderProgress_mirrorsSubmittedPayload() throws Exception {
+        PendingOperationRequest operation = new PendingOperationRequest();
+        operation.setOperationType("SAVE_WORK_ORDER_PROGRESS");
+        operation.setCreatedAt(1_751_700_001_000L);
+        operation.setPayload("{\"completionNotes\":\"Draft gasket notes.\"}");
+
+        var clientState = SyncConflictEnrichment.buildClientState(operation, objectMapper);
+
+        assertThat(clientState.getOperationType()).isEqualTo("SAVE_WORK_ORDER_PROGRESS");
+        assertThat(clientState.getCreatedAt()).isEqualTo(1_751_700_001_000L);
+        assertThat(clientState.getPayload().get("completionNotes").asText()).isEqualTo("Draft gasket notes.");
     }
 
     @Test

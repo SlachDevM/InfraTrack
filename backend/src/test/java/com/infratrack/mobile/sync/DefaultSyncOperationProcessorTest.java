@@ -149,6 +149,51 @@ class DefaultSyncOperationProcessorTest {
     }
 
     @Test
+    void process_multipleWorkOrderOperations_returnsAcceptedConflictAndRejectedTogether() {
+        when(workOrderService.saveWorkOrderProgress(eq(100L), org.mockito.ArgumentMatchers.any(), eq(USER_ID)))
+                .thenReturn(new WorkOrderResponse());
+        doThrow(new ConflictException("Work order is no longer editable."))
+                .when(workOrderService)
+                .saveWorkOrderProgress(eq(200L), org.mockito.ArgumentMatchers.any(), eq(USER_ID));
+        com.infratrack.workorder.WorkOrderStatus assigned = com.infratrack.workorder.WorkOrderStatus.ASSIGNED;
+        WorkOrderResponse conflictWorkOrder = mock(WorkOrderResponse.class);
+        when(conflictWorkOrder.getId()).thenReturn(200L);
+        when(conflictWorkOrder.getStatus()).thenReturn(assigned);
+        when(workOrderService.getById(200L)).thenReturn(conflictWorkOrder);
+        doThrow(new BusinessValidationException("Completion notes must not exceed 4000 characters"))
+                .when(workOrderService)
+                .saveWorkOrderProgress(eq(300L), org.mockito.ArgumentMatchers.any(), eq(USER_ID));
+
+        PendingOperationRequest accepted = workOrderProgressOperation("op-wo-accepted", 100L);
+        PendingOperationRequest conflict = workOrderProgressOperation("op-wo-conflict", 200L);
+        PendingOperationRequest rejected = workOrderProgressOperation("op-wo-rejected", 300L);
+
+        SyncOperationBatchResult batch = processor.process(USER_ID, List.of(accepted, conflict, rejected));
+
+        assertThat(batch.operations()).hasSize(3);
+        assertThat(batch.operations().get(0).getStatus()).isEqualTo(SyncOperationStatus.ACCEPTED);
+        assertThat(batch.operations().get(1).getStatus()).isEqualTo(SyncOperationStatus.CONFLICT);
+        assertThat(batch.operations().get(2).getStatus()).isEqualTo(SyncOperationStatus.REJECTED);
+        assertThat(batch.conflicts()).hasSize(1);
+        assertThat(batch.conflicts().get(0).getOperationId()).isEqualTo("op-wo-conflict");
+        assertThat(batch.conflicts().get(0).getConflictType()).isEqualTo(SyncConflictType.WORKFLOW_COMPLETED);
+        assertThat(batch.conflicts().get(0).getResolutionHint()).isEqualTo(SyncResolutionHint.SERVER_WINS);
+        assertThat(batch.conflicts().get(0).getServerState()).isNotNull();
+        assertThat(batch.conflicts().get(0).getClientState()).isNotNull();
+    }
+
+    @Test
+    void process_unsupportedWorkOrderOperation_returnsIgnored() {
+        PendingOperationRequest operation = workOrderProgressOperation("op-wo-ignored", 456L);
+        operation.setOperationType("COMPLETE_MAINTENANCE");
+
+        SyncOperationBatchResult batch = processor.process(USER_ID, List.of(operation));
+
+        assertThat(batch.operations().get(0).getStatus()).isEqualTo(SyncOperationStatus.IGNORED);
+        assertThat(batch.conflicts()).isEmpty();
+    }
+
+    @Test
     void process_saveWorkOrderProgress_returnsAccepted() {
         when(workOrderService.saveWorkOrderProgress(eq(456L), org.mockito.ArgumentMatchers.any(), eq(USER_ID)))
                 .thenReturn(new WorkOrderResponse());

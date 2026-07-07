@@ -1,11 +1,15 @@
 package com.infratrack.mobile.sync;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.infratrack.exception.ConflictException;
 import com.infratrack.inspection.InspectionService;
 import com.infratrack.inspection.dto.InspectionResponse;
 import com.infratrack.mobile.sync.dto.PendingOperationRequest;
+import com.infratrack.mobile.sync.dto.SyncConflictType;
 import com.infratrack.mobile.sync.dto.SyncOperationStatus;
+import com.infratrack.mobile.sync.dto.SyncResolutionHint;
 import com.infratrack.workorder.WorkOrderService;
+import com.infratrack.workorder.WorkOrderStatus;
 import com.infratrack.workorder.dto.WorkOrderResponse;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +29,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -91,6 +97,33 @@ class SyncOperationIdempotencyIntegrationTest {
 
         assertThat(first.operations().get(0).getStatus()).isEqualTo(SyncOperationStatus.ACCEPTED);
         assertThat(second.operations().get(0).getStatus()).isEqualTo(SyncOperationStatus.ACCEPTED);
+
+        verify(workOrderService, times(1)).saveWorkOrderProgress(eq(456L), any(), eq(USER_ID));
+        assertThat(meterRegistry.get("mobile.sync.operations.duplicate").counter().count()).isEqualTo(1.0);
+    }
+
+    @Test
+    void duplicateWorkOrderConflictOperation_executesHandlerOnceAndReturnsSameConflict() {
+        WorkOrderResponse workOrder = mock(WorkOrderResponse.class);
+        when(workOrder.getId()).thenReturn(456L);
+        when(workOrder.getStatus()).thenReturn(WorkOrderStatus.COMPLETED);
+        when(workOrderService.getById(456L)).thenReturn(workOrder);
+        doThrow(new ConflictException("Work order is no longer editable."))
+                .when(workOrderService)
+                .saveWorkOrderProgress(eq(456L), any(), eq(USER_ID));
+
+        PendingOperationRequest operation = workOrderProgressOperation("op-wo-conflict-dup-1");
+        SyncOperationBatchResult first = processor.process(USER_ID, List.of(operation));
+        SyncOperationBatchResult second = processor.process(USER_ID, List.of(operation));
+
+        assertThat(first.operations().get(0).getStatus()).isEqualTo(SyncOperationStatus.CONFLICT);
+        assertThat(second.operations().get(0).getStatus()).isEqualTo(SyncOperationStatus.CONFLICT);
+        assertThat(first.conflicts()).hasSize(1);
+        assertThat(second.conflicts()).hasSize(1);
+        assertThat(first.conflicts().get(0).getConflictType()).isEqualTo(SyncConflictType.WORKFLOW_COMPLETED);
+        assertThat(second.conflicts().get(0).getConflictType()).isEqualTo(SyncConflictType.WORKFLOW_COMPLETED);
+        assertThat(second.conflicts().get(0).getResolutionHint()).isEqualTo(SyncResolutionHint.SERVER_WINS);
+        assertThat(second.conflicts().get(0).getMessage()).isEqualTo(first.conflicts().get(0).getMessage());
 
         verify(workOrderService, times(1)).saveWorkOrderProgress(eq(456L), any(), eq(USER_ID));
         assertThat(meterRegistry.get("mobile.sync.operations.duplicate").counter().count()).isEqualTo(1.0);

@@ -91,6 +91,9 @@ class MobileSyncControllerOperationTest {
     private AssetSyncDeltaService assetSyncDeltaService;
 
     @MockitoBean
+    private ReferenceDataSyncDeltaService referenceDataSyncDeltaService;
+
+    @MockitoBean
     private InspectionService inspectionService;
 
     @MockitoBean
@@ -133,6 +136,11 @@ class MobileSyncControllerOperationTest {
                 .thenReturn(new com.infratrack.mobile.sync.dto.SyncDashboardDeltaResponse());
         when(assetSyncDeltaService.buildDeltaRecords(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(java.util.List.of());
+        com.infratrack.mobile.sync.dto.SyncReferenceDataDeltaResponse referenceData =
+                new com.infratrack.mobile.sync.dto.SyncReferenceDataDeltaResponse();
+        referenceData.setGeneratedAt(FIXED_INSTANT.toEpochMilli());
+        when(referenceDataSyncDeltaService.buildSnapshot(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(referenceData);
     }
 
     @Test

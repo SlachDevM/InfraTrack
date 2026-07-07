@@ -37,6 +37,7 @@ public class MobileSyncService {
     private final WorkOrderSyncDeltaService workOrderSyncDeltaService;
     private final DashboardSyncDeltaService dashboardSyncDeltaService;
     private final AssetSyncDeltaService assetSyncDeltaService;
+    private final ReferenceDataSyncDeltaService referenceDataSyncDeltaService;
     private final SyncMetricsRecorder syncMetricsRecorder;
 
     public MobileSyncService(
@@ -48,6 +49,7 @@ public class MobileSyncService {
             WorkOrderSyncDeltaService workOrderSyncDeltaService,
             DashboardSyncDeltaService dashboardSyncDeltaService,
             AssetSyncDeltaService assetSyncDeltaService,
+            ReferenceDataSyncDeltaService referenceDataSyncDeltaService,
             SyncMetricsRecorder syncMetricsRecorder) {
         this.authorizationService = authorizationService;
         this.clock = clock;
@@ -57,6 +59,7 @@ public class MobileSyncService {
         this.workOrderSyncDeltaService = workOrderSyncDeltaService;
         this.dashboardSyncDeltaService = dashboardSyncDeltaService;
         this.assetSyncDeltaService = assetSyncDeltaService;
+        this.referenceDataSyncDeltaService = referenceDataSyncDeltaService;
         this.syncMetricsRecorder = syncMetricsRecorder;
     }
 
@@ -89,6 +92,7 @@ public class MobileSyncService {
         delta.setWorkOrders(workOrderDeltas);
         delta.setDashboard(dashboardSyncDeltaService.buildSnapshot(user, watermark));
         delta.setAssets(assetSyncDeltaService.buildDeltaRecords(user, inspectionDeltas, workOrderDeltas));
+        delta.setReferenceData(referenceDataSyncDeltaService.buildSnapshot(watermark));
 
         SyncResponse response = new SyncResponse();
         response.setProtocolVersion(SyncProtocolVersion.CURRENT);

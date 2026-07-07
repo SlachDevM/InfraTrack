@@ -2,7 +2,7 @@
 
 **Status:** Accepted  
 **Date:** July 2026  
-**Context:** V2.5 — M5 Offline Synchronization. Conflict detection and payload enrichment delivered (M5.5-BE1 / M5.5-BE1.1). Explicit resolution endpoint delivered (M5.5-BE2). Automatic merge and durable history deferred.
+**Context:** V2.5 — M5 Offline Synchronization. Conflict detection and payload enrichment delivered (M5.5-BE1 / M5.5-BE1.1). Work order progress conflict detection delivered (M6.4-BE1). Explicit resolution endpoint delivered (M5.5-BE2). Automatic merge and durable history deferred.
 
 **Companion to:** [BDR-005 — Offline & Synchronization Architecture](bdr-005-offline-synchronization-architecture.md)
 
@@ -99,7 +99,7 @@ The sync protocol classifies conflicts using `SyncConflictType`. The protocol is
 
 - Inspection completed (no longer `ASSIGNED`);
 - Inspection cancelled or reassigned such that progress save is invalid;
-- Work order completed or cancelled (future sync scope).
+- Work order no longer `ASSIGNED` (completed, cancelled, or maintenance activity already recorded) — **M6.4-BE1 delivered** for `SAVE_WORK_ORDER_PROGRESS`.
 
 **Expected behaviour:**
 
@@ -281,7 +281,7 @@ The backend does not trust Android workflow state. Every upload re-validates aga
 |----------------|-------------|
 | Persist pending operations | Queue mutations with stable `operationId` until outcome known |
 | Display conflicts | Present `message`, `conflictType`, and enriched payload to the user |
-| Preserve unsynchronized work | Do not silently delete conflicting operations |
+| Preserve unsynchronized work | Do not silently delete conflicting operations — including `SAVE_WORK_ORDER_PROGRESS` conflicts (**M6.4-BE1**) |
 | Never invent merge logic | Do not auto-merge workflow completions or permissions locally |
 | Never modify backend workflow state locally | Do not set `COMPLETED`, assignments, or roles in Room as authoritative |
 | Wait for explicit backend guidance | Use `resolutionHint` for UX only; future resolution endpoints will govern apply/discard |
@@ -325,6 +325,7 @@ POST /api/mobile/sync
 | Offline edit, pending queue | Android planned (M5.1+) |
 | `POST /api/mobile/sync` | **Delivered** |
 | Operation upload (`SAVE_INSPECTION_PROGRESS`) | **Delivered** |
+| Operation upload (`SAVE_WORK_ORDER_PROGRESS`) | **Delivered** (M6.1-BE1 upload; M6.4-BE1 conflict detection) |
 | Delta download (`delta.inspections`) | **Delivered** |
 | Conflict detection (`CONFLICT` + `conflicts[]`) | **Delivered** |
 | Enriched payload (`serverState`, `clientState`, `resolutionHint`) | **Delivered** |
@@ -394,7 +395,7 @@ The following capabilities are planned. None alter the principles in §2.
 
 | Capability | Purpose |
 |------------|---------|
-| Work order synchronization | Upload/download for assigned work orders |
+| Work order synchronization | Upload/download for assigned work orders — **upload and delta delivered M6.1; conflict detection delivered M6.4-BE1** |
 | Document synchronization | Metadata and binary cache coordination |
 | Issue synchronization | Offline issue recording where in scope |
 | Automatic retry policies | Server-guided retry backoff for transient classes |

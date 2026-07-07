@@ -234,9 +234,9 @@ Reuses existing role and department rules; no new Android-specific permissions w
 
 `canCreateInspection` is `true` only for Operational Coordinators in the asset's own department (matching the existing "assign inspection" rule). `canCreateIssue` is `true` only for Field Employees/Contractors in the asset's own department (matching the existing "record issue" role rule). Neither flag creates any new record — creation still goes through the existing `/api/inspections` and `/api/issues` endpoints, which enforce their own full preconditions.
 
-## Offline synchronization protocol (M5.2-BE1 / M5.2-BE2 / M5.3-BE / M5.4-BE / M5.5-BE1 / M5.5-BE1.1)
+## Offline synchronization protocol (M5.2-BE1 / M5.2-BE2 / M5.3-BE / M5.4-BE / M5.5-BE1 / M5.5-BE1.1 / M6.4-BE1)
 
-`POST /api/mobile/sync` is the backend synchronization protocol foundation ([BDR-005](../03-architecture/bdr-005-offline-synchronization-architecture.md)). **M5.2-BE1** introduced the request/response envelope. **M5.2-BE2** added opaque sync tokens, protocol versioning, typed operation/conflict/warning codes, and the delta container. **M5.3-BE** processes `SAVE_INSPECTION_PROGRESS` uploads. **M5.4-BE** populates `delta.inspections` with scoped inspection sync records. **M5.4.2-BE** embeds checklist template/question/choice definitions in each inspection delta so assigned inspections are renderable offline without a prior bundle fetch. **M5.5-BE1** detects synchronization conflicts for `SAVE_INSPECTION_PROGRESS`. **M5.5-BE1.1** enriches `conflicts[]` with structured `serverState`, `clientState`, and `resolutionHint` (detection only — no automatic resolution). **M6.1-BE1** (V2.6) adds `SAVE_WORK_ORDER_PROGRESS` upload processing for draft maintenance notes. **M6.1-BE2** populates `delta.workOrders` with scoped work order sync records. **M6.2-BE1** populates `delta.dashboard` with a server-computed dashboard snapshot on every sync. **M6.3-BE1** populates `delta.assets` with linked asset context records. Other delta sections remain empty; tombstones are not produced yet. `COMPLETE_MAINTENANCE` remains future work.
+`POST /api/mobile/sync` is the backend synchronization protocol foundation ([BDR-005](../03-architecture/bdr-005-offline-synchronization-architecture.md)). **M5.2-BE1** introduced the request/response envelope. **M5.2-BE2** added opaque sync tokens, protocol versioning, typed operation/conflict/warning codes, and the delta container. **M5.3-BE** processes `SAVE_INSPECTION_PROGRESS` uploads. **M5.4-BE** populates `delta.inspections` with scoped inspection sync records. **M5.4.2-BE** embeds checklist template/question/choice definitions in each inspection delta so assigned inspections are renderable offline without a prior bundle fetch. **M5.5-BE1** detects synchronization conflicts for `SAVE_INSPECTION_PROGRESS`. **M5.5-BE1.1** enriches `conflicts[]` with structured `serverState`, `clientState`, and `resolutionHint` (detection only — no automatic resolution). **M6.1-BE1** (V2.6) adds `SAVE_WORK_ORDER_PROGRESS` upload processing for draft maintenance notes. **M6.4-BE1** extends conflict detection and enrichment to `SAVE_WORK_ORDER_PROGRESS` on `WORK_ORDER` (same `SyncConflictType` taxonomy and `resolutionHint` mapping as inspections). **M6.1-BE2** populates `delta.workOrders` with scoped work order sync records. **M6.2-BE1** populates `delta.dashboard` with a server-computed dashboard snapshot on every sync. **M6.3-BE1** populates `delta.assets` with linked asset context records. **M6.5-BE1** populates `delta.referenceData` with server-authoritative reference data and enum dictionaries. Other delta sections (`documents`, `users`) remain empty; tombstones are not produced yet. `COMPLETE_MAINTENANCE` and offline work order completion remain future work. Work order conflict resolution via `POST /api/mobile/sync/conflicts/resolve` remains inspection-only (M5.5-BE2).
 
 ### Authorization
 
@@ -270,7 +270,8 @@ Example work order `payload` fields: `completionNotes` (draft maintenance notes 
 | `delta.workOrders` | Scoped work order sync records (`SyncWorkOrderDeltaResponse`) — see below (**M6.1-BE2**) |
 | `delta.dashboard` | Server-computed mobile dashboard snapshot (`SyncDashboardDeltaResponse`) — see below (**M6.2-BE1**) |
 | `delta.assets` | Linked asset context records (`SyncAssetDeltaResponse`) — see below (**M6.3-BE1**) |
-| `delta` (other sections) | `documents`, `users`, `referenceData` remain `[]` |
+| `delta.referenceData` | Server-authoritative reference data snapshot (`SyncReferenceDataDeltaResponse`) — see below (**M6.5-BE1**) |
+| `delta` (other sections) | `documents`, `users` remain `[]` |
 | `operations` | One `SyncOperationResponse` per pending operation (in request order) |
 | `conflicts` | Populated when an operation returns `CONFLICT` — see below |
 | `warnings` | May include `FULL_SYNC_REQUIRED` when `syncToken` is invalid; sync still succeeds |
@@ -359,6 +360,30 @@ Each successful sync may include compact asset operational context for assets **
 
 **Processing order:** Built after inspection, work order, and dashboard deltas so asset IDs are derived from scoped operational records in the same response.
 
+### Reference data delta (`delta.referenceData`) — M6.5-BE1
+
+`SyncReferenceDataDeltaResponse` provides compact, server-authoritative reference data for offline mobile rendering. Android may cache and display it; Android must not create or modify reference data offline.
+
+| Field | Notes |
+|-------|-------|
+| `generatedAt` | Sync watermark (epoch millis) |
+| `schemaVersion` | Payload schema version (`1` in M6.5-BE1) |
+| `assetCategories` | `SyncReferenceItemResponse[]` — `id`, `label` (from `name`; no `code`/`active` on source entity) |
+| `departments` | `SyncReferenceItemResponse[]` — all deployment departments (`DepartmentService.listAll`) |
+| `workOrderTypes` | `SyncEnumItemResponse[]` — `WorkType` codes and labels |
+| `inspectionStatuses` | `SyncEnumItemResponse[]` |
+| `inspectionPriorities` | `SyncEnumItemResponse[]` |
+| `workOrderStatuses` | `SyncEnumItemResponse[]` |
+| `workOrderPriorities` | `SyncEnumItemResponse[]` |
+| `assetStatuses` | `SyncEnumItemResponse[]` |
+| `issueSeverities` | `SyncEnumItemResponse[]` — mobile-exposed issue severity (no `IssueStatus` entity) |
+
+**Download strategy:** Always returned as a full snapshot on every successful sync (first sync, valid token, and invalid token). Not token-incremental. `generatedAt` equals the sync watermark.
+
+**Excluded (deferred):** inspection templates/questions/choices (embedded in `delta.inspections`), users, documents, policies, decision rules, public/citizen reporting options.
+
+**Processing order:** Built after `delta.assets`, before `nextSyncToken` is issued.
+
 ### Per-operation outcomes (`SyncOperationResponse`)
 
 | `status` | Meaning |
@@ -378,13 +403,15 @@ When `SAVE_INSPECTION_PROGRESS` or `SAVE_WORK_ORDER_PROGRESS` cannot be applied 
 | Field | Notes |
 |-------|-------|
 | `operationId` | Client idempotency key |
-| `entityType` | `INSPECTION` |
-| `entityId` | Inspection id |
+| `entityType` | `INSPECTION` or `WORK_ORDER` |
+| `entityId` | Inspection or work order id |
 | `conflictType` | `WORKFLOW_COMPLETED`, `ENTITY_DELETED`, `PERMISSION_DENIED`, `VERSION_MISMATCH`, or `UNKNOWN` |
 | `resolutionHint` | Informational guidance only — `SERVER_WINS`, `CLIENT_RETRY`, `MANUAL_REVIEW`, or `UNKNOWN` |
 | `message` | Safe user-facing summary |
 | `clientState` | `SyncConflictClientState`: `operationType`, `createdAt`, original `payload` JSON (not transformed to write DTOs) |
-| `serverState` | `SyncConflictServerState`: compact inspection snapshot when the entity still exists; `null` for `ENTITY_DELETED` |
+| `serverState` | `SyncConflictServerState`: compact entity snapshot when the entity still exists; `null` for `ENTITY_DELETED` |
+
+**Work order conflict cases (M6.4-BE1):** completed or cancelled work order, maintenance activity already recorded, work order deleted, user no longer assigned or authorized. Malformed payload or `completionNotes` validation failures remain `REJECTED` without a `conflicts[]` entry.
 
 **`resolutionHint` mapping (conservative, informational only):**
 
@@ -396,7 +423,7 @@ When `SAVE_INSPECTION_PROGRESS` or `SAVE_WORK_ORDER_PROGRESS` cannot be applied 
 | `VERSION_MISMATCH` | `CLIENT_RETRY` |
 | `UNKNOWN` | `UNKNOWN` |
 
-**`serverState` fields (populated when available):** `entityId`, `entityType`, `status`, `updatedAt`, `completedAt`, `assignedTo`, `assignedToName`, `version` (nullable — inspection has no version field yet).
+**`serverState` fields (populated when available):** `entityId`, `entityType`, `status`, `updatedAt`, `completedAt` (inspection only), `assignedTo`, `assignedToName`, `version` (nullable — no version field yet).
 
 Conflicts are **detected** on sync; **explicit resolution** is a separate endpoint (M5.5-BE2). The backend does not merge or auto-apply client payloads during resolution.
 
@@ -428,7 +455,7 @@ See [BDR-005 Conflict Resolution Strategy](../03-architecture/bdr-005-conflict-r
 ### Client queue guidance (Android)
 
 - Remove local pending operations only when `status` is `ACCEPTED`.
-- Keep `CONFLICT` operations locally until explicit resolution via `POST /api/mobile/sync/conflicts/resolve` (M5.5-BE2).
+- Keep `CONFLICT` operations locally until explicit resolution via `POST /api/mobile/sync/conflicts/resolve` (M5.5-BE2 — inspection scope today; work order conflicts detected M6.4-BE1, resolution endpoint scope unchanged).
 - On `RESOLVED` — remove or archive pending operation per UX.
 - On `RETRY_REQUIRED` — refresh `delta.inspections`, let user requeue if still applicable.
 - On `MANUAL_REVIEW_REQUIRED` — keep conflict visible; no silent discard.
@@ -456,7 +483,7 @@ See [BDR-005 Conflict Resolution Strategy](../03-architecture/bdr-005-conflict-r
 - Clients must tolerate unknown response fields and empty delta sections until download is implemented.
 - Backend may replace sync token encoding without Android changes; clients store the opaque string only.
 
-Android should not expect work order/asset/document deltas, maintenance completion upload (`COMPLETE_MAINTENANCE`), or automatic conflict resolution for work orders until later M6 phases.
+Android should not expect maintenance completion upload (`COMPLETE_MAINTENANCE`), automatic conflict resolution for work orders, or document/issue/asset upload conflicts until later M6 phases.
 
 ## Future phases (deferred)
 

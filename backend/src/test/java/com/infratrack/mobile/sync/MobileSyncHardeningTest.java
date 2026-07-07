@@ -65,6 +65,9 @@ class MobileSyncHardeningTest {
     @Mock
     private AssetSyncDeltaService assetSyncDeltaService;
 
+    @Mock
+    private ReferenceDataSyncDeltaService referenceDataSyncDeltaService;
+
     private SimpleMeterRegistry meterRegistry;
     private MobileSyncService mobileSyncService;
     private ListAppender<ILoggingEvent> logAppender;
@@ -88,6 +91,7 @@ class MobileSyncHardeningTest {
                 workOrderSyncDeltaService,
                 dashboardSyncDeltaService,
                 assetSyncDeltaService,
+                referenceDataSyncDeltaService,
                 new SyncMetricsRecorder(meterRegistry));
 
         Logger logger = (Logger) LoggerFactory.getLogger(MobileSyncService.class);
@@ -105,6 +109,8 @@ class MobileSyncHardeningTest {
                 .thenReturn(new com.infratrack.mobile.sync.dto.SyncDashboardDeltaResponse());
         lenient().when(assetSyncDeltaService.buildDeltaRecords(any(User.class), any(), any()))
                 .thenReturn(List.of());
+        lenient().when(referenceDataSyncDeltaService.buildSnapshot(any()))
+                .thenReturn(new com.infratrack.mobile.sync.dto.SyncReferenceDataDeltaResponse());
     }
 
     @AfterEach
@@ -128,6 +134,7 @@ class MobileSyncHardeningTest {
         verify(workOrderSyncDeltaService, never()).buildDeltaRecords(any(User.class), any(), any());
         verify(dashboardSyncDeltaService, never()).buildSnapshot(any(User.class), any());
         verify(assetSyncDeltaService, never()).buildDeltaRecords(any(User.class), any(), any());
+        verify(referenceDataSyncDeltaService, never()).buildSnapshot(any());
         assertThat(meterRegistry.get("mobile.sync.requests").counter().count()).isEqualTo(0.0);
     }
 

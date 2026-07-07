@@ -298,10 +298,10 @@ M5 requires **new backend sync capabilities**. No implementation exists at V2.4 
 | Capability | Purpose |
 |------------|---------|
 | **Sync cursor / token** | Opaque server-issued cursor (`nextSyncToken`) — **M5.2-BE2 delivered**; issued on every successful `POST /api/mobile/sync`. Android stores and resubmits; backend owns encoding. No business data in token. |
-| **Batch upload endpoint** | `POST /api/mobile/sync` — … plus `delta.inspections`, `delta.workOrders`, `delta.dashboard`, and **M6.3-BE1** `delta.assets`. |
-| **Delta download** | … **`delta.dashboard` — M6.2-BE1 delivered:** … **`delta.assets` — M6.3-BE1 delivered:** `SyncAssetDeltaResponse` for assets linked to scoped inspections/work orders in the same sync; reuses asset lookup enrichment via `MobileService.buildAssetContext`; metadata-only documents; no binary sync; no public/citizen portal. Other delta sections remain empty. |
+| **Batch upload endpoint** | `POST /api/mobile/sync` — … plus `delta.inspections`, `delta.workOrders`, `delta.dashboard`, `delta.assets`, and **M6.5-BE1** `delta.referenceData`. |
+| **Delta download** | … **`delta.assets` — M6.3-BE1 delivered:** … **`delta.referenceData` — M6.5-BE1 delivered:** `SyncReferenceDataDeltaResponse` with asset categories, departments, work order types, and mobile enum dictionaries; always returned as a full deployment snapshot (`generatedAt` = sync watermark). Server-authoritative labels; no offline mutation. `documents` and `users` remain empty. |
 | **Delta download endpoints** | `GET /api/mobile/sync/changes?since={cursor}` — alternative/future path; primary delta container is `SyncResponse.delta` |
-| **Operation result envelope** | Per-item `SyncOperationStatus`: `ACCEPTED`, `REJECTED`, `CONFLICT`, `RETRY`, `IGNORED` — **M5.3-BE:** `SAVE_INSPECTION_PROGRESS` returns `ACCEPTED` or `REJECTED`; unsupported types return `IGNORED`. **M5.5-BE1:** stale workflow, permission, or entity-state failures return `CONFLICT` plus a matching `conflicts[]` entry. **M6.1-BE1:** `SAVE_WORK_ORDER_PROGRESS` on `WORK_ORDER` uses the same pipeline (draft `completionNotes` only). Validation/malformed payloads remain `REJECTED`. One failure does not fail the whole sync. |
+| **Operation result envelope** | Per-item `SyncOperationStatus`: `ACCEPTED`, `REJECTED`, `CONFLICT`, `RETRY`, `IGNORED` — **M5.3-BE:** `SAVE_INSPECTION_PROGRESS` returns `ACCEPTED` or `REJECTED`; unsupported types return `IGNORED`. **M5.5-BE1:** stale workflow, permission, or entity-state failures return `CONFLICT` plus a matching `conflicts[]` entry. **M6.1-BE1:** `SAVE_WORK_ORDER_PROGRESS` on `WORK_ORDER` uses the same pipeline (draft `completionNotes` only). **M6.4-BE1:** work order progress conflicts use the same classification and enrichment as inspections (completed/cancelled work order, maintenance already exists, deleted entity, permission loss). Validation/malformed payloads remain `REJECTED`. One failure does not fail the whole sync. |
 | **Conflict classification** | `SyncConflictType`: … **M5.5-BE1.1:** enriched `conflicts[]` payload … **M5.5-BE2:** explicit resolution via `POST /api/mobile/sync/conflicts/resolve` — stateless, no payload apply, no automatic merge. |
 | **Sync warnings** | `SyncWarningCode`: `FULL_SYNC_REQUIRED`, `SYNC_TOKEN_EXPIRED`, `CLIENT_OUTDATED`, `PARTIAL_SYNC`, `UNKNOWN_WARNING` (types defined M5.2-BE2; list empty) |
 | **Document caching support** | `ETag` or `contentVersion` on document metadata; conditional download |
@@ -394,6 +394,10 @@ M6.2 — Dashboard Sync Contract (M6.2-BE1 delivered)
         ↓ delta.dashboard on POST /api/mobile/sync; server-computed snapshot; always full refresh; no client-side counter math
 M6.3 — Asset Context Delta (M6.3-BE1 delivered)
         ↓ delta.assets for assets linked to scoped inspections/work orders; lookup-aligned context; metadata-only documents
+M6.4 — Work Order Conflict Detection (M6.4-BE1 delivered)
+        ↓ SAVE_WORK_ORDER_PROGRESS conflicts classified and enriched; Android retains conflicting work order pending operations; no automatic resolution
+M6.5 — Reference Data Delta (M6.5-BE1 delivered)
+        ↓ delta.referenceData with asset categories, departments, enum dictionaries; always-returned snapshot; server-authoritative; no offline mutation
 M5.5 — Conflict Detection (M5.5-BE1 delivered)
         ↓ Server classifies stale workflow / permission / entity-state failures as CONFLICT; Android retains conflicting operations for future UX
 M5.5.1 — Conflict Payload Enrichment (M5.5-BE1.1 delivered)
