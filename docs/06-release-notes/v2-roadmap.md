@@ -85,6 +85,7 @@ The KPI API is designed for reuse by the React web client, future Android applic
 **Delivered capabilities:**
 
 - **Sprint M1 (validated):** Mobile API foundation — read/bundle endpoints under `/api/mobile/*` (identity, dashboard, my inspections/work orders, screen bundles)
+- **Sprint M1.x (validated):** Mobile API contract hardening — MockMvc contract tests, read-only regression tests, documented JSON examples for Android M2
 - **Sprint R1 (validated):** CSV reporting foundation — read-only exports under `/api/reporting/exports/*.csv` (Assets, Inspections, Issues, Work Orders, Preventive Execution Candidates)
 - **Sprint C1 (V2.3.x):** XLSX reporting foundation — read-only exports under `/api/reporting/exports/*.xlsx` with the same scoping and columns as CSV
 - **Sprint C2 (V2.3.x):** PDF reporting foundation — read-only exports under `/api/reporting/exports/*.pdf` with the same scoping, filters, and columns as CSV/XLSX

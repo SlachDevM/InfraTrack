@@ -2,6 +2,8 @@
 
 Compact, read-only REST endpoints for the future Android field client. **M1** is the mobile API foundation. **M4-BE** (V2.4) is the current backend milestone — asset lookup, asset context, QR foundation, documents, and allowed actions. No Android scanning UI, offline sync, or push delivery in M4-BE (backend only).
 
+**V2.2.x contract hardening:** JSON response shapes are locked by `MobileControllerContractTest` and `MobileApiReadOnlyRegressionTest`. Android M2 should treat these contracts as stable.
+
 ## Purpose
 
 Field users need one backend call per mobile screen instead of orchestrating multiple web APIs. The mobile layer:
@@ -21,7 +23,7 @@ All mobile endpoints require a valid JWT from `POST /api/auth/login`.
 Authorization: Bearer <token>
 ```
 
-Unauthenticated requests receive `401`. Forbidden scoping receives `403`.
+Unauthenticated requests receive `403 Forbidden` (project security behaviour). Forbidden scoping receives `403` with a plain-text message.
 
 ## Primary users
 
@@ -106,7 +108,190 @@ This is **not** the Operations Intelligence web dashboard.
 
 **My inspections:** overdue first → `expectedCompletionDate` ascending → priority (URGENT → LOW).
 
-**My work orders:** active (`ASSIGNED`) first → `assignedAt` → priority.
+**My work orders:** active (`ASSIGNED`) first → `assignedAt` → priority. `expectedCompletionDate` is always omitted when the work order model has no due date.
+
+## Response examples
+
+Illustrative JSON shapes (field names are contract-stable). See Swagger for full schema.
+
+### `GET /api/mobile/me`
+
+```json
+{
+  "id": 20,
+  "name": "Alex Field",
+  "email": "alex.field@parks.council.gov.au",
+  "role": "FIELD_EMPLOYEE",
+  "departmentId": 3,
+  "departmentName": "Parks",
+  "enabled": true
+}
+```
+
+### `GET /api/mobile/dashboard`
+
+```json
+{
+  "assignedInspections": 2,
+  "assignedWorkOrders": 1,
+  "overdueInspections": 1,
+  "overdueWorkOrders": 0,
+  "completedToday": 3
+}
+```
+
+### `GET /api/mobile/my-inspections`
+
+```json
+[
+  {
+    "inspectionId": 100,
+    "assetId": 5,
+    "assetName": "Street Light 001",
+    "assetCategoryName": "Street Lighting",
+    "status": "ASSIGNED",
+    "priority": "HIGH",
+    "expectedCompletionDate": "2026-06-30",
+    "templateId": 50,
+    "templateName": "Street Light Routine Inspection",
+    "hasChecklist": true,
+    "issueIdentified": false
+  },
+  {
+    "inspectionId": 101,
+    "assetId": 6,
+    "assetName": "Park BBQ 12",
+    "assetCategoryName": "Park Equipment",
+    "status": "ASSIGNED",
+    "priority": "NORMAL",
+    "expectedCompletionDate": "2026-07-05",
+    "hasChecklist": false,
+    "issueIdentified": false
+  }
+]
+```
+
+### `GET /api/mobile/inspections/{id}/bundle`
+
+```json
+{
+  "inspection": {
+    "id": 100,
+    "status": "ASSIGNED",
+    "priority": "HIGH",
+    "expectedCompletionDate": "2026-06-30",
+    "observedCondition": null,
+    "observations": null,
+    "issueIdentified": false
+  },
+  "asset": {
+    "id": 5,
+    "name": "Street Light 001",
+    "category": "Street Lighting",
+    "department": "Parks",
+    "location": "Main Street / Oak Avenue"
+  },
+  "template": {
+    "id": 50,
+    "name": "Street Light Routine Inspection",
+    "version": 2,
+    "status": "PUBLISHED"
+  },
+  "questions": [
+    {
+      "id": 10,
+      "code": "LAMP_CONDITION",
+      "questionText": "Is the lamp operating correctly?",
+      "helpText": "Check after dark if possible",
+      "type": "BOOLEAN",
+      "required": true,
+      "displayOrder": 1,
+      "unitSymbol": null,
+      "minValue": null,
+      "maxValue": null,
+      "decimalPlaces": null,
+      "choices": []
+    }
+  ],
+  "answers": [
+    {
+      "questionId": 10,
+      "booleanValue": true,
+      "textValue": null,
+      "numberValue": null,
+      "choiceCodeValue": null
+    }
+  ],
+  "allowedActions": {
+    "canComplete": true,
+    "canUploadDocument": true,
+    "canViewAsset": true
+  }
+}
+```
+
+Legacy inspections omit `template` and return empty `questions` and `answers` arrays.
+
+### `GET /api/mobile/my-work-orders`
+
+```json
+[
+  {
+    "workOrderId": 200,
+    "assetId": 7,
+    "assetName": "Public Toilet Block A",
+    "status": "ASSIGNED",
+    "priority": "HIGH",
+    "description": "Repair leaking tap and replace soap dispenser",
+    "assignedAt": "2026-06-20T08:30:00"
+  }
+]
+```
+
+### `GET /api/mobile/work-orders/{id}/bundle`
+
+```json
+{
+  "workOrder": {
+    "id": 200,
+    "status": "ASSIGNED",
+    "priority": "HIGH",
+    "description": "Repair leaking tap and replace soap dispenser",
+    "assignedTo": 20
+  },
+  "asset": {
+    "id": 7,
+    "name": "Public Toilet Block A",
+    "category": "Public Amenities",
+    "department": "Parks",
+    "location": "River Reserve"
+  },
+  "issue": {
+    "issueId": 500,
+    "issueDescription": "Tap leaking in male amenities",
+    "issueSeverity": "MEDIUM"
+  },
+  "decision": {
+    "operationalDecisionId": 900,
+    "decisionType": "INTERNAL_MAINTENANCE"
+  },
+  "maintenanceActivity": null,
+  "allowedActions": {
+    "canCompleteMaintenance": true,
+    "canUploadDocument": true,
+    "canViewAsset": true
+  }
+}
+```
+
+## Android M2 Handoff Notes
+
+- **Authentication:** Use Bearer JWT from `POST /api/auth/login` on every `/api/mobile/*` request.
+- **Backend is the source of truth:** Never infer permissions from role alone in the Android client.
+- **Use `allowedActions`:** Show complete/upload/navigation controls only when the bundle flags allow them.
+- **Do not recalculate permissions:** Scoping (assigned vs department vs admin) is enforced server-side; the client must not filter lists as a security control.
+- **Bundle endpoints load a screen:** Prefer one bundle call per inspection or work order detail screen instead of chaining web APIs.
+- **Writes unchanged:** Complete inspection, maintenance, and document upload continue to use existing `/api/*` write endpoints documented in Swagger.
 
 ## Reused write APIs (Android — future)
 

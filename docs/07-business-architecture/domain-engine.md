@@ -1580,6 +1580,8 @@ GET  /api/mobile/sync/* (future)  ──→ Incremental download
 
 **M6.5-BE1 (delivered):** Reference data delta — `delta.referenceData` with `SyncReferenceDataDeltaResponse` on every successful sync. Includes asset categories and departments (`AssetCategoryService` / `DepartmentService.listAll` — deployment-wide), work order types (`WorkType`), and mobile enum dictionaries (inspection/work order status and priority, asset status, issue severity) with server-authoritative labels aligned to React constants. Always-returned full snapshot (`generatedAt` = sync watermark, `schemaVersion` = 1). Built after asset delta. No offline reference-data mutation; no users, policies, documents, or citizen/public options. No new endpoint.
 
+**Contract hardening (V2.2.x):** `MobileControllerContractTest` locks JSON field names and HTTP status behaviour. `MobileApiReadOnlyRegressionTest` proves mobile reads never persist operational records. Android M2 should treat documented response shapes as stable contracts.
+
 ---
 
 ## Authorization summary

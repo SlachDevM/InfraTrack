@@ -35,6 +35,7 @@ import com.infratrack.mobile.dto.MobileMaintenanceActivitySummaryResponse;
 import com.infratrack.mobile.dto.MobileMeResponse;
 import com.infratrack.mobile.dto.MobileQuestionResponse;
 import com.infratrack.mobile.dto.MobileTemplateSummaryResponse;
+import com.infratrack.mobile.dto.MobileWorkOrderAllowedActionsResponse;
 import com.infratrack.mobile.dto.MobileWorkOrderBundleResponse;
 import com.infratrack.mobile.dto.MobileWorkOrderDetailResponse;
 import com.infratrack.mobile.dto.MobileWorkOrderSummaryResponse;
@@ -252,7 +253,7 @@ public class MobileService {
                 .orElse(null);
 
         boolean canComplete = authorizationService.canCompleteMaintenance(user, workOrder);
-        MobileAllowedActionsResponse allowedActions = new MobileAllowedActionsResponse(
+        MobileWorkOrderAllowedActionsResponse allowedActions = new MobileWorkOrderAllowedActionsResponse(
                 canComplete,
                 canComplete,
                 true);

@@ -4,6 +4,7 @@ import com.infratrack.workorder.WorkOrder;
 import com.infratrack.workorder.WorkOrderPriority;
 import com.infratrack.workorder.WorkOrderStatus;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class MobileWorkOrderSummaryResponse {
@@ -15,6 +16,7 @@ public class MobileWorkOrderSummaryResponse {
     private WorkOrderPriority priority;
     private String description;
     private LocalDateTime assignedAt;
+    private LocalDate expectedCompletionDate;
 
     public static MobileWorkOrderSummaryResponse from(WorkOrder workOrder) {
         MobileWorkOrderSummaryResponse response = new MobileWorkOrderSummaryResponse();
@@ -25,6 +27,7 @@ public class MobileWorkOrderSummaryResponse {
         response.priority = workOrder.getPriority();
         response.description = workOrder.getDescription();
         response.assignedAt = workOrder.getAssignedAt();
+        response.expectedCompletionDate = null;
         return response;
     }
 
@@ -54,5 +57,9 @@ public class MobileWorkOrderSummaryResponse {
 
     public LocalDateTime getAssignedAt() {
         return assignedAt;
+    }
+
+    public LocalDate getExpectedCompletionDate() {
+        return expectedCompletionDate;
     }
 }

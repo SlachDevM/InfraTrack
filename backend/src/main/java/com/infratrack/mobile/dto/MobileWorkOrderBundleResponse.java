@@ -7,7 +7,7 @@ public class MobileWorkOrderBundleResponse {
     private MobileIssueSummaryResponse issue;
     private MobileDecisionSummaryResponse decision;
     private MobileMaintenanceActivitySummaryResponse maintenanceActivity;
-    private MobileAllowedActionsResponse allowedActions;
+    private MobileWorkOrderAllowedActionsResponse allowedActions;
 
     public MobileWorkOrderBundleResponse(
             MobileWorkOrderDetailResponse workOrder,
@@ -15,7 +15,7 @@ public class MobileWorkOrderBundleResponse {
             MobileIssueSummaryResponse issue,
             MobileDecisionSummaryResponse decision,
             MobileMaintenanceActivitySummaryResponse maintenanceActivity,
-            MobileAllowedActionsResponse allowedActions) {
+            MobileWorkOrderAllowedActionsResponse allowedActions) {
         this.workOrder = workOrder;
         this.asset = asset;
         this.issue = issue;
@@ -44,7 +44,7 @@ public class MobileWorkOrderBundleResponse {
         return maintenanceActivity;
     }
 
-    public MobileAllowedActionsResponse getAllowedActions() {
+    public MobileWorkOrderAllowedActionsResponse getAllowedActions() {
         return allowedActions;
     }
 }

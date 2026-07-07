@@ -426,7 +426,7 @@ class MobileServiceTest {
         assertThat(response.getIssue().getIssueId()).isEqualTo(500L);
         assertThat(response.getDecision().getOperationalDecisionId()).isEqualTo(900L);
         assertThat(response.getMaintenanceActivity().getNotes()).isEqualTo("Completed repair");
-        assertThat(response.getAllowedActions().isCanComplete()).isTrue();
+        assertThat(response.getAllowedActions().isCanCompleteMaintenance()).isTrue();
     }
 
     @Test
