@@ -84,6 +84,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -119,9 +120,6 @@ class MobileServiceTest {
     private IssueRepository issueRepository;
 
     @Mock
-    private OperationalDecisionRepository operationalDecisionRepository;
-
-    @Mock
     private DelegatedAuthorityService delegatedAuthorityService;
 
     @Mock
@@ -146,12 +144,24 @@ class MobileServiceTest {
                 inspectionAnswerRepository,
                 checklistLoader,
                 issueRepository,
-                operationalDecisionRepository,
                 workOrderRepository,
                 maintenanceActivityRepository,
                 preventiveMaintenancePlanRepository,
                 operationalDocumentService,
                 userNameLookup);
+        stubEmptyAssetContextBatch();
+    }
+
+    private void stubEmptyAssetContextBatch() {
+        lenient().when(issueRepository.findOpenByAssetIdIn(any())).thenReturn(List.of());
+        lenient().when(inspectionRepository.findByAsset_IdInAndStatus(any(), any())).thenReturn(List.of());
+        lenient().when(workOrderRepository.findByAsset_IdInAndStatusIn(any(), any())).thenReturn(List.of());
+        lenient().when(maintenanceActivityRepository.findByAsset_IdInOrderByCompletedAtDesc(any()))
+                .thenReturn(List.of());
+        lenient().when(preventiveMaintenancePlanRepository.findByAsset_IdInAndStatusOrderByCreatedAtDesc(any(), any()))
+                .thenReturn(List.of());
+        lenient().when(operationalDocumentService.listVisibleAssetOwnedDocumentsForAssets(any(), any()))
+                .thenReturn(Map.of());
     }
 
     @Test
@@ -201,9 +211,6 @@ class MobileServiceTest {
         hiddenAsset.setId(99L);
 
         when(assetRepository.findByIdIn(List.of(50L, 99L))).thenReturn(List.of(visibleAsset, hiddenAsset));
-        when(issueRepository.findAllByAsset_IdOrderByRecordedAtDesc(50L)).thenReturn(List.of());
-        when(operationalDocumentService.listVisibleAssetOwnedDocuments(visibleAsset, 20L))
-                .thenReturn(List.of());
 
         List<AssetContextResponse> contexts = mobileService.buildAssetContextsForSync(
                 fieldEmployee, List.of(50L, 99L));
@@ -492,15 +499,14 @@ class MobileServiceTest {
         assertThatThrownBy(() -> mobileService.getAssetContext(1L, "UNKNOWN-1"))
                 .isInstanceOf(NotFoundException.class);
 
-        verify(issueRepository, never()).findAllByAsset_IdOrderByRecordedAtDesc(any());
-        verify(inspectionRepository, never()).findByAsset_IdAndStatus(any(), any());
-        verify(workOrderRepository, never()).findByAsset_IdAndStatusIn(any(), any());
-        verify(inspectionRepository, never())
-                .findFirstByAsset_IdAndStatusOrderByCompletedAtDesc(any(), any());
-        verify(maintenanceActivityRepository, never()).findFirstByAsset_IdOrderByCompletedAtDesc(any());
+        verify(issueRepository, never()).findOpenByAssetIdIn(any());
+        verify(inspectionRepository, never()).findByAsset_IdInAndStatus(any(), any());
+        verify(workOrderRepository, never()).findByAsset_IdInAndStatusIn(any(), any());
+        verify(inspectionRepository, never()).findByAsset_IdInAndStatus(any(), eq(InspectionStatus.COMPLETED));
+        verify(maintenanceActivityRepository, never()).findByAsset_IdInOrderByCompletedAtDesc(any());
         verify(preventiveMaintenancePlanRepository, never())
-                .findFirstByAsset_IdAndStatusOrderByCreatedAtDesc(any(), any());
-        verify(operationalDocumentService, never()).listVisibleAssetOwnedDocuments(any(), any());
+                .findByAsset_IdInAndStatusOrderByCreatedAtDesc(any(), any());
+        verify(operationalDocumentService, never()).listVisibleAssetOwnedDocumentsForAssets(any(), any());
     }
 
     @Test
@@ -560,7 +566,7 @@ class MobileServiceTest {
         assertThatThrownBy(() -> mobileService.getAssetContext(2L, asset.getCode()))
                 .isInstanceOf(ForbiddenOperationException.class);
 
-        verify(issueRepository, never()).findAllByAsset_IdOrderByRecordedAtDesc(any());
+        verify(issueRepository, never()).findOpenByAssetIdIn(any());
     }
 
     @Test
@@ -631,15 +637,14 @@ class MobileServiceTest {
         assertThatThrownBy(() -> mobileService.getAssetContext(20L, asset.getCode()))
                 .isInstanceOf(ForbiddenOperationException.class);
 
-        verify(issueRepository, never()).findAllByAsset_IdOrderByRecordedAtDesc(any());
-        verify(inspectionRepository, never()).findByAsset_IdAndStatus(any(), any());
-        verify(workOrderRepository, never()).findByAsset_IdAndStatusIn(any(), any());
-        verify(inspectionRepository, never())
-                .findFirstByAsset_IdAndStatusOrderByCompletedAtDesc(any(), any());
-        verify(maintenanceActivityRepository, never()).findFirstByAsset_IdOrderByCompletedAtDesc(any());
+        verify(issueRepository, never()).findOpenByAssetIdIn(any());
+        verify(inspectionRepository, never()).findByAsset_IdInAndStatus(any(), any());
+        verify(workOrderRepository, never()).findByAsset_IdInAndStatusIn(any(), any());
+        verify(inspectionRepository, never()).findByAsset_IdInAndStatus(any(), eq(InspectionStatus.COMPLETED));
+        verify(maintenanceActivityRepository, never()).findByAsset_IdInOrderByCompletedAtDesc(any());
         verify(preventiveMaintenancePlanRepository, never())
-                .findFirstByAsset_IdAndStatusOrderByCreatedAtDesc(any(), any());
-        verify(operationalDocumentService, never()).listVisibleAssetOwnedDocuments(any(), any());
+                .findByAsset_IdInAndStatusOrderByCreatedAtDesc(any(), any());
+        verify(operationalDocumentService, never()).listVisibleAssetOwnedDocumentsForAssets(any(), any());
     }
 
     @Test
@@ -665,8 +670,8 @@ class MobileServiceTest {
         when(userService.getById(1L)).thenReturn(admin);
 
         OperationalDocument document = assetOwnedDocument(101L, asset);
-        when(operationalDocumentService.listVisibleAssetOwnedDocuments(asset, 1L))
-                .thenReturn(List.of(document));
+        when(operationalDocumentService.listVisibleAssetOwnedDocumentsForAssets(eq(admin), eq(List.of(asset))))
+                .thenReturn(Map.of(asset.getId(), List.of(document)));
         when(userNameLookup.resolveNames(List.of(30L))).thenReturn(Map.of(30L, "Maintenance Admin"));
 
         AssetContextResponse response = mobileService.getAssetContext(1L, asset.getCode());
@@ -691,8 +696,8 @@ class MobileServiceTest {
         when(userService.getById(1L)).thenReturn(admin);
 
         OperationalDocument document = assetOwnedDocument(101L, asset);
-        when(operationalDocumentService.listVisibleAssetOwnedDocuments(asset, 1L))
-                .thenReturn(List.of(document));
+        when(operationalDocumentService.listVisibleAssetOwnedDocumentsForAssets(eq(admin), eq(List.of(asset))))
+                .thenReturn(Map.of(asset.getId(), List.of(document)));
         when(userNameLookup.resolveNames(List.of(30L))).thenReturn(Map.of(30L, "Maintenance Admin"));
 
         AssetContextResponse response = mobileService.getAssetContext(1L, asset.getCode());
@@ -711,8 +716,8 @@ class MobileServiceTest {
         when(userService.getById(20L)).thenReturn(fieldEmployee);
 
         OperationalDocument document = assetOwnedDocument(101L, asset);
-        when(operationalDocumentService.listVisibleAssetOwnedDocuments(asset, 20L))
-                .thenReturn(List.of(document));
+        when(operationalDocumentService.listVisibleAssetOwnedDocumentsForAssets(eq(fieldEmployee), eq(List.of(asset))))
+                .thenReturn(Map.of(asset.getId(), List.of(document)));
         when(userNameLookup.resolveNames(List.of(30L))).thenReturn(Map.of(30L, "Maintenance Admin"));
 
         AssetContextResponse response = mobileService.getAssetContext(20L, asset.getCode());
@@ -731,8 +736,8 @@ class MobileServiceTest {
         when(userService.getById(21L)).thenReturn(contractor);
 
         OperationalDocument document = assetOwnedDocument(102L, asset);
-        when(operationalDocumentService.listVisibleAssetOwnedDocuments(asset, 21L))
-                .thenReturn(List.of(document));
+        when(operationalDocumentService.listVisibleAssetOwnedDocumentsForAssets(eq(contractor), eq(List.of(asset))))
+                .thenReturn(Map.of(asset.getId(), List.of(document)));
         when(userNameLookup.resolveNames(List.of(30L))).thenReturn(Map.of(30L, "Maintenance Admin"));
 
         AssetContextResponse response = mobileService.getAssetContext(21L, asset.getCode());
@@ -753,7 +758,7 @@ class MobileServiceTest {
         assertThatThrownBy(() -> mobileService.getAssetContext(20L, asset.getCode()))
                 .isInstanceOf(ForbiddenOperationException.class);
 
-        verify(operationalDocumentService, never()).listVisibleAssetOwnedDocuments(any(), any());
+        verify(operationalDocumentService, never()).listVisibleAssetOwnedDocumentsForAssets(any(), any());
     }
 
     @Test
@@ -764,9 +769,9 @@ class MobileServiceTest {
         when(userService.getById(1L)).thenReturn(admin);
 
         Inspection completedInspection = completedInspection(901L);
-        when(inspectionRepository.findFirstByAsset_IdAndStatusOrderByCompletedAtDesc(
-                asset.getId(), InspectionStatus.COMPLETED))
-                .thenReturn(Optional.of(completedInspection));
+        when(inspectionRepository.findByAsset_IdInAndStatus(
+                List.of(asset.getId()), InspectionStatus.COMPLETED))
+                .thenReturn(List.of(completedInspection));
 
         AssetContextResponse response = mobileService.getAssetContext(1L, asset.getCode());
 
@@ -787,10 +792,9 @@ class MobileServiceTest {
         when(userService.getById(1L)).thenReturn(admin);
 
         MaintenanceActivity maintenanceActivity = maintenanceActivityForAsset(asset, 902L, 77L);
-        when(maintenanceActivityRepository.findFirstByAsset_IdOrderByCompletedAtDesc(asset.getId()))
-                .thenReturn(Optional.of(maintenanceActivity));
-        User performer = user(20L, UserRole.FIELD_EMPLOYEE);
-        when(userService.getById(20L)).thenReturn(performer);
+        when(maintenanceActivityRepository.findByAsset_IdInOrderByCompletedAtDesc(List.of(asset.getId())))
+                .thenReturn(List.of(maintenanceActivity));
+        when(userNameLookup.resolveNames(List.of(20L))).thenReturn(Map.of(20L, "John Smith"));
 
         AssetContextResponse response = mobileService.getAssetContext(1L, asset.getCode());
 
@@ -810,9 +814,9 @@ class MobileServiceTest {
         when(userService.getById(1L)).thenReturn(admin);
 
         PreventiveMaintenancePlan plan = activePreventivePlan(88L, asset);
-        when(preventiveMaintenancePlanRepository.findFirstByAsset_IdAndStatusOrderByCreatedAtDesc(
-                asset.getId(), PreventiveMaintenancePlanStatus.ACTIVE))
-                .thenReturn(Optional.of(plan));
+        when(preventiveMaintenancePlanRepository.findByAsset_IdInAndStatusOrderByCreatedAtDesc(
+                List.of(asset.getId()), PreventiveMaintenancePlanStatus.ACTIVE))
+                .thenReturn(List.of(plan));
 
         AssetContextResponse response = mobileService.getAssetContext(1L, asset.getCode());
 
@@ -836,12 +840,11 @@ class MobileServiceTest {
         assertThatThrownBy(() -> mobileService.getAssetContext(20L, asset.getCode()))
                 .isInstanceOf(ForbiddenOperationException.class);
 
-        verify(inspectionRepository, never())
-                .findFirstByAsset_IdAndStatusOrderByCompletedAtDesc(any(), any());
-        verify(maintenanceActivityRepository, never()).findFirstByAsset_IdOrderByCompletedAtDesc(any());
+        verify(inspectionRepository, never()).findByAsset_IdInAndStatus(any(), eq(InspectionStatus.COMPLETED));
+        verify(maintenanceActivityRepository, never()).findByAsset_IdInOrderByCompletedAtDesc(any());
         verify(preventiveMaintenancePlanRepository, never())
-                .findFirstByAsset_IdAndStatusOrderByCreatedAtDesc(any(), any());
-        verify(operationalDocumentService, never()).listVisibleAssetOwnedDocuments(any(), any());
+                .findByAsset_IdInAndStatusOrderByCreatedAtDesc(any(), any());
+        verify(operationalDocumentService, never()).listVisibleAssetOwnedDocumentsForAssets(any(), any());
     }
 
     @Test
@@ -870,11 +873,8 @@ class MobileServiceTest {
         when(userService.getById(1L)).thenReturn(admin);
 
         Issue openIssue = issueForAsset(asset, 600L);
-        Issue resolvedIssue = issueForAsset(asset, 601L);
-        when(issueRepository.findAllByAsset_IdOrderByRecordedAtDesc(asset.getId()))
-                .thenReturn(List.of(openIssue, resolvedIssue));
-        when(operationalDecisionRepository.findResolvedIssueIds(List.of(600L, 601L)))
-                .thenReturn(Set.of(601L));
+        when(issueRepository.findOpenByAssetIdIn(List.of(asset.getId())))
+                .thenReturn(List.of(openIssue));
 
         AssetContextResponse response = mobileService.getAssetContext(1L, asset.getCode());
 
@@ -890,12 +890,12 @@ class MobileServiceTest {
         when(userService.getById(1L)).thenReturn(admin);
 
         Inspection activeInspection = assignedInspection(700L, 20L);
-        when(inspectionRepository.findByAsset_IdAndStatus(asset.getId(), InspectionStatus.ASSIGNED))
+        when(inspectionRepository.findByAsset_IdInAndStatus(List.of(asset.getId()), InspectionStatus.ASSIGNED))
                 .thenReturn(List.of(activeInspection));
 
         WorkOrder activeWorkOrder = createdWorkOrder(800L);
-        when(workOrderRepository.findByAsset_IdAndStatusIn(
-                asset.getId(), List.of(WorkOrderStatus.CREATED, WorkOrderStatus.ASSIGNED)))
+        when(workOrderRepository.findByAsset_IdInAndStatusIn(
+                List.of(asset.getId()), List.of(WorkOrderStatus.CREATED, WorkOrderStatus.ASSIGNED)))
                 .thenReturn(List.of(activeWorkOrder));
 
         AssetContextResponse response = mobileService.getAssetContext(1L, asset.getCode());
@@ -928,22 +928,21 @@ class MobileServiceTest {
 
     private void stubAssetLookup(Asset asset) {
         when(assetRepository.findByCodeIgnoreCase(asset.getCode())).thenReturn(Optional.of(asset));
-        when(issueRepository.findAllByAsset_IdOrderByRecordedAtDesc(asset.getId())).thenReturn(List.of());
-        when(inspectionRepository.findByAsset_IdAndStatus(asset.getId(), InspectionStatus.ASSIGNED))
+        when(issueRepository.findOpenByAssetIdIn(List.of(asset.getId()))).thenReturn(List.of());
+        when(inspectionRepository.findByAsset_IdInAndStatus(List.of(asset.getId()), InspectionStatus.ASSIGNED))
                 .thenReturn(List.of());
-        when(workOrderRepository.findByAsset_IdAndStatusIn(
-                asset.getId(), List.of(WorkOrderStatus.CREATED, WorkOrderStatus.ASSIGNED)))
+        when(inspectionRepository.findByAsset_IdInAndStatus(List.of(asset.getId()), InspectionStatus.COMPLETED))
                 .thenReturn(List.of());
-        when(inspectionRepository.findFirstByAsset_IdAndStatusOrderByCompletedAtDesc(
-                asset.getId(), InspectionStatus.COMPLETED))
-                .thenReturn(Optional.empty());
-        when(maintenanceActivityRepository.findFirstByAsset_IdOrderByCompletedAtDesc(asset.getId()))
-                .thenReturn(Optional.empty());
-        when(preventiveMaintenancePlanRepository.findFirstByAsset_IdAndStatusOrderByCreatedAtDesc(
-                asset.getId(), PreventiveMaintenancePlanStatus.ACTIVE))
-                .thenReturn(Optional.empty());
-        when(operationalDocumentService.listVisibleAssetOwnedDocuments(eq(asset), any()))
+        when(workOrderRepository.findByAsset_IdInAndStatusIn(
+                List.of(asset.getId()), List.of(WorkOrderStatus.CREATED, WorkOrderStatus.ASSIGNED)))
                 .thenReturn(List.of());
+        when(maintenanceActivityRepository.findByAsset_IdInOrderByCompletedAtDesc(List.of(asset.getId())))
+                .thenReturn(List.of());
+        when(preventiveMaintenancePlanRepository.findByAsset_IdInAndStatusOrderByCreatedAtDesc(
+                List.of(asset.getId()), PreventiveMaintenancePlanStatus.ACTIVE))
+                .thenReturn(List.of());
+        lenient().when(operationalDocumentService.listVisibleAssetOwnedDocumentsForAssets(any(), eq(List.of(asset))))
+                .thenReturn(Map.of());
     }
 
     private void stubAssetFound(Asset asset) {

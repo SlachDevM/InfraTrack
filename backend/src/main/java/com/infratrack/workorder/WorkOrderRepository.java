@@ -29,6 +29,11 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, Long> {
     List<WorkOrder> findByAsset_IdAndStatusIn(Long assetId, Collection<WorkOrderStatus> statuses);
 
     @EntityGraph(attributePaths = {"asset", "asset.department", "operationalDecision"})
+    List<WorkOrder> findByAsset_IdInAndStatusIn(
+            Collection<Long> assetIds,
+            Collection<WorkOrderStatus> statuses);
+
+    @EntityGraph(attributePaths = {"asset", "asset.department", "operationalDecision"})
     @Query("""
             SELECT wo FROM WorkOrder wo
             WHERE wo.status = com.infratrack.workorder.WorkOrderStatus.CREATED
@@ -46,13 +51,16 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, Long> {
             "operationalDecision", "operationalDecision.issue"})
     Optional<WorkOrder> findMobileBundleById(Long id);
 
-    @EntityGraph(attributePaths = {"asset", "asset.department", "operationalDecision"})
+    @EntityGraph(attributePaths = {
+            "asset", "asset.department", "asset.assetCategory", "operationalDecision"})
     List<WorkOrder> findByAssignedToUserId(Long assignedToUserId);
 
-    @EntityGraph(attributePaths = {"asset", "asset.department", "operationalDecision"})
+    @EntityGraph(attributePaths = {
+            "asset", "asset.department", "asset.assetCategory", "operationalDecision"})
     List<WorkOrder> findByAsset_Department_Id(Long departmentId);
 
-    @EntityGraph(attributePaths = {"asset", "asset.department", "operationalDecision"})
+    @EntityGraph(attributePaths = {
+            "asset", "asset.department", "asset.assetCategory", "operationalDecision"})
     List<WorkOrder> findByStatus(WorkOrderStatus status);
 
     @EntityGraph(attributePaths = {

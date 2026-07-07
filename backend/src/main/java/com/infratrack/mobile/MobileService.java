@@ -11,7 +11,6 @@ import com.infratrack.inspection.InspectionAnswerRepository;
 import com.infratrack.inspection.InspectionPriority;
 import com.infratrack.inspection.InspectionRepository;
 import com.infratrack.inspection.InspectionStatus;
-import com.infratrack.issue.Issue;
 import com.infratrack.issue.IssueRepository;
 import com.infratrack.maintenanceactivity.MaintenanceActivity;
 import com.infratrack.maintenanceactivity.MaintenanceActivityRepository;
@@ -39,7 +38,6 @@ import com.infratrack.mobile.dto.MobileWorkOrderAllowedActionsResponse;
 import com.infratrack.mobile.dto.MobileWorkOrderBundleResponse;
 import com.infratrack.mobile.dto.MobileWorkOrderDetailResponse;
 import com.infratrack.mobile.dto.MobileWorkOrderSummaryResponse;
-import com.infratrack.operationaldecision.OperationalDecisionRepository;
 import com.infratrack.operationaldocument.OperationalDocument;
 import com.infratrack.operationaldocument.OperationalDocumentService;
 import com.infratrack.preventivemaintenance.PreventiveMaintenancePlanRepository;
@@ -59,9 +57,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class MobileService {
@@ -73,7 +72,6 @@ public class MobileService {
     private final InspectionAnswerRepository inspectionAnswerRepository;
     private final MobileInspectionChecklistLoader checklistLoader;
     private final IssueRepository issueRepository;
-    private final OperationalDecisionRepository operationalDecisionRepository;
     private final WorkOrderRepository workOrderRepository;
     private final MaintenanceActivityRepository maintenanceActivityRepository;
     private final PreventiveMaintenancePlanRepository preventiveMaintenancePlanRepository;
@@ -88,7 +86,6 @@ public class MobileService {
             InspectionAnswerRepository inspectionAnswerRepository,
             MobileInspectionChecklistLoader checklistLoader,
             IssueRepository issueRepository,
-            OperationalDecisionRepository operationalDecisionRepository,
             WorkOrderRepository workOrderRepository,
             MaintenanceActivityRepository maintenanceActivityRepository,
             PreventiveMaintenancePlanRepository preventiveMaintenancePlanRepository,
@@ -101,7 +98,6 @@ public class MobileService {
         this.inspectionAnswerRepository = inspectionAnswerRepository;
         this.checklistLoader = checklistLoader;
         this.issueRepository = issueRepository;
-        this.operationalDecisionRepository = operationalDecisionRepository;
         this.workOrderRepository = workOrderRepository;
         this.maintenanceActivityRepository = maintenanceActivityRepository;
         this.preventiveMaintenancePlanRepository = preventiveMaintenancePlanRepository;
@@ -279,40 +275,27 @@ public class MobileService {
         if (assetIds == null || assetIds.isEmpty()) {
             return List.of();
         }
-        return assetRepository.findByIdIn(assetIds).stream()
+        List<Asset> visibleAssets = assetRepository.findByIdIn(assetIds).stream()
                 .filter(asset -> isAssetContextVisible(user, asset))
-                .map(asset -> buildAssetContext(user, asset))
+                .toList();
+        if (visibleAssets.isEmpty()) {
+            return List.of();
+        }
+        AssetContextBatch batch = loadAssetContextBatch(user, visibleAssets);
+        return visibleAssets.stream()
+                .map(asset -> assembleAssetContext(user, asset, batch))
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public AssetContextResponse buildAssetContext(User user, Asset asset) {
         authorizationService.requireCanViewAssetContext(user, asset);
+        AssetContextBatch batch = loadAssetContextBatch(user, List.of(asset));
+        return assembleAssetContext(user, asset, batch);
+    }
 
-        List<MobileIssueSummaryResponse> openIssues = loadOpenIssues(asset.getId());
-        List<MobileInspectionSummaryResponse> activeInspections = inspectionRepository
-                .findByAsset_IdAndStatus(asset.getId(), InspectionStatus.ASSIGNED)
-                .stream()
-                .map(MobileInspectionSummaryResponse::from)
-                .toList();
-        List<MobileWorkOrderSummaryResponse> activeWorkOrders = workOrderRepository
-                .findByAsset_IdAndStatusIn(asset.getId(), List.of(WorkOrderStatus.CREATED, WorkOrderStatus.ASSIGNED))
-                .stream()
-                .map(MobileWorkOrderSummaryResponse::from)
-                .toList();
-
-        MobileAssetLastInspectionResponse lastInspection = inspectionRepository
-                .findFirstByAsset_IdAndStatusOrderByCompletedAtDesc(asset.getId(), InspectionStatus.COMPLETED)
-                .map(MobileAssetLastInspectionResponse::from)
-                .orElse(null);
-        MobileAssetLastMaintenanceResponse lastMaintenance = loadLastMaintenance(asset.getId());
-        MobileAssetPreventivePlanResponse preventivePlan = preventiveMaintenancePlanRepository
-                .findFirstByAsset_IdAndStatusOrderByCreatedAtDesc(asset.getId(), PreventiveMaintenancePlanStatus.ACTIVE)
-                .map(MobileAssetPreventivePlanResponse::from)
-                .orElse(null);
-
-        List<MobileAssetDocumentSummaryResponse> documents = loadAssetDocuments(asset, user.getId());
-
+    private AssetContextResponse assembleAssetContext(User user, Asset asset, AssetContextBatch batch) {
+        Long assetId = asset.getId();
         AssetContextAllowedActionsResponse allowedActions = new AssetContextAllowedActionsResponse(
                 true,
                 true,
@@ -323,38 +306,151 @@ public class MobileService {
 
         return new AssetContextResponse(
                 AssetContextSummaryResponse.from(asset),
-                lastInspection,
-                lastMaintenance,
-                preventivePlan,
-                documents,
-                openIssues,
-                activeInspections,
-                activeWorkOrders,
+                batch.lastInspectionByAssetId().get(assetId),
+                batch.lastMaintenanceByAssetId().get(assetId),
+                batch.preventivePlanByAssetId().get(assetId),
+                batch.documentsByAssetId().getOrDefault(assetId, List.of()),
+                batch.openIssuesByAssetId().getOrDefault(assetId, List.of()),
+                batch.activeInspectionsByAssetId().getOrDefault(assetId, List.of()),
+                batch.activeWorkOrdersByAssetId().getOrDefault(assetId, List.of()),
                 allowedActions);
     }
 
-    private List<MobileAssetDocumentSummaryResponse> loadAssetDocuments(Asset asset, Long userId) {
-        List<OperationalDocument> documents =
-                operationalDocumentService.listVisibleAssetOwnedDocuments(asset, userId);
-        if (documents.isEmpty()) {
-            return List.of();
+    private AssetContextBatch loadAssetContextBatch(User user, List<Asset> assets) {
+        List<Long> assetIds = assets.stream().map(Asset::getId).toList();
+
+        Map<Long, List<MobileIssueSummaryResponse>> openIssuesByAssetId =
+                issueRepository.findOpenByAssetIdIn(assetIds).stream()
+                        .collect(Collectors.groupingBy(
+                                issue -> issue.getAsset().getId(),
+                                Collectors.mapping(MobileIssueSummaryResponse::from, Collectors.toList())));
+
+        Map<Long, List<MobileInspectionSummaryResponse>> activeInspectionsByAssetId =
+                inspectionRepository.findByAsset_IdInAndStatus(assetIds, InspectionStatus.ASSIGNED).stream()
+                        .collect(Collectors.groupingBy(
+                                inspection -> inspection.getAsset().getId(),
+                                Collectors.mapping(MobileInspectionSummaryResponse::from, Collectors.toList())));
+
+        List<WorkOrderStatus> activeWorkOrderStatuses = List.of(WorkOrderStatus.CREATED, WorkOrderStatus.ASSIGNED);
+        Map<Long, List<MobileWorkOrderSummaryResponse>> activeWorkOrdersByAssetId =
+                workOrderRepository.findByAsset_IdInAndStatusIn(assetIds, activeWorkOrderStatuses).stream()
+                        .collect(Collectors.groupingBy(
+                                workOrder -> workOrder.getAsset().getId(),
+                                Collectors.mapping(MobileWorkOrderSummaryResponse::from, Collectors.toList())));
+
+        Map<Long, Inspection> latestCompletedByAssetId = new HashMap<>();
+        for (Inspection inspection : inspectionRepository.findByAsset_IdInAndStatus(
+                assetIds, InspectionStatus.COMPLETED)) {
+            Long assetId = inspection.getAsset().getId();
+            Inspection current = latestCompletedByAssetId.get(assetId);
+            if (current == null || isAfter(inspection.getCompletedAt(), current.getCompletedAt())) {
+                latestCompletedByAssetId.put(assetId, inspection);
+            }
         }
-        Map<Long, String> uploaderNames = userNameLookup.resolveNames(
-                documents.stream().map(OperationalDocument::getUploadedByUserId).toList());
-        return documents.stream()
-                .map(document -> MobileAssetDocumentSummaryResponse.from(
-                        document,
-                        uploaderNames.get(document.getUploadedByUserId())))
-                .toList();
+        Map<Long, MobileAssetLastInspectionResponse> lastInspectionByAssetId = new HashMap<>();
+        for (Map.Entry<Long, Inspection> entry : latestCompletedByAssetId.entrySet()) {
+            lastInspectionByAssetId.put(entry.getKey(), MobileAssetLastInspectionResponse.from(entry.getValue()));
+        }
+
+        Map<Long, MobileAssetLastMaintenanceResponse> lastMaintenanceByAssetId =
+                loadLastMaintenanceByAssetId(assetIds);
+
+        Map<Long, MobileAssetPreventivePlanResponse> preventivePlanByAssetId = new HashMap<>();
+        for (var plan : preventiveMaintenancePlanRepository.findByAsset_IdInAndStatusOrderByCreatedAtDesc(
+                assetIds, PreventiveMaintenancePlanStatus.ACTIVE)) {
+            preventivePlanByAssetId.putIfAbsent(
+                    plan.getAsset().getId(),
+                    MobileAssetPreventivePlanResponse.from(plan));
+        }
+
+        Map<Long, List<MobileAssetDocumentSummaryResponse>> documentsByAssetId =
+                loadAssetDocumentsBatch(user, assets);
+
+        return new AssetContextBatch(
+                openIssuesByAssetId,
+                activeInspectionsByAssetId,
+                activeWorkOrdersByAssetId,
+                lastInspectionByAssetId,
+                lastMaintenanceByAssetId,
+                preventivePlanByAssetId,
+                documentsByAssetId);
     }
 
-    private MobileAssetLastMaintenanceResponse loadLastMaintenance(Long assetId) {
-        return maintenanceActivityRepository.findFirstByAsset_IdOrderByCompletedAtDesc(assetId)
-                .map(activity -> {
-                    User performer = userService.getById(activity.getPerformedByUserId());
-                    return MobileAssetLastMaintenanceResponse.from(activity, performer.getName());
-                })
-                .orElse(null);
+    private Map<Long, MobileAssetLastMaintenanceResponse> loadLastMaintenanceByAssetId(List<Long> assetIds) {
+        List<MaintenanceActivity> activities =
+                maintenanceActivityRepository.findByAsset_IdInOrderByCompletedAtDesc(assetIds);
+        if (activities.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, MaintenanceActivity> latestByAssetId = new HashMap<>();
+        for (MaintenanceActivity activity : activities) {
+            latestByAssetId.putIfAbsent(activity.getAsset().getId(), activity);
+        }
+
+        Map<Long, String> performerNames = userNameLookup.resolveNames(
+                latestByAssetId.values().stream()
+                        .map(MaintenanceActivity::getPerformedByUserId)
+                        .toList());
+
+        Map<Long, MobileAssetLastMaintenanceResponse> result = new HashMap<>();
+        for (Map.Entry<Long, MaintenanceActivity> entry : latestByAssetId.entrySet()) {
+            MaintenanceActivity activity = entry.getValue();
+            result.put(
+                    entry.getKey(),
+                    MobileAssetLastMaintenanceResponse.from(
+                            activity,
+                            performerNames.get(activity.getPerformedByUserId())));
+        }
+        return result;
+    }
+
+    private Map<Long, List<MobileAssetDocumentSummaryResponse>> loadAssetDocumentsBatch(
+            User user, List<Asset> assets) {
+        Map<Long, List<OperationalDocument>> documentsByAssetId =
+                operationalDocumentService.listVisibleAssetOwnedDocumentsForAssets(user, assets);
+        if (documentsByAssetId.isEmpty()) {
+            return Map.of();
+        }
+
+        List<Long> uploaderIds = documentsByAssetId.values().stream()
+                .flatMap(List::stream)
+                .map(OperationalDocument::getUploadedByUserId)
+                .distinct()
+                .toList();
+        Map<Long, String> uploaderNames = userNameLookup.resolveNames(uploaderIds);
+
+        Map<Long, List<MobileAssetDocumentSummaryResponse>> result = new HashMap<>();
+        for (Map.Entry<Long, List<OperationalDocument>> entry : documentsByAssetId.entrySet()) {
+            result.put(
+                    entry.getKey(),
+                    entry.getValue().stream()
+                            .map(document -> MobileAssetDocumentSummaryResponse.from(
+                                    document,
+                                    uploaderNames.get(document.getUploadedByUserId())))
+                            .toList());
+        }
+        return result;
+    }
+
+    private static boolean isAfter(LocalDateTime left, LocalDateTime right) {
+        if (left == null) {
+            return false;
+        }
+        if (right == null) {
+            return true;
+        }
+        return left.isAfter(right);
+    }
+
+    private record AssetContextBatch(
+            Map<Long, List<MobileIssueSummaryResponse>> openIssuesByAssetId,
+            Map<Long, List<MobileInspectionSummaryResponse>> activeInspectionsByAssetId,
+            Map<Long, List<MobileWorkOrderSummaryResponse>> activeWorkOrdersByAssetId,
+            Map<Long, MobileAssetLastInspectionResponse> lastInspectionByAssetId,
+            Map<Long, MobileAssetLastMaintenanceResponse> lastMaintenanceByAssetId,
+            Map<Long, MobileAssetPreventivePlanResponse> preventivePlanByAssetId,
+            Map<Long, List<MobileAssetDocumentSummaryResponse>> documentsByAssetId) {
     }
 
     private Asset findAssetByCodeOrThrow(String code) {
@@ -372,19 +468,6 @@ public class MobileService {
         } catch (ForbiddenOperationException ex) {
             return false;
         }
-    }
-
-    private List<MobileIssueSummaryResponse> loadOpenIssues(Long assetId) {
-        List<Issue> issues = issueRepository.findAllByAsset_IdOrderByRecordedAtDesc(assetId);
-        if (issues.isEmpty()) {
-            return List.of();
-        }
-        List<Long> issueIds = issues.stream().map(Issue::getId).toList();
-        Set<Long> resolvedIssueIds = operationalDecisionRepository.findResolvedIssueIds(issueIds);
-        return issues.stream()
-                .filter(issue -> !resolvedIssueIds.contains(issue.getId()))
-                .map(MobileIssueSummaryResponse::from)
-                .toList();
     }
 
     private List<Inspection> loadScopedInspections(User user) {

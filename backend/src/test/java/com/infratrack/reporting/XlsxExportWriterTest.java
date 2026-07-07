@@ -78,6 +78,24 @@ class XlsxExportWriterTest {
     }
 
     @Test
+    void write_shouldUseFixedColumnWidthsWhenRowCountExceedsThreshold() throws Exception {
+        List<List<String>> rows = new java.util.ArrayList<>();
+        for (int i = 0; i < XlsxExportWriter.AUTO_SIZE_MAX_ROWS + 1; i++) {
+            rows.add(List.of("value-" + i));
+        }
+
+        byte[] content = XlsxExportWriter.write(
+                "Assets",
+                List.of("Asset ID"),
+                rows);
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(content))) {
+            Sheet sheet = workbook.getSheetAt(0);
+            assertThat(sheet.getColumnWidth(0)).isEqualTo(XlsxExportWriter.DEFAULT_COLUMN_WIDTH);
+        }
+    }
+
+    @Test
     void sanitizeSheetName_shouldTruncateLongNames() {
         String sanitized = XlsxExportWriter.sanitizeSheetName("A".repeat(40));
 

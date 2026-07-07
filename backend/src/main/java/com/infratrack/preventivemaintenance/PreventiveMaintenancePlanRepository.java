@@ -7,8 +7,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.Optional;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface PreventiveMaintenancePlanRepository extends JpaRepository<PreventiveMaintenancePlan, Long> {
 
@@ -42,5 +43,10 @@ public interface PreventiveMaintenancePlanRepository extends JpaRepository<Preve
     @EntityGraph(attributePaths = {"businessTrigger"})
     Optional<PreventiveMaintenancePlan> findFirstByAsset_IdAndStatusOrderByCreatedAtDesc(
             Long assetId,
+            PreventiveMaintenancePlanStatus status);
+
+    @EntityGraph(attributePaths = {"businessTrigger"})
+    List<PreventiveMaintenancePlan> findByAsset_IdInAndStatusOrderByCreatedAtDesc(
+            Collection<Long> assetIds,
             PreventiveMaintenancePlanStatus status);
 }

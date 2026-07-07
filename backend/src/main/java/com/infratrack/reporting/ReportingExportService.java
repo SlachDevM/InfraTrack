@@ -39,6 +39,8 @@ public class ReportingExportService {
             "Reporting export to date must not be before from date.";
     static final String EXPORT_WINDOW_EXCEEDED_MESSAGE =
             "Reporting exports cannot span more than 365 days.";
+    static final String EXPORT_ROW_LIMIT_EXCEEDED_MESSAGE =
+            "Export exceeds the maximum supported size. Please reduce the selected date range.";
 
     private static final DateTimeFormatter ISO_DATE = DateTimeFormatter.ISO_LOCAL_DATE;
     private static final DateTimeFormatter ISO_DATE_TIME = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
@@ -53,6 +55,7 @@ public class ReportingExportService {
     private final UserNameLookup userNameLookup;
     private final ReportingPolicyService reportingPolicyService;
     private final ReportingExportMetricsRecorder exportMetrics;
+    private final ReportingExportProperties exportProperties;
 
     public ReportingExportService(
             ReportingAuthorizationService authorizationService,
@@ -64,7 +67,8 @@ public class ReportingExportService {
             OperationalDecisionRepository operationalDecisionRepository,
             UserNameLookup userNameLookup,
             ReportingPolicyService reportingPolicyService,
-            ReportingExportMetricsRecorder exportMetrics) {
+            ReportingExportMetricsRecorder exportMetrics,
+            ReportingExportProperties exportProperties) {
         this.authorizationService = authorizationService;
         this.assetRepository = assetRepository;
         this.inspectionRepository = inspectionRepository;
@@ -75,6 +79,7 @@ public class ReportingExportService {
         this.userNameLookup = userNameLookup;
         this.reportingPolicyService = reportingPolicyService;
         this.exportMetrics = exportMetrics;
+        this.exportProperties = exportProperties;
     }
 
     @Transactional(readOnly = true)
@@ -175,6 +180,7 @@ public class ReportingExportService {
         validateExportDateWindow(from, to);
         ExportScope scope = authorizationService.resolveScope(userId);
         List<Asset> assets = assetRepository.findForExport(scope.departmentId(), from, to);
+        validateExportRowCount(assets.size());
         List<String> headers = List.of(
                 "Asset ID", "Asset Name", "Category", "Department", "Location", "Status", "Created At");
         List<List<String>> rows = assets.stream()
@@ -194,6 +200,7 @@ public class ReportingExportService {
         validateExportDateWindow(from, to);
         ExportScope scope = authorizationService.resolveScope(userId);
         List<Inspection> inspections = inspectionRepository.findForExport(scope.departmentId(), from, to);
+        validateExportRowCount(inspections.size());
         Map<Long, String> assigneeNames = userNameLookup.resolveNames(inspections.stream()
                 .map(Inspection::getAssignedToUserId)
                 .collect(Collectors.toSet()));
@@ -220,8 +227,9 @@ public class ReportingExportService {
         validateExportDateWindow(from, to);
         ExportScope scope = authorizationService.resolveScope(userId);
         LocalDateTime fromDateTime = toLocalDateTime(from);
-        LocalDateTime toDateTime = toLocalDateTimeExclusive(to);
+        LocalDateTime toDateTime = toLocalDateTime(to);
         List<Issue> issues = issueRepository.findForExport(scope.departmentId(), fromDateTime, toDateTime);
+        validateExportRowCount(issues.size());
         Set<Long> resolvedIssueIds = issues.isEmpty()
                 ? Set.of()
                 : operationalDecisionRepository.findResolvedIssueIds(
@@ -251,6 +259,7 @@ public class ReportingExportService {
         validateExportDateWindow(from, to);
         ExportScope scope = authorizationService.resolveScope(userId);
         List<WorkOrder> workOrders = workOrderRepository.findForExport(scope.departmentId(), from, to);
+        validateExportRowCount(workOrders.size());
         Map<Long, String> assigneeNames = userNameLookup.resolveNames(workOrders.stream()
                 .map(WorkOrder::getAssignedToUserId)
                 .collect(Collectors.toSet()));
@@ -277,6 +286,7 @@ public class ReportingExportService {
         ExportScope scope = authorizationService.resolveScope(userId);
         List<PreventiveExecutionCandidate> candidates = preventiveExecutionCandidateRepository.findForExport(
                 scope.departmentId(), from, to);
+        validateExportRowCount(candidates.size());
         List<String> headers = List.of(
                 "Candidate ID", "Plan Code", "Asset Name", "Department", "Status", "Target Action",
                 "Trigger Type", "Evaluated At", "Decision Date", "Created Inspection ID");
@@ -360,11 +370,10 @@ public class ReportingExportService {
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneOffset.UTC);
     }
 
-    private static LocalDateTime toLocalDateTimeExclusive(Long epochMillis) {
-        if (epochMillis == null) {
-            return null;
+    private void validateExportRowCount(int rowCount) {
+        if (rowCount > exportProperties.getMaxRows()) {
+            throw new BusinessValidationException(EXPORT_ROW_LIMIT_EXCEEDED_MESSAGE);
         }
-        return LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneOffset.UTC);
     }
 
     static void validateExportDateWindow(Long from, Long to) {

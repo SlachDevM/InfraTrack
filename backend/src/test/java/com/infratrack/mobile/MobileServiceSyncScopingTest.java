@@ -12,7 +12,6 @@ import com.infratrack.inspectiontemplate.InspectionTemplateQuestionChoiceReposit
 import com.infratrack.inspectiontemplate.InspectionTemplateQuestionRepository;
 import com.infratrack.issue.IssueRepository;
 import com.infratrack.maintenanceactivity.MaintenanceActivityRepository;
-import com.infratrack.operationaldecision.OperationalDecisionRepository;
 import com.infratrack.operationaldocument.OperationalDocumentService;
 import com.infratrack.organization.policy.visibility.InspectionVisibilityPolicyService;
 import com.infratrack.preventivemaintenance.PreventiveMaintenancePlanRepository;
@@ -69,9 +68,6 @@ class MobileServiceSyncScopingTest {
     private IssueRepository issueRepository;
 
     @Mock
-    private OperationalDecisionRepository operationalDecisionRepository;
-
-    @Mock
     private DelegatedAuthorityService delegatedAuthorityService;
 
     @Mock
@@ -96,7 +92,6 @@ class MobileServiceSyncScopingTest {
                 inspectionAnswerRepository,
                 checklistLoader,
                 issueRepository,
-                operationalDecisionRepository,
                 workOrderRepository,
                 maintenanceActivityRepository,
                 preventiveMaintenancePlanRepository,

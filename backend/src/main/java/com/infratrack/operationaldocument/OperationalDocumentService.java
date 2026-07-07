@@ -8,7 +8,6 @@ import com.infratrack.operationaldocument.dto.OperationalDocumentEligibleOwnerRe
 import com.infratrack.operationaldocument.dto.OperationalDocumentResponse;
 import com.infratrack.operationaldocument.dto.OperationalDocumentSummaryResponse;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
@@ -21,7 +20,10 @@ import org.springframework.web.multipart.MultipartFile;
 import com.infratrack.asset.Asset;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Uploads, lists and downloads operational documents linked to assets (UC-012).
@@ -131,21 +133,14 @@ public class OperationalDocumentService {
         if (user.getRole() != null && (user.getRole().isFieldEmployee() || user.getRole().isContractor())) {
             authorizationService.requireAssetDepartmentDownloadAuthorized(user, asset);
 
-            Page<OperationalDocument> page = operationalDocumentRepository
-                    .findByAssetIdOrderByUploadedAtDesc(assetId, pageable);
-
-            List<OperationalDocumentSummaryResponse> authorized =
-                    page.getContent().stream()
-                            .filter(document -> canViewDocumentMetadata(user, asset, document))
-                            .map(OperationalDocumentSummaryResponse::from)
-                            .toList();
-
-            if (authorized.isEmpty()) {
+            Page<OperationalDocument> page = operationalDocumentRepository.findVisibleToFieldUser(
+                    assetId, user.getId(), pageable);
+            if (page.getTotalElements() == 0) {
                 throw new ForbiddenOperationException(
                         OperationalEvidenceMessages.UNAUTHORIZED_DOWNLOAD_OPERATIONAL_EVIDENCE_CONTEXT);
             }
 
-            return new PageImpl<>(authorized, pageable, authorized.size());
+            return page.map(OperationalDocumentSummaryResponse::from);
         }
 
         throw new ForbiddenOperationException(OperationalEvidenceMessages.UNAUTHORIZED_DOWNLOAD_OPERATIONAL_EVIDENCE);
@@ -159,6 +154,11 @@ public class OperationalDocumentService {
     @Transactional(readOnly = true)
     public List<OperationalDocument> listVisibleAssetOwnedDocuments(Asset asset, Long userId) {
         User user = userService.getById(userId);
+        return listVisibleAssetOwnedDocuments(user, asset);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OperationalDocument> listVisibleAssetOwnedDocuments(User user, Asset asset) {
         List<OperationalDocument> documents = operationalDocumentRepository
                 .findByAssetIdAndOwnerTypeOrderByUploadedAtDesc(asset.getId(), OperationalDocumentOwnerType.ASSET);
 
@@ -178,17 +178,46 @@ public class OperationalDocumentService {
         return List.of();
     }
 
-    private boolean canViewDocumentMetadata(User user, Asset asset, OperationalDocument document) {
-        try {
-            OperationalDocumentOwnerContext ownerContext = ownerResolver.resolveForAsset(
-                    asset,
-                    document.getOwnerType(),
-                    document.getOwnerId());
-            authorizationService.requireDownloadAuthorized(user, ownerContext);
-            return true;
-        } catch (ForbiddenOperationException e) {
-            return false;
+    @Transactional(readOnly = true)
+    public Map<Long, List<OperationalDocument>> listVisibleAssetOwnedDocumentsForAssets(
+            User user, Collection<Asset> assets) {
+        if (assets == null || assets.isEmpty()) {
+            return Map.of();
         }
+
+        List<Asset> authorizedAssets = assets.stream()
+                .filter(asset -> isAssetOwnedDocumentVisible(user, asset))
+                .toList();
+        if (authorizedAssets.isEmpty()) {
+            return Map.of();
+        }
+
+        List<Long> assetIds = authorizedAssets.stream().map(Asset::getId).toList();
+        return operationalDocumentRepository
+                .findByAssetIdInAndOwnerTypeOrderByUploadedAtDesc(assetIds, OperationalDocumentOwnerType.ASSET)
+                .stream()
+                .collect(Collectors.groupingBy(document -> document.getAsset().getId()));
+    }
+
+    private boolean isAssetOwnedDocumentVisible(User user, Asset asset) {
+        if (user.getRole() != null && user.getRole().isAdministrator()) {
+            return true;
+        }
+
+        if (user.getRole() != null
+                && (user.getRole().isManager()
+                || user.getRole().isOperationalCoordinator()
+                || user.getRole().isFieldEmployee()
+                || user.getRole().isContractor())) {
+            try {
+                authorizationService.requireAssetDepartmentDownloadAuthorized(user, asset);
+                return true;
+            } catch (ForbiddenOperationException ex) {
+                return false;
+            }
+        }
+
+        return false;
     }
 
     @Transactional(readOnly = true)

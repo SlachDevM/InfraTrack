@@ -15,6 +15,9 @@ public final class XlsxExportWriter {
 
     private static final int EXCEL_SHEET_NAME_MAX_LENGTH = 31;
 
+    static final int AUTO_SIZE_MAX_ROWS = 5_000;
+    static final int DEFAULT_COLUMN_WIDTH = 15 * 256;
+
     private XlsxExportWriter() {
     }
 
@@ -48,8 +51,14 @@ public final class XlsxExportWriter {
             }
 
             sheet.createFreezePane(0, 1);
-            for (int columnIndex = 0; columnIndex < headers.size(); columnIndex++) {
-                sheet.autoSizeColumn(columnIndex);
+            if (rows.size() <= AUTO_SIZE_MAX_ROWS) {
+                for (int columnIndex = 0; columnIndex < headers.size(); columnIndex++) {
+                    sheet.autoSizeColumn(columnIndex);
+                }
+            } else {
+                for (int columnIndex = 0; columnIndex < headers.size(); columnIndex++) {
+                    sheet.setColumnWidth(columnIndex, DEFAULT_COLUMN_WIDTH);
+                }
             }
 
             workbook.write(outputStream);

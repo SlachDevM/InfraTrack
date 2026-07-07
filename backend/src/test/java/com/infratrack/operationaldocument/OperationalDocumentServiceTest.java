@@ -52,6 +52,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -229,13 +230,13 @@ class OperationalDocumentServiceTest {
         when(userService.getById(20L)).thenReturn(fieldEmployee);
         when(assetRepository.existsById(5L)).thenReturn(true);
         when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
-        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
-        when(operationalDocumentRepository.findByAssetIdOrderByUploadedAtDesc(5L, pageable))
+        when(operationalDocumentRepository.findVisibleToFieldUser(5L, 20L, pageable))
                 .thenReturn(new PageImpl<>(java.util.List.of(inspectionDocument), pageable, 1));
 
         Page<?> page = operationalDocumentService.listDocuments(5L, pageable, 20L);
 
         assertThat(page.getContent()).hasSize(1);
+        assertThat(page.getTotalElements()).isEqualTo(1);
     }
 
     @Test
@@ -365,8 +366,8 @@ class OperationalDocumentServiceTest {
         when(userService.getById(20L)).thenReturn(fieldEmployee);
         when(assetRepository.existsById(5L)).thenReturn(true);
         when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
-        when(operationalDocumentRepository.findByAssetIdOrderByUploadedAtDesc(5L, pageable))
-                .thenReturn(new PageImpl<>(java.util.List.of(assetDocument), pageable, 1));
+        when(operationalDocumentRepository.findVisibleToFieldUser(5L, 20L, pageable))
+                .thenReturn(new PageImpl<>(java.util.List.of(), pageable, 0));
 
         assertThatThrownBy(() -> operationalDocumentService.listDocuments(5L, pageable, 20L))
                 .isInstanceOf(ForbiddenOperationException.class)
@@ -379,15 +380,11 @@ class OperationalDocumentServiceTest {
         User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
         Pageable pageable = PageRequest.of(0, 20);
 
-        Inspection inspection = inspection(100L, asset, 999L);
-        OperationalDocument inspectionDocument = inspectionDocument(201L, asset, 100L);
-
         when(userService.getById(20L)).thenReturn(fieldEmployee);
         when(assetRepository.existsById(5L)).thenReturn(true);
         when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
-        when(inspectionRepository.findById(100L)).thenReturn(Optional.of(inspection));
-        when(operationalDocumentRepository.findByAssetIdOrderByUploadedAtDesc(5L, pageable))
-                .thenReturn(new PageImpl<>(java.util.List.of(inspectionDocument), pageable, 1));
+        when(operationalDocumentRepository.findVisibleToFieldUser(5L, 20L, pageable))
+                .thenReturn(new PageImpl<>(java.util.List.of(), pageable, 0));
 
         assertThatThrownBy(() -> operationalDocumentService.listDocuments(5L, pageable, 20L))
                 .isInstanceOf(ForbiddenOperationException.class)
@@ -406,8 +403,7 @@ class OperationalDocumentServiceTest {
         when(userService.getById(25L)).thenReturn(contractor);
         when(assetRepository.existsById(5L)).thenReturn(true);
         when(assetRepository.findById(5L)).thenReturn(Optional.of(asset));
-        when(workOrderRepository.findById(1000L)).thenReturn(Optional.of(workOrder));
-        when(operationalDocumentRepository.findByAssetIdOrderByUploadedAtDesc(5L, pageable))
+        when(operationalDocumentRepository.findVisibleToFieldUser(5L, 25L, pageable))
                 .thenReturn(new PageImpl<>(java.util.List.of(workOrderDocument), pageable, 1));
 
         Page<?> page = operationalDocumentService.listDocuments(5L, pageable, 25L);

@@ -85,6 +85,7 @@ class ReportingExportServiceTest {
                 .when(reportingPolicyService.getPolicy())
                 .thenReturn(new DefaultReportingPolicy());
         ReportingAuthorizationService authorizationService = new ReportingAuthorizationService(userService);
+        ReportingExportProperties exportProperties = new ReportingExportProperties();
         exportService = new ReportingExportService(
                 authorizationService,
                 assetRepository,
@@ -95,7 +96,8 @@ class ReportingExportServiceTest {
                 operationalDecisionRepository,
                 userNameLookup,
                 reportingPolicyService,
-                new ReportingExportMetricsRecorder(new io.micrometer.core.instrument.simple.SimpleMeterRegistry()));
+                new ReportingExportMetricsRecorder(new io.micrometer.core.instrument.simple.SimpleMeterRegistry()),
+                exportProperties);
     }
 
     @Test
@@ -447,6 +449,32 @@ class ReportingExportServiceTest {
                 .hasMessage(ReportingExportService.EXPORT_DATE_FILTERS_REQUIRED_MESSAGE);
         assertThatThrownBy(() -> ReportingExportService.validateExportDateWindow(validFrom(), null))
                 .hasMessage(ReportingExportService.EXPORT_DATE_FILTERS_REQUIRED_MESSAGE);
+    }
+
+    @Test
+    void exportAssets_rejectsWhenRowCountExceedsConfiguredLimit() {
+        ReportingExportProperties properties = new ReportingExportProperties();
+        properties.setMaxRows(1);
+        ReportingExportService limitedExportService = new ReportingExportService(
+                new ReportingAuthorizationService(userService),
+                assetRepository,
+                inspectionRepository,
+                issueRepository,
+                workOrderRepository,
+                preventiveExecutionCandidateRepository,
+                operationalDecisionRepository,
+                userNameLookup,
+                reportingPolicyService,
+                new ReportingExportMetricsRecorder(new io.micrometer.core.instrument.simple.SimpleMeterRegistry()),
+                properties);
+
+        when(userService.getById(1L)).thenReturn(admin());
+        when(assetRepository.findForExport(isNull(), eq(validFrom()), eq(validTo())))
+                .thenReturn(List.of(parksAsset(), parksAsset()));
+
+        assertThatThrownBy(() -> limitedExportService.exportAssets(1L, validFrom(), validTo()))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage(ReportingExportService.EXPORT_ROW_LIMIT_EXCEEDED_MESSAGE);
     }
 
     private static Stream<Arguments> missingDateFilterDomainExports() {

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -48,6 +49,9 @@ public interface InspectionRepository extends JpaRepository<Inspection, Long> {
 
     @EntityGraph(attributePaths = {"asset", "asset.assetCategory", "inspectionTemplate"})
     List<Inspection> findByAsset_IdAndStatus(Long assetId, InspectionStatus status);
+
+    @EntityGraph(attributePaths = {"asset", "asset.assetCategory", "inspectionTemplate"})
+    List<Inspection> findByAsset_IdInAndStatus(Collection<Long> assetIds, InspectionStatus status);
 
     @EntityGraph(attributePaths = {"asset", "asset.department", "inspectionTemplate"})
     Optional<Inspection> findWithEvaluationContextById(Long id);

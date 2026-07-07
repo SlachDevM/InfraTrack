@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,6 +27,15 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
 
     @EntityGraph(attributePaths = {"asset", "asset.department", "inspection", "sourceCompletionReview"})
     List<Issue> findAllByAsset_IdOrderByRecordedAtDesc(Long assetId);
+
+    @EntityGraph(attributePaths = {"asset", "asset.department", "inspection", "sourceCompletionReview"})
+    @Query("""
+            SELECT i FROM Issue i
+            WHERE i.asset.id IN :assetIds
+              AND NOT EXISTS (SELECT 1 FROM OperationalDecision od WHERE od.issue.id = i.id)
+            ORDER BY i.asset.id, i.recordedAt DESC
+            """)
+    List<Issue> findOpenByAssetIdIn(@Param("assetIds") Collection<Long> assetIds);
 
     @EntityGraph(attributePaths = {"asset", "asset.department", "inspection", "sourceCompletionReview"})
     @Query("""
@@ -58,7 +68,7 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
             SELECT i FROM Issue i
             WHERE (:departmentId IS NULL OR i.asset.department.id = :departmentId)
               AND (:from IS NULL OR i.recordedAt >= :from)
-              AND (:to IS NULL OR i.recordedAt < :to)
+              AND (:to IS NULL OR i.recordedAt <= :to)
             ORDER BY i.recordedAt DESC
             """)
     List<Issue> findForExport(
