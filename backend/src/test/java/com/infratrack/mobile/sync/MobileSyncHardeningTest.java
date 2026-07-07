@@ -56,6 +56,9 @@ class MobileSyncHardeningTest {
     @Mock
     private InspectionSyncDeltaService inspectionSyncDeltaService;
 
+    @Mock
+    private WorkOrderSyncDeltaService workOrderSyncDeltaService;
+
     private SimpleMeterRegistry meterRegistry;
     private MobileSyncService mobileSyncService;
     private ListAppender<ILoggingEvent> logAppender;
@@ -76,6 +79,7 @@ class MobileSyncHardeningTest {
                         List.of(handler),
                         SyncTestIdempotencySupport.passthroughService(clock)),
                 inspectionSyncDeltaService,
+                workOrderSyncDeltaService,
                 new SyncMetricsRecorder(meterRegistry));
 
         Logger logger = (Logger) LoggerFactory.getLogger(MobileSyncService.class);
@@ -85,10 +89,10 @@ class MobileSyncHardeningTest {
 
         User fieldUser = user();
         lenient().when(authorizationService.requireMobileUser(FIELD_USER_ID)).thenReturn(fieldUser);
-        lenient().when(inspectionSyncDeltaService.build(any(User.class), any(), any()))
-                .thenReturn(new InspectionSyncDeltaService.SyncDeltaBuildResult(
-                        SyncDeltaResponse.empty(),
-                        List.of()));
+        lenient().when(inspectionSyncDeltaService.buildDeltaRecords(any(User.class), any(), any()))
+                .thenReturn(List.of());
+        lenient().when(workOrderSyncDeltaService.buildDeltaRecords(any(User.class), any(), any()))
+                .thenReturn(List.of());
     }
 
     @AfterEach
@@ -108,7 +112,8 @@ class MobileSyncHardeningTest {
                 .isInstanceOf(BusinessValidationException.class)
                 .hasMessage(SyncLimits.BATCH_LIMIT_MESSAGE);
 
-        verify(inspectionSyncDeltaService, never()).build(any(User.class), any());
+        verify(inspectionSyncDeltaService, never()).buildDeltaRecords(any(User.class), any(), any());
+        verify(workOrderSyncDeltaService, never()).buildDeltaRecords(any(User.class), any(), any());
         assertThat(meterRegistry.get("mobile.sync.requests").counter().count()).isEqualTo(0.0);
     }
 
@@ -138,10 +143,10 @@ class MobileSyncHardeningTest {
         when(inspectionService.saveInspectionProgress(eq(123L), any(), eq(FIELD_USER_ID)))
                 .thenReturn(new InspectionResponse());
 
-        SyncDeltaResponse delta = SyncDeltaResponse.empty();
-        delta.setInspections(List.of());
-        when(inspectionSyncDeltaService.build(any(User.class), any(), any()))
-                .thenReturn(new InspectionSyncDeltaService.SyncDeltaBuildResult(delta, List.of()));
+        when(inspectionSyncDeltaService.buildDeltaRecords(any(User.class), any(), any()))
+                .thenReturn(List.of());
+        when(workOrderSyncDeltaService.buildDeltaRecords(any(User.class), any(), any()))
+                .thenReturn(List.of());
 
         SyncRequest request = validRequest();
         request.setPendingOperations(List.of(progressOperation("op-1")));
@@ -159,6 +164,7 @@ class MobileSyncHardeningTest {
                         && event.getFormattedMessage().contains("operationCount=1")
                         && event.getFormattedMessage().contains("accepted=1")
                         && event.getFormattedMessage().contains("duplicateOperations=0")
+                        && event.getFormattedMessage().contains("deltaWorkOrderCount=0")
                         && event.getFormattedMessage().contains("requiresFullSync=false"));
     }
 

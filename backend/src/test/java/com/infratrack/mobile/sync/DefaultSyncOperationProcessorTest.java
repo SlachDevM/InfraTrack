@@ -9,8 +9,10 @@ import com.infratrack.inspection.dto.InspectionResponse;
 import com.infratrack.mobile.sync.dto.PendingOperationRequest;
 import com.infratrack.inspection.InspectionStatus;
 import com.infratrack.mobile.sync.dto.SyncConflictType;
-import com.infratrack.mobile.sync.dto.SyncResolutionHint;
 import com.infratrack.mobile.sync.dto.SyncOperationStatus;
+import com.infratrack.mobile.sync.dto.SyncResolutionHint;
+import com.infratrack.workorder.WorkOrderService;
+import com.infratrack.workorder.dto.WorkOrderResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,17 +41,24 @@ class DefaultSyncOperationProcessorTest {
     @Mock
     private InspectionService inspectionService;
 
+    @Mock
+    private WorkOrderService workOrderService;
+
     private DefaultSyncOperationProcessor processor;
 
     @BeforeEach
     void setUp() {
         Clock clock = Clock.fixed(FIXED_INSTANT, ZoneOffset.UTC);
-        InspectionProgressSyncOperationHandler handler = new InspectionProgressSyncOperationHandler(
+        InspectionProgressSyncOperationHandler inspectionHandler = new InspectionProgressSyncOperationHandler(
                 inspectionService,
                 new ObjectMapper(),
                 clock);
+        WorkOrderProgressSyncOperationHandler workOrderHandler = new WorkOrderProgressSyncOperationHandler(
+                workOrderService,
+                new ObjectMapper(),
+                clock);
         processor = new DefaultSyncOperationProcessor(
-                List.of(handler),
+                List.of(inspectionHandler, workOrderHandler),
                 SyncTestIdempotencySupport.passthroughService(clock));
     }
 
@@ -140,6 +149,20 @@ class DefaultSyncOperationProcessorTest {
     }
 
     @Test
+    void process_saveWorkOrderProgress_returnsAccepted() {
+        when(workOrderService.saveWorkOrderProgress(eq(456L), org.mockito.ArgumentMatchers.any(), eq(USER_ID)))
+                .thenReturn(new WorkOrderResponse());
+
+        PendingOperationRequest operation = workOrderProgressOperation("op-wo-1", 456L);
+        SyncOperationBatchResult batch = processor.process(USER_ID, List.of(operation));
+
+        assertThat(batch.operations()).hasSize(1);
+        assertThat(batch.operations().get(0).getStatus()).isEqualTo(SyncOperationStatus.ACCEPTED);
+        assertThat(batch.conflicts()).isEmpty();
+        verify(workOrderService).saveWorkOrderProgress(eq(456L), org.mockito.ArgumentMatchers.any(), eq(USER_ID));
+    }
+
+    @Test
     void process_oversizedPayload_returnsRejected() {
         PendingOperationRequest operation = progressOperation("op-large", 123L);
         operation.setPayload(oversizedPayload());
@@ -207,6 +230,16 @@ class DefaultSyncOperationProcessorTest {
         operation.setEntityId(inspectionId);
         operation.setOperationType("SAVE_INSPECTION_PROGRESS");
         operation.setPayload("{\"answers\":[]}");
+        return operation;
+    }
+
+    private PendingOperationRequest workOrderProgressOperation(String operationId, Long workOrderId) {
+        PendingOperationRequest operation = new PendingOperationRequest();
+        operation.setOperationId(operationId);
+        operation.setEntityType("WORK_ORDER");
+        operation.setEntityId(workOrderId);
+        operation.setOperationType("SAVE_WORK_ORDER_PROGRESS");
+        operation.setPayload("{\"completionNotes\":\"Draft notes.\"}");
         return operation;
     }
 }

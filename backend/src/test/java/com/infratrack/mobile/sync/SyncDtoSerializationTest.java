@@ -9,6 +9,10 @@ import com.infratrack.mobile.sync.dto.SyncConflictServerState;
 import com.infratrack.mobile.sync.dto.SyncConflictType;
 import com.infratrack.mobile.sync.dto.SyncResolutionHint;
 import com.infratrack.mobile.sync.dto.SyncDeltaResponse;
+import com.infratrack.mobile.sync.dto.SyncWorkOrderDeltaResponse;
+import com.infratrack.workorder.WorkOrderPriority;
+import com.infratrack.workorder.WorkOrderStatus;
+import com.infratrack.workorder.WorkType;
 import com.infratrack.mobile.sync.dto.SyncOperationResponse;
 import com.infratrack.mobile.sync.dto.SyncOperationStatus;
 import com.infratrack.mobile.sync.dto.SyncRequest;
@@ -137,7 +141,7 @@ class SyncDtoSerializationTest {
         SyncConflictServerState serverState = new SyncConflictServerState();
         serverState.setEntityId(42L);
         serverState.setEntityType("INSPECTION");
-        serverState.setStatus(com.infratrack.inspection.InspectionStatus.COMPLETED);
+        serverState.setStatus(com.infratrack.inspection.InspectionStatus.COMPLETED.name());
 
         SyncConflictResponse conflict = new SyncConflictResponse();
         conflict.setOperationId("op-1");
@@ -160,6 +164,41 @@ class SyncDtoSerializationTest {
         assertThat(roundTripped.getResolutionHint()).isEqualTo(SyncResolutionHint.SERVER_WINS);
         assertThat(roundTripped.getServerState().getEntityId()).isEqualTo(42L);
         assertThat(roundTripped.getClientState().getPayload().get("answers").isArray()).isTrue();
+    }
+
+    @Test
+    void syncWorkOrderDeltaResponse_serializesExpectedFields() throws Exception {
+        SyncWorkOrderDeltaResponse workOrder = new SyncWorkOrderDeltaResponse();
+        workOrder.setWorkOrderId(500L);
+        workOrder.setStatus(WorkOrderStatus.ASSIGNED);
+        workOrder.setPriority(WorkOrderPriority.HIGH);
+        workOrder.setWorkType(WorkType.INTERNAL_MAINTENANCE);
+        workOrder.setDescription("Fix swing");
+        workOrder.setAssetId(50L);
+        workOrder.setAssetName("Central Playground");
+        workOrder.setAssetCategoryName("Playground");
+        workOrder.setAssignedTo(20L);
+        workOrder.setAssignedToName("Field User");
+        workOrder.setCreatedAt(1_751_700_000_000L);
+        workOrder.setUpdatedAt(1_751_700_100_000L);
+        workOrder.setDraftCompletionNotes("Offline draft");
+        workOrder.setCompletionEligible(true);
+        workOrder.setOperationalDecisionId(200L);
+
+        SyncDeltaResponse delta = SyncDeltaResponse.empty();
+        delta.setWorkOrders(List.of(workOrder));
+
+        String json = objectMapper.writeValueAsString(delta);
+
+        assertThat(json).contains("\"workOrderId\":500");
+        assertThat(json).contains("\"draftCompletionNotes\":\"Offline draft\"");
+        assertThat(json).contains("\"completionEligible\":true");
+        assertThat(json).contains("\"operationalDecisionId\":200");
+
+        SyncDeltaResponse roundTripped = objectMapper.readValue(json, SyncDeltaResponse.class);
+        assertThat(roundTripped.getWorkOrders()).hasSize(1);
+        assertThat(roundTripped.getWorkOrders().get(0).getWorkOrderId()).isEqualTo(500L);
+        assertThat(roundTripped.getWorkOrders().get(0).getDraftCompletionNotes()).isEqualTo("Offline draft");
     }
 
     @Test

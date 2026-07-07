@@ -16,8 +16,8 @@ public class SyncDeltaResponse {
     @Schema(description = "Changed or assigned inspection sync records (M5.4-BE+)")
     private List<SyncInspectionDeltaResponse> inspections = new ArrayList<>();
 
-    @Schema(description = "Changed or assigned work order summaries (future)")
-    private List<Object> workOrders = new ArrayList<>();
+    @Schema(description = "Changed or assigned work order sync records (M6.1-BE2+)")
+    private List<SyncWorkOrderDeltaResponse> workOrders = new ArrayList<>();
 
     @Schema(description = "Changed document metadata (future)")
     private List<Object> documents = new ArrayList<>();
@@ -48,11 +48,11 @@ public class SyncDeltaResponse {
         this.inspections = inspections != null ? inspections : new ArrayList<>();
     }
 
-    public List<Object> getWorkOrders() {
+    public List<SyncWorkOrderDeltaResponse> getWorkOrders() {
         return workOrders;
     }
 
-    public void setWorkOrders(List<Object> workOrders) {
+    public void setWorkOrders(List<SyncWorkOrderDeltaResponse> workOrders) {
         this.workOrders = workOrders != null ? workOrders : new ArrayList<>();
     }
 

@@ -194,7 +194,29 @@ The KPI API is designed for reuse by the React web client, future Android applic
 
 ---
 
-## ⬜ Version 2.6.0 — Inventory & Spare Parts
+## ◐ Version 2.6.0 — Work Order Offline
+
+**Objective:** Extend the V2.5 mobile sync engine to support offline work order draft progress.
+
+**Business value:** Field workers can queue maintenance notes while offline; server remains authoritative for completion.
+
+**Status:** In progress — M6.1-BE1 delivered.
+
+**Delivered capabilities:**
+
+- **Sprint M6.1-BE1 (validated):** `SAVE_WORK_ORDER_PROGRESS` on `WORK_ORDER` through existing `POST /api/mobile/sync`. Payload: `SaveWorkOrderProgressRequest` (`completionNotes` draft only, max 4000 characters). Stored on `work_orders.draft_completion_notes`. Reuses V2.5 idempotency store, conflict detection/enrichment, and metrics. No Android or React changes.
+- **Sprint M6.1-BE2 (validated):** Work order delta download — `delta.workOrders` populated with scoped `SyncWorkOrderDeltaResponse` records (including `draftCompletionNotes` and `completionEligible`). Same sync token semantics as inspections: null/invalid token → full delta + optional `FULL_SYNC_REQUIRED`; valid token → SQL filter `updatedAt >= issuedAt` with watermark upper bound. Reuses existing `POST /api/mobile/sync`; no new endpoint. Offline completion sync (`COMPLETE_MAINTENANCE`) remains future work.
+
+**Planned within this version family (not yet delivered):**
+
+- Queued maintenance completion sync
+- Extended conflict resolution scope for work orders
+
+**Reference:** [BDR-005](../03-architecture/bdr-005-offline-synchronization-architecture.md), [Mobile API](../04-api/mobile-api.md)
+
+---
+
+## ⬜ Version 2.7.0 — Inventory & Spare Parts
 
 **Objective:** Parts and materials associated with maintenance work.
 
@@ -204,7 +226,7 @@ The KPI API is designed for reuse by the React web client, future Android applic
 
 ---
 
-## ⬜ Version 2.7.0 — Cost Management
+## ⬜ Version 2.8.0 — Cost Management
 
 **Objective:** Financial visibility on maintenance activity.
 
@@ -214,7 +236,7 @@ The KPI API is designed for reuse by the React web client, future Android applic
 
 ---
 
-## ⬜ Version 2.8.0 — Multi-site Management
+## ⬜ Version 2.9.0 — Multi-site Management
 
 **Objective:** Support councils operating multiple sites or regions under one tenant.
 
@@ -224,7 +246,7 @@ The KPI API is designed for reuse by the React web client, future Android applic
 
 ---
 
-## ⬜ Version 2.9.0 — Public API & Integrations
+## ⬜ Version 2.10.0 — Public API & Integrations
 
 **Objective:** Documented integration surface for external systems.
 

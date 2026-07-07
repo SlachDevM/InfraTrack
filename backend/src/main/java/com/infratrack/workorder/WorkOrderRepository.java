@@ -55,6 +55,62 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, Long> {
     @EntityGraph(attributePaths = {"asset", "asset.department", "operationalDecision"})
     List<WorkOrder> findByStatus(WorkOrderStatus status);
 
+    @EntityGraph(attributePaths = {
+            "asset", "asset.department", "asset.assetCategory", "operationalDecision"})
+    List<WorkOrder> findByStatusAndUpdatedAtGreaterThanEqual(WorkOrderStatus status, Long updatedAt);
+
+    @EntityGraph(attributePaths = {
+            "asset", "asset.department", "asset.assetCategory", "operationalDecision"})
+    List<WorkOrder> findByStatusAndUpdatedAtLessThanEqual(WorkOrderStatus status, Long updatedAt);
+
+    @EntityGraph(attributePaths = {
+            "asset", "asset.department", "asset.assetCategory", "operationalDecision"})
+    List<WorkOrder> findByStatusAndUpdatedAtGreaterThanEqualAndUpdatedAtLessThanEqual(
+            WorkOrderStatus status,
+            Long updatedAtSince,
+            Long updatedAtUntil);
+
+    @EntityGraph(attributePaths = {
+            "asset", "asset.department", "asset.assetCategory", "operationalDecision"})
+    List<WorkOrder> findByAsset_Department_IdAndStatus(Long departmentId, WorkOrderStatus status);
+
+    @EntityGraph(attributePaths = {
+            "asset", "asset.department", "asset.assetCategory", "operationalDecision"})
+    List<WorkOrder> findByAsset_Department_IdAndStatusAndUpdatedAtGreaterThanEqual(
+            Long departmentId,
+            WorkOrderStatus status,
+            Long updatedAt);
+
+    @EntityGraph(attributePaths = {
+            "asset", "asset.department", "asset.assetCategory", "operationalDecision"})
+    List<WorkOrder> findByAsset_Department_IdAndStatusAndUpdatedAtLessThanEqual(
+            Long departmentId,
+            WorkOrderStatus status,
+            Long updatedAt);
+
+    @EntityGraph(attributePaths = {
+            "asset", "asset.department", "asset.assetCategory", "operationalDecision"})
+    List<WorkOrder> findByAsset_Department_IdAndStatusAndUpdatedAtGreaterThanEqualAndUpdatedAtLessThanEqual(
+            Long departmentId,
+            WorkOrderStatus status,
+            Long updatedAtSince,
+            Long updatedAtUntil);
+
+    @EntityGraph(attributePaths = {
+            "asset", "asset.department", "asset.assetCategory", "operationalDecision"})
+    List<WorkOrder> findByAssignedToUserIdAndUpdatedAtGreaterThanEqual(Long assignedToUserId, Long updatedAt);
+
+    @EntityGraph(attributePaths = {
+            "asset", "asset.department", "asset.assetCategory", "operationalDecision"})
+    List<WorkOrder> findByAssignedToUserIdAndUpdatedAtLessThanEqual(Long assignedToUserId, Long updatedAt);
+
+    @EntityGraph(attributePaths = {
+            "asset", "asset.department", "asset.assetCategory", "operationalDecision"})
+    List<WorkOrder> findByAssignedToUserIdAndUpdatedAtGreaterThanEqualAndUpdatedAtLessThanEqual(
+            Long assignedToUserId,
+            Long updatedAtSince,
+            Long updatedAtUntil);
+
     long countByAssignedToUserIdAndStatus(Long assignedToUserId, WorkOrderStatus status);
 
     @EntityGraph(attributePaths = {"asset", "asset.department"})

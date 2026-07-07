@@ -1531,6 +1531,7 @@ Conflict detection, Audit                  ↓
         ↓                            Sync on reconnect
 POST /api/mobile/sync (M5.2-BE1/BE2)  ←── Protocol handshake (token + empty delta)
 POST /api/mobile/sync (M5.4-BE)       ←── Download: delta.inspections
+POST /api/mobile/sync (M6.1-BE2)      ←── Download: delta.workOrders
 POST /api/mobile/sync (future)    ←── Idempotent upload processing
 GET  /api/mobile/sync/* (future)  ──→ Incremental download
 ```
@@ -1564,6 +1565,10 @@ GET  /api/mobile/sync/* (future)  ──→ Incremental download
 **V2.5-STAB-2 (delivered):** Sync scalability prep — incremental `delta.inspections` filtering moved to SQL (`updatedAt >= syncToken.issuedAt` with unchanged role scoping). Inspection answers batch-loaded in one query per sync. Indexes: `idx_inspections_assigned_to_user_id`, `idx_inspections_updated_at` (V30). No API, Android, or sync protocol changes.
 
 **V2.5-STAB-3 (delivered):** Production observability — authentication metrics (`mobile.auth.jwt.*`), extended sync metrics (delta/batch distributions, full-sync/invalid-token counters, protocol version tag), reporting export metrics, mobile endpoint timers, enriched sync structured logging. No API, behaviour, or schema changes.
+
+**M6.1-BE1 (delivered — V2.6 Work Order Offline begins):** First work order sync upload — `SAVE_WORK_ORDER_PROGRESS` on `WORK_ORDER` via existing `POST /api/mobile/sync`. Payload `SaveWorkOrderProgressRequest` with optional `completionNotes` (draft only; persisted to `work_orders.draft_completion_notes`). Delegates to `WorkOrderService.saveWorkOrderProgress` with assigned-worker authorization and `ASSIGNED`-only guards. Reuses V2.5 atomic idempotency, conflict classification/enrichment, and sync metrics. No `COMPLETE_MAINTENANCE`, no new endpoint, no Android/React changes.
+
+**M6.1-BE2 (delivered):** Work order delta download — `delta.workOrders` populated with scoped `SyncWorkOrderDeltaResponse` records. Mirrors inspection delta design: shared sync token resolution (`SyncDeltaTokenSupport`), role scoping via `MobileService.listScopedWorkOrdersForSync`, SQL `updatedAt` filtering, watermark upper bound after operation processing. Fields include `workOrderId`, `description`, `priority`, `status`, `workType`, asset summary, assignee, `createdAt`/`updatedAt`, `draftCompletionNotes`, `completionEligible`, `operationalDecisionId`. Accepted `SAVE_WORK_ORDER_PROGRESS` operations are reflected in the same response delta. Index `idx_work_orders_updated_at` (V34). No offline completion, tombstones, or new endpoint.
 
 ---
 

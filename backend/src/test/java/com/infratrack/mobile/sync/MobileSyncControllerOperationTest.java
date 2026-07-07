@@ -5,6 +5,7 @@ import com.infratrack.config.SecurityConfig;
 import com.infratrack.inspection.InspectionService;
 import com.infratrack.inspection.dto.InspectionResponse;
 import com.infratrack.mobile.MobileAuthorizationService;
+import com.infratrack.workorder.WorkOrderService;
 import com.infratrack.mobile.sync.dto.SyncDeltaResponse;
 import com.infratrack.mobile.sync.dto.SyncInspectionDeltaResponse;
 import com.infratrack.observability.ObservabilityTestConfiguration;
@@ -49,7 +50,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         ProcessedSyncOperationService.class,
         MobileSyncIdempotencyConfiguration.class,
         InspectionProgressSyncOperationHandler.class,
+        WorkOrderProgressSyncOperationHandler.class,
         InspectionSyncDeltaService.class,
+        WorkOrderSyncDeltaService.class,
         SyncMetricsRecorder.class,
         ObservabilityTestConfiguration.class,
         MobileSyncControllerOperationTest.FixedClockConfig.class
@@ -77,7 +80,13 @@ class MobileSyncControllerOperationTest {
     private InspectionSyncDeltaService inspectionSyncDeltaService;
 
     @MockitoBean
+    private WorkOrderSyncDeltaService workOrderSyncDeltaService;
+
+    @MockitoBean
     private InspectionService inspectionService;
+
+    @MockitoBean
+    private WorkOrderService workOrderService;
 
     @MockitoBean
     private ProcessedSyncOperationRepository processedSyncOperationRepository;
@@ -108,8 +117,10 @@ class MobileSyncControllerOperationTest {
         deltaInspection.setId(123L);
         SyncDeltaResponse delta = SyncDeltaResponse.empty();
         delta.setInspections(java.util.List.of(deltaInspection));
-        when(inspectionSyncDeltaService.build(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
-                .thenReturn(new InspectionSyncDeltaService.SyncDeltaBuildResult(delta, java.util.List.of()));
+        when(inspectionSyncDeltaService.buildDeltaRecords(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(java.util.List.of(deltaInspection));
+        when(workOrderSyncDeltaService.buildDeltaRecords(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(java.util.List.of());
     }
 
     @Test

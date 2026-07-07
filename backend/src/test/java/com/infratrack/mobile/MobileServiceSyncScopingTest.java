@@ -20,7 +20,9 @@ import com.infratrack.user.User;
 import com.infratrack.user.UserNameLookup;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
+import com.infratrack.workorder.WorkOrder;
 import com.infratrack.workorder.WorkOrderRepository;
+import com.infratrack.workorder.WorkOrderStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -232,6 +234,83 @@ class MobileServiceSyncScopingTest {
 
         assertThat(result).hasSize(1);
         verify(inspectionRepository).findByAssignedToUserIdAndUpdatedAtGreaterThanEqual(30L, UPDATED_SINCE);
+    }
+
+    @Test
+    void listScopedWorkOrdersForSync_administratorUsesAssignedStatusScope() {
+        User admin = user(1L, UserRole.ADMINISTRATOR, null);
+        WorkOrder workOrder = workOrder(100L);
+        when(userService.getById(1L)).thenReturn(admin);
+        when(workOrderRepository.findByStatus(WorkOrderStatus.ASSIGNED)).thenReturn(List.of(workOrder));
+
+        List<WorkOrder> result = mobileService.listScopedWorkOrdersForSync(admin);
+
+        assertThat(result).hasSize(1);
+        verify(workOrderRepository).findByStatus(WorkOrderStatus.ASSIGNED);
+        verify(workOrderRepository, never()).findByAssignedToUserId(20L);
+    }
+
+    @Test
+    void listScopedWorkOrdersForSync_administratorIncrementalUsesUpdatedAtFilter() {
+        User admin = user(1L, UserRole.ADMINISTRATOR, null);
+        WorkOrder workOrder = workOrder(100L);
+        when(userService.getById(1L)).thenReturn(admin);
+        when(workOrderRepository.findByStatusAndUpdatedAtGreaterThanEqual(WorkOrderStatus.ASSIGNED, UPDATED_SINCE))
+                .thenReturn(List.of(workOrder));
+
+        List<WorkOrder> result = mobileService.listScopedWorkOrdersForSync(admin, UPDATED_SINCE);
+
+        assertThat(result).hasSize(1);
+        verify(workOrderRepository).findByStatusAndUpdatedAtGreaterThanEqual(
+                WorkOrderStatus.ASSIGNED, UPDATED_SINCE);
+    }
+
+    @Test
+    void listScopedWorkOrdersForSync_managerUsesDepartmentAssignedScope() {
+        Department department = department(5L);
+        User manager = user(2L, UserRole.MANAGER, department);
+        WorkOrder workOrder = workOrder(100L);
+        when(userService.getById(2L)).thenReturn(manager);
+        when(workOrderRepository.findByAsset_Department_IdAndStatus(5L, WorkOrderStatus.ASSIGNED))
+                .thenReturn(List.of(workOrder));
+
+        List<WorkOrder> result = mobileService.listScopedWorkOrdersForSync(manager);
+
+        assertThat(result).hasSize(1);
+        verify(workOrderRepository).findByAsset_Department_IdAndStatus(5L, WorkOrderStatus.ASSIGNED);
+        verify(workOrderRepository, never()).findByAssignedToUserId(20L);
+    }
+
+    @Test
+    void listScopedWorkOrdersForSync_fieldEmployeeUsesAssignedUserScope() {
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE, department(1L));
+        WorkOrder workOrder = workOrder(100L);
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(workOrderRepository.findByAssignedToUserId(20L)).thenReturn(List.of(workOrder));
+
+        List<WorkOrder> result = mobileService.listScopedWorkOrdersForSync(fieldEmployee);
+
+        assertThat(result).hasSize(1);
+        verify(workOrderRepository).findByAssignedToUserId(20L);
+        verify(workOrderRepository, never()).findByStatus(WorkOrderStatus.ASSIGNED);
+    }
+
+    @Test
+    void listScopedWorkOrdersForSync_contractorUsesAssignedUserScope() {
+        User contractor = user(30L, UserRole.CONTRACTOR, department(1L));
+        WorkOrder workOrder = workOrder(100L);
+        when(userService.getById(30L)).thenReturn(contractor);
+        when(workOrderRepository.findByAssignedToUserIdAndUpdatedAtGreaterThanEqual(30L, UPDATED_SINCE))
+                .thenReturn(List.of(workOrder));
+
+        List<WorkOrder> result = mobileService.listScopedWorkOrdersForSync(contractor, UPDATED_SINCE);
+
+        assertThat(result).hasSize(1);
+        verify(workOrderRepository).findByAssignedToUserIdAndUpdatedAtGreaterThanEqual(30L, UPDATED_SINCE);
+    }
+
+    private WorkOrder workOrder(Long id) {
+        return org.mockito.Mockito.mock(WorkOrder.class);
     }
 
     private User user(Long id, UserRole role, Department department) {

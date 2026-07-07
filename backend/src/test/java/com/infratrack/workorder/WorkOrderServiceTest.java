@@ -24,7 +24,9 @@ import com.infratrack.operationaldecision.OperationalDecisionOutcome;
 import com.infratrack.operationaldecision.OperationalDecisionRepository;
 import com.infratrack.workorder.dto.AssignWorkOrderRequest;
 import com.infratrack.workorder.dto.CreateWorkOrderRequest;
+import com.infratrack.workorder.dto.SaveWorkOrderProgressRequest;
 import com.infratrack.workorder.dto.WorkOrderSummaryResponse;
+import com.infratrack.maintenanceactivity.MaintenanceActivityRepository;
 import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.organization.policy.approval.ApprovalPolicyService;
 import com.infratrack.organization.policy.notification.NotificationPolicyService;
@@ -75,6 +77,9 @@ class WorkOrderServiceTest {
     @Mock
     private OperationalEventNotificationService operationalEventNotificationService;
 
+    @Mock
+    private MaintenanceActivityRepository maintenanceActivityRepository;
+
     private WorkOrderService workOrderService;
 
     @BeforeEach
@@ -84,6 +89,7 @@ class WorkOrderServiceTest {
         workOrderService = new WorkOrderService(
                 workOrderRepository,
                 operationalDecisionRepository,
+                maintenanceActivityRepository,
                 authorizationService,
                 historyRecorder,
                 userService,
@@ -420,6 +426,92 @@ class WorkOrderServiceTest {
     }
 
     @Test
+    void saveWorkOrderProgress_shouldPersistDraftCompletionNotesForAssignedWorker() {
+        SaveWorkOrderProgressRequest request = new SaveWorkOrderProgressRequest();
+        request.setCompletionNotes("Replaced gasket on site.");
+        WorkOrder workOrder = assignedWorkOrder(1000L, 20L, WorkType.INTERNAL_MAINTENANCE);
+        User fieldEmployee = userInDepartment(20L, UserRole.FIELD_EMPLOYEE, 1L);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.of(workOrder));
+        when(maintenanceActivityRepository.existsByWorkOrderId(1000L)).thenReturn(false);
+        when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+
+        var response = workOrderService.saveWorkOrderProgress(1000L, request, 20L);
+
+        assertThat(response.getStatus()).isEqualTo(WorkOrderStatus.ASSIGNED);
+        assertThat(workOrder.getDraftCompletionNotes()).isEqualTo("Replaced gasket on site.");
+        verify(workOrderRepository).save(workOrder);
+    }
+
+    @Test
+    void saveWorkOrderProgress_completedWorkOrder_throwsConflict() {
+        SaveWorkOrderProgressRequest request = new SaveWorkOrderProgressRequest();
+        request.setCompletionNotes("Too late.");
+        WorkOrder workOrder = assignedWorkOrder(1000L, 20L, WorkType.INTERNAL_MAINTENANCE);
+        workOrder.complete();
+        User fieldEmployee = userInDepartment(20L, UserRole.FIELD_EMPLOYEE, 1L);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.of(workOrder));
+
+        assertThatThrownBy(() -> workOrderService.saveWorkOrderProgress(1000L, request, 20L))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Work order is no longer editable.");
+
+        verify(workOrderRepository, never()).save(any());
+    }
+
+    @Test
+    void saveWorkOrderProgress_unassignedWorker_throwsForbidden() {
+        SaveWorkOrderProgressRequest request = new SaveWorkOrderProgressRequest();
+        request.setCompletionNotes("Draft notes.");
+        WorkOrder workOrder = assignedWorkOrder(1000L, 20L, WorkType.INTERNAL_MAINTENANCE);
+        User otherWorker = userInDepartment(99L, UserRole.FIELD_EMPLOYEE, 1L);
+
+        when(userService.getById(99L)).thenReturn(otherWorker);
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.of(workOrder));
+
+        assertThatThrownBy(() -> workOrderService.saveWorkOrderProgress(1000L, request, 99L))
+                .isInstanceOf(ForbiddenOperationException.class);
+
+        verify(workOrderRepository, never()).save(any());
+    }
+
+    @Test
+    void saveWorkOrderProgress_notesTooLong_throwsBusinessValidation() {
+        SaveWorkOrderProgressRequest request = new SaveWorkOrderProgressRequest();
+        request.setCompletionNotes("x".repeat(4001));
+        WorkOrder workOrder = assignedWorkOrder(1000L, 20L, WorkType.INTERNAL_MAINTENANCE);
+        User fieldEmployee = userInDepartment(20L, UserRole.FIELD_EMPLOYEE, 1L);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.of(workOrder));
+        when(maintenanceActivityRepository.existsByWorkOrderId(1000L)).thenReturn(false);
+
+        assertThatThrownBy(() -> workOrderService.saveWorkOrderProgress(1000L, request, 20L))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Completion notes must not exceed 4000 characters");
+    }
+
+    @Test
+    void saveWorkOrderProgress_existingMaintenanceActivity_throwsConflict() {
+        SaveWorkOrderProgressRequest request = new SaveWorkOrderProgressRequest();
+        request.setCompletionNotes("Draft notes.");
+        WorkOrder workOrder = assignedWorkOrder(1000L, 20L, WorkType.INTERNAL_MAINTENANCE);
+        User fieldEmployee = userInDepartment(20L, UserRole.FIELD_EMPLOYEE, 1L);
+
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(workOrderRepository.findDetailedById(1000L)).thenReturn(Optional.of(workOrder));
+        when(maintenanceActivityRepository.existsByWorkOrderId(1000L)).thenReturn(true);
+
+        assertThatThrownBy(() -> workOrderService.saveWorkOrderProgress(1000L, request, 20L))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Work order is no longer editable.");
+    }
+
+    @Test
     void assignWorkOrder_shouldRejectContractorForInternalMaintenance() {
         AssignWorkOrderRequest request = validAssignRequest(25L);
         WorkOrder workOrder = createdWorkOrder(1000L, WorkType.INTERNAL_MAINTENANCE);
@@ -736,6 +828,12 @@ class WorkOrderServiceTest {
                 LocalDateTime.now().minusHours(1)
         );
         workOrder.setId(id);
+        return workOrder;
+    }
+
+    private WorkOrder assignedWorkOrder(Long id, Long assignedToUserId, WorkType workType) {
+        WorkOrder workOrder = createdWorkOrder(id, workType);
+        workOrder.assign(assignedToUserId, 40L, LocalDateTime.now().minusMinutes(30));
         return workOrder;
     }
 

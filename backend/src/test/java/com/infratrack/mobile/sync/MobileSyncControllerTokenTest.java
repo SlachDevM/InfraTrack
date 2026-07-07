@@ -47,6 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         MobileSyncIdempotencyConfiguration.class,
         InspectionProgressSyncOperationHandler.class,
         InspectionSyncDeltaService.class,
+        WorkOrderSyncDeltaService.class,
         SyncMetricsRecorder.class,
         ObservabilityTestConfiguration.class,
         MobileSyncControllerTokenTest.FixedClockConfig.class
@@ -66,6 +67,9 @@ class MobileSyncControllerTokenTest {
 
     @MockitoBean
     private InspectionSyncDeltaService inspectionSyncDeltaService;
+
+    @MockitoBean
+    private WorkOrderSyncDeltaService workOrderSyncDeltaService;
 
     @MockitoBean
     private InspectionService inspectionService;
@@ -100,10 +104,10 @@ class MobileSyncControllerTokenTest {
         fieldUser.setEmail("field@test.com");
         fieldUser.setRole(UserRole.FIELD_EMPLOYEE);
         when(authorizationService.requireMobileUser(FIELD_USER_ID)).thenReturn(fieldUser);
-        when(inspectionSyncDeltaService.build(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
-                .thenReturn(new InspectionSyncDeltaService.SyncDeltaBuildResult(
-                        SyncDeltaResponse.empty(),
-                        java.util.List.of()));
+        when(inspectionSyncDeltaService.buildDeltaRecords(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(java.util.List.of());
+        when(workOrderSyncDeltaService.buildDeltaRecords(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(java.util.List.of());
     }
 
     @Test

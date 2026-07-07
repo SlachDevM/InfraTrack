@@ -167,7 +167,7 @@ class InspectionProgressSyncOperationHandlerTest {
         assertThat(result.conflict().getOperationId()).isEqualTo("op-1");
         assertThat(result.conflict().getEntityId()).isEqualTo(INSPECTION_ID);
         assertThat(result.conflict().getServerState()).isNotNull();
-        assertThat(result.conflict().getServerState().getStatus()).isEqualTo(InspectionStatus.COMPLETED);
+        assertThat(result.conflict().getServerState().getStatus()).isEqualTo("COMPLETED");
         assertThat(result.conflict().getClientState().getOperationType())
                 .isEqualTo("SAVE_INSPECTION_PROGRESS");
         assertThat(result.conflict().getClientState().getPayload()).isNotNull();

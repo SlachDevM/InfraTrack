@@ -13,6 +13,7 @@ import com.infratrack.mobile.sync.dto.SyncRequest;
 import com.infratrack.mobile.sync.dto.SyncResponse;
 import com.infratrack.mobile.sync.dto.SyncWarningCode;
 import com.infratrack.mobile.sync.dto.SyncWarningResponse;
+import com.infratrack.mobile.sync.dto.SyncWorkOrderDeltaResponse;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,6 +55,9 @@ class MobileSyncServiceTest {
     @Mock
     private InspectionSyncDeltaService inspectionSyncDeltaService;
 
+    @Mock
+    private WorkOrderSyncDeltaService workOrderSyncDeltaService;
+
     private SimpleMeterRegistry meterRegistry;
 
     private MobileSyncService mobileSyncService;
@@ -74,11 +78,12 @@ class MobileSyncServiceTest {
                         List.of(handler),
                         SyncTestIdempotencySupport.passthroughService(clock)),
                 inspectionSyncDeltaService,
+                workOrderSyncDeltaService,
                 new SyncMetricsRecorder(meterRegistry));
-        lenient().when(inspectionSyncDeltaService.build(any(User.class), any(), any()))
-                .thenReturn(new InspectionSyncDeltaService.SyncDeltaBuildResult(
-                        SyncDeltaResponse.empty(),
-                        List.of()));
+        lenient().when(inspectionSyncDeltaService.buildDeltaRecords(any(User.class), any(), any()))
+                .thenReturn(List.of());
+        lenient().when(workOrderSyncDeltaService.buildDeltaRecords(any(User.class), any(), any()))
+                .thenReturn(List.of());
     }
 
     @Test
@@ -109,10 +114,8 @@ class MobileSyncServiceTest {
 
         SyncInspectionDeltaResponse deltaInspection = new SyncInspectionDeltaResponse();
         deltaInspection.setId(123L);
-        SyncDeltaResponse delta = SyncDeltaResponse.empty();
-        delta.setInspections(List.of(deltaInspection));
-        when(inspectionSyncDeltaService.build(eq(fieldUser), isNull(), eq(FIXED_INSTANT)))
-                .thenReturn(new InspectionSyncDeltaService.SyncDeltaBuildResult(delta, List.of()));
+        when(inspectionSyncDeltaService.buildDeltaRecords(eq(fieldUser), isNull(), eq(FIXED_INSTANT.toEpochMilli())))
+                .thenReturn(List.of(deltaInspection));
 
         SyncRequest request = validRequest();
         request.setPendingOperations(List.of(progressOperation()));
@@ -134,8 +137,9 @@ class MobileSyncServiceTest {
         SyncRequest request = validRequest();
         mobileSyncService.sync(FIELD_USER_ID, request);
 
-        InOrder order = inOrder(inspectionSyncDeltaService);
-        order.verify(inspectionSyncDeltaService).build(fieldUser, null, FIXED_INSTANT);
+        InOrder order = inOrder(inspectionSyncDeltaService, workOrderSyncDeltaService);
+        order.verify(inspectionSyncDeltaService).buildDeltaRecords(fieldUser, null, FIXED_INSTANT.toEpochMilli());
+        order.verify(workOrderSyncDeltaService).buildDeltaRecords(fieldUser, null, FIXED_INSTANT.toEpochMilli());
     }
 
     @Test
@@ -172,32 +176,25 @@ class MobileSyncServiceTest {
     void sync_invalidSyncToken_recordsInvalidTokenAndFullSyncMetrics() {
         User fieldUser = user(UserRole.FIELD_EMPLOYEE);
         when(authorizationService.requireMobileUser(FIELD_USER_ID)).thenReturn(fieldUser);
-        when(inspectionSyncDeltaService.build(eq(fieldUser), eq("bad-token"), eq(FIXED_INSTANT)))
-                .thenReturn(new InspectionSyncDeltaService.SyncDeltaBuildResult(
-                        SyncDeltaResponse.empty(),
-                        List.of(new SyncWarningResponse(
-                                SyncWarningCode.FULL_SYNC_REQUIRED,
-                                "Sync token is invalid; returning full inspection delta."))));
 
         SyncRequest request = validRequest();
         request.setSyncToken("bad-token");
 
-        mobileSyncService.sync(FIELD_USER_ID, request);
+        SyncResponse response = mobileSyncService.sync(FIELD_USER_ID, request);
 
+        assertThat(response.isRequiresFullSync()).isTrue();
+        assertThat(response.getWarnings()).hasSize(1);
+        assertThat(response.getWarnings().get(0).getCode()).isEqualTo(SyncWarningCode.FULL_SYNC_REQUIRED);
         assertThat(meterRegistry.get("mobile.sync.invalid_token").counter().count()).isEqualTo(1.0);
         assertThat(meterRegistry.get("mobile.sync.full_sync_required").counter().count()).isEqualTo(1.0);
+        verify(inspectionSyncDeltaService).buildDeltaRecords(fieldUser, null, FIXED_INSTANT.toEpochMilli());
+        verify(workOrderSyncDeltaService).buildDeltaRecords(fieldUser, null, FIXED_INSTANT.toEpochMilli());
     }
 
     @Test
     void sync_invalidSyncToken_setsRequiresFullSyncTrue() {
         User fieldUser = user(UserRole.FIELD_EMPLOYEE);
         when(authorizationService.requireMobileUser(FIELD_USER_ID)).thenReturn(fieldUser);
-        when(inspectionSyncDeltaService.build(eq(fieldUser), eq("bad-token"), eq(FIXED_INSTANT)))
-                .thenReturn(new InspectionSyncDeltaService.SyncDeltaBuildResult(
-                        SyncDeltaResponse.empty(),
-                        List.of(new SyncWarningResponse(
-                                SyncWarningCode.FULL_SYNC_REQUIRED,
-                                "Sync token is invalid; returning full inspection delta."))));
 
         SyncRequest request = validRequest();
         request.setSyncToken("bad-token");
@@ -206,6 +203,36 @@ class MobileSyncServiceTest {
 
         assertThat(response.isRequiresFullSync()).isTrue();
         assertThat(SyncToken.fromOpaqueValue(response.getNextSyncToken()).getIssuedAt()).isEqualTo(FIXED_INSTANT);
+    }
+
+    @Test
+    void sync_returnsWorkOrderDeltaFromService() {
+        User fieldUser = user(UserRole.FIELD_EMPLOYEE);
+        when(authorizationService.requireMobileUser(FIELD_USER_ID)).thenReturn(fieldUser);
+        SyncWorkOrderDeltaResponse workOrderDelta = new SyncWorkOrderDeltaResponse();
+        workOrderDelta.setWorkOrderId(500L);
+        workOrderDelta.setDraftCompletionNotes("Saved offline");
+        when(workOrderSyncDeltaService.buildDeltaRecords(eq(fieldUser), isNull(), eq(FIXED_INSTANT.toEpochMilli())))
+                .thenReturn(List.of(workOrderDelta));
+
+        SyncResponse response = mobileSyncService.sync(FIELD_USER_ID, validRequest());
+
+        assertThat(response.getDelta().getWorkOrders()).hasSize(1);
+        assertThat(response.getDelta().getWorkOrders().get(0).getWorkOrderId()).isEqualTo(500L);
+        assertThat(response.getDelta().getWorkOrders().get(0).getDraftCompletionNotes()).isEqualTo("Saved offline");
+    }
+
+    @Test
+    void sync_invalidSyncToken_emitsSingleFullSyncWarning() {
+        User fieldUser = user(UserRole.FIELD_EMPLOYEE);
+        when(authorizationService.requireMobileUser(FIELD_USER_ID)).thenReturn(fieldUser);
+
+        SyncRequest request = validRequest();
+        request.setSyncToken("bad-token");
+
+        SyncResponse response = mobileSyncService.sync(FIELD_USER_ID, request);
+
+        assertThat(response.getWarnings()).hasSize(1);
     }
 
     @Test

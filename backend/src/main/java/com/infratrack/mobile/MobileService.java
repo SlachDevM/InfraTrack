@@ -166,6 +166,23 @@ public class MobileService {
     }
 
     @Transactional(readOnly = true)
+    public List<WorkOrder> listScopedWorkOrdersForSync(User user) {
+        return listScopedWorkOrdersForSync(user, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<WorkOrder> listScopedWorkOrdersForSync(User user, Long updatedSinceMillis) {
+        return listScopedWorkOrdersForSync(user, updatedSinceMillis, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<WorkOrder> listScopedWorkOrdersForSync(
+            User user, Long updatedSinceMillis, Long updatedUntilMillis) {
+        authorizationService.requireMobileUser(user.getId());
+        return loadScopedWorkOrdersForSync(user, updatedSinceMillis, updatedUntilMillis);
+    }
+
+    @Transactional(readOnly = true)
     public MobileInspectionBundleResponse getInspectionBundle(Long userId, Long inspectionId) {
         User user = authorizationService.requireMobileUser(userId);
         Inspection inspection = inspectionRepository.findMobileBundleById(inspectionId)
@@ -402,6 +419,58 @@ public class MobileService {
                     user.getId(), updatedSinceMillis);
         }
         return inspectionRepository.findByAssignedToUserIdAndUpdatedAtGreaterThanEqualAndUpdatedAtLessThanEqual(
+                user.getId(), updatedSinceMillis, updatedUntilMillis);
+    }
+
+    private List<WorkOrder> loadScopedWorkOrdersForSync(
+            User user, Long updatedSinceMillis, Long updatedUntilMillis) {
+        if (user.getRole().isAdministrator()) {
+            if (updatedSinceMillis == null) {
+                if (updatedUntilMillis == null) {
+                    return workOrderRepository.findByStatus(WorkOrderStatus.ASSIGNED);
+                }
+                return workOrderRepository.findByStatusAndUpdatedAtLessThanEqual(
+                        WorkOrderStatus.ASSIGNED, updatedUntilMillis);
+            }
+            if (updatedUntilMillis == null) {
+                return workOrderRepository.findByStatusAndUpdatedAtGreaterThanEqual(
+                        WorkOrderStatus.ASSIGNED, updatedSinceMillis);
+            }
+            return workOrderRepository.findByStatusAndUpdatedAtGreaterThanEqualAndUpdatedAtLessThanEqual(
+                    WorkOrderStatus.ASSIGNED, updatedSinceMillis, updatedUntilMillis);
+        }
+        if (user.getRole().isManager()) {
+            if (user.getDepartment() == null) {
+                return List.of();
+            }
+            Long departmentId = user.getDepartment().getId();
+            if (updatedSinceMillis == null) {
+                if (updatedUntilMillis == null) {
+                    return workOrderRepository.findByAsset_Department_IdAndStatus(
+                            departmentId, WorkOrderStatus.ASSIGNED);
+                }
+                return workOrderRepository.findByAsset_Department_IdAndStatusAndUpdatedAtLessThanEqual(
+                        departmentId, WorkOrderStatus.ASSIGNED, updatedUntilMillis);
+            }
+            if (updatedUntilMillis == null) {
+                return workOrderRepository.findByAsset_Department_IdAndStatusAndUpdatedAtGreaterThanEqual(
+                        departmentId, WorkOrderStatus.ASSIGNED, updatedSinceMillis);
+            }
+            return workOrderRepository.findByAsset_Department_IdAndStatusAndUpdatedAtGreaterThanEqualAndUpdatedAtLessThanEqual(
+                    departmentId, WorkOrderStatus.ASSIGNED, updatedSinceMillis, updatedUntilMillis);
+        }
+        if (updatedSinceMillis == null) {
+            if (updatedUntilMillis == null) {
+                return workOrderRepository.findByAssignedToUserId(user.getId());
+            }
+            return workOrderRepository.findByAssignedToUserIdAndUpdatedAtLessThanEqual(
+                    user.getId(), updatedUntilMillis);
+        }
+        if (updatedUntilMillis == null) {
+            return workOrderRepository.findByAssignedToUserIdAndUpdatedAtGreaterThanEqual(
+                    user.getId(), updatedSinceMillis);
+        }
+        return workOrderRepository.findByAssignedToUserIdAndUpdatedAtGreaterThanEqualAndUpdatedAtLessThanEqual(
                 user.getId(), updatedSinceMillis, updatedUntilMillis);
     }
 

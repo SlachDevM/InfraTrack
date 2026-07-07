@@ -27,6 +27,29 @@ class SyncConflictClassifierTest {
 
         assertThat(classification).isPresent();
         assertThat(classification.get().conflictType()).isEqualTo(SyncConflictType.ENTITY_DELETED);
+        assertThat(classification.get().message()).isEqualTo("Inspection no longer exists.");
+    }
+
+    @Test
+    void classify_notFoundForWorkOrder_returnsWorkOrderEntityDeletedMessage() {
+        Optional<SyncConflictClassifier.Classification> classification = SyncConflictClassifier.classify(
+                new NotFoundException("Work order not found"),
+                "WORK_ORDER");
+
+        assertThat(classification).isPresent();
+        assertThat(classification.get().conflictType()).isEqualTo(SyncConflictType.ENTITY_DELETED);
+        assertThat(classification.get().message()).isEqualTo("Work order no longer exists.");
+    }
+
+    @Test
+    void classify_completedWorkOrder_returnsWorkflowCompletedMessage() {
+        Optional<SyncConflictClassifier.Classification> classification = SyncConflictClassifier.classify(
+                new ConflictException("Work order is no longer editable."),
+                "WORK_ORDER");
+
+        assertThat(classification).isPresent();
+        assertThat(classification.get().conflictType()).isEqualTo(SyncConflictType.WORKFLOW_COMPLETED);
+        assertThat(classification.get().message()).isEqualTo("Work order is no longer editable.");
     }
 
     @Test

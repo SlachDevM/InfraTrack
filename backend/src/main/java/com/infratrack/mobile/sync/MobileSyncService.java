@@ -2,6 +2,7 @@ package com.infratrack.mobile.sync;
 
 import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.mobile.MobileAuthorizationService;
+import com.infratrack.mobile.sync.dto.SyncDeltaResponse;
 import com.infratrack.mobile.sync.dto.SyncRequest;
 import com.infratrack.mobile.sync.dto.SyncResponse;
 import com.infratrack.mobile.sync.dto.SyncWarningCode;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -30,6 +32,7 @@ public class MobileSyncService {
     private final SyncTokenService syncTokenService;
     private final SyncOperationProcessor syncOperationProcessor;
     private final InspectionSyncDeltaService inspectionSyncDeltaService;
+    private final WorkOrderSyncDeltaService workOrderSyncDeltaService;
     private final SyncMetricsRecorder syncMetricsRecorder;
 
     public MobileSyncService(
@@ -38,12 +41,14 @@ public class MobileSyncService {
             SyncTokenService syncTokenService,
             SyncOperationProcessor syncOperationProcessor,
             InspectionSyncDeltaService inspectionSyncDeltaService,
+            WorkOrderSyncDeltaService workOrderSyncDeltaService,
             SyncMetricsRecorder syncMetricsRecorder) {
         this.authorizationService = authorizationService;
         this.clock = clock;
         this.syncTokenService = syncTokenService;
         this.syncOperationProcessor = syncOperationProcessor;
         this.inspectionSyncDeltaService = inspectionSyncDeltaService;
+        this.workOrderSyncDeltaService = workOrderSyncDeltaService;
         this.syncMetricsRecorder = syncMetricsRecorder;
     }
 
@@ -61,33 +66,40 @@ public class MobileSyncService {
         diagnostics.recordDuplicateOperations(operationBatch.duplicateOperations());
 
         Instant watermark = clock.instant();
+        Long updatedUntilMillis = watermark.toEpochMilli();
+
+        List<SyncWarningResponse> warnings = new ArrayList<>();
+        Long updatedSinceMillis =
+                SyncDeltaTokenSupport.resolveUpdatedSinceMillis(request.getSyncToken(), warnings);
+
+        SyncDeltaResponse delta = SyncDeltaResponse.empty();
+        delta.setInspections(inspectionSyncDeltaService.buildDeltaRecords(
+                user, updatedSinceMillis, updatedUntilMillis));
+        delta.setWorkOrders(workOrderSyncDeltaService.buildDeltaRecords(
+                user, updatedSinceMillis, updatedUntilMillis));
 
         SyncResponse response = new SyncResponse();
         response.setProtocolVersion(SyncProtocolVersion.CURRENT);
         response.setServerTime(watermark);
         response.setOperations(operationBatch.operations());
         response.setConflicts(operationBatch.conflicts());
-
-        InspectionSyncDeltaService.SyncDeltaBuildResult deltaResult =
-                inspectionSyncDeltaService.build(user, request.getSyncToken(), watermark);
-        response.setDelta(deltaResult.delta());
-        response.setWarnings(deltaResult.warnings().isEmpty()
-                ? Collections.emptyList()
-                : List.copyOf(deltaResult.warnings()));
+        response.setDelta(delta);
+        response.setWarnings(warnings.isEmpty() ? Collections.emptyList() : List.copyOf(warnings));
         response.setNextSyncToken(
                 syncTokenService.resolveNextSyncToken(userId, request.getSyncToken(), watermark));
 
-        boolean requiresFullSync = requiresFullSync(deltaResult.warnings());
+        boolean requiresFullSync = requiresFullSync(warnings);
         response.setRequiresFullSync(requiresFullSync);
         diagnostics.recordRequiresFullSync(requiresFullSync);
 
         diagnostics.recordOperations(response.getOperations());
         diagnostics.recordDeltaInspections(response.getDelta().getInspections().size());
+        diagnostics.recordDeltaWorkOrders(response.getDelta().getWorkOrders().size());
         syncMetricsRecorder.record(diagnostics);
         log.info(
                 "Sync completed userId={} protocolVersion={} operationCount={} accepted={} rejected={} "
-                        + "conflicts={} ignored={} duplicateOperations={} deltaInspectionCount={} durationMs={} "
-                        + "requiresFullSync={}",
+                        + "conflicts={} ignored={} duplicateOperations={} deltaInspectionCount={} "
+                        + "deltaWorkOrderCount={} durationMs={} requiresFullSync={}",
                 userId,
                 diagnostics.protocolVersion(),
                 diagnostics.processed(),
@@ -97,6 +109,7 @@ public class MobileSyncService {
                 diagnostics.ignored(),
                 diagnostics.duplicateOperations(),
                 diagnostics.deltaInspections(),
+                diagnostics.deltaWorkOrders(),
                 diagnostics.elapsedMillis(),
                 diagnostics.requiresFullSync());
 

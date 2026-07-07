@@ -5,6 +5,8 @@ import com.infratrack.inspection.InspectionService;
 import com.infratrack.inspection.dto.InspectionResponse;
 import com.infratrack.mobile.sync.dto.PendingOperationRequest;
 import com.infratrack.mobile.sync.dto.SyncOperationStatus;
+import com.infratrack.workorder.WorkOrderService;
+import com.infratrack.workorder.dto.WorkOrderResponse;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +41,9 @@ class SyncOperationIdempotencyIntegrationTest {
     @Mock
     private InspectionService inspectionService;
 
+    @Mock
+    private WorkOrderService workOrderService;
+
     private DefaultSyncOperationProcessor processor;
     private SimpleMeterRegistry meterRegistry;
 
@@ -63,11 +68,32 @@ class SyncOperationIdempotencyIntegrationTest {
                 repository,
                 clock,
                 new SyncMetricsRecorder(meterRegistry));
-        InspectionProgressSyncOperationHandler handler = new InspectionProgressSyncOperationHandler(
+        InspectionProgressSyncOperationHandler inspectionHandler = new InspectionProgressSyncOperationHandler(
                 inspectionService,
                 new ObjectMapper(),
                 clock);
-        processor = new DefaultSyncOperationProcessor(List.of(handler), idempotencyService);
+        WorkOrderProgressSyncOperationHandler workOrderHandler = new WorkOrderProgressSyncOperationHandler(
+                workOrderService,
+                new ObjectMapper(),
+                clock);
+        processor = new DefaultSyncOperationProcessor(
+                List.of(inspectionHandler, workOrderHandler), idempotencyService);
+    }
+
+    @Test
+    void duplicateWorkOrderSyncOperation_executesHandlerOnceAndReturnsSameResponse() {
+        when(workOrderService.saveWorkOrderProgress(eq(456L), any(), eq(USER_ID)))
+                .thenReturn(new WorkOrderResponse());
+
+        PendingOperationRequest operation = workOrderProgressOperation("op-wo-dup-1");
+        SyncOperationBatchResult first = processor.process(USER_ID, List.of(operation));
+        SyncOperationBatchResult second = processor.process(USER_ID, List.of(operation));
+
+        assertThat(first.operations().get(0).getStatus()).isEqualTo(SyncOperationStatus.ACCEPTED);
+        assertThat(second.operations().get(0).getStatus()).isEqualTo(SyncOperationStatus.ACCEPTED);
+
+        verify(workOrderService, times(1)).saveWorkOrderProgress(eq(456L), any(), eq(USER_ID));
+        assertThat(meterRegistry.get("mobile.sync.operations.duplicate").counter().count()).isEqualTo(1.0);
     }
 
     @Test
@@ -97,6 +123,16 @@ class SyncOperationIdempotencyIntegrationTest {
         operation.setEntityId(123L);
         operation.setOperationType("SAVE_INSPECTION_PROGRESS");
         operation.setPayload("{\"answers\":[]}");
+        return operation;
+    }
+
+    private static PendingOperationRequest workOrderProgressOperation(String operationId) {
+        PendingOperationRequest operation = new PendingOperationRequest();
+        operation.setOperationId(operationId);
+        operation.setEntityType("WORK_ORDER");
+        operation.setEntityId(456L);
+        operation.setOperationType("SAVE_WORK_ORDER_PROGRESS");
+        operation.setPayload("{\"completionNotes\":\"Draft notes.\"}");
         return operation;
     }
 }

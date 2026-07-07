@@ -17,6 +17,7 @@ final class SyncDiagnostics {
     private int ignored;
     private int conflicts;
     private int deltaInspections;
+    private int deltaWorkOrders;
     private int batchSize;
     private int duplicateOperations;
     private int protocolVersion;
@@ -63,6 +64,10 @@ final class SyncDiagnostics {
         deltaInspections = Math.max(0, count);
     }
 
+    void recordDeltaWorkOrders(int count) {
+        deltaWorkOrders = Math.max(0, count);
+    }
+
     void recordProtocolVersion(int version) {
         protocolVersion = version;
     }
@@ -101,6 +106,10 @@ final class SyncDiagnostics {
 
     int deltaInspections() {
         return deltaInspections;
+    }
+
+    int deltaWorkOrders() {
+        return deltaWorkOrders;
     }
 
     int batchSize() {

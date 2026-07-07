@@ -12,6 +12,7 @@ import com.infratrack.inspection.InspectionPriority;
 import com.infratrack.inspection.PhysicalCondition;
 import com.infratrack.issue.Issue;
 import com.infratrack.issue.IssueSeverity;
+import com.infratrack.maintenanceactivity.MaintenanceActivityRepository;
 import com.infratrack.notification.NotificationService;
 import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.organization.policy.approval.ApprovalPolicyService;
@@ -63,6 +64,9 @@ class WorkOrderServiceNotificationTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private MaintenanceActivityRepository maintenanceActivityRepository;
+
     private WorkOrderService workOrderService;
 
     @BeforeEach
@@ -74,6 +78,7 @@ class WorkOrderServiceNotificationTest {
         workOrderService = new WorkOrderService(
                 workOrderRepository,
                 operationalDecisionRepository,
+                maintenanceActivityRepository,
                 authorizationService,
                 historyRecorder,
                 userService,
@@ -146,6 +151,7 @@ class WorkOrderServiceNotificationTest {
         return new WorkOrderService(
                 workOrderRepository,
                 operationalDecisionRepository,
+                maintenanceActivityRepository,
                 authorizationService,
                 historyRecorder,
                 userService,

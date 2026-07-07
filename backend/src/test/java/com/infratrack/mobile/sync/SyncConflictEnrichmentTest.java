@@ -8,6 +8,9 @@ import com.infratrack.inspection.dto.InspectionResponse;
 import com.infratrack.mobile.sync.dto.PendingOperationRequest;
 import com.infratrack.mobile.sync.dto.SyncConflictType;
 import com.infratrack.mobile.sync.dto.SyncResolutionHint;
+import com.infratrack.workorder.WorkOrderService;
+import com.infratrack.workorder.WorkOrderStatus;
+import com.infratrack.workorder.dto.WorkOrderResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,6 +31,9 @@ class SyncConflictEnrichmentTest {
     @Mock
     private InspectionService inspectionService;
 
+    @Mock
+    private WorkOrderService workOrderService;
+
     private ObjectMapper objectMapper;
 
     @BeforeEach
@@ -46,11 +52,26 @@ class SyncConflictEnrichmentTest {
         assertThat(serverState).isNotNull();
         assertThat(serverState.getEntityId()).isEqualTo(INSPECTION_ID);
         assertThat(serverState.getEntityType()).isEqualTo("INSPECTION");
-        assertThat(serverState.getStatus()).isEqualTo(InspectionStatus.COMPLETED);
+        assertThat(serverState.getStatus()).isEqualTo("COMPLETED");
         assertThat(serverState.getUpdatedAt()).isEqualTo(1_700_000_000_000L);
         assertThat(serverState.getCompletedAt()).isEqualTo(LocalDateTime.parse("2026-07-01T10:00:00"));
         assertThat(serverState.getAssignedTo()).isEqualTo(20L);
         assertThat(serverState.getAssignedToName()).isEqualTo("Field User");
+    }
+
+    @Test
+    void buildServerState_workOrderWorkflowCompleted_containsWorkOrderSnapshot() {
+        WorkOrderResponse workOrder = workOrderResponse(WorkOrderStatus.COMPLETED);
+        when(workOrderService.getById(88L)).thenReturn(workOrder);
+
+        var serverState = SyncConflictEnrichment.buildServerState(
+                null, workOrderService, "WORK_ORDER", 88L, SyncConflictType.WORKFLOW_COMPLETED);
+
+        assertThat(serverState).isNotNull();
+        assertThat(serverState.getEntityId()).isEqualTo(88L);
+        assertThat(serverState.getEntityType()).isEqualTo("WORK_ORDER");
+        assertThat(serverState.getStatus()).isEqualTo("COMPLETED");
+        assertThat(serverState.getAssignedTo()).isEqualTo(20L);
     }
 
     @Test
@@ -107,6 +128,16 @@ class SyncConflictEnrichmentTest {
         when(response.getStatus()).thenReturn(status);
         when(response.getUpdatedAt()).thenReturn(1_700_000_000_000L);
         when(response.getCompletedAt()).thenReturn(LocalDateTime.parse("2026-07-01T10:00:00"));
+        when(response.getAssignedToUserId()).thenReturn(20L);
+        when(response.getAssignedToUserName()).thenReturn("Field User");
+        return response;
+    }
+
+    private static WorkOrderResponse workOrderResponse(WorkOrderStatus status) {
+        WorkOrderResponse response = mock(WorkOrderResponse.class);
+        when(response.getId()).thenReturn(88L);
+        when(response.getStatus()).thenReturn(status);
+        when(response.getUpdatedAt()).thenReturn(1_700_000_000_000L);
         when(response.getAssignedToUserId()).thenReturn(20L);
         when(response.getAssignedToUserName()).thenReturn("Field User");
         return response;

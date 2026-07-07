@@ -1,6 +1,5 @@
 package com.infratrack.mobile.sync.dto;
 
-import com.infratrack.inspection.InspectionStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
@@ -15,7 +14,8 @@ public class SyncConflictServerState {
     @Schema(description = "Entity type", example = "INSPECTION")
     private String entityType;
 
-    private InspectionStatus status;
+    @Schema(description = "Domain status name (e.g. ASSIGNED, COMPLETED)")
+    private String status;
 
     @Schema(description = "Server-side last update time (epoch millis)")
     private Long updatedAt;
@@ -49,11 +49,11 @@ public class SyncConflictServerState {
         this.entityType = entityType;
     }
 
-    public InspectionStatus getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public void setStatus(InspectionStatus status) {
+    public void setStatus(String status) {
         this.status = status;
     }
 

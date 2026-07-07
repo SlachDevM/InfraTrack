@@ -58,6 +58,9 @@ public class WorkOrder {
     @Column(name = "updated_at", nullable = false)
     private Long updatedAt;
 
+    @Column(name = "draft_completion_notes", columnDefinition = "TEXT")
+    private String draftCompletionNotes;
+
     protected WorkOrder() {
     }
 
@@ -144,6 +147,15 @@ public class WorkOrder {
 
     public void complete() {
         this.status = WorkOrderStatus.COMPLETED;
+        this.updatedAt = System.currentTimeMillis();
+    }
+
+    public String getDraftCompletionNotes() {
+        return draftCompletionNotes;
+    }
+
+    public void saveDraftCompletionNotes(String draftCompletionNotes) {
+        this.draftCompletionNotes = draftCompletionNotes;
         this.updatedAt = System.currentTimeMillis();
     }
 

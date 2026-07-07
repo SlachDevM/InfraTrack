@@ -3,7 +3,9 @@ package com.infratrack.workorder;
 import com.infratrack.asset.Asset;
 import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.ConflictException;
+import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.exception.NotFoundException;
+import com.infratrack.maintenanceactivity.MaintenanceActivityRepository;
 import com.infratrack.notification.OperationalEventNotificationService;
 import com.infratrack.organization.policy.approval.ApprovalPolicyService;
 import com.infratrack.organization.policy.notification.NotificationPolicyService;
@@ -15,6 +17,7 @@ import com.infratrack.user.UserNameLookup;
 import com.infratrack.user.UserService;
 import com.infratrack.workorder.dto.AssignWorkOrderRequest;
 import com.infratrack.workorder.dto.CreateWorkOrderRequest;
+import com.infratrack.workorder.dto.SaveWorkOrderProgressRequest;
 import com.infratrack.workorder.dto.WorkOrderResponse;
 import com.infratrack.workorder.dto.WorkOrderSummaryResponse;
 import org.springframework.data.domain.Page;
@@ -35,6 +38,7 @@ public class WorkOrderService {
 
     private final WorkOrderRepository workOrderRepository;
     private final OperationalDecisionRepository operationalDecisionRepository;
+    private final MaintenanceActivityRepository maintenanceActivityRepository;
     private final WorkOrderAuthorizationService authorizationService;
     private final WorkOrderHistoryRecorder historyRecorder;
     private final UserService userService;
@@ -46,6 +50,7 @@ public class WorkOrderService {
     public WorkOrderService(
             WorkOrderRepository workOrderRepository,
             OperationalDecisionRepository operationalDecisionRepository,
+            MaintenanceActivityRepository maintenanceActivityRepository,
             WorkOrderAuthorizationService authorizationService,
             WorkOrderHistoryRecorder historyRecorder,
             UserService userService,
@@ -55,6 +60,7 @@ public class WorkOrderService {
             ApprovalPolicyService approvalPolicyService) {
         this.workOrderRepository = workOrderRepository;
         this.operationalDecisionRepository = operationalDecisionRepository;
+        this.maintenanceActivityRepository = maintenanceActivityRepository;
         this.authorizationService = authorizationService;
         this.historyRecorder = historyRecorder;
         this.userService = userService;
@@ -146,6 +152,28 @@ public class WorkOrderService {
         }
 
         return WorkOrderResponse.from(workOrder, assignee);
+    }
+
+    @Transactional
+    public WorkOrderResponse saveWorkOrderProgress(
+            Long workOrderId,
+            SaveWorkOrderProgressRequest request,
+            Long userId) {
+        User actor = userService.getById(userId);
+        WorkOrder workOrder = findWorkOrderOrThrow(workOrderId);
+        requireEditableForProgressSave(workOrder);
+        requireAssignedUser(workOrder, userId);
+        requireExecutorRole(actor, workOrder.getWorkType());
+        requireNoExistingMaintenanceActivity(workOrderId);
+
+        if (request.getCompletionNotes() != null) {
+            String notes = request.getCompletionNotes().isBlank() ? null : request.getCompletionNotes().trim();
+            validateDraftCompletionNotesLength(notes);
+            workOrder.saveDraftCompletionNotes(notes);
+            workOrderRepository.save(workOrder);
+        }
+
+        return toResponse(workOrder);
     }
 
     private WorkOrderResponse toResponse(WorkOrder workOrder) {
@@ -242,6 +270,45 @@ public class WorkOrderService {
         if (!approvalPolicyService.getPolicy().requiresManagerOperationalDecision()) {
             throw new BusinessValidationException(
                     "Work orders require manager operational decisions under the current approval policy");
+        }
+    }
+
+    private void requireEditableForProgressSave(WorkOrder workOrder) {
+        if (workOrder.getStatus() != WorkOrderStatus.ASSIGNED) {
+            throw new ConflictException("Work order is no longer editable.");
+        }
+    }
+
+    private void requireAssignedUser(WorkOrder workOrder, Long userId) {
+        if (workOrder.getAssignedToUserId() == null) {
+            throw new ConflictException("Work order has no assigned user");
+        }
+        if (!workOrder.getAssignedToUserId().equals(userId)) {
+            throw new ForbiddenOperationException(
+                    "Only the assigned worker may save maintenance progress for this work order");
+        }
+    }
+
+    private void requireExecutorRole(User actor, WorkType workType) {
+        if (workType == WorkType.INTERNAL_MAINTENANCE && !actor.getRole().isFieldEmployee()) {
+            throw new ForbiddenOperationException(
+                    "Internal maintenance work orders must be completed by a field employee");
+        }
+        if (workType == WorkType.CONTRACTOR_WORK && !actor.getRole().isContractor()) {
+            throw new ForbiddenOperationException(
+                    "Contractor work orders must be completed by a contractor");
+        }
+    }
+
+    private void requireNoExistingMaintenanceActivity(Long workOrderId) {
+        if (maintenanceActivityRepository.existsByWorkOrderId(workOrderId)) {
+            throw new ConflictException("Work order is no longer editable.");
+        }
+    }
+
+    private void validateDraftCompletionNotesLength(String notes) {
+        if (notes != null && notes.length() > 4000) {
+            throw new BusinessValidationException("Completion notes must not exceed 4000 characters");
         }
     }
 }
