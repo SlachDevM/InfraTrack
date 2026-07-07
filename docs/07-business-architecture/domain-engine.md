@@ -1532,6 +1532,8 @@ Conflict detection, Audit                  ↓
 POST /api/mobile/sync (M5.2-BE1/BE2)  ←── Protocol handshake (token + empty delta)
 POST /api/mobile/sync (M5.4-BE)       ←── Download: delta.inspections
 POST /api/mobile/sync (M6.1-BE2)      ←── Download: delta.workOrders
+POST /api/mobile/sync (M6.2-BE1)      ←── Download: delta.dashboard (full snapshot every sync)
+POST /api/mobile/sync (M6.3-BE1)      ←── Download: delta.assets (linked asset context snapshot)
 POST /api/mobile/sync (future)    ←── Idempotent upload processing
 GET  /api/mobile/sync/* (future)  ──→ Incremental download
 ```
@@ -1569,6 +1571,10 @@ GET  /api/mobile/sync/* (future)  ──→ Incremental download
 **M6.1-BE1 (delivered — V2.6 Work Order Offline begins):** First work order sync upload — `SAVE_WORK_ORDER_PROGRESS` on `WORK_ORDER` via existing `POST /api/mobile/sync`. Payload `SaveWorkOrderProgressRequest` with optional `completionNotes` (draft only; persisted to `work_orders.draft_completion_notes`). Delegates to `WorkOrderService.saveWorkOrderProgress` with assigned-worker authorization and `ASSIGNED`-only guards. Reuses V2.5 atomic idempotency, conflict classification/enrichment, and sync metrics. No `COMPLETE_MAINTENANCE`, no new endpoint, no Android/React changes.
 
 **M6.1-BE2 (delivered):** Work order delta download — `delta.workOrders` populated with scoped `SyncWorkOrderDeltaResponse` records. Mirrors inspection delta design: shared sync token resolution (`SyncDeltaTokenSupport`), role scoping via `MobileService.listScopedWorkOrdersForSync`, SQL `updatedAt` filtering, watermark upper bound after operation processing. Fields include `workOrderId`, `description`, `priority`, `status`, `workType`, asset summary, assignee, `createdAt`/`updatedAt`, `draftCompletionNotes`, `completionEligible`, `operationalDecisionId`. Accepted `SAVE_WORK_ORDER_PROGRESS` operations are reflected in the same response delta. Index `idx_work_orders_updated_at` (V34). No offline completion, tombstones, or new endpoint.
+
+**M6.2-BE1 (delivered):** Dashboard sync contract — `delta.dashboard` on every successful `POST /api/mobile/sync`. Server-computed `SyncDashboardDeltaResponse` snapshot reuses `MobileService.buildDashboard` (same counters as `GET /api/mobile/dashboard`). Includes `generatedAt` (watermark epoch millis) plus `assignedInspections`, `assignedWorkOrders`, `overdueInspections`, `overdueWorkOrders`, `completedToday`. Always returned (not incremental by sync token). Built after pending operations so accepted uploads are reflected. Android must not recompute dashboard counters from local entities. No new endpoint; no dashboard business rule changes.
+
+**M6.3-BE1 (delivered):** Asset context delta — `delta.assets` with `SyncAssetDeltaResponse` for assets linked to scoped `delta.inspections` and `delta.workOrders`. Reuses `MobileService.buildAssetContext` / `buildAssetContextsForSync` (same enrichment as `GET /api/mobile/assets/lookup`). Contextual snapshot returned whenever linked operational records appear in sync; not per-asset token incremental. Batch asset load via `findByIdIn`; authorization via existing `requireCanViewAssetContext`. Document metadata only (`downloadUrl`, no storage paths or bytes). No public/citizen exposure; no org-wide asset dump.
 
 ---
 

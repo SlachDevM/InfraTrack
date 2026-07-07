@@ -59,6 +59,12 @@ class MobileSyncHardeningTest {
     @Mock
     private WorkOrderSyncDeltaService workOrderSyncDeltaService;
 
+    @Mock
+    private DashboardSyncDeltaService dashboardSyncDeltaService;
+
+    @Mock
+    private AssetSyncDeltaService assetSyncDeltaService;
+
     private SimpleMeterRegistry meterRegistry;
     private MobileSyncService mobileSyncService;
     private ListAppender<ILoggingEvent> logAppender;
@@ -80,6 +86,8 @@ class MobileSyncHardeningTest {
                         SyncTestIdempotencySupport.passthroughService(clock)),
                 inspectionSyncDeltaService,
                 workOrderSyncDeltaService,
+                dashboardSyncDeltaService,
+                assetSyncDeltaService,
                 new SyncMetricsRecorder(meterRegistry));
 
         Logger logger = (Logger) LoggerFactory.getLogger(MobileSyncService.class);
@@ -92,6 +100,10 @@ class MobileSyncHardeningTest {
         lenient().when(inspectionSyncDeltaService.buildDeltaRecords(any(User.class), any(), any()))
                 .thenReturn(List.of());
         lenient().when(workOrderSyncDeltaService.buildDeltaRecords(any(User.class), any(), any()))
+                .thenReturn(List.of());
+        lenient().when(dashboardSyncDeltaService.buildSnapshot(any(User.class), any()))
+                .thenReturn(new com.infratrack.mobile.sync.dto.SyncDashboardDeltaResponse());
+        lenient().when(assetSyncDeltaService.buildDeltaRecords(any(User.class), any(), any()))
                 .thenReturn(List.of());
     }
 
@@ -114,6 +126,8 @@ class MobileSyncHardeningTest {
 
         verify(inspectionSyncDeltaService, never()).buildDeltaRecords(any(User.class), any(), any());
         verify(workOrderSyncDeltaService, never()).buildDeltaRecords(any(User.class), any(), any());
+        verify(dashboardSyncDeltaService, never()).buildSnapshot(any(User.class), any());
+        verify(assetSyncDeltaService, never()).buildDeltaRecords(any(User.class), any(), any());
         assertThat(meterRegistry.get("mobile.sync.requests").counter().count()).isEqualTo(0.0);
     }
 
@@ -146,6 +160,10 @@ class MobileSyncHardeningTest {
         when(inspectionSyncDeltaService.buildDeltaRecords(any(User.class), any(), any()))
                 .thenReturn(List.of());
         when(workOrderSyncDeltaService.buildDeltaRecords(any(User.class), any(), any()))
+                .thenReturn(List.of());
+        when(dashboardSyncDeltaService.buildSnapshot(any(User.class), any()))
+                .thenReturn(new com.infratrack.mobile.sync.dto.SyncDashboardDeltaResponse());
+        when(assetSyncDeltaService.buildDeltaRecords(any(User.class), any(), any()))
                 .thenReturn(List.of());
 
         SyncRequest request = validRequest();

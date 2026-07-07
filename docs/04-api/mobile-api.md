@@ -236,7 +236,7 @@ Reuses existing role and department rules; no new Android-specific permissions w
 
 ## Offline synchronization protocol (M5.2-BE1 / M5.2-BE2 / M5.3-BE / M5.4-BE / M5.5-BE1 / M5.5-BE1.1)
 
-`POST /api/mobile/sync` is the backend synchronization protocol foundation ([BDR-005](../03-architecture/bdr-005-offline-synchronization-architecture.md)). **M5.2-BE1** introduced the request/response envelope. **M5.2-BE2** added opaque sync tokens, protocol versioning, typed operation/conflict/warning codes, and the delta container. **M5.3-BE** processes `SAVE_INSPECTION_PROGRESS` uploads. **M5.4-BE** populates `delta.inspections` with scoped inspection sync records. **M5.4.2-BE** embeds checklist template/question/choice definitions in each inspection delta so assigned inspections are renderable offline without a prior bundle fetch. **M5.5-BE1** detects synchronization conflicts for `SAVE_INSPECTION_PROGRESS`. **M5.5-BE1.1** enriches `conflicts[]` with structured `serverState`, `clientState`, and `resolutionHint` (detection only — no automatic resolution). **M6.1-BE1** (V2.6) adds `SAVE_WORK_ORDER_PROGRESS` upload processing for draft maintenance notes. **M6.1-BE2** populates `delta.workOrders` with scoped work order sync records. Other delta sections remain empty; tombstones are not produced yet. `COMPLETE_MAINTENANCE` remains future work.
+`POST /api/mobile/sync` is the backend synchronization protocol foundation ([BDR-005](../03-architecture/bdr-005-offline-synchronization-architecture.md)). **M5.2-BE1** introduced the request/response envelope. **M5.2-BE2** added opaque sync tokens, protocol versioning, typed operation/conflict/warning codes, and the delta container. **M5.3-BE** processes `SAVE_INSPECTION_PROGRESS` uploads. **M5.4-BE** populates `delta.inspections` with scoped inspection sync records. **M5.4.2-BE** embeds checklist template/question/choice definitions in each inspection delta so assigned inspections are renderable offline without a prior bundle fetch. **M5.5-BE1** detects synchronization conflicts for `SAVE_INSPECTION_PROGRESS`. **M5.5-BE1.1** enriches `conflicts[]` with structured `serverState`, `clientState`, and `resolutionHint` (detection only — no automatic resolution). **M6.1-BE1** (V2.6) adds `SAVE_WORK_ORDER_PROGRESS` upload processing for draft maintenance notes. **M6.1-BE2** populates `delta.workOrders` with scoped work order sync records. **M6.2-BE1** populates `delta.dashboard` with a server-computed dashboard snapshot on every sync. **M6.3-BE1** populates `delta.assets` with linked asset context records. Other delta sections remain empty; tombstones are not produced yet. `COMPLETE_MAINTENANCE` remains future work.
 
 ### Authorization
 
@@ -268,7 +268,9 @@ Example work order `payload` fields: `completionNotes` (draft maintenance notes 
 | `nextSyncToken` | Opaque cursor issued on every successful sync; store and resubmit as `syncToken` on the next call. Android must not parse it. |
 | `delta.inspections` | Scoped inspection sync records (`SyncInspectionDeltaResponse`) — see below |
 | `delta.workOrders` | Scoped work order sync records (`SyncWorkOrderDeltaResponse`) — see below (**M6.1-BE2**) |
-| `delta` (other sections) | `assets`, `documents`, `users`, `referenceData` remain `[]` |
+| `delta.dashboard` | Server-computed mobile dashboard snapshot (`SyncDashboardDeltaResponse`) — see below (**M6.2-BE1**) |
+| `delta.assets` | Linked asset context records (`SyncAssetDeltaResponse`) — see below (**M6.3-BE1**) |
+| `delta` (other sections) | `documents`, `users`, `referenceData` remain `[]` |
 | `operations` | One `SyncOperationResponse` per pending operation (in request order) |
 | `conflicts` | Populated when an operation returns `CONFLICT` — see below |
 | `warnings` | May include `FULL_SYNC_REQUIRED` when `syncToken` is invalid; sync still succeeds |
@@ -318,6 +320,44 @@ Each `SyncWorkOrderDeltaResponse` includes compact fields required for offline m
 **Scoping:** Mirrors `GET /api/mobile/my-work-orders` — Administrator: assigned work orders organisation-wide; Manager: assigned work orders in department; Field Employee / Contractor: assigned to current user. Unauthorized work orders are never included.
 
 **Not yet synchronized:** Offline maintenance completion (`COMPLETE_MAINTENANCE`), work order removals/tombstones, and document payloads.
+
+### Dashboard delta (`delta.dashboard`) — M6.2-BE1
+
+Each successful sync includes a compact dashboard snapshot for offline rendering. The backend remains the source of truth — Android must store and display this snapshot; it must **not** recompute counters from local inspection/work order entities.
+
+| Field | Notes |
+|-------|-------|
+| `generatedAt` | Snapshot time (epoch millis); matches sync watermark |
+| `assignedInspections` | Personal assigned inspection count |
+| `assignedWorkOrders` | Personal assigned work order count |
+| `overdueInspections` | Overdue assigned inspections for the user |
+| `overdueWorkOrders` | Always `0` (no due date in current model) |
+| `completedToday` | Inspections + maintenance completed today by the user |
+
+**Download strategy:** Unlike entity deltas, the dashboard snapshot is **always returned on every sync** — it is not filtered by `syncToken`. Invalid `syncToken` still includes `delta.dashboard`. Counters are computed via the same logic as `GET /api/mobile/dashboard` (`MobileService.buildDashboard`).
+
+**Processing order:** Dashboard is built after pending operations are processed and the watermark is captured, so accepted uploads in the same sync request are reflected in the snapshot when they affect dashboard counters.
+
+### Asset context delta (`delta.assets`) — M6.3-BE1
+
+Each successful sync may include compact asset operational context for assets **linked to scoped inspections or work orders** in the same response. This aligns with `GET /api/mobile/assets/lookup` enrichment sections but omits `allowedActions` (compact offline viewing).
+
+| Section | Notes |
+|---------|-------|
+| `asset` | Summary: `id`, `code`, `name`, `category`, `department`, `location`, `status` |
+| `lastInspection` | Most recent completed inspection when present |
+| `lastMaintenance` | Most recent maintenance activity when present |
+| `preventivePlan` | Active preventive plan when present |
+| `openIssues` | Unresolved issues only |
+| `activeInspections` | `ASSIGNED` inspections on the asset |
+| `activeWorkOrders` | `CREATED` / `ASSIGNED` work orders on the asset |
+| `documents` | Metadata only: `id`, `filename`, `contentType`, `uploadedAt`, `downloadUrl` — no storage paths or file bytes |
+
+**Scope:** Only assets referenced by `delta.inspections` or `delta.workOrders` for the authenticated user. Never all organization assets. Authorization reuses `requireCanViewAssetContext`; unauthorized linked assets are omitted.
+
+**Download strategy:** Contextual snapshot — all relevant linked assets are included whenever they appear in the current scoped operational deltas. Not per-asset incremental sync by token (deferred). Invalid `syncToken` still returns `delta.assets` for linked records in the full entity deltas.
+
+**Processing order:** Built after inspection, work order, and dashboard deltas so asset IDs are derived from scoped operational records in the same response.
 
 ### Per-operation outcomes (`SyncOperationResponse`)
 

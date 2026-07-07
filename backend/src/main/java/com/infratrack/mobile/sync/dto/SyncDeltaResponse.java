@@ -10,14 +10,17 @@ import java.util.List;
  */
 public class SyncDeltaResponse {
 
-    @Schema(description = "Changed or assigned asset summaries (future)")
-    private List<Object> assets = new ArrayList<>();
+    @Schema(description = "Asset context records for assets linked to scoped sync operations (M6.3-BE1+)")
+    private List<SyncAssetDeltaResponse> assets = new ArrayList<>();
 
     @Schema(description = "Changed or assigned inspection sync records (M5.4-BE+)")
     private List<SyncInspectionDeltaResponse> inspections = new ArrayList<>();
 
     @Schema(description = "Changed or assigned work order sync records (M6.1-BE2+)")
     private List<SyncWorkOrderDeltaResponse> workOrders = new ArrayList<>();
+
+    @Schema(description = "Server-computed mobile dashboard snapshot (M6.2-BE1+)")
+    private SyncDashboardDeltaResponse dashboard;
 
     @Schema(description = "Changed document metadata (future)")
     private List<Object> documents = new ArrayList<>();
@@ -32,11 +35,11 @@ public class SyncDeltaResponse {
         return new SyncDeltaResponse();
     }
 
-    public List<Object> getAssets() {
+    public List<SyncAssetDeltaResponse> getAssets() {
         return assets;
     }
 
-    public void setAssets(List<Object> assets) {
+    public void setAssets(List<SyncAssetDeltaResponse> assets) {
         this.assets = assets != null ? assets : new ArrayList<>();
     }
 
@@ -54,6 +57,14 @@ public class SyncDeltaResponse {
 
     public void setWorkOrders(List<SyncWorkOrderDeltaResponse> workOrders) {
         this.workOrders = workOrders != null ? workOrders : new ArrayList<>();
+    }
+
+    public SyncDashboardDeltaResponse getDashboard() {
+        return dashboard;
+    }
+
+    public void setDashboard(SyncDashboardDeltaResponse dashboard) {
+        this.dashboard = dashboard;
     }
 
     public List<Object> getDocuments() {

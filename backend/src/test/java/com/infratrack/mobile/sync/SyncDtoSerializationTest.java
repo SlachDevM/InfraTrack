@@ -8,6 +8,9 @@ import com.infratrack.mobile.sync.dto.SyncConflictResponse;
 import com.infratrack.mobile.sync.dto.SyncConflictServerState;
 import com.infratrack.mobile.sync.dto.SyncConflictType;
 import com.infratrack.mobile.sync.dto.SyncResolutionHint;
+import com.infratrack.mobile.dto.AssetContextSummaryResponse;
+import com.infratrack.mobile.sync.dto.SyncAssetDeltaResponse;
+import com.infratrack.mobile.sync.dto.SyncDashboardDeltaResponse;
 import com.infratrack.mobile.sync.dto.SyncDeltaResponse;
 import com.infratrack.mobile.sync.dto.SyncWorkOrderDeltaResponse;
 import com.infratrack.workorder.WorkOrderPriority;
@@ -164,6 +167,71 @@ class SyncDtoSerializationTest {
         assertThat(roundTripped.getResolutionHint()).isEqualTo(SyncResolutionHint.SERVER_WINS);
         assertThat(roundTripped.getServerState().getEntityId()).isEqualTo(42L);
         assertThat(roundTripped.getClientState().getPayload().get("answers").isArray()).isTrue();
+    }
+
+    @Test
+    void syncAssetDeltaResponse_serializesExpectedFields() throws Exception {
+        com.infratrack.asset.Asset asset = new com.infratrack.asset.Asset(
+                "Central Playground",
+                new com.infratrack.department.Department("Parks"),
+                new com.infratrack.assetcategory.AssetCategory("Playground"),
+                "Memorial Park",
+                com.infratrack.asset.AssetStatus.ACTIVE,
+                java.time.LocalDate.of(2026, 6, 25),
+                10L);
+        asset.setId(50L);
+
+        SyncAssetDeltaResponse assetDelta = SyncAssetDeltaResponse.from(
+                new com.infratrack.mobile.dto.AssetContextResponse(
+                        AssetContextSummaryResponse.from(asset),
+                        null,
+                        null,
+                        null,
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        null));
+
+        SyncDeltaResponse delta = SyncDeltaResponse.empty();
+        delta.setAssets(List.of(assetDelta));
+
+        String json = objectMapper.writeValueAsString(delta);
+
+        assertThat(json).contains("\"assets\"");
+        assertThat(json).contains("\"name\":\"Central Playground\"");
+
+        SyncDeltaResponse roundTripped = objectMapper.readValue(json, SyncDeltaResponse.class);
+        assertThat(roundTripped.getAssets()).hasSize(1);
+        assertThat(roundTripped.getAssets().get(0).getAsset().getName()).isEqualTo("Central Playground");
+        assertThat(roundTripped.getAssets().get(0).getAsset().getCode()).isNotBlank();
+    }
+
+    @Test
+    void syncDashboardDeltaResponse_serializesExpectedFields() throws Exception {
+        SyncDashboardDeltaResponse dashboard = new SyncDashboardDeltaResponse();
+        dashboard.setGeneratedAt(1_751_700_000_000L);
+        dashboard.setAssignedInspections(3L);
+        dashboard.setAssignedWorkOrders(2L);
+        dashboard.setOverdueInspections(1L);
+        dashboard.setOverdueWorkOrders(0L);
+        dashboard.setCompletedToday(4L);
+
+        SyncDeltaResponse delta = SyncDeltaResponse.empty();
+        delta.setDashboard(dashboard);
+
+        String json = objectMapper.writeValueAsString(delta);
+
+        assertThat(json).contains("\"generatedAt\":1751700000000");
+        assertThat(json).contains("\"assignedInspections\":3");
+        assertThat(json).contains("\"assignedWorkOrders\":2");
+        assertThat(json).contains("\"overdueInspections\":1");
+        assertThat(json).contains("\"completedToday\":4");
+
+        SyncDeltaResponse roundTripped = objectMapper.readValue(json, SyncDeltaResponse.class);
+        assertThat(roundTripped.getDashboard()).isNotNull();
+        assertThat(roundTripped.getDashboard().getAssignedInspections()).isEqualTo(3L);
+        assertThat(roundTripped.getDashboard().getCompletedToday()).isEqualTo(4L);
     }
 
     @Test

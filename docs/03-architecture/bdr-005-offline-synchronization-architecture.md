@@ -298,8 +298,8 @@ M5 requires **new backend sync capabilities**. No implementation exists at V2.4 
 | Capability | Purpose |
 |------------|---------|
 | **Sync cursor / token** | Opaque server-issued cursor (`nextSyncToken`) — **M5.2-BE2 delivered**; issued on every successful `POST /api/mobile/sync`. Android stores and resubmits; backend owns encoding. No business data in token. |
-| **Batch upload endpoint** | `POST /api/mobile/sync` — **M5.3-BE delivered (first upload)**. **M5.4-BE delivered (first download)**. Returns per-operation outcomes plus `delta.inspections` and **M6.1-BE2** `delta.workOrders`. |
-| **Delta download** | `SyncResponse.delta.inspections` — **M5.4-BE delivered**. Compact `SyncInspectionDeltaResponse` records scoped like mobile inspection lists. Null/invalid token → full delta; valid token → SQL filter `updatedAt >= issuedAt` (**V2.5-STAB-2**). Answers batch-loaded per sync (**V2.5-STAB-2**). **M5.4.2-BE:** checklist template/question/choice definitions embedded per inspection (batch-loaded; same mapping as bundle endpoint) so delta is self-contained for offline rendering — no prior bundle fetch required. **`delta.workOrders` — M6.1-BE2 delivered:** compact `SyncWorkOrderDeltaResponse` records scoped like `GET /api/mobile/my-work-orders`, including `draftCompletionNotes` and `completionEligible`. Same token/watermark semantics as inspections via shared `SyncDeltaTokenSupport`. Other delta sections remain empty. |
+| **Batch upload endpoint** | `POST /api/mobile/sync` — … plus `delta.inspections`, `delta.workOrders`, `delta.dashboard`, and **M6.3-BE1** `delta.assets`. |
+| **Delta download** | … **`delta.dashboard` — M6.2-BE1 delivered:** … **`delta.assets` — M6.3-BE1 delivered:** `SyncAssetDeltaResponse` for assets linked to scoped inspections/work orders in the same sync; reuses asset lookup enrichment via `MobileService.buildAssetContext`; metadata-only documents; no binary sync; no public/citizen portal. Other delta sections remain empty. |
 | **Delta download endpoints** | `GET /api/mobile/sync/changes?since={cursor}` — alternative/future path; primary delta container is `SyncResponse.delta` |
 | **Operation result envelope** | Per-item `SyncOperationStatus`: `ACCEPTED`, `REJECTED`, `CONFLICT`, `RETRY`, `IGNORED` — **M5.3-BE:** `SAVE_INSPECTION_PROGRESS` returns `ACCEPTED` or `REJECTED`; unsupported types return `IGNORED`. **M5.5-BE1:** stale workflow, permission, or entity-state failures return `CONFLICT` plus a matching `conflicts[]` entry. **M6.1-BE1:** `SAVE_WORK_ORDER_PROGRESS` on `WORK_ORDER` uses the same pipeline (draft `completionNotes` only). Validation/malformed payloads remain `REJECTED`. One failure does not fail the whole sync. |
 | **Conflict classification** | `SyncConflictType`: … **M5.5-BE1.1:** enriched `conflicts[]` payload … **M5.5-BE2:** explicit resolution via `POST /api/mobile/sync/conflicts/resolve` — stateless, no payload apply, no automatic merge. |
@@ -390,6 +390,10 @@ M6.1 — Work Order Sync Upload (M6.1-BE1 delivered)
         ↓ SAVE_WORK_ORDER_PROGRESS on POST /api/mobile/sync; draft_completion_notes on work_orders
 M6.1 — Work Order Delta Download (M6.1-BE2 delivered)
         ↓ delta.workOrders on POST /api/mobile/sync; scoped SyncWorkOrderDeltaResponse; no offline completion yet
+M6.2 — Dashboard Sync Contract (M6.2-BE1 delivered)
+        ↓ delta.dashboard on POST /api/mobile/sync; server-computed snapshot; always full refresh; no client-side counter math
+M6.3 — Asset Context Delta (M6.3-BE1 delivered)
+        ↓ delta.assets for assets linked to scoped inspections/work orders; lookup-aligned context; metadata-only documents
 M5.5 — Conflict Detection (M5.5-BE1 delivered)
         ↓ Server classifies stale workflow / permission / entity-state failures as CONFLICT; Android retains conflicting operations for future UX
 M5.5.1 — Conflict Payload Enrichment (M5.5-BE1.1 delivered)

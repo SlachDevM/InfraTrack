@@ -6,6 +6,8 @@ import com.infratrack.inspection.InspectionService;
 import com.infratrack.inspection.dto.InspectionResponse;
 import com.infratrack.mobile.MobileAuthorizationService;
 import com.infratrack.mobile.sync.dto.PendingOperationRequest;
+import com.infratrack.mobile.sync.dto.SyncAssetDeltaResponse;
+import com.infratrack.mobile.sync.dto.SyncDashboardDeltaResponse;
 import com.infratrack.mobile.sync.dto.SyncDeltaResponse;
 import com.infratrack.mobile.sync.dto.SyncInspectionDeltaResponse;
 import com.infratrack.mobile.sync.dto.SyncOperationStatus;
@@ -58,6 +60,12 @@ class MobileSyncServiceTest {
     @Mock
     private WorkOrderSyncDeltaService workOrderSyncDeltaService;
 
+    @Mock
+    private DashboardSyncDeltaService dashboardSyncDeltaService;
+
+    @Mock
+    private AssetSyncDeltaService assetSyncDeltaService;
+
     private SimpleMeterRegistry meterRegistry;
 
     private MobileSyncService mobileSyncService;
@@ -79,10 +87,16 @@ class MobileSyncServiceTest {
                         SyncTestIdempotencySupport.passthroughService(clock)),
                 inspectionSyncDeltaService,
                 workOrderSyncDeltaService,
+                dashboardSyncDeltaService,
+                assetSyncDeltaService,
                 new SyncMetricsRecorder(meterRegistry));
         lenient().when(inspectionSyncDeltaService.buildDeltaRecords(any(User.class), any(), any()))
                 .thenReturn(List.of());
         lenient().when(workOrderSyncDeltaService.buildDeltaRecords(any(User.class), any(), any()))
+                .thenReturn(List.of());
+        lenient().when(dashboardSyncDeltaService.buildSnapshot(any(User.class), eq(FIXED_INSTANT)))
+                .thenReturn(dashboardDelta());
+        lenient().when(assetSyncDeltaService.buildDeltaRecords(any(User.class), any(), any()))
                 .thenReturn(List.of());
     }
 
@@ -97,7 +111,9 @@ class MobileSyncServiceTest {
         assertThat(response.getServerTime()).isEqualTo(FIXED_INSTANT);
         assertThat(response.getProtocolVersion()).isEqualTo(SyncProtocolVersion.CURRENT);
         assertThat(response.getNextSyncToken()).isNotBlank();
-        assertThat(response.getDelta().getAssets()).isEmpty();
+        assertThat(response.getDelta().getWorkOrders()).isEmpty();
+        assertThat(response.getDelta().getDashboard()).isNotNull();
+        assertThat(response.getDelta().getDashboard().getAssignedInspections()).isEqualTo(3L);
         assertThat(response.getOperations()).isEmpty();
         assertThat(response.getConflicts()).isEmpty();
         assertThat(response.getWarnings()).isEmpty();
@@ -137,9 +153,15 @@ class MobileSyncServiceTest {
         SyncRequest request = validRequest();
         mobileSyncService.sync(FIELD_USER_ID, request);
 
-        InOrder order = inOrder(inspectionSyncDeltaService, workOrderSyncDeltaService);
+        InOrder order = inOrder(
+                inspectionSyncDeltaService,
+                workOrderSyncDeltaService,
+                dashboardSyncDeltaService,
+                assetSyncDeltaService);
         order.verify(inspectionSyncDeltaService).buildDeltaRecords(fieldUser, null, FIXED_INSTANT.toEpochMilli());
         order.verify(workOrderSyncDeltaService).buildDeltaRecords(fieldUser, null, FIXED_INSTANT.toEpochMilli());
+        order.verify(dashboardSyncDeltaService).buildSnapshot(fieldUser, FIXED_INSTANT);
+        order.verify(assetSyncDeltaService).buildDeltaRecords(eq(fieldUser), any(), any());
     }
 
     @Test
@@ -189,6 +211,22 @@ class MobileSyncServiceTest {
         assertThat(meterRegistry.get("mobile.sync.full_sync_required").counter().count()).isEqualTo(1.0);
         verify(inspectionSyncDeltaService).buildDeltaRecords(fieldUser, null, FIXED_INSTANT.toEpochMilli());
         verify(workOrderSyncDeltaService).buildDeltaRecords(fieldUser, null, FIXED_INSTANT.toEpochMilli());
+        verify(dashboardSyncDeltaService).buildSnapshot(fieldUser, FIXED_INSTANT);
+    }
+
+    @Test
+    void sync_invalidSyncToken_stillIncludesDashboardDelta() {
+        User fieldUser = user(UserRole.FIELD_EMPLOYEE);
+        when(authorizationService.requireMobileUser(FIELD_USER_ID)).thenReturn(fieldUser);
+
+        SyncRequest request = validRequest();
+        request.setSyncToken("bad-token");
+
+        SyncResponse response = mobileSyncService.sync(FIELD_USER_ID, request);
+
+        assertThat(response.getDelta().getDashboard()).isNotNull();
+        assertThat(response.getDelta().getDashboard().getAssignedInspections()).isEqualTo(3L);
+        verify(dashboardSyncDeltaService).buildSnapshot(fieldUser, FIXED_INSTANT);
     }
 
     @Test
@@ -243,6 +281,70 @@ class MobileSyncServiceTest {
         SyncResponse response = mobileSyncService.sync(FIELD_USER_ID, validRequest());
 
         assertThat(response.isRequiresFullSync()).isFalse();
+    }
+
+    @Test
+    void sync_returnsAssetDeltaFromService() {
+        User fieldUser = user(UserRole.FIELD_EMPLOYEE);
+        when(authorizationService.requireMobileUser(FIELD_USER_ID)).thenReturn(fieldUser);
+        SyncAssetDeltaResponse assetDelta = new SyncAssetDeltaResponse();
+        com.infratrack.mobile.dto.AssetContextSummaryResponse summary =
+                com.infratrack.mobile.dto.AssetContextSummaryResponse.from(
+                        assetEntity(50L));
+        assetDelta.setAsset(summary);
+        when(assetSyncDeltaService.buildDeltaRecords(eq(fieldUser), any(), any()))
+                .thenReturn(List.of(assetDelta));
+
+        SyncResponse response = mobileSyncService.sync(FIELD_USER_ID, validRequest());
+
+        assertThat(response.getDelta().getAssets()).hasSize(1);
+        assertThat(response.getDelta().getAssets().get(0).getAsset().getId()).isEqualTo(50L);
+    }
+
+    @Test
+    void sync_invalidSyncToken_stillIncludesAssetDelta() {
+        User fieldUser = user(UserRole.FIELD_EMPLOYEE);
+        when(authorizationService.requireMobileUser(FIELD_USER_ID)).thenReturn(fieldUser);
+        SyncAssetDeltaResponse assetDelta = new SyncAssetDeltaResponse();
+        when(assetSyncDeltaService.buildDeltaRecords(eq(fieldUser), any(), any()))
+                .thenReturn(List.of(assetDelta));
+
+        SyncRequest request = validRequest();
+        request.setSyncToken("bad-token");
+
+        SyncResponse response = mobileSyncService.sync(FIELD_USER_ID, request);
+
+        assertThat(response.getDelta().getAssets()).hasSize(1);
+        verify(assetSyncDeltaService).buildDeltaRecords(eq(fieldUser), any(), any());
+    }
+
+    private com.infratrack.asset.Asset assetEntity(Long id) {
+        com.infratrack.department.Department department = new com.infratrack.department.Department("Parks");
+        department.setId(1L);
+        com.infratrack.assetcategory.AssetCategory category =
+                new com.infratrack.assetcategory.AssetCategory("Playground");
+        category.setId(2L);
+        com.infratrack.asset.Asset asset = new com.infratrack.asset.Asset(
+                "Central Playground",
+                department,
+                category,
+                "Memorial Park",
+                com.infratrack.asset.AssetStatus.ACTIVE,
+                java.time.LocalDate.of(2026, 6, 25),
+                10L);
+        asset.setId(id);
+        return asset;
+    }
+
+    private SyncDashboardDeltaResponse dashboardDelta() {
+        SyncDashboardDeltaResponse dashboard = new SyncDashboardDeltaResponse();
+        dashboard.setGeneratedAt(FIXED_INSTANT.toEpochMilli());
+        dashboard.setAssignedInspections(3L);
+        dashboard.setAssignedWorkOrders(2L);
+        dashboard.setOverdueInspections(1L);
+        dashboard.setOverdueWorkOrders(0L);
+        dashboard.setCompletedToday(4L);
+        return dashboard;
     }
 
     private SyncRequest validRequest() {

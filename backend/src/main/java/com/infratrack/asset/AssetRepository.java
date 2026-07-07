@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,6 +20,9 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
 
     @EntityGraph(attributePaths = {"department", "assetCategory"})
     Optional<Asset> findByCodeIgnoreCase(String code);
+
+    @EntityGraph(attributePaths = {"department", "assetCategory"})
+    List<Asset> findByIdIn(Collection<Long> ids);
 
     @EntityGraph(attributePaths = {"department", "assetCategory"})
     List<Asset> findAllByOrderByRegistrationDateDesc();

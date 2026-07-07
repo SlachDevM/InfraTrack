@@ -3,10 +3,12 @@ package com.infratrack.mobile.sync;
 import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.mobile.MobileAuthorizationService;
 import com.infratrack.mobile.sync.dto.SyncDeltaResponse;
+import com.infratrack.mobile.sync.dto.SyncInspectionDeltaResponse;
 import com.infratrack.mobile.sync.dto.SyncRequest;
 import com.infratrack.mobile.sync.dto.SyncResponse;
 import com.infratrack.mobile.sync.dto.SyncWarningCode;
 import com.infratrack.mobile.sync.dto.SyncWarningResponse;
+import com.infratrack.mobile.sync.dto.SyncWorkOrderDeltaResponse;
 import com.infratrack.user.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +35,8 @@ public class MobileSyncService {
     private final SyncOperationProcessor syncOperationProcessor;
     private final InspectionSyncDeltaService inspectionSyncDeltaService;
     private final WorkOrderSyncDeltaService workOrderSyncDeltaService;
+    private final DashboardSyncDeltaService dashboardSyncDeltaService;
+    private final AssetSyncDeltaService assetSyncDeltaService;
     private final SyncMetricsRecorder syncMetricsRecorder;
 
     public MobileSyncService(
@@ -42,6 +46,8 @@ public class MobileSyncService {
             SyncOperationProcessor syncOperationProcessor,
             InspectionSyncDeltaService inspectionSyncDeltaService,
             WorkOrderSyncDeltaService workOrderSyncDeltaService,
+            DashboardSyncDeltaService dashboardSyncDeltaService,
+            AssetSyncDeltaService assetSyncDeltaService,
             SyncMetricsRecorder syncMetricsRecorder) {
         this.authorizationService = authorizationService;
         this.clock = clock;
@@ -49,6 +55,8 @@ public class MobileSyncService {
         this.syncOperationProcessor = syncOperationProcessor;
         this.inspectionSyncDeltaService = inspectionSyncDeltaService;
         this.workOrderSyncDeltaService = workOrderSyncDeltaService;
+        this.dashboardSyncDeltaService = dashboardSyncDeltaService;
+        this.assetSyncDeltaService = assetSyncDeltaService;
         this.syncMetricsRecorder = syncMetricsRecorder;
     }
 
@@ -73,10 +81,14 @@ public class MobileSyncService {
                 SyncDeltaTokenSupport.resolveUpdatedSinceMillis(request.getSyncToken(), warnings);
 
         SyncDeltaResponse delta = SyncDeltaResponse.empty();
-        delta.setInspections(inspectionSyncDeltaService.buildDeltaRecords(
-                user, updatedSinceMillis, updatedUntilMillis));
-        delta.setWorkOrders(workOrderSyncDeltaService.buildDeltaRecords(
-                user, updatedSinceMillis, updatedUntilMillis));
+        List<SyncInspectionDeltaResponse> inspectionDeltas = inspectionSyncDeltaService.buildDeltaRecords(
+                user, updatedSinceMillis, updatedUntilMillis);
+        List<SyncWorkOrderDeltaResponse> workOrderDeltas = workOrderSyncDeltaService.buildDeltaRecords(
+                user, updatedSinceMillis, updatedUntilMillis);
+        delta.setInspections(inspectionDeltas);
+        delta.setWorkOrders(workOrderDeltas);
+        delta.setDashboard(dashboardSyncDeltaService.buildSnapshot(user, watermark));
+        delta.setAssets(assetSyncDeltaService.buildDeltaRecords(user, inspectionDeltas, workOrderDeltas));
 
         SyncResponse response = new SyncResponse();
         response.setProtocolVersion(SyncProtocolVersion.CURRENT);

@@ -48,6 +48,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         InspectionProgressSyncOperationHandler.class,
         InspectionSyncDeltaService.class,
         WorkOrderSyncDeltaService.class,
+        DashboardSyncDeltaService.class,
+        AssetSyncDeltaService.class,
         SyncMetricsRecorder.class,
         ObservabilityTestConfiguration.class,
         MobileSyncControllerTokenTest.FixedClockConfig.class
@@ -70,6 +72,12 @@ class MobileSyncControllerTokenTest {
 
     @MockitoBean
     private WorkOrderSyncDeltaService workOrderSyncDeltaService;
+
+    @MockitoBean
+    private DashboardSyncDeltaService dashboardSyncDeltaService;
+
+    @MockitoBean
+    private AssetSyncDeltaService assetSyncDeltaService;
 
     @MockitoBean
     private InspectionService inspectionService;
@@ -108,6 +116,10 @@ class MobileSyncControllerTokenTest {
                 .thenReturn(java.util.List.of());
         when(workOrderSyncDeltaService.buildDeltaRecords(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(java.util.List.of());
+        when(dashboardSyncDeltaService.buildSnapshot(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new com.infratrack.mobile.sync.dto.SyncDashboardDeltaResponse());
+        when(assetSyncDeltaService.buildDeltaRecords(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(java.util.List.of());
     }
 
     @Test
@@ -124,7 +136,8 @@ class MobileSyncControllerTokenTest {
                 .andExpect(jsonPath("$.delta.assets").isEmpty())
                 .andExpect(jsonPath("$.delta.inspections").isEmpty())
                 .andExpect(jsonPath("$.delta.workOrders").isEmpty())
-                .andExpect(jsonPath("$.delta.documents").isEmpty())
+                .andExpect(jsonPath("$.delta.dashboard").exists())
+                .andExpect(jsonPath("$.delta.assets").isArray())
                 .andExpect(jsonPath("$.delta.users").isEmpty())
                 .andExpect(jsonPath("$.delta.referenceData").isEmpty())
                 .andExpect(jsonPath("$.operations").isEmpty())

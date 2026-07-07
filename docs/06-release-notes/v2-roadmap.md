@@ -200,12 +200,14 @@ The KPI API is designed for reuse by the React web client, future Android applic
 
 **Business value:** Field workers can queue maintenance notes while offline; server remains authoritative for completion.
 
-**Status:** In progress — M6.1-BE1 delivered.
+**Status:** In progress — M6.1 and M6.2-BE1 delivered.
 
 **Delivered capabilities:**
 
 - **Sprint M6.1-BE1 (validated):** `SAVE_WORK_ORDER_PROGRESS` on `WORK_ORDER` through existing `POST /api/mobile/sync`. Payload: `SaveWorkOrderProgressRequest` (`completionNotes` draft only, max 4000 characters). Stored on `work_orders.draft_completion_notes`. Reuses V2.5 idempotency store, conflict detection/enrichment, and metrics. No Android or React changes.
 - **Sprint M6.1-BE2 (validated):** Work order delta download — `delta.workOrders` populated with scoped `SyncWorkOrderDeltaResponse` records (including `draftCompletionNotes` and `completionEligible`). Same sync token semantics as inspections: null/invalid token → full delta + optional `FULL_SYNC_REQUIRED`; valid token → SQL filter `updatedAt >= issuedAt` with watermark upper bound. Reuses existing `POST /api/mobile/sync`; no new endpoint. Offline completion sync (`COMPLETE_MAINTENANCE`) remains future work.
+- **Sprint M6.2-BE1 (validated):** Dashboard sync contract — `delta.dashboard` populated on every successful sync with a server-computed `SyncDashboardDeltaResponse` snapshot matching `GET /api/mobile/dashboard` counters. Always returned (not token-incremental). Android must store and display the snapshot; must not recompute counters locally. No new endpoint; no dashboard business rule changes.
+- **Sprint M6.3-BE1 (validated):** Asset context delta — `delta.assets` populated with compact `SyncAssetDeltaResponse` records for assets linked to scoped inspections/work orders in the same sync response. Reuses `MobileService.buildAssetContext` (aligned with `GET /api/mobile/assets/lookup`). Document metadata only; no binary sync; no public/citizen portal. No new endpoint.
 
 **Planned within this version family (not yet delivered):**
 

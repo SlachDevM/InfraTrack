@@ -191,6 +191,49 @@ class MobileServiceTest {
     }
 
     @Test
+    void buildAssetContextsForSync_excludesUnauthorizedAssets() {
+        Department employeeDepartment = department(1L, "Parks");
+        Department assetDepartment = department(3L, "Roads");
+        User fieldEmployee = userWithDepartment(20L, UserRole.FIELD_EMPLOYEE, employeeDepartment);
+        Asset visibleAsset = assetInDepartment(employeeDepartment);
+        visibleAsset.setId(50L);
+        Asset hiddenAsset = assetInDepartment(assetDepartment);
+        hiddenAsset.setId(99L);
+
+        when(assetRepository.findByIdIn(List.of(50L, 99L))).thenReturn(List.of(visibleAsset, hiddenAsset));
+        when(issueRepository.findAllByAsset_IdOrderByRecordedAtDesc(50L)).thenReturn(List.of());
+        when(operationalDocumentService.listVisibleAssetOwnedDocuments(visibleAsset, 20L))
+                .thenReturn(List.of());
+
+        List<AssetContextResponse> contexts = mobileService.buildAssetContextsForSync(
+                fieldEmployee, List.of(50L, 99L));
+
+        assertThat(contexts).hasSize(1);
+        assertThat(contexts.get(0).getAsset().getId()).isEqualTo(50L);
+    }
+
+    @Test
+    void buildDashboard_matchesGetDashboardForSameUser() {
+        User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
+        when(userService.getById(20L)).thenReturn(fieldEmployee);
+        when(inspectionRepository.countByAssignedToUserIdAndStatus(20L, InspectionStatus.ASSIGNED)).thenReturn(3L);
+        when(workOrderRepository.countByAssignedToUserIdAndStatus(20L, WorkOrderStatus.ASSIGNED)).thenReturn(2L);
+        when(inspectionRepository.countOverdueByAssignedUser(eq(20L), eq(InspectionStatus.ASSIGNED), any()))
+                .thenReturn(1L);
+        when(inspectionRepository.countCompletedByUserBetween(eq(20L), any(), any())).thenReturn(1L);
+        when(maintenanceActivityRepository.countCompletedByUserBetween(eq(20L), any(), any())).thenReturn(1L);
+
+        MobileDashboardResponse fromGet = mobileService.getDashboard(20L);
+        MobileDashboardResponse fromBuild = mobileService.buildDashboard(fieldEmployee);
+
+        assertThat(fromBuild.getAssignedInspections()).isEqualTo(fromGet.getAssignedInspections());
+        assertThat(fromBuild.getAssignedWorkOrders()).isEqualTo(fromGet.getAssignedWorkOrders());
+        assertThat(fromBuild.getOverdueInspections()).isEqualTo(fromGet.getOverdueInspections());
+        assertThat(fromBuild.getOverdueWorkOrders()).isEqualTo(fromGet.getOverdueWorkOrders());
+        assertThat(fromBuild.getCompletedToday()).isEqualTo(fromGet.getCompletedToday());
+    }
+
+    @Test
     void getMyInspections_shouldReturnOnlyAssignedInspectionsForFieldUser() {
         User fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
         Inspection assigned = assignedInspection(100L, 20L);

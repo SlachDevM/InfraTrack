@@ -3,6 +3,7 @@ package com.infratrack.mobile;
 import com.infratrack.asset.Asset;
 import com.infratrack.asset.AssetRepository;
 import com.infratrack.exception.BusinessValidationException;
+import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.exception.NotFoundException;
 import com.infratrack.inspection.Inspection;
 import com.infratrack.inspection.InspectionAnswer;
@@ -55,6 +56,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -115,6 +117,11 @@ public class MobileService {
     @Transactional(readOnly = true)
     public MobileDashboardResponse getDashboard(Long userId) {
         User user = authorizationService.requireMobileUser(userId);
+        return buildDashboard(user);
+    }
+
+    @Transactional(readOnly = true)
+    public MobileDashboardResponse buildDashboard(User user) {
         LocalDate today = LocalDate.now();
         LocalDateTime dayStart = today.atStartOfDay();
         LocalDateTime dayEnd = today.plusDays(1).atStartOfDay();
@@ -263,6 +270,22 @@ public class MobileService {
     public AssetContextResponse getAssetContext(Long userId, String code) {
         User user = userService.getById(userId);
         Asset asset = findAssetByCodeOrThrow(code);
+        return buildAssetContext(user, asset);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AssetContextResponse> buildAssetContextsForSync(User user, Collection<Long> assetIds) {
+        if (assetIds == null || assetIds.isEmpty()) {
+            return List.of();
+        }
+        return assetRepository.findByIdIn(assetIds).stream()
+                .filter(asset -> isAssetContextVisible(user, asset))
+                .map(asset -> buildAssetContext(user, asset))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public AssetContextResponse buildAssetContext(User user, Asset asset) {
         authorizationService.requireCanViewAssetContext(user, asset);
 
         List<MobileIssueSummaryResponse> openIssues = loadOpenIssues(asset.getId());
@@ -287,7 +310,7 @@ public class MobileService {
                 .map(MobileAssetPreventivePlanResponse::from)
                 .orElse(null);
 
-        List<MobileAssetDocumentSummaryResponse> documents = loadAssetDocuments(asset, userId);
+        List<MobileAssetDocumentSummaryResponse> documents = loadAssetDocuments(asset, user.getId());
 
         AssetContextAllowedActionsResponse allowedActions = new AssetContextAllowedActionsResponse(
                 true,
@@ -339,6 +362,15 @@ public class MobileService {
         }
         return assetRepository.findByCodeIgnoreCase(code.trim())
                 .orElseThrow(() -> new NotFoundException("Asset not found"));
+    }
+
+    private boolean isAssetContextVisible(User user, Asset asset) {
+        try {
+            authorizationService.requireCanViewAssetContext(user, asset);
+            return true;
+        } catch (ForbiddenOperationException ex) {
+            return false;
+        }
     }
 
     private List<MobileIssueSummaryResponse> loadOpenIssues(Long assetId) {

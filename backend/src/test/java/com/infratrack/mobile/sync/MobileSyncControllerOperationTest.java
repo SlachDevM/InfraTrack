@@ -53,6 +53,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         WorkOrderProgressSyncOperationHandler.class,
         InspectionSyncDeltaService.class,
         WorkOrderSyncDeltaService.class,
+        DashboardSyncDeltaService.class,
+        AssetSyncDeltaService.class,
         SyncMetricsRecorder.class,
         ObservabilityTestConfiguration.class,
         MobileSyncControllerOperationTest.FixedClockConfig.class
@@ -81,6 +83,12 @@ class MobileSyncControllerOperationTest {
 
     @MockitoBean
     private WorkOrderSyncDeltaService workOrderSyncDeltaService;
+
+    @MockitoBean
+    private DashboardSyncDeltaService dashboardSyncDeltaService;
+
+    @MockitoBean
+    private AssetSyncDeltaService assetSyncDeltaService;
 
     @MockitoBean
     private InspectionService inspectionService;
@@ -120,6 +128,10 @@ class MobileSyncControllerOperationTest {
         when(inspectionSyncDeltaService.buildDeltaRecords(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(java.util.List.of(deltaInspection));
         when(workOrderSyncDeltaService.buildDeltaRecords(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(java.util.List.of());
+        when(dashboardSyncDeltaService.buildSnapshot(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new com.infratrack.mobile.sync.dto.SyncDashboardDeltaResponse());
+        when(assetSyncDeltaService.buildDeltaRecords(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(java.util.List.of());
     }
 
