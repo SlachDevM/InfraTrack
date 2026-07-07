@@ -27,7 +27,7 @@ describe('InspectionList', () => {
     );
 
     expect(screen.getByText('Central Playground')).toBeInTheDocument();
-    expect(screen.getByText('ASSIGNED')).toBeInTheDocument();
+    expect(screen.getByText('Assigned', { selector: 'span.status-badge' })).toBeInTheDocument();
     expect(screen.getByText('Alex Field')).toBeInTheDocument();
   });
 

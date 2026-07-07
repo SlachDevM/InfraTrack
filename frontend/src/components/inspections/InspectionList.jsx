@@ -1,10 +1,27 @@
 import { getBusinessTriggerTypeLabel } from '../../constants/businessTriggerTypes';
-import { getInspectionPriorityLabel } from '../../constants/inspectionPriorities';
+import {
+  getInspectionPriorityLabel,
+  getInspectionStatusLabel,
+} from '../../constants/inspectionPriorities';
 import { INSPECTION_STATUS } from '../../constants/statuses';
 import { getPhysicalConditionLabel } from '../../constants/physicalConditions';
 import { COMMON_MESSAGES } from '../../constants/messages';
 import RuleEvaluationReportPanel from './RuleEvaluationReportPanel';
 import DecisionAssistantPanel from './DecisionAssistantPanel';
+
+function formatAssignedUser(inspection) {
+  if (inspection.assignedToUserName?.trim()) {
+    return inspection.assignedToUserName.trim();
+  }
+  if (inspection.assignedToUserId != null) {
+    return `User #${inspection.assignedToUserId}`;
+  }
+  return 'Unassigned';
+}
+
+function formatDateTime(value) {
+  return value ? new Date(value).toLocaleString() : '—';
+}
 
 export default function InspectionList({ inspections }) {
   const completedTemplatedInspections = inspections.filter(
@@ -13,25 +30,27 @@ export default function InspectionList({ inspections }) {
   );
 
   return (
-    <section className="inspection-list-section">
-      <h2>Inspections</h2>
+    <section className="inspection-list-section" aria-labelledby="inspections-heading">
+      <h2 id="inspections-heading">Inspections</h2>
       {inspections.length === 0 ? (
-        <p className="empty-state no-items">{COMMON_MESSAGES.NO_INSPECTIONS}</p>
+        <p className="empty-state no-items" role="status">
+          {COMMON_MESSAGES.NO_INSPECTIONS}
+        </p>
       ) : (
         <div className="table-scroll">
           <table className="reference-table inspections-table" aria-label="Inspections">
             <thead>
               <tr>
-                <th>Asset</th>
-                <th>Trigger</th>
-                <th>Assigned To</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Condition</th>
-                <th>Issue</th>
-                <th>Expected By</th>
-                <th>Completed</th>
-                <th>Created</th>
+                <th scope="col">Asset</th>
+                <th scope="col">Trigger</th>
+                <th scope="col">Assigned To</th>
+                <th scope="col">Priority</th>
+                <th scope="col">Status</th>
+                <th scope="col">Condition</th>
+                <th scope="col">Issue</th>
+                <th scope="col">Expected By</th>
+                <th scope="col">Completed</th>
+                <th scope="col">Created</th>
               </tr>
             </thead>
             <tbody>
@@ -42,24 +61,22 @@ export default function InspectionList({ inspections }) {
                     #{inspection.businessTriggerId} —{' '}
                     {getBusinessTriggerTypeLabel(inspection.businessTriggerType)}
                   </td>
-                  <td>{inspection.assignedToUserName || inspection.assignedToUserId}</td>
+                  <td>{formatAssignedUser(inspection)}</td>
                   <td>{getInspectionPriorityLabel(inspection.priority)}</td>
-                  <td>{inspection.status}</td>
+                  <td>
+                    <span className={`status-badge status-${inspection.status?.toLowerCase()}`}>
+                      {getInspectionStatusLabel(inspection.status)}
+                    </span>
+                  </td>
                   <td>
                     {inspection.observedCondition
                       ? getPhysicalConditionLabel(inspection.observedCondition)
-                      : '-'}
+                      : '—'}
                   </td>
                   <td>{inspection.issueIdentified ? 'Yes' : 'No'}</td>
-                  <td>{inspection.expectedCompletionDate || '-'}</td>
-                  <td>
-                    {inspection.completedAt
-                      ? new Date(inspection.completedAt).toLocaleString()
-                      : '-'}
-                  </td>
-                  <td>
-                    {inspection.createdAt ? new Date(inspection.createdAt).toLocaleString() : '-'}
-                  </td>
+                  <td>{inspection.expectedCompletionDate || '—'}</td>
+                  <td>{formatDateTime(inspection.completedAt)}</td>
+                  <td>{formatDateTime(inspection.createdAt)}</td>
                 </tr>
               ))}
             </tbody>

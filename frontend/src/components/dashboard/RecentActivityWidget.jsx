@@ -23,6 +23,11 @@ export default function RecentActivityWidget({ items, loading, error, onNavigate
               className="dashboard-activity-item"
               onClick={() => item.route && onNavigate(item.route)}
               disabled={!item.route}
+              aria-label={
+                item.route
+                  ? `${formatActivityTypeLabel(item.type)}: ${item.title}`
+                  : `${formatActivityTypeLabel(item.type)}: ${item.title} (no link)`
+              }
             >
               <div className="dashboard-activity-item-header">
                 <span className="dashboard-activity-type">

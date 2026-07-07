@@ -3,7 +3,10 @@ import { render, waitFor, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import ApiAuthBridge from '../../components/ApiAuthBridge';
 import apiClient from '../../services/apiClient';
-import { notifyUnauthorized, registerUnauthorizedHandler } from '../../services/unauthorizedHandler';
+import {
+  notifyUnauthorized,
+  registerUnauthorizedHandler,
+} from '../../services/unauthorizedHandler';
 import { ROUTES } from '../../constants/routes';
 
 const mockLogout = vi.fn();

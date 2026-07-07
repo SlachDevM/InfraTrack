@@ -65,6 +65,12 @@
   white-space: nowrap;
 }
 
+.export-reporting-range-summary {
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+}
+
 .export-reporting-date-input {
   padding: 0.35rem 0.5rem;
   border: 1px solid rgba(255, 255, 255, 0.35);

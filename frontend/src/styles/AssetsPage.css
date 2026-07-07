@@ -56,3 +56,34 @@
   margin: 1rem 0;
   border-radius: 4px;
 }
+
+.asset-context-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem 1.25rem;
+  background: #f7faf8;
+  border: 1px solid #dde3df;
+  border-left: 4px solid #2d6b4d;
+  border-radius: 6px;
+  padding: 0.85rem 1rem;
+  margin: 1rem 0;
+}
+
+.asset-context-summary-item {
+  margin: 0;
+}
+
+.asset-context-summary dt {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #5f6368;
+}
+
+.asset-context-summary dd {
+  margin: 0.2rem 0 0;
+  font-size: 0.95rem;
+  color: #1a472a;
+}

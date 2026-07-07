@@ -207,6 +207,25 @@ describe('DashboardPage', () => {
     expect(within(inspectionsCard).getByText('2')).toBeInTheDocument();
   });
 
+  it('refreshes dashboard data when Refresh is clicked', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('Good morning, Alex Manager');
+    expect(operationsIntelligenceApi.getKpis).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole('button', { name: 'Refresh dashboard' }));
+
+    await waitFor(() => {
+      expect(operationsIntelligenceApi.getKpis).toHaveBeenCalledTimes(2);
+    });
+    expect(screen.getByText('Refresh')).toBeInTheDocument();
+  });
+
   it('displays attention alerts when KPI values are non-zero', async () => {
     render(
       <MemoryRouter>

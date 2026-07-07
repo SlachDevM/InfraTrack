@@ -34,6 +34,32 @@
   vertical-align: top;
 }
 
+.status-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.status-badge.status-assigned,
+.status-badge.status-created {
+  background: #e8f1ec;
+  color: #1a472a;
+}
+
+.status-badge.status-completed {
+  background: #e8f5ea;
+  color: #1f6b3a;
+}
+
+.status-badge.status-cancelled {
+  background: #f3f4f6;
+  color: #5f6368;
+}
+
 .complete-form {
   margin-bottom: 1.5rem;
 }

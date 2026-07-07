@@ -6,7 +6,7 @@ export function PageErrorMessage({ message }) {
   }
 
   return (
-    <div className="error-message" role="alert">
+    <div className="error-message" role="alert" aria-live="assertive">
       {message}
     </div>
   );
@@ -18,7 +18,7 @@ export function PageSuccessMessage({ message, children }) {
   }
 
   return (
-    <div className="success-message" role="status">
+    <div className="success-message" role="status" aria-live="polite">
       {message}
       {children}
     </div>

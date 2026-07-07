@@ -22,6 +22,16 @@ export const INSPECTION_STATUSES = {
   CANCELLED: 'CANCELLED',
 };
 
+export const INSPECTION_STATUS_LABELS = {
+  [INSPECTION_STATUSES.ASSIGNED]: 'Assigned',
+  [INSPECTION_STATUSES.COMPLETED]: 'Completed',
+  [INSPECTION_STATUSES.CANCELLED]: 'Cancelled',
+};
+
 export function getInspectionPriorityLabel(priority) {
   return INSPECTION_PRIORITY_LABELS[priority] || priority;
+}
+
+export function getInspectionStatusLabel(status) {
+  return INSPECTION_STATUS_LABELS[status] || status;
 }

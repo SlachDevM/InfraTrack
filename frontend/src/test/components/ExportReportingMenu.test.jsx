@@ -54,6 +54,7 @@ describe('ExportReportingMenu', () => {
     renderExportMenu();
 
     expect(screen.getByText('Export range:')).toBeInTheDocument();
+    expect(screen.getByText('2026-01-01 to 2026-01-31')).toBeInTheDocument();
     expect(screen.getByLabelText('Export from date')).toHaveValue('2026-01-01');
     expect(screen.getByLabelText('Export to date')).toHaveValue('2026-01-31');
     expect(screen.getByRole('button', { name: 'Export' })).toBeInTheDocument();

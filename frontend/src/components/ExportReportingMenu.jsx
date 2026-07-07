@@ -96,11 +96,17 @@ export default function ExportReportingMenu({
 
   return (
     <div className="export-reporting-controls" ref={containerRef}>
-      <span className="export-reporting-range-label">{COMMON_LABELS.EXPORT_RANGE}</span>
+      <span className="export-reporting-range-label" id={`${exportType}-export-range-label`}>
+        {COMMON_LABELS.EXPORT_RANGE}
+      </span>
+      <span className="export-reporting-range-summary" aria-live="polite">
+        {fromDate} to {toDate}
+      </span>
       <input
         type="date"
         className="export-reporting-date-input"
         aria-label={COMMON_LABELS.EXPORT_FROM_DATE}
+        aria-describedby={`${exportType}-export-range-label`}
         value={fromDate}
         disabled={exporting}
         onChange={(event) => setFromDate(event.target.value)}
@@ -109,6 +115,7 @@ export default function ExportReportingMenu({
         type="date"
         className="export-reporting-date-input"
         aria-label={COMMON_LABELS.EXPORT_TO_DATE}
+        aria-describedby={`${exportType}-export-range-label`}
         value={toDate}
         disabled={exporting}
         onChange={(event) => setToDate(event.target.value)}

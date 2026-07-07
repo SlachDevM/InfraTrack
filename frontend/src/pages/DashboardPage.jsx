@@ -67,6 +67,7 @@ export default function DashboardPage() {
   const [error, setError] = useState(null);
   const [trendsError, setTrendsError] = useState(null);
   const [activityError, setActivityError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const role = auth?.user?.role;
   const normalizedPreferences = useMemo(
@@ -180,6 +181,15 @@ export default function DashboardPage() {
     }
   };
 
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      await loadDashboardData(normalizedPreferences);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const handleResetPreferences = async () => {
     try {
       setResettingPreferences(true);
@@ -253,25 +263,46 @@ export default function DashboardPage() {
     <div className="dashboard-page">
       <AppNavbar onNavigate={navigate} onLogout={handleLogout} />
 
-      <main className="dashboard-content">
+      <main className="dashboard-content" aria-busy={loading || refreshing || preferencesLoading}>
         <header className="dashboard-greeting">
           <div className="dashboard-greeting-row">
             <div>
               <h1>Good morning, {getDisplayName(auth.user)}</h1>
               <p>Operational overview</p>
             </div>
-            <button
-              type="button"
-              className="dashboard-settings-button"
-              onClick={() => setSettingsOpen(true)}
-              aria-label="Dashboard settings"
-            >
-              Dashboard Settings
-            </button>
+            <div className="dashboard-header-actions">
+              <button
+                type="button"
+                className="dashboard-refresh-button"
+                onClick={handleRefresh}
+                disabled={refreshing || loading || preferencesLoading}
+                aria-label="Refresh dashboard"
+              >
+                {refreshing ? 'Refreshing...' : 'Refresh'}
+              </button>
+              <button
+                type="button"
+                className="dashboard-settings-button"
+                onClick={() => setSettingsOpen(true)}
+                aria-label="Dashboard settings"
+              >
+                Dashboard Settings
+              </button>
+            </div>
           </div>
         </header>
 
-        {preferencesLoading && (
+        {refreshing && (
+          <div
+            className="dashboard-state-message loading-state-inline"
+            role="status"
+            aria-live="polite"
+          >
+            Refreshing dashboard data...
+          </div>
+        )}
+
+        {preferencesLoading && !refreshing && (
           <div className="dashboard-state-message loading-state-inline" role="status">
             Loading dashboard preferences...
           </div>
@@ -283,9 +314,15 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {loading && (
+        {loading && !refreshing && (
           <div className="dashboard-state-message loading-state-inline" role="status">
             Loading operational KPIs...
+          </div>
+        )}
+
+        {!loading && !error && !kpis && !refreshing && (
+          <div className="dashboard-state-message empty-state" role="status">
+            No operational KPI data is available right now.
           </div>
         )}
 

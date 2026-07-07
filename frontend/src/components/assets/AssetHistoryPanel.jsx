@@ -15,8 +15,8 @@ export default function AssetHistoryPanel({
   onHistoryNext,
 }) {
   return (
-    <section className="asset-history-section">
-      <h2>Asset History</h2>
+    <section className="asset-history-section" aria-labelledby="asset-history-heading">
+      <h2 id="asset-history-heading">Asset History</h2>
       <div className="form-row">
         <label htmlFor="historyAssetId">Asset</label>
         <select
@@ -25,6 +25,7 @@ export default function AssetHistoryPanel({
           value={selectedAssetId}
           onChange={onAssetChange}
           disabled={historyLoading || assets.length === 0}
+          aria-describedby={assets.length === 0 ? 'asset-history-empty-hint' : undefined}
         >
           <option value="">Select asset</option>
           {assets.map((asset) => (
@@ -35,30 +36,53 @@ export default function AssetHistoryPanel({
         </select>
       </div>
 
-      {selectedAsset && (
-        <div className="linked-decision-info">
-          <strong>Department:</strong> {selectedAsset.departmentName}
-          <br />
-          <strong>Category:</strong> {selectedAsset.assetCategoryName}
-          <br />
-          <strong>Status:</strong> {getAssetStatusLabel(selectedAsset.status)}
-        </div>
+      {assets.length === 0 && (
+        <p id="asset-history-empty-hint" className="read-only-note" role="status">
+          Register an asset to review its operational history.
+        </p>
       )}
 
-      {historyLoading && <p className="read-only-note">Loading asset history...</p>}
+      {selectedAsset && (
+        <dl className="asset-context-summary">
+          <div className="asset-context-summary-item">
+            <dt>Department</dt>
+            <dd>{selectedAsset.departmentName}</dd>
+          </div>
+          <div className="asset-context-summary-item">
+            <dt>Category</dt>
+            <dd>{selectedAsset.assetCategoryName}</dd>
+          </div>
+          <div className="asset-context-summary-item">
+            <dt>Status</dt>
+            <dd>{getAssetStatusLabel(selectedAsset.status)}</dd>
+          </div>
+          <div className="asset-context-summary-item">
+            <dt>Location</dt>
+            <dd>{selectedAsset.location || '—'}</dd>
+          </div>
+        </dl>
+      )}
+
+      {historyLoading && (
+        <p className="read-only-note" role="status" aria-live="polite">
+          Loading asset history...
+        </p>
+      )}
 
       {!historyLoading && selectedAssetId && assetHistory.length === 0 && (
-        <p className="read-only-note">No history entries recorded for this asset.</p>
+        <p className="empty-state no-items" role="status">
+          No history entries recorded for this asset.
+        </p>
       )}
 
       {!historyLoading && assetHistory.length > 0 && (
-        <table className="reference-table assets-table">
+        <table className="reference-table assets-table" aria-label="Asset history events">
           <thead>
             <tr>
-              <th>Event Date</th>
-              <th>Event Type</th>
-              <th>Details</th>
-              <th>Responsible User</th>
+              <th scope="col">Event Date</th>
+              <th scope="col">Event Type</th>
+              <th scope="col">Details</th>
+              <th scope="col">Responsible User</th>
             </tr>
           </thead>
           <tbody>
@@ -66,7 +90,7 @@ export default function AssetHistoryPanel({
               <tr key={`${entry.eventType}-${entry.eventDate}-${index}`}>
                 <td>{entry.eventDate}</td>
                 <td>{getAssetHistoryEventTypeLabel(entry.eventType)}</td>
-                <td>{entry.details || '-'}</td>
+                <td>{entry.details || '—'}</td>
                 <td>{entry.responsibleUserName || `#${entry.responsibleUserId}`}</td>
               </tr>
             ))}
