@@ -166,7 +166,7 @@ public class WorkOrderService {
         return WorkOrderResponse.from(workOrder, assignee);
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = com.infratrack.exception.BusinessException.class)
     public WorkOrderResponse saveWorkOrderProgress(
             Long workOrderId,
             SaveWorkOrderProgressRequest request,

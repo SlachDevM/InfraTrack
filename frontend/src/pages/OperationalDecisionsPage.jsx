@@ -287,9 +287,7 @@ export default function OperationalDecisionsPage() {
                     <td>#{decision.issueId}</td>
                     <td>{getOperationalDecisionOutcomeLabel(decision.outcome)}</td>
                     <td>{decision.rationale}</td>
-                    <td>
-                      {formatTimestamp(decision.decidedAt)}
-                    </td>
+                    <td>{formatTimestamp(decision.decidedAt)}</td>
                   </tr>
                 ))}
               </tbody>

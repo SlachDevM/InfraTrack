@@ -561,9 +561,7 @@ export default function IssuesPage() {
                       <td>{getIssueSeverityLabel(issue.severity)}</td>
                       <td>{displayCapaValue(issue.rootCause)}</td>
                       <td>{displayCapaValue(issue.lessonsLearned)}</td>
-                      <td>
-                        {formatTimestamp(issue.recordedAt)}
-                      </td>
+                      <td>{formatTimestamp(issue.recordedAt)}</td>
                     </tr>
                   ))}
                 </tbody>

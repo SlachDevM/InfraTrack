@@ -11,6 +11,7 @@ import com.infratrack.mobile.sync.dto.SyncOperationStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 /**
@@ -93,7 +94,7 @@ class InspectionProgressSyncOperationHandler implements SyncOperationHandler {
     private SyncOperationResponse accepted(PendingOperationRequest operation, Long inspectionId) {
         SyncOperationResponse response = baseResponse(operation, inspectionId);
         response.setStatus(SyncOperationStatus.ACCEPTED);
-        response.setServerUpdatedAt(clock.instant());
+        response.setServerUpdatedAt(clock.instant().truncatedTo(ChronoUnit.MICROS));
         return response;
     }
 
