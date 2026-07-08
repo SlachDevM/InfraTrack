@@ -137,9 +137,7 @@ export default function NotificationPage() {
                 <div className="notification-content">
                   <div className="notification-header-row">
                     {notif.title && <span className="notification-title">{notif.title}</span>}
-                    <span className="notification-time">
-                      {formatTimestamp(notif.createdAt)}
-                    </span>
+                    <span className="notification-time">{formatTimestamp(notif.createdAt)}</span>
                   </div>
                   <p className="notification-message">{notif.message}</p>
                 </div>

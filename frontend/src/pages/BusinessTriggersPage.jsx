@@ -293,9 +293,7 @@ export default function BusinessTriggersPage() {
                     <td>{getBusinessTriggerTypeLabel(trigger.type)}</td>
                     <td>{trigger.reason}</td>
                     <td>{trigger.urgent ? 'Yes' : 'No'}</td>
-                    <td>
-                      {formatTimestamp(trigger.createdAt)}
-                    </td>
+                    <td>{formatTimestamp(trigger.createdAt)}</td>
                   </tr>
                 ))}
               </tbody>

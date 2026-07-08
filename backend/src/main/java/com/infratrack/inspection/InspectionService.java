@@ -310,7 +310,7 @@ public class InspectionService {
         return saveInspectionProgress(inspection, null, null, false, null, answers);
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = com.infratrack.exception.BusinessException.class)
     public InspectionResponse saveInspectionProgress(
             Long inspectionId,
             SaveInspectionProgressRequest request,

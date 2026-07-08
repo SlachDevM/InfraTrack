@@ -21,18 +21,19 @@ import com.infratrack.user.UserRole;
 import com.infratrack.workorder.WorkOrder;
 import com.infratrack.workorder.WorkOrderRepository;
 import com.infratrack.workorder.WorkType;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -47,12 +48,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * End-to-end integration tests for {@code POST /api/mobile/sync} (M6.5-STAB-2).
+ *
+ * <p>NOTE: This test class intentionally does NOT use {@code @Transactional}. The sync endpoint
+ * internally uses {@code @Transactional(propagation = REQUIRES_NEW)} for idempotency tracking,
+ * which creates a separate DB transaction that cannot see uncommitted data from an enclosing test
+ * transaction. Each test commits its setup data and cleans up in {@link #cleanUp()}.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Testcontainers(disabledWithoutDocker = true)
-@Transactional
 class MobileSyncIntegrationTest {
 
     @Container
@@ -104,6 +109,9 @@ class MobileSyncIntegrationTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     private MobileSyncIntegrationFixture fixture;
 
     private User coordinator;
@@ -111,6 +119,13 @@ class MobileSyncIntegrationTest {
     private Asset asset;
     private Inspection assignedInspection;
     private WorkOrder assignedWorkOrder;
+
+    @AfterEach
+    void cleanUp() {
+        // Truncate test data in dependency order. CASCADE handles all FK-dependent tables
+        // (work_orders, operational_decisions, issues, inspections, business_triggers, assets, etc.).
+        jdbcTemplate.execute("TRUNCATE TABLE departments, asset_categories, mobile_sync_operation CASCADE");
+    }
 
     @BeforeEach
     void setUp() throws Exception {

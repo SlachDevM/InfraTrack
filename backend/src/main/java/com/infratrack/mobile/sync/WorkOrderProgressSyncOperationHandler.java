@@ -11,6 +11,7 @@ import com.infratrack.workorder.dto.SaveWorkOrderProgressRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 /**
@@ -94,7 +95,7 @@ class WorkOrderProgressSyncOperationHandler implements SyncOperationHandler {
     private SyncOperationResponse accepted(PendingOperationRequest operation, Long workOrderId) {
         SyncOperationResponse response = baseResponse(operation, workOrderId);
         response.setStatus(SyncOperationStatus.ACCEPTED);
-        response.setServerUpdatedAt(clock.instant());
+        response.setServerUpdatedAt(clock.instant().truncatedTo(ChronoUnit.MICROS));
         return response;
     }
 
