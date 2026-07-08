@@ -1,10 +1,23 @@
 # System Blueprint
 
-Engineering standards, development workflow, and visual workflow guides for InfraTrack.
+Permanent engineering blueprint, development workflow, and visual workflow guides for InfraTrack.
+
+## Current Documentation Baseline
+
+| Item | Value |
+|------|-------|
+| **Backend platform** | V2.6.x |
+| **React web** | V2.6.x |
+| **Android application** | v1.3.0 |
+| **Documentation status** | Living Documentation |
+| **Platform status** | Internally validated |
+| **Active development** | M6.6 — see [Product Roadmap](../06-release-notes/v2-roadmap.md) |
+
+**Versioning:** Platform versions (V2.x) and Android application versions (v1.x) are independent numbering schemes.
 
 ## Purpose
 
-This folder holds the **engineering handbook** and **visual workflow references** that explain how InfraTrack is built — distinct from business discovery (domain language) and from ADRs/BDRs (decision records).
+This folder holds the **engineering blueprint** and **visual workflow references** that explain how InfraTrack is built — distinct from business discovery (domain language) and from ADRs/BDRs (decision records).
 
 ## Audience
 
@@ -13,7 +26,7 @@ This folder holds the **engineering handbook** and **visual workflow references*
 - AI coding assistants
 - Technical and architecture reviewers
 
-## Recommended reading order
+## Where to start
 
 1. [Workflow Sequence Diagrams](workflow-sequence-diagrams.md) — visual overview of main business flows
 2. [InfraTrack System Blueprint](INFRATRACK_SYSTEM_BLUEPRINT.md) — engineering principles, coding standards, AI collaboration rules
@@ -24,7 +37,7 @@ This folder holds the **engineering handbook** and **visual workflow references*
 
 | Document | Role |
 | -------- | ---- |
-| [INFRATRACK_SYSTEM_BLUEPRINT.md](INFRATRACK_SYSTEM_BLUEPRINT.md) | Engineering handbook — how the product must be developed |
+| [INFRATRACK_SYSTEM_BLUEPRINT.md](INFRATRACK_SYSTEM_BLUEPRINT.md) | Permanent engineering blueprint — how the product must be developed |
 | [workflow-sequence-diagrams.md](workflow-sequence-diagrams.md) | Visual workflow guides (Living Document) |
 
 ## Reference documents
@@ -34,6 +47,7 @@ This folder holds the **engineering handbook** and **visual workflow references*
 | [Product Vision](../00-product-vision.md) | Product purpose and principles |
 | [Business Capability Map](../01-business-architecture/business-capability-map.md) | What the platform does today |
 | [API Consumer Guide](../04-api/api-consumer-guide.md) | How clients consume the API |
+| [Platform Version History](../06-release-notes/platform-version-history.md) | Delivered platform capability versions |
 
 ## Historical documents
 

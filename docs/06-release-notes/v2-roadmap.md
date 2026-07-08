@@ -2,6 +2,10 @@
 
 Planned evolution of InfraTrack by **product version**. Delivered and validated versions are documented in [Platform Version History](platform-version-history.md).
 
+**Documentation baseline:** Platform capability **V2.6.x** (current); Android application **v1.3.0** (independent `v1.x` versioning). This roadmap is the **planning** view for platform capability; delivered history is authoritative in [Platform Version History](platform-version-history.md).
+
+**Active development:** **M6.6** (V2.6.0 Work Order Offline family).
+
 **Legend:**
 
 | Symbol | Meaning |
@@ -116,7 +120,7 @@ The KPI API is designed for reuse by the React web client, future Android applic
 
 **Business value:** Reliable field work in low-connectivity areas; scanning a physical asset tag opens its operational context instead of manual search.
 
-**Status:** In progress — mobile backend (M4-BE), platform upgrade (DT-3), reporting security hardening, and frontend refactoring validated; Android scanning UI, printable labels, and offline sync remain planned. **V2.4 platform documentation baseline** consolidated in [v2.4.md](v2.4.md) (DOC-1).
+**Status:** In progress — mobile backend (M4-BE), platform upgrade (DT-3), reporting security hardening, and frontend refactoring validated; Android scanning UI, printable labels, and remaining offline/Android integration planned. Historical DOC-1 consolidation: [v2.4.md](v2.4.md).
 
 **Delivered capabilities:**
 
@@ -218,6 +222,7 @@ The KPI API is designed for reuse by the React web client, future Android applic
 
 **Planned within this version family (not yet delivered):**
 
+- **M6.6** — next milestone (active development)
 - Queued maintenance completion sync (`COMPLETE_MAINTENANCE`)
 - Extended conflict resolution endpoint scope for work orders
 
@@ -285,7 +290,6 @@ The KPI API is designed for reuse by the React web client, future Android applic
 
 ## See also
 
-- [V2.4 release notes](v2.4.md)
-- [Platform Version History](platform-version-history.md)
+- [Platform Version History](platform-version-history.md) — delivered capability history (authoritative)
 - [BDR-005 — Offline & Synchronization Architecture](../03-architecture/bdr-005-offline-synchronization-architecture.md)
 - [Glossary](../01-business-architecture/glossary.md)

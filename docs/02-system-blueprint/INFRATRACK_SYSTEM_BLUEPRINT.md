@@ -5,6 +5,9 @@
 | Field    | Value                |
 | -------- | -------------------- |
 | Status   | Living Document      |
+| Role     | Permanent Engineering Blueprint |
+| Introduced | V1 (original handbook) |
+| Platform baseline | V2.6.x |
 | Audience | Developers, AI assistants, technical reviewers |
 
 ## Purpose
@@ -23,7 +26,7 @@ every new AI session.
 
 ---
 
-# Planned Structure
+# Document Structure
 
 1. Purpose
 2. Project Identity
@@ -71,17 +74,13 @@ Business Discovery ↓ Use Case ↓ Architecture ↓ Implementation ↓ Testing
 
 ---
 
-## Notes
+## Document identity
 
-This is the Version 1 engineering handbook for InfraTrack.
+This is the **permanent engineering blueprint** for InfraTrack — a living document, not a temporary V1 handbook.
 
-Each chapter will be expanded carefully, following the same philosophy
-used to build the MRRG blueprint, while adapting every section to
-InfraTrack's domain.
+It was originally introduced during V1 development and remains the authoritative engineering reference as the platform evolves. The current platform baseline is **V2.6.x**; delivered product capability is tracked in [Platform Version History](../06-release-notes/platform-version-history.md).
 
-The final blueprint is expected to become substantially larger than the
-MRRG blueprint and act as the definitive engineering handbook for the
-project.
+Technical chapters below are updated incrementally. They define **how InfraTrack must be developed**, independent of any single product version sprint.
 
 # 1. Purpose
 

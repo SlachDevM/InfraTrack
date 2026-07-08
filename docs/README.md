@@ -2,6 +2,24 @@
 
 Documentation is organised by project phase. Each folder represents a stage of product development, from business understanding through implementation reference.
 
+## Current Documentation Baseline
+
+| Item | Value |
+|------|-------|
+| **Backend platform** | V2.6.x — Work Order Offline (validated through M6.5) |
+| **React web** | V2.6.x |
+| **Android application** | **v1.3.0** |
+| **Maven/npm artifact** | `2.0.1` per [ADR-004](03-architecture/adr-004-platform-versioning-strategy.md) |
+| **Documentation status** | Living Documentation |
+| **Platform status** | Internally validated |
+| **Active development** | **M6.6** — see [Product Roadmap](06-release-notes/v2-roadmap.md) |
+
+**Versioning:** **Platform versions** (V2.x) describe delivered backend and React capabilities. The **Android application** uses an independent release cycle (currently **v1.3.0**). These numbering schemes are not interchangeable.
+
+**What version is this documentation describing?** Platform capability **V2.6.x**. Delivered platform history: [Platform Version History](06-release-notes/platform-version-history.md). Planned platform work: [Product Roadmap](06-release-notes/v2-roadmap.md).
+
+---
+
 **[Product Vision](00-product-vision.md)** — why InfraTrack exists, who it serves, product principles, platform evolution, and long-term direction. Start here for the product story; use the phase folders below for detail.
 
 **[Business Capability Map](01-business-architecture/business-capability-map.md)** — what the platform can do today; high-level functional reference by business capability.
@@ -40,10 +58,10 @@ Navigate product releases and planning:
 | **Business Capability Map** | [business-capability-map.md](01-business-architecture/business-capability-map.md) — what the platform can do today |
 | **API Consumer Guide** | [api-consumer-guide.md](04-api/api-consumer-guide.md) — how clients should consume the API |
 | **Workflow Sequence Diagrams** | [workflow-sequence-diagrams.md](02-system-blueprint/workflow-sequence-diagrams.md) — visual workflow guides |
-| **Platform Version History** | [platform-version-history.md](06-release-notes/platform-version-history.md) — authoritative product versions |
-| **Validated baseline** | Product capability **V2.4** (see [v2.4.md](06-release-notes/v2.4.md)); Maven/npm artifact version **2.0.1** per ADR-004 |
-| **Roadmap** | [v2-roadmap.md](06-release-notes/v2-roadmap.md) — planned versions |
-| **V2.4 release notes** | [v2.4.md](06-release-notes/v2.4.md) — platform baseline consolidation |
+| **Platform Version History** | [platform-version-history.md](06-release-notes/platform-version-history.md) — authoritative **delivered** product versions |
+| **Current baseline** | Platform capability **V2.6.x**; Maven/npm artifact **`2.0.1`** per ADR-004 |
+| **Roadmap** | [v2-roadmap.md](06-release-notes/v2-roadmap.md) — planned versions and active development (M6.6) |
+| **V2.4 milestone notes** | [v2.4.md](06-release-notes/v2.4.md) — historical DOC-1 consolidation (superseded as current baseline by V2.6.x) |
 | **Release notes** | [06-release-notes/](06-release-notes/) — sprint and version reports |
 | **Architecture decisions** | [**ADR Index**](03-architecture/ADR-INDEX.md) · [ADR-004 Versioning](03-architecture/adr-004-platform-versioning-strategy.md) · [ADR-003 V2 workflow](03-architecture/adr-003-v2-domain-driven-workflow.md) · [all ADRs/BDRs](03-architecture/) |
 
@@ -51,7 +69,7 @@ Versioning rules: [ADR-004 — Platform Versioning Strategy](03-architecture/adr
 
 ---
 
-## Quick links (Version 2.4 baseline)
+## Quick links (V2.6.x baseline)
 
 | Topic | Document |
 |-------|----------|
@@ -65,8 +83,8 @@ Versioning rules: [ADR-004 — Platform Versioning Strategy](03-architecture/adr
 | Business Glossary | [glossary.md](01-business-architecture/glossary.md) |
 | V2 workflow architecture | [adr-003-v2-domain-driven-workflow.md](03-architecture/adr-003-v2-domain-driven-workflow.md) |
 | Version 2.0.0 sprint report | [v2-phase-a-b.md](06-release-notes/v2-phase-a-b.md) |
-| V2.4 release notes | [v2.4.md](06-release-notes/v2.4.md) |
 | Product Roadmap | [v2-roadmap.md](06-release-notes/v2-roadmap.md) |
+| V2.4 milestone notes | [v2.4.md](06-release-notes/v2.4.md) |
 | V2 API endpoint groups | [v2-domain-engine-api.md](04-api/v2-domain-engine-api.md) |
 | Human-in-the-loop (BDR) | [bdr-001](03-architecture/bdr-001-human-in-the-loop-decision-engine.md) |
 | Preventive candidates (BDR) | [bdr-002](03-architecture/bdr-002-preventive-candidates-before-automation.md) |
@@ -160,7 +178,7 @@ Defines the long-term business architecture and translates business discovery in
 
 ### 02 — System Blueprint
 
-Engineering handbook and visual workflow guides. See [02-system-blueprint/README.md](02-system-blueprint/README.md), [workflow-sequence-diagrams.md](02-system-blueprint/workflow-sequence-diagrams.md), and [INFRATRACK_SYSTEM_BLUEPRINT.md](02-system-blueprint/INFRATRACK_SYSTEM_BLUEPRINT.md).
+Permanent engineering blueprint and visual workflow guides. See [02-system-blueprint/README.md](02-system-blueprint/README.md), [workflow-sequence-diagrams.md](02-system-blueprint/workflow-sequence-diagrams.md), and [INFRATRACK_SYSTEM_BLUEPRINT.md](02-system-blueprint/INFRATRACK_SYSTEM_BLUEPRINT.md).
 
 ### 03 — Architecture
 
@@ -189,9 +207,9 @@ Deployment, secrets, security hardening, backup/restore, and troubleshooting. Se
 
 Product versions and sprint reports:
 
-- [platform-version-history.md](06-release-notes/platform-version-history.md) — **Platform version history** (authoritative)
-- [v2-roadmap.md](06-release-notes/v2-roadmap.md) — Product roadmap by version
-- [v2.4.md](06-release-notes/v2.4.md) — V2.4 platform baseline
+- [platform-version-history.md](06-release-notes/platform-version-history.md) — **Delivered** product versions (authoritative history)
+- [v2-roadmap.md](06-release-notes/v2-roadmap.md) — Product roadmap and **active development** (M6.6)
+- [v2.4.md](06-release-notes/v2.4.md) — V2.4 milestone notes (historical DOC-1 consolidation)
 - [v2-0-1-security-hardening.md](06-release-notes/v2-0-1-security-hardening.md) — Version 2.0.1
 - [v2-phase-a-b.md](06-release-notes/v2-phase-a-b.md) — Version 2.0.0 (historical sprint report)
 - [v2-sprint0.md](06-release-notes/v2-sprint0.md) — V2 Sprint 0 technical baseline (Version 1.0.1)

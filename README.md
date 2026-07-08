@@ -2,9 +2,21 @@
 
 Operational asset and field operations management platform for Australian Local Governments.
 
-**Current validated product baseline: V2.4** (internally validated — see [v2.4.md](docs/06-release-notes/v2.4.md)). Maven/npm artifact version remains `2.0.1` per [ADR-004](docs/03-architecture/adr-004-platform-versioning-strategy.md).
+## Current Platform Baseline
 
-Validated foundations through **Version 2.4.x** (Policy Engine, Reporting, Mobile Asset Context, Security Hardening) are documented in [Platform Version History](docs/06-release-notes/platform-version-history.md) and [V2.4 release notes](docs/06-release-notes/v2.4.md). This is an **internally validated baseline** — not a production release.
+| Item | Value |
+|------|-------|
+| **Backend platform** | V2.6.x |
+| **React web** | V2.6.x |
+| **Android application** | **v1.3.0** |
+| **Maven/npm artifact** | `2.0.1` per [ADR-004](docs/03-architecture/adr-004-platform-versioning-strategy.md) |
+| **Documentation status** | Living Documentation |
+| **Platform status** | Internally validated |
+| **Active development** | **M6.6** — see [Product Roadmap](docs/06-release-notes/v2-roadmap.md) |
+
+**Versioning:** **Platform versions** (V2.x) describe delivered platform capabilities. The **Android application** uses an independent release cycle (currently **v1.3.0**). These numbering schemes are not interchangeable.
+
+Delivered platform capability history: [Platform Version History](docs/06-release-notes/platform-version-history.md). This documentation describes **platform capability V2.6.x** (Work Order Offline backend validated through M6.5).
 
 ![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)
 ![React](https://img.shields.io/badge/React-Frontend-61DAFB?logo=react)
@@ -33,7 +45,9 @@ InfraTrack is an enterprise software product for managing public infrastructure 
 | **2.1.0** | Operations Intelligence & dashboard (validated) |
 | **2.2.x** | Mobile API & CSV reporting foundations (validated) |
 | **2.3.x** | Policy Engine & extended reporting (CSV/XLSX/PDF) (validated) |
-| **2.4.x** | Mobile asset context, QR foundation, Spring Boot 4, security hardening (partial — see roadmap) |
+| **2.4.x** | Mobile asset context, QR foundation, Spring Boot 4, security hardening (validated — partial Android/offline scope remains) |
+| **2.5.x** | Mobile offline sync backend — protocol, inspection delta, conflicts (validated — partial) |
+| **2.6.x** | Work Order Offline — mobile sync extensions through M6.5 (in progress — **current baseline**) |
 
 See [Platform Version History](docs/06-release-notes/platform-version-history.md) and [Product Roadmap](docs/06-release-notes/v2-roadmap.md) for delivery status.
 
@@ -42,7 +56,7 @@ See [Platform Version History](docs/06-release-notes/platform-version-history.md
 The backend is the single source of truth for all business rules. Clients consume one REST API:
 
 - **React web application** — office-based operational users (included)
-- **Native Android application** — field operations (planned; Mobile API and M4-BE backend ready)
+- **Native Android application** — field operations (**v1.3.0**; consumes Mobile API and platform V2.6.x sync backend)
 
 ---
 
@@ -74,7 +88,7 @@ See [Functional Use Cases](docs/01-business-architecture/functional-use-cases.md
 | [Domain Engine](docs/07-business-architecture/domain-engine.md) | V2 business architecture |
 | [Business Capability Map](docs/01-business-architecture/business-capability-map.md) | What the platform can do today |
 | [Product Roadmap](docs/06-release-notes/v2-roadmap.md) | Planned versions |
-| [V2.4 release notes](docs/06-release-notes/v2.4.md) | V2.4 platform baseline |
+| [V2.4 milestone notes](docs/06-release-notes/v2.4.md) | V2.4 DOC-1 consolidation (historical) |
 | [ADR Index](docs/03-architecture/ADR-INDEX.md) | Architecture decisions |
 | [BDR-004](docs/03-architecture/bdr-004-configurable-organizational-policies.md) | Configurable organizational policies principle |
 | [BDR-005](docs/03-architecture/bdr-005-offline-synchronization-architecture.md) | Offline & synchronization architecture (M5) |
@@ -84,9 +98,11 @@ See [Functional Use Cases](docs/01-business-architecture/functional-use-cases.md
 
 ## Roadmap
 
-Next planned milestones: native Android field application (2.3.0), offline sync (2.4.0 — [BDR-005](docs/03-architecture/bdr-005-offline-synchronization-architecture.md)), and M5 implementation slices.
+**Active development:** M6.6 (V2.6.0 Work Order Offline family).
 
-See [Product Roadmap](docs/06-release-notes/v2-roadmap.md), [V2.4 release notes](docs/06-release-notes/v2.4.md), and [Functional Use Cases](docs/01-business-architecture/functional-use-cases.md) for scope detail.
+Next major milestones: remaining offline/sync scope (M6.6+), and subsequent platform capability releases per [Product Roadmap](docs/06-release-notes/v2-roadmap.md).
+
+See [Product Roadmap](docs/06-release-notes/v2-roadmap.md), [Platform Version History](docs/06-release-notes/platform-version-history.md), and [Functional Use Cases](docs/01-business-architecture/functional-use-cases.md) for scope detail.
 
 ---
 
@@ -220,7 +236,7 @@ Full checklist: [docs/05-deployment/production-checklist.md](docs/05-deployment/
 
 ## API Developer Guide
 
-InfraTrack exposes a single REST API consumed by the React web app, future Android clients, and third-party integrations.
+InfraTrack exposes a single REST API consumed by the React web app, the Android application (v1.3.0), and third-party integrations.
 
 **Interactive documentation:** Use Swagger UI at `http://localhost:4000/swagger-ui/index.html`. Every public endpoint is annotated with operation summaries, request/response schemas, and common error codes (400, 401, 403, 404, 409). Authenticated endpoints show the **Authorize** button — paste the JWT from login as `Bearer <token>`.
 
@@ -234,7 +250,7 @@ See [Authentication Flow](#authentication-flow) below for activation and lifecyc
 
 **Pagination:** Paginated endpoints accept optional `page` (zero-based, default `0`) and `size` (default `20`, maximum `100`) query parameters. Responses use Spring Data `Page` JSON (`content`, `totalElements`, `totalPages`, etc.). Non-paginated list endpoints return a plain JSON array.
 
-**Versioning:** REST paths are stable under `/api/...`. The OpenAPI `info.version` matches the Maven/npm artifact version (`2.0.1`); product capability is documented separately in [Platform Version History](docs/06-release-notes/platform-version-history.md) (currently V2.4 baseline). Breaking changes require a new major version; additive DTO fields may be introduced without a path change.
+**Versioning:** REST paths are stable under `/api/...`. The OpenAPI `info.version` matches the Maven/npm artifact version (`2.0.1`); product capability is documented separately in [Platform Version History](docs/06-release-notes/platform-version-history.md) (currently **V2.6.x** baseline). Breaking changes require a new major version; additive DTO fields may be introduced without a path change.
 
 **Errors:** Business and validation failures return plain-text bodies with appropriate HTTP status codes. Swagger documents the common responses on each controller via `@StandardApiResponses`.
 

@@ -2,6 +2,20 @@
 
 Architecture Decision Records (ADRs) and Business Decision Records (BDRs) for InfraTrack.
 
+## Current Documentation Baseline
+
+| Item | Value |
+|------|-------|
+| **Backend platform** | V2.6.x |
+| **React web** | V2.6.x |
+| **Android application** | v1.3.0 |
+| **Documentation status** | Living Documentation |
+| **Platform status** | Internally validated |
+| **Delivered platform history** | [Platform Version History](../06-release-notes/platform-version-history.md) |
+| **Active development** | M6.6 — see [Product Roadmap](../06-release-notes/v2-roadmap.md) |
+
+Platform versions (V2.x) and Android application versions (v1.x) are independent numbering schemes.
+
 ## Purpose
 
 This folder records **why** important technical and product constraints exist. ADRs capture implementation structure; BDRs capture workflow governance and product promises.
