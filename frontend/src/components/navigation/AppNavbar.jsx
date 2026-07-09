@@ -35,7 +35,7 @@ export default function AppNavbar({ onNavigate, onLogout }) {
         ))}
         <NavigationMoreMenu items={overflowNavigationItems} onNavigate={onNavigate} />
         <NotificationButton />
-        <button type="button" className="navbar-link logout" onClick={onLogout}>
+        <button type="button" className="logout-btn" onClick={onLogout} aria-label="Log out">
           {COMMON_LABELS.LOGOUT}
         </button>
       </div>

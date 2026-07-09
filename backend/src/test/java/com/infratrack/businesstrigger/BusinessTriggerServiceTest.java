@@ -15,6 +15,7 @@ import com.infratrack.department.Department;
 import com.infratrack.user.User;
 import com.infratrack.user.UserRole;
 import com.infratrack.user.UserService;
+import com.infratrack.inspection.InspectionStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -280,6 +281,25 @@ class BusinessTriggerServiceTest {
         assertThat(page.getContent()).hasSize(1);
         assertThat(page.getContent().get(0).getId()).isEqualTo(100L);
         assertThat(page.getTotalPages()).isEqualTo(3);
+        verify(businessTriggerRepository).findAllByOrderByCreatedAtDesc(pageable);
+        verify(businessTriggerRepository, never()).findEligibleForInspectionOrderByCreatedAtDesc(
+                any(), any());
+    }
+
+    @Test
+    void listPage_shouldReturnEligibleTriggersOnly_whenEligibleForInspectionRequested() {
+        BusinessTrigger trigger = businessTrigger(200L);
+        Pageable pageable = PageRequest.of(0, 20);
+        when(businessTriggerRepository.findEligibleForInspectionOrderByCreatedAtDesc(
+                        InspectionStatus.ASSIGNED, pageable))
+                .thenReturn(new PageImpl<>(List.of(trigger), pageable, 1));
+
+        Page<BusinessTriggerResponse> page = businessTriggerService.listPage(pageable, true);
+
+        assertThat(page.getContent()).extracting(BusinessTriggerResponse::getId).containsExactly(200L);
+        verify(businessTriggerRepository).findEligibleForInspectionOrderByCreatedAtDesc(
+                InspectionStatus.ASSIGNED, pageable);
+        verify(businessTriggerRepository, never()).findAllByOrderByCreatedAtDesc(any());
     }
 
     private CreateBusinessTriggerRequest validRequest() {

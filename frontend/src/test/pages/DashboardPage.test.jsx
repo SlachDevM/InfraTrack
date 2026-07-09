@@ -207,6 +207,18 @@ describe('DashboardPage', () => {
     expect(within(inspectionsCard).getByText('2')).toBeInTheDocument();
   });
 
+  it('renders logout button with the same danger class used on other pages', async () => {
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    const logoutButton = await screen.findByRole('button', { name: 'Log out' });
+    expect(logoutButton).toHaveClass('logout-btn');
+    expect(logoutButton).not.toHaveClass('navbar-link');
+  });
+
   it('refreshes dashboard data when Refresh is clicked', async () => {
     const user = userEvent.setup();
     render(

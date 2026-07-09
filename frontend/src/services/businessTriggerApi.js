@@ -7,8 +7,13 @@ const ENDPOINTS = {
 };
 
 export const businessTriggerApi = {
-  list: (page = DEFAULT_PAGE, size = DEFAULT_SIZE) =>
-    apiClient.get(`${ENDPOINTS.LIST}?${paginatedQuery(page, size)}`),
+  list: (page = DEFAULT_PAGE, size = DEFAULT_SIZE, options = {}) => {
+    const params = new URLSearchParams(paginatedQuery(page, size));
+    if (options.eligibleForInspection) {
+      params.set('eligibleForInspection', 'true');
+    }
+    return apiClient.get(`${ENDPOINTS.LIST}?${params}`);
+  },
   get: (id) => apiClient.get(ENDPOINTS.DETAIL(id)),
   create: (request) => apiClient.post(ENDPOINTS.LIST, request),
 };

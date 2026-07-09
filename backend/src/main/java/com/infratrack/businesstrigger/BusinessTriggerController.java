@@ -39,16 +39,22 @@ public class BusinessTriggerController {
     }
 
     @GetMapping
-    @Operation(summary = "List business triggers", description = "Returns paginated business triggers ordered by creation time.")
+    @Operation(
+            summary = "List business triggers",
+            description = "Returns paginated business triggers ordered by creation time. "
+                    + "When eligibleForInspection=true, excludes triggers that already have an assigned inspection.")
     @ApiResponse(responseCode = "200", description = "Paginated business trigger list")
     public ResponseEntity<Page<BusinessTriggerResponse>> listBusinessTriggers(
             @Parameter(description = "Zero-based page index") @RequestParam(required = false) Integer page,
-            @Parameter(description = "Page size (max 100)") @RequestParam(required = false) Integer size) {
+            @Parameter(description = "Page size (max 100)") @RequestParam(required = false) Integer size,
+            @Parameter(description = "When true, return only triggers eligible for new inspection assignment")
+            @RequestParam(required = false) Boolean eligibleForInspection) {
         Pageable pageable = PaginationSupport.pageable(
                 page,
                 size,
                 Sort.by(Sort.Direction.DESC, "createdAt"));
-        return ResponseEntity.ok(businessTriggerService.listPage(pageable));
+        boolean eligibleForInspectionOnly = Boolean.TRUE.equals(eligibleForInspection);
+        return ResponseEntity.ok(businessTriggerService.listPage(pageable, eligibleForInspectionOnly));
     }
 
     @GetMapping("/{id}")

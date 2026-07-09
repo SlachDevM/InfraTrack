@@ -11,6 +11,7 @@ import com.infratrack.exception.BusinessValidationException;
 import com.infratrack.exception.ForbiddenOperationException;
 import com.infratrack.exception.NotFoundException;
 import com.infratrack.department.Department;
+import com.infratrack.inspection.InspectionStatus;
 import com.infratrack.user.User;
 import com.infratrack.user.UserService;
 import org.springframework.data.domain.Page;
@@ -44,8 +45,16 @@ public class BusinessTriggerService {
 
     @Transactional(readOnly = true)
     public Page<BusinessTriggerResponse> listPage(Pageable pageable) {
-        return businessTriggerRepository.findAllByOrderByCreatedAtDesc(pageable)
-                .map(BusinessTriggerResponse::from);
+        return listPage(pageable, false);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<BusinessTriggerResponse> listPage(Pageable pageable, boolean eligibleForInspectionOnly) {
+        Page<BusinessTrigger> page = eligibleForInspectionOnly
+                ? businessTriggerRepository.findEligibleForInspectionOrderByCreatedAtDesc(
+                        InspectionStatus.ASSIGNED, pageable)
+                : businessTriggerRepository.findAllByOrderByCreatedAtDesc(pageable);
+        return page.map(BusinessTriggerResponse::from);
     }
 
     @Transactional(readOnly = true)

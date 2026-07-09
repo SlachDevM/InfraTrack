@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, cleanup } from '@testing-library/react';
+import { render, screen, waitFor, cleanup, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import InspectionsPage from '../../pages/InspectionsPage';
@@ -172,6 +172,45 @@ describe('InspectionsPage template assignment', () => {
     inspectionApi.listWorkers.mockResolvedValue(workers);
     inspectionTemplateApi.list.mockResolvedValue(pageResponse([publishedTemplate]));
     inspectionApi.assign.mockResolvedValue({ id: 100 });
+  });
+
+  it('requests eligible business triggers for inspection assignment', async () => {
+    render(
+      <MemoryRouter>
+        <InspectionsPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(businessTriggerApi.list).toHaveBeenCalledWith(0, 100, {
+        eligibleForInspection: true,
+      });
+    });
+  });
+
+  it('does not show business triggers that are not eligible for inspection assignment', async () => {
+    businessTriggerApi.list.mockResolvedValue(
+      pageResponse([
+        {
+          id: 2,
+          assetId: 5,
+          assetName: 'Street Light B',
+          type: 'CUSTOMER_REQUEST',
+          reason: 'New request',
+          urgent: false,
+        },
+      ])
+    );
+
+    render(
+      <MemoryRouter>
+        <InspectionsPage />
+      </MemoryRouter>
+    );
+
+    const triggerSelect = await screen.findByLabelText('Business Trigger');
+    expect(within(triggerSelect).queryByRole('option', { name: /#1 —/ })).not.toBeInTheDocument();
+    expect(within(triggerSelect).getByRole('option', { name: /#2 — Street Light B/ })).toBeInTheDocument();
   });
 
   it('loads only published templates for the selected asset category', async () => {

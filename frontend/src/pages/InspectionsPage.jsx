@@ -186,7 +186,7 @@ export default function InspectionsPage() {
       const canAssignRole = canAssignInspections(auth?.user?.role);
       const [inspectionPage, triggerPage, assetPage] = await Promise.all([
         inspectionApi.list(page),
-        businessTriggerApi.list(DEFAULT_PAGE, MAX_PAGE_SIZE),
+        businessTriggerApi.list(DEFAULT_PAGE, MAX_PAGE_SIZE, { eligibleForInspection: true }),
         canAssignRole ? assetApi.list(DEFAULT_PAGE, MAX_PAGE_SIZE) : Promise.resolve(null),
       ]);
       setInspections(unwrapPageContent(inspectionPage));

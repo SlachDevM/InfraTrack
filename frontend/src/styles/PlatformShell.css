@@ -49,12 +49,25 @@
   background: rgba(255, 255, 255, 0.14);
 }
 
-.navbar-link.logout {
-  color: #ffebee;
+.platform-navbar .logout-btn {
+  padding: 0.5rem 1rem;
+  background-color: rgba(244, 67, 54, 0.8);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: background-color 0.2s;
 }
 
-.navbar-link.logout:hover {
-  background: rgba(255, 255, 255, 0.18);
+.platform-navbar .logout-btn:hover {
+  background-color: rgba(244, 67, 54, 1);
+}
+
+.platform-navbar .logout-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 2px;
 }
 
 .navbar-more {
