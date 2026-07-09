@@ -210,7 +210,9 @@ describe('InspectionsPage template assignment', () => {
 
     const triggerSelect = await screen.findByLabelText('Business Trigger');
     expect(within(triggerSelect).queryByRole('option', { name: /#1 —/ })).not.toBeInTheDocument();
-    expect(within(triggerSelect).getByRole('option', { name: /#2 — Street Light B/ })).toBeInTheDocument();
+    expect(
+      within(triggerSelect).getByRole('option', { name: /#2 — Street Light B/ })
+    ).toBeInTheDocument();
   });
 
   it('loads only published templates for the selected asset category', async () => {
