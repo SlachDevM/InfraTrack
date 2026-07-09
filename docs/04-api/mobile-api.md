@@ -683,7 +683,7 @@ See [BDR-006 Conflict Resolution Strategy](../03-architecture/bdr-006-conflict-r
 
 ### Idempotency (M5.3 / DT-OFFLINE-1)
 
-`operationId` is the client idempotency key. **DT-OFFLINE-1 / RC-FIX-BE-1:** the backend atomically reserves `operationId` in `mobile_sync_operation` (`PROCESSING` → `RECORDED`) before handler execution. Concurrent duplicates wait for or receive the recorded `SyncOperationResponse` without re-executing business services. Runtime handler failures release the reservation so the client may retry. Retention default **90 days** (`mobile.sync.idempotency.retention-days`). Duplicate metric: `mobile.sync.operations.duplicate`.
+`operationId` is the client idempotency key. Each pending operation must use a **new globally unique** `operationId` (typically a client-generated UUID). Reusing an `operationId` for a different `entityType`, `operationType`, or `entityId` returns operation-level `REJECTED` with message `Operation ID already exists with a different operation signature.` — the prior idempotency record is preserved and the handler is not executed. **DT-OFFLINE-1 / RC-FIX-BE-1:** the backend atomically reserves `operationId` in `mobile_sync_operation` (`PROCESSING` → `RECORDED`) before handler execution. Concurrent duplicates with the **same** signature wait for or receive the recorded `SyncOperationResponse` without re-executing business services. Runtime handler failures release the reservation so the client may retry. Retention default **90 days** (`mobile.sync.idempotency.retention-days`). Duplicate metric: `mobile.sync.operations.duplicate` (same-signature replay only).
 
 ### Typed envelopes
 

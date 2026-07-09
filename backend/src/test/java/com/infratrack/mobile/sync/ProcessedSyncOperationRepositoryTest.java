@@ -17,6 +17,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.util.ReflectionTestUtils.getField;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -39,11 +40,25 @@ class ProcessedSyncOperationRepositoryTest {
     @Autowired
     private List<SyncOperationHandler> syncOperationHandlers;
 
+    @Autowired
+    private DefaultSyncOperationProcessor syncOperationProcessor;
+
     @Test
     void contextWiresBothProgressSyncHandlersWithWorkOrderListedFirst() {
         assertThat(syncOperationHandlers).hasSize(2);
         assertThat(syncOperationHandlers.get(0)).isInstanceOf(WorkOrderProgressSyncOperationHandler.class);
         assertThat(syncOperationHandlers.get(1)).isInstanceOf(InspectionProgressSyncOperationHandler.class);
+    }
+
+    @Test
+    void defaultSyncOperationProcessor_usesConfiguredHandlerOrder() {
+        @SuppressWarnings("unchecked")
+        List<SyncOperationHandler> processorHandlers =
+                (List<SyncOperationHandler>) getField(syncOperationProcessor, "handlers");
+
+        assertThat(processorHandlers).hasSize(2);
+        assertThat(processorHandlers.get(0)).isInstanceOf(WorkOrderProgressSyncOperationHandler.class);
+        assertThat(processorHandlers.get(1)).isInstanceOf(InspectionProgressSyncOperationHandler.class);
     }
 
     @Test

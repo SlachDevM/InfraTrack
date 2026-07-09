@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -28,6 +29,8 @@ class ProcessedSyncOperationService {
 
     private static final String USER_MISMATCH_MESSAGE =
             "Sync operation id was already processed by another user.";
+    static final String OPERATION_SIGNATURE_MISMATCH_MESSAGE =
+            "Operation ID already exists with a different operation signature.";
     private static final long AWAIT_RECORDED_TIMEOUT_MILLIS = 5_000L;
     private static final long AWAIT_RECORDED_POLL_MILLIS = 25L;
 
@@ -62,13 +65,15 @@ class ProcessedSyncOperationService {
             PendingOperationRequest operation,
             Supplier<SyncOperationHandlerResult> executor) {
         ReservationOutcome reservation = reserve(userId, operation);
-        if (reservation.duplicate()) {
-            metricsRecorder.recordDuplicateOperation();
-            log.info(
-                    "Duplicate sync operation operationId={} user={} ignored=true",
-                    operation.getOperationId(),
-                    userId);
-            return reservation.result();
+        if (reservation.earlyResult() != null) {
+            if (reservation.countAsDuplicate()) {
+                metricsRecorder.recordDuplicateOperation();
+                log.info(
+                        "Duplicate sync operation operationId={} user={} ignored=true",
+                        operation.getOperationId(),
+                        userId);
+            }
+            return reservation.earlyResult();
         }
 
         try {
@@ -90,10 +95,22 @@ class ProcessedSyncOperationService {
         Optional<ProcessedSyncOperation> existing = repository.findById(operation.getOperationId());
         if (existing.isPresent()) {
             ProcessedSyncOperation record = existing.get();
-            if (record.isRecorded()) {
+            if (!matchesOperationSignature(record, operation)) {
+                log.warn(
+                        "Sync operationId={} reused with different signature. Stored {}/{} entityId={}; request {}/{} entityId={}. Rejecting.",
+                        operation.getOperationId(),
+                        record.getEntityType(),
+                        record.getOperationType(),
+                        record.getEntityId(),
+                        operation.getEntityType(),
+                        operation.getOperationType(),
+                        operation.getEntityId());
+                return ReservationOutcome.signatureMismatch(signatureMismatchResult(operation));
+            } else if (record.isRecorded()) {
                 return ReservationOutcome.duplicate(toHandlerResult(record, userId));
+            } else {
+                return ReservationOutcome.duplicate(awaitRecordedResult(operation.getOperationId(), userId));
             }
-            return ReservationOutcome.duplicate(awaitRecordedResult(operation.getOperationId(), userId));
         }
 
         ProcessedSyncOperation processing = ProcessedSyncOperation.processing(
@@ -106,10 +123,13 @@ class ProcessedSyncOperationService {
                 clock.instant());
         try {
             repository.saveAndFlush(processing);
-            return ReservationOutcome.reserved();
+            return ReservationOutcome.forExecution();
         } catch (DataIntegrityViolationException exception) {
             ProcessedSyncOperation concurrent = repository.findById(operation.getOperationId())
                     .orElseThrow(() -> exception);
+            if (!matchesOperationSignature(concurrent, operation)) {
+                return ReservationOutcome.signatureMismatch(signatureMismatchResult(operation));
+            }
             if (concurrent.isRecorded()) {
                 return ReservationOutcome.duplicate(toHandlerResult(concurrent, userId));
             }
@@ -196,6 +216,25 @@ class ProcessedSyncOperationService {
         return SyncOperationHandlerResult.withConflict(response, conflict);
     }
 
+    private SyncOperationHandlerResult signatureMismatchResult(PendingOperationRequest operation) {
+        SyncOperationResponse response = new SyncOperationResponse();
+        response.setOperationId(operation.getOperationId());
+        response.setEntityType(operation.getEntityType());
+        response.setEntityId(operation.getEntityId());
+        response.setOperationType(operation.getOperationType());
+        response.setStatus(SyncOperationStatus.REJECTED);
+        response.setMessage(OPERATION_SIGNATURE_MISMATCH_MESSAGE);
+        return SyncOperationHandlerResult.withoutConflict(response);
+    }
+
+    private static boolean matchesOperationSignature(
+            ProcessedSyncOperation record,
+            PendingOperationRequest operation) {
+        return Objects.equals(record.getEntityType(), operation.getEntityType())
+                && Objects.equals(record.getOperationType(), operation.getOperationType())
+                && Objects.equals(record.getEntityId(), operation.getEntityId());
+    }
+
     private static void sleepBriefly() {
         try {
             Thread.sleep(AWAIT_RECORDED_POLL_MILLIS);
@@ -205,14 +244,20 @@ class ProcessedSyncOperationService {
         }
     }
 
-    private record ReservationOutcome(boolean duplicate, SyncOperationHandlerResult result) {
+    private record ReservationOutcome(
+            SyncOperationHandlerResult earlyResult,
+            boolean countAsDuplicate) {
 
-        static ReservationOutcome reserved() {
-            return new ReservationOutcome(false, null);
+        static ReservationOutcome forExecution() {
+            return new ReservationOutcome(null, false);
         }
 
         static ReservationOutcome duplicate(SyncOperationHandlerResult result) {
-            return new ReservationOutcome(true, result);
+            return new ReservationOutcome(result, true);
+        }
+
+        static ReservationOutcome signatureMismatch(SyncOperationHandlerResult result) {
+            return new ReservationOutcome(result, false);
         }
     }
 }

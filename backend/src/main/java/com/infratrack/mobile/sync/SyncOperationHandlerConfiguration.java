@@ -6,9 +6,8 @@ import org.springframework.context.annotation.Configuration;
 import java.util.List;
 
 /**
- * Registers sync operation handlers in deterministic routing order.
- * Work-order progress is listed before inspection progress so
- * {@link DefaultSyncOperationProcessor} never evaluates the inspection handler first.
+ * Registers sync operation handlers in deterministic routing order and exposes the list
+ * for {@link DefaultSyncOperationProcessor} via the {@code syncOperationHandlers} bean name.
  */
 @Configuration
 class SyncOperationHandlerConfiguration {

@@ -123,6 +123,109 @@ class ProcessedSyncOperationServiceTest {
     }
 
     @Test
+    void processIdempotently_operationIdReusedWithDifferentSignature_rejectsWithoutMutatingStoredRecord() {
+        ProcessedSyncOperation stored = ProcessedSyncOperation.recorded(
+                "op-1",
+                USER_ID,
+                "INSPECTION",
+                123L,
+                "SAVE_INSPECTION_PROGRESS",
+                SyncProtocolVersion.CURRENT,
+                FIXED_INSTANT,
+                SyncOperationStatus.REJECTED.name(),
+                "Invalid sync operation payload.",
+                null,
+                null,
+                null);
+        store.put("op-1", stored);
+
+        PendingOperationRequest workOrderRequest = workOrderRequest("op-1", 456L);
+
+        SyncOperationHandlerResult result = service.processIdempotently(
+                USER_ID,
+                workOrderRequest,
+                () -> {
+                    throw new AssertionError("Executor must not run for signature mismatch");
+                });
+
+        assertThat(result.operation().getStatus()).isEqualTo(SyncOperationStatus.REJECTED);
+        assertThat(result.operation().getEntityType()).isEqualTo("WORK_ORDER");
+        assertThat(result.operation().getEntityId()).isEqualTo(456L);
+        assertThat(result.operation().getOperationType()).isEqualTo("SAVE_WORK_ORDER_PROGRESS");
+        assertThat(result.operation().getMessage())
+                .isEqualTo(ProcessedSyncOperationService.OPERATION_SIGNATURE_MISMATCH_MESSAGE);
+        assertThat(store.get("op-1").getEntityType()).isEqualTo("INSPECTION");
+        assertThat(store.get("op-1").getOperationType()).isEqualTo("SAVE_INSPECTION_PROGRESS");
+        assertThat(store.get("op-1").getEntityId()).isEqualTo(123L);
+        assertThat(store.get("op-1").getResponseMessage()).isEqualTo("Invalid sync operation payload.");
+        verify(repository, never()).deleteById(any());
+        verify(repository, never()).saveAndFlush(any());
+        assertThat(meterRegistry.get("mobile.sync.operations.duplicate").counter().count()).isZero();
+    }
+
+    @Test
+    void processIdempotently_operationIdReusedWithDifferentEntityType_rejectsWithoutMutatingStoredRecord() {
+        store.put("op-1", storedInspectionRecord(123L));
+
+        PendingOperationRequest request = operationRequest();
+        request.setEntityType("WORK_ORDER");
+
+        SyncOperationHandlerResult result = rejectWithoutExecutor(request);
+
+        assertThat(result.operation().getEntityType()).isEqualTo("WORK_ORDER");
+        assertThat(store.get("op-1").getEntityType()).isEqualTo("INSPECTION");
+    }
+
+    @Test
+    void processIdempotently_operationIdReusedWithDifferentOperationType_rejectsWithoutMutatingStoredRecord() {
+        store.put("op-1", storedInspectionRecord(123L));
+
+        PendingOperationRequest request = operationRequest();
+        request.setOperationType("SAVE_WORK_ORDER_PROGRESS");
+
+        SyncOperationHandlerResult result = rejectWithoutExecutor(request);
+
+        assertThat(result.operation().getOperationType()).isEqualTo("SAVE_WORK_ORDER_PROGRESS");
+        assertThat(store.get("op-1").getOperationType()).isEqualTo("SAVE_INSPECTION_PROGRESS");
+    }
+
+    @Test
+    void processIdempotently_operationIdReusedWithDifferentEntityId_rejectsWithoutMutatingStoredRecord() {
+        store.put("op-1", storedInspectionRecord(123L));
+
+        PendingOperationRequest request = operationRequest();
+        request.setEntityId(999L);
+
+        SyncOperationHandlerResult result = rejectWithoutExecutor(request);
+
+        assertThat(result.operation().getEntityId()).isEqualTo(999L);
+        assertThat(store.get("op-1").getEntityId()).isEqualTo(123L);
+    }
+
+    @Test
+    void processIdempotently_newOperationId_processesNormally() {
+        store.put("op-existing", storedInspectionRecord(123L));
+
+        PendingOperationRequest request = workOrderRequest("op-new", 456L);
+        SyncOperationResponse accepted = new SyncOperationResponse();
+        accepted.setOperationId("op-new");
+        accepted.setEntityType("WORK_ORDER");
+        accepted.setEntityId(456L);
+        accepted.setOperationType("SAVE_WORK_ORDER_PROGRESS");
+        accepted.setStatus(SyncOperationStatus.ACCEPTED);
+        accepted.setServerUpdatedAt(FIXED_INSTANT);
+
+        SyncOperationHandlerResult result = service.processIdempotently(
+                USER_ID,
+                request,
+                () -> SyncOperationHandlerResult.withoutConflict(accepted));
+
+        assertThat(result.operation().getStatus()).isEqualTo(SyncOperationStatus.ACCEPTED);
+        assertThat(store.get("op-new").getEntityType()).isEqualTo("WORK_ORDER");
+        assertThat(store.get("op-existing").getEntityType()).isEqualTo("INSPECTION");
+    }
+
+    @Test
     void processIdempotently_runtimeFailure_releasesReservationForRetry() {
         assertThatThrownBy(() -> service.processIdempotently(
                         USER_ID,
@@ -236,6 +339,41 @@ class ProcessedSyncOperationServiceTest {
         request.setOperationType("SAVE_INSPECTION_PROGRESS");
         request.setPayload("{\"answers\":[]}");
         return request;
+    }
+
+    private static PendingOperationRequest workOrderRequest(String operationId, Long workOrderId) {
+        PendingOperationRequest request = new PendingOperationRequest();
+        request.setOperationId(operationId);
+        request.setEntityType("WORK_ORDER");
+        request.setEntityId(workOrderId);
+        request.setOperationType("SAVE_WORK_ORDER_PROGRESS");
+        request.setPayload("{\"completionNotes\":\"Valve inspected.\"}");
+        return request;
+    }
+
+    private ProcessedSyncOperation storedInspectionRecord(Long entityId) {
+        return ProcessedSyncOperation.recorded(
+                "op-1",
+                USER_ID,
+                "INSPECTION",
+                entityId,
+                "SAVE_INSPECTION_PROGRESS",
+                SyncProtocolVersion.CURRENT,
+                FIXED_INSTANT,
+                SyncOperationStatus.REJECTED.name(),
+                "Invalid sync operation payload.",
+                null,
+                null,
+                null);
+    }
+
+    private SyncOperationHandlerResult rejectWithoutExecutor(PendingOperationRequest request) {
+        return service.processIdempotently(
+                USER_ID,
+                request,
+                () -> {
+                    throw new AssertionError("Executor must not run for signature mismatch");
+                });
     }
 
     private static SyncOperationResponse acceptedResponse() {

@@ -4,10 +4,10 @@ import com.infratrack.mobile.sync.dto.PendingOperationRequest;
 import com.infratrack.mobile.sync.dto.SyncConflictResponse;
 import com.infratrack.mobile.sync.dto.SyncOperationResponse;
 import com.infratrack.mobile.sync.dto.SyncOperationStatus;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -22,7 +22,7 @@ class DefaultSyncOperationProcessor implements SyncOperationProcessor {
     private final ProcessedSyncOperationService processedSyncOperationService;
 
     DefaultSyncOperationProcessor(
-            List<SyncOperationHandler> handlers,
+            @Qualifier("syncOperationHandlers") List<SyncOperationHandler> handlers,
             ProcessedSyncOperationService processedSyncOperationService) {
         this.handlers = handlers != null ? handlers : List.of();
         this.processedSyncOperationService = processedSyncOperationService;

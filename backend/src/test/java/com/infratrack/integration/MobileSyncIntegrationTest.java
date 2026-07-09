@@ -311,6 +311,92 @@ class MobileSyncIntegrationTest {
     }
 
     @Test
+    void swaggerExampleOperationId_afterPriorInspectionRecord_rejectsWorkOrderSignatureMismatch() throws Exception {
+        String exampleOperationId = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+
+        String inspectionOperation = """
+                [
+                  {
+                    "operationId": "%s",
+                    "entityType": "INSPECTION",
+                    "entityId": %d,
+                    "operationType": "SAVE_INSPECTION_PROGRESS",
+                    "payload": "not-valid-json"
+                  }
+                ]
+                """.formatted(exampleOperationId, assignedInspection.getId());
+
+        JsonNode inspectionResponse = sync(fieldEmployee, syncRequest(null, inspectionOperation));
+        assertThat(inspectionResponse.path("operations").get(0).path("entityType").asText()).isEqualTo("INSPECTION");
+        assertThat(inspectionResponse.path("operations").get(0).path("operationType").asText())
+                .isEqualTo("SAVE_INSPECTION_PROGRESS");
+        assertThat(inspectionResponse.path("operations").get(0).path("status").asText()).isEqualTo("REJECTED");
+        assertThat(inspectionResponse.path("operations").get(0).path("message").asText())
+                .isEqualTo("Invalid sync operation payload.");
+
+        String workOrderOperation = """
+                [
+                  {
+                    "operationId": "%s",
+                    "entityType": "WORK_ORDER",
+                    "entityId": %d,
+                    "operationType": "SAVE_WORK_ORDER_PROGRESS",
+                    "payload": "{\\"completionNotes\\":\\"Valve inspected.\\"}",
+                    "createdAt": 0
+                  }
+                ]
+                """.formatted(exampleOperationId, assignedWorkOrder.getId());
+
+        JsonNode workOrderResponse = sync(fieldEmployee, syncRequest(null, workOrderOperation));
+
+        assertThat(workOrderResponse.path("operations").get(0).path("operationId").asText())
+                .isEqualTo(exampleOperationId);
+        assertThat(workOrderResponse.path("operations").get(0).path("entityType").asText()).isEqualTo("WORK_ORDER");
+        assertThat(workOrderResponse.path("operations").get(0).path("entityId").asLong())
+                .isEqualTo(assignedWorkOrder.getId());
+        assertThat(workOrderResponse.path("operations").get(0).path("operationType").asText())
+                .isEqualTo("SAVE_WORK_ORDER_PROGRESS");
+        assertThat(workOrderResponse.path("operations").get(0).path("status").asText()).isEqualTo("REJECTED");
+        assertThat(workOrderResponse.path("operations").get(0).path("message").asText())
+                .isEqualTo("Operation ID already exists with a different operation signature.");
+
+        Integer storedInspectionRecords = jdbcTemplate.queryForObject(
+                """
+                SELECT COUNT(*) FROM mobile_sync_operation
+                WHERE operation_id = ?
+                  AND entity_type = 'INSPECTION'
+                  AND operation_type = 'SAVE_INSPECTION_PROGRESS'
+                """,
+                Integer.class,
+                exampleOperationId);
+        assertThat(storedInspectionRecords).isEqualTo(1);
+    }
+
+    @Test
+    void saveWorkOrderProgress_withNewOperationId_returnsAccepted() throws Exception {
+        String pendingOperations = """
+                [
+                  {
+                    "operationId": "sync-work-order-new-op-1",
+                    "entityType": "WORK_ORDER",
+                    "entityId": %d,
+                    "operationType": "SAVE_WORK_ORDER_PROGRESS",
+                    "payload": "{\\"completionNotes\\":\\"Valve inspected.\\"}"
+                  }
+                ]
+                """.formatted(assignedWorkOrder.getId());
+
+        JsonNode response = sync(fieldEmployee, syncRequest(null, pendingOperations));
+
+        assertThat(response.path("operations").get(0).path("entityType").asText()).isEqualTo("WORK_ORDER");
+        assertThat(response.path("operations").get(0).path("operationType").asText())
+                .isEqualTo("SAVE_WORK_ORDER_PROGRESS");
+        assertThat(response.path("operations").get(0).path("status").asText()).isEqualTo("ACCEPTED");
+        assertThat(findWorkOrderDelta(response, assignedWorkOrder.getId()).path("draftCompletionNotes").asText())
+                .isEqualTo("Valve inspected.");
+    }
+
+    @Test
     void roleScoping_limitsDeltaToAuthorizedRecords() throws Exception {
         Department departmentA = fixture.createDepartment("Dept A");
         Department departmentB = fixture.createDepartment("Dept B");

@@ -243,6 +243,8 @@ M5.5-BE1.1 response    { protocolVersion: 1, serverTime, nextSyncToken, delta: {
 
 Store `nextSyncToken` opaquely; resubmit as `syncToken` on the next sync. Apply `delta.inspections`, `delta.workOrders`, `delta.dashboard`, `delta.assets`, and `delta.referenceData` to local cache after each successful sync — including embedded `template`, `questions`, and `choices` when present (**M5.4.2-BE**). Persist checklist definitions from the delta; do not synthesize them client-side. Replace the offline dashboard UI from `delta.dashboard` only; never recompute assignment/overdue/completed counters from local Room data (**M6.2-BE1**). Cache reference data labels from `delta.referenceData` for offline display; do not invent enum labels client-side (**M6.5-BE1**). Invalid `syncToken` yields a single `FULL_SYNC_REQUIRED` warning and full inspection/work order deltas — dashboard and reference data snapshots are still returned.
 
+**Idempotency:** assign a new UUID to each queued `pendingOperation`. Do not reuse Swagger or documentation example `operationId` values. Retrying the same operation must resubmit the same `operationId` with the same `entityType`, `operationType`, and `entityId`; reusing an `operationId` with a different signature returns `REJECTED` for that operation only (sync HTTP `200`).
+
 **Queue handling:** remove pending operations on `ACCEPTED`; keep `CONFLICT` operations locally (inspection and work order progress — **M6.4-BE1**); resolve inspection conflicts via `POST /api/mobile/sync/conflicts/resolve` (M5.5-BE2). `resolutionHint` from sync is informational; explicit `resolution` action is required for resolution outcome. Tombstones and delta removals are not synchronized yet.
 
 ### Conflict resolution (M5.5-BE2)
