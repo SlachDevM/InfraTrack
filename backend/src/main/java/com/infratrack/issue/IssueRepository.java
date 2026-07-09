@@ -12,7 +12,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-public interface IssueRepository extends JpaRepository<Issue, Long> {
+public interface IssueRepository extends JpaRepository<Issue, Long>, IssueRepositoryCustom {
 
     List<Issue> findAllByOrderByCreatedAtDesc();
 
@@ -63,16 +63,4 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
             @Param("at") LocalDateTime at,
             Pageable pageable);
 
-    @EntityGraph(attributePaths = {"asset", "asset.department"})
-    @Query("""
-            SELECT i FROM Issue i
-            WHERE (:departmentId IS NULL OR i.asset.department.id = :departmentId)
-              AND (:from IS NULL OR i.recordedAt >= :from)
-              AND (:to IS NULL OR i.recordedAt <= :to)
-            ORDER BY i.recordedAt DESC
-            """)
-    List<Issue> findForExport(
-            @Param("departmentId") Long departmentId,
-            @Param("from") LocalDateTime from,
-            @Param("to") LocalDateTime to);
 }
