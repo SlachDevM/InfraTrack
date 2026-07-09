@@ -41,8 +41,7 @@ class WorkOrderProgressSyncOperationHandler implements SyncOperationHandler {
 
     @Override
     public boolean supports(PendingOperationRequest operation) {
-        return OPERATION_TYPE.equals(operation.getOperationType())
-                && ENTITY_TYPE.equals(operation.getEntityType());
+        return SyncOperationMatching.matches(operation, ENTITY_TYPE, OPERATION_TYPE);
     }
 
     @Override

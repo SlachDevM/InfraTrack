@@ -74,6 +74,32 @@ class SyncDtoSerializationTest {
     }
 
     @Test
+    void syncRequest_deserializesWorkOrderPendingOperation() throws Exception {
+        String json = """
+                {
+                  "clientId": "android-install-uuid",
+                  "clientVersion": "1",
+                  "pendingOperations": [
+                    {
+                      "operationId": "op-wo-1",
+                      "entityType": "WORK_ORDER",
+                      "entityId": 456,
+                      "operationType": "SAVE_WORK_ORDER_PROGRESS",
+                      "payload": "{\\"completionNotes\\":\\"Draft notes.\\"}"
+                    }
+                  ]
+                }
+                """;
+
+        SyncRequest request = objectMapper.readValue(json, SyncRequest.class);
+
+        assertThat(request.getPendingOperations()).hasSize(1);
+        PendingOperationRequest operation = request.getPendingOperations().get(0);
+        assertThat(operation.getEntityType()).isEqualTo("WORK_ORDER");
+        assertThat(operation.getOperationType()).isEqualTo("SAVE_WORK_ORDER_PROGRESS");
+    }
+
+    @Test
     void syncResponse_roundTripsExpectedShape() throws Exception {
         SyncResponse response = new SyncResponse();
         response.setProtocolVersion(SyncProtocolVersion.CURRENT);

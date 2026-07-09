@@ -203,8 +203,42 @@ class DefaultSyncOperationProcessorTest {
 
         assertThat(batch.operations()).hasSize(1);
         assertThat(batch.operations().get(0).getStatus()).isEqualTo(SyncOperationStatus.ACCEPTED);
+        assertThat(batch.operations().get(0).getEntityType()).isEqualTo("WORK_ORDER");
+        assertThat(batch.operations().get(0).getOperationType()).isEqualTo("SAVE_WORK_ORDER_PROGRESS");
         assertThat(batch.conflicts()).isEmpty();
         verify(workOrderService).saveWorkOrderProgress(eq(456L), org.mockito.ArgumentMatchers.any(), eq(USER_ID));
+        verify(inspectionService, org.mockito.Mockito.never())
+                .saveInspectionProgress(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), eq(USER_ID));
+    }
+
+    @Test
+    void process_saveWorkOrderProgress_withInspectionHandlerListedFirst_stillRoutesToWorkOrderHandler() {
+        Clock clock = Clock.fixed(FIXED_INSTANT, ZoneOffset.UTC);
+        InspectionProgressSyncOperationHandler inspectionHandler = new InspectionProgressSyncOperationHandler(
+                inspectionService,
+                new ObjectMapper(),
+                clock);
+        WorkOrderProgressSyncOperationHandler workOrderHandler = new WorkOrderProgressSyncOperationHandler(
+                workOrderService,
+                new ObjectMapper(),
+                clock);
+        DefaultSyncOperationProcessor inspectionFirstProcessor = new DefaultSyncOperationProcessor(
+                List.of(inspectionHandler, workOrderHandler),
+                SyncTestIdempotencySupport.passthroughService(clock));
+
+        when(workOrderService.saveWorkOrderProgress(eq(456L), org.mockito.ArgumentMatchers.any(), eq(USER_ID)))
+                .thenReturn(new WorkOrderResponse());
+
+        SyncOperationBatchResult batch = inspectionFirstProcessor.process(
+                USER_ID,
+                List.of(workOrderProgressOperation("op-wo-ordering", 456L)));
+
+        assertThat(batch.operations().get(0).getStatus()).isEqualTo(SyncOperationStatus.ACCEPTED);
+        assertThat(batch.operations().get(0).getEntityType()).isEqualTo("WORK_ORDER");
+        assertThat(batch.operations().get(0).getOperationType()).isEqualTo("SAVE_WORK_ORDER_PROGRESS");
+        verify(workOrderService).saveWorkOrderProgress(eq(456L), org.mockito.ArgumentMatchers.any(), eq(USER_ID));
+        verify(inspectionService, org.mockito.Mockito.never())
+                .saveInspectionProgress(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), eq(USER_ID));
     }
 
     @Test

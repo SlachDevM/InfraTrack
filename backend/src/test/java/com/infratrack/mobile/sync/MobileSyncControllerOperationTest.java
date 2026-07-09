@@ -6,6 +6,7 @@ import com.infratrack.inspection.InspectionService;
 import com.infratrack.inspection.dto.InspectionResponse;
 import com.infratrack.mobile.MobileAuthorizationService;
 import com.infratrack.workorder.WorkOrderService;
+import com.infratrack.workorder.dto.WorkOrderResponse;
 import com.infratrack.mobile.sync.dto.SyncDeltaResponse;
 import com.infratrack.mobile.sync.dto.SyncInspectionDeltaResponse;
 import com.infratrack.observability.ObservabilityTestConfiguration;
@@ -49,6 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         DefaultSyncOperationProcessor.class,
         ProcessedSyncOperationService.class,
         MobileSyncIdempotencyConfiguration.class,
+        SyncOperationHandlerConfiguration.class,
         InspectionProgressSyncOperationHandler.class,
         WorkOrderProgressSyncOperationHandler.class,
         InspectionSyncDeltaService.class,
@@ -169,6 +171,27 @@ class MobileSyncControllerOperationTest {
     }
 
     @Test
+    void sync_saveWorkOrderProgress_returnsAcceptedOperationResult() throws Exception {
+        when(workOrderService.saveWorkOrderProgress(eq(456L), org.mockito.ArgumentMatchers.any(), eq(FIELD_USER_ID)))
+                .thenReturn(new WorkOrderResponse());
+
+        mockMvc.perform(post("/api/mobile/sync")
+                        .header("Authorization", bearerToken(FIELD_USER_ID, "field@test.com"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(syncRequestWithWorkOrderPendingOperationJson()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.operations").isArray())
+                .andExpect(jsonPath("$.operations.length()").value(1))
+                .andExpect(jsonPath("$.operations[0].operationId").value("9f90ef8f-2cb0-5fb5-92bb-4f17f516e81f"))
+                .andExpect(jsonPath("$.operations[0].entityType").value("WORK_ORDER"))
+                .andExpect(jsonPath("$.operations[0].entityId").value(456))
+                .andExpect(jsonPath("$.operations[0].operationType").value("SAVE_WORK_ORDER_PROGRESS"))
+                .andExpect(jsonPath("$.operations[0].status").value("ACCEPTED"))
+                .andExpect(jsonPath("$.operations[0].serverUpdatedAt").value(FIXED_INSTANT.toString()))
+                .andExpect(jsonPath("$.conflicts").isEmpty());
+    }
+
+    @Test
     void sync_missingClientId_returnsBadRequest() throws Exception {
         mockMvc.perform(post("/api/mobile/sync")
                         .header("Authorization", bearerToken(FIELD_USER_ID, "field@test.com"))
@@ -203,6 +226,26 @@ class MobileSyncControllerOperationTest {
                       "entityId": 123,
                       "operationType": "SAVE_INSPECTION_PROGRESS",
                       "payload": "{\\"observedCondition\\":\\"GOOD\\",\\"observations\\":\\"Checked on site.\\",\\"issueIdentified\\":false,\\"answers\\":[{\\"questionId\\":10,\\"booleanValue\\":true}]}",
+                      "createdAt": 1751700000000
+                    }
+                  ]
+                }
+                """;
+    }
+
+    private String syncRequestWithWorkOrderPendingOperationJson() {
+        return """
+                {
+                  "clientId": "android-install-uuid",
+                  "clientVersion": "1",
+                  "appVersion": "1.1.0",
+                  "pendingOperations": [
+                    {
+                      "operationId": "9f90ef8f-2cb0-5fb5-92bb-4f17f516e81f",
+                      "entityType": "WORK_ORDER",
+                      "entityId": 456,
+                      "operationType": "SAVE_WORK_ORDER_PROGRESS",
+                      "payload": "{\\"completionNotes\\":\\"Draft maintenance notes.\\"}",
                       "createdAt": 1751700000000
                     }
                   ]

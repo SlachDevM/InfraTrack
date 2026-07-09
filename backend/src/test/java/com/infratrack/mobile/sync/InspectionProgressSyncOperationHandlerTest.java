@@ -67,6 +67,16 @@ class InspectionProgressSyncOperationHandlerTest {
     }
 
     @Test
+    void supports_saveWorkOrderProgressOnWorkOrder_returnsFalse() {
+        PendingOperationRequest operation = new PendingOperationRequest();
+        operation.setOperationId("op-wo-1");
+        operation.setEntityType("WORK_ORDER");
+        operation.setEntityId(456L);
+        operation.setOperationType("SAVE_WORK_ORDER_PROGRESS");
+        assertThat(handler.supports(operation)).isFalse();
+    }
+
+    @Test
     void process_validOperation_returnsAccepted() {
         when(inspectionService.saveInspectionProgress(eq(INSPECTION_ID), org.mockito.ArgumentMatchers.any(), eq(USER_ID)))
                 .thenReturn(new InspectionResponse());

@@ -14,6 +14,7 @@ import org.testcontainers.utility.DockerImageName;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -34,6 +35,16 @@ class ProcessedSyncOperationRepositoryTest {
 
     @Autowired
     private ProcessedSyncOperationRepository repository;
+
+    @Autowired
+    private List<SyncOperationHandler> syncOperationHandlers;
+
+    @Test
+    void contextWiresBothProgressSyncHandlersWithWorkOrderListedFirst() {
+        assertThat(syncOperationHandlers).hasSize(2);
+        assertThat(syncOperationHandlers.get(0)).isInstanceOf(WorkOrderProgressSyncOperationHandler.class);
+        assertThat(syncOperationHandlers.get(1)).isInstanceOf(InspectionProgressSyncOperationHandler.class);
+    }
 
     @Test
     void saveAndFind_persistsRecord() {
