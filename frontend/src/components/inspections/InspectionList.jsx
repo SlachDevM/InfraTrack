@@ -6,6 +6,7 @@ import {
 import { INSPECTION_STATUS } from '../../constants/statuses';
 import { getPhysicalConditionLabel } from '../../constants/physicalConditions';
 import { COMMON_MESSAGES } from '../../constants/messages';
+import PaginationControls from '../PaginationControls';
 import RuleEvaluationReportPanel from './RuleEvaluationReportPanel';
 import DecisionAssistantPanel from './DecisionAssistantPanel';
 import { formatDateTime } from '../../utils/dateTime';
@@ -20,7 +21,14 @@ function formatAssignedUser(inspection) {
   return 'Unassigned';
 }
 
-export default function InspectionList({ inspections }) {
+export default function InspectionList({
+  inspections,
+  page,
+  totalPages,
+  listLoading,
+  onPrevious,
+  onNext,
+}) {
   const completedTemplatedInspections = inspections.filter(
     (inspection) =>
       inspection.status === INSPECTION_STATUS.COMPLETED && inspection.inspectionTemplateId != null
@@ -80,6 +88,14 @@ export default function InspectionList({ inspections }) {
           </table>
         </div>
       )}
+
+      <PaginationControls
+        page={page}
+        totalPages={totalPages}
+        loading={listLoading}
+        onPrevious={onPrevious}
+        onNext={onNext}
+      />
 
       {completedTemplatedInspections.length > 0 && (
         <div className="rule-evaluation-reports-section">

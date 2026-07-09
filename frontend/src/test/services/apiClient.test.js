@@ -56,4 +56,51 @@ describe('ApiClient unauthorized handling', () => {
 
     expect(onUnauthorized).not.toHaveBeenCalled();
   });
+
+  it('does not notify unauthorized handler when multipart upload returns 400', async () => {
+    const onUnauthorized = vi.fn();
+    registerUnauthorizedHandler(onUnauthorized);
+    apiClient.setToken('jwt-token');
+
+    const formData = new FormData();
+    formData.append('file', new File(['%PDF'], 'report.pdf', { type: 'application/pdf' }));
+    formData.append('documentType', 'MANUAL');
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      statusText: 'Bad Request',
+      text: async () => 'Invalid multipart request: could not bind documentType.',
+    });
+
+    await expect(apiClient.postMultipart('/api/assets/1/documents', formData)).rejects.toMatchObject({
+      status: 400,
+    });
+
+    expect(onUnauthorized).not.toHaveBeenCalled();
+  });
+
+  it('notifies unauthorized handler when multipart upload returns 401', async () => {
+    const onUnauthorized = vi.fn();
+    registerUnauthorizedHandler(onUnauthorized);
+    apiClient.setToken('jwt-token');
+
+    const formData = new FormData();
+    formData.append('file', new File(['%PDF'], 'report.pdf', { type: 'application/pdf' }));
+    formData.append('documentType', 'MANUAL');
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      statusText: 'Unauthorized',
+      text: async () => 'Unauthorized',
+    });
+
+    await expect(apiClient.postMultipart('/api/assets/1/documents', formData)).rejects.toMatchObject({
+      status: 401,
+      type: 'UNAUTHORIZED',
+    });
+
+    expect(onUnauthorized).toHaveBeenCalledTimes(1);
+  });
 });

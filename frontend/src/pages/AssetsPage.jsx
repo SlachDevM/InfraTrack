@@ -40,8 +40,11 @@ import '../styles/ReferenceDataPage.css';
 import '../styles/AssetsPage.css';
 import '../styles/UserManagementPage.css';
 
-function appendRequestPart(formData, name, value) {
-  formData.append(name, new Blob([JSON.stringify(value)], { type: 'application/json' }));
+function appendMultipartField(formData, name, value) {
+  if (value === null || value === undefined || value === '') {
+    return;
+  }
+  formData.append(name, String(value));
 }
 
 function todayIsoDate() {
@@ -346,14 +349,12 @@ export default function AssetsPage() {
       setSuccess(null);
       const uploadFormData = new FormData();
       uploadFormData.append('file', documentForm.file);
-      appendRequestPart(uploadFormData, 'documentType', documentForm.documentType);
+      appendMultipartField(uploadFormData, 'documentType', documentForm.documentType);
       if (documentForm.ownerType) {
-        appendRequestPart(uploadFormData, 'ownerType', documentForm.ownerType);
-        appendRequestPart(uploadFormData, 'ownerId', Number(selectedOwnerId));
+        appendMultipartField(uploadFormData, 'ownerType', documentForm.ownerType);
+        appendMultipartField(uploadFormData, 'ownerId', selectedOwnerId);
       }
-      if (documentForm.documentDate) {
-        appendRequestPart(uploadFormData, 'documentDate', documentForm.documentDate);
-      }
+      appendMultipartField(uploadFormData, 'documentDate', documentForm.documentDate);
       await operationalDocumentApi.upload(Number(selectedAssetId), uploadFormData);
       setSuccess('Operational document uploaded successfully.');
       setDocumentForm({

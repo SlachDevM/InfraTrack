@@ -74,6 +74,10 @@
   gap: 0.5rem;
 }
 
+.inspection-list-section .pagination-controls {
+  margin-top: 1rem;
+}
+
 .rule-evaluation-reports-section {
   margin-top: 2rem;
 }

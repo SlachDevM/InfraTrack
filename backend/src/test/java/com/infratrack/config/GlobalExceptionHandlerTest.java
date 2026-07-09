@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentConversionNotSupportedException;
 
 import java.sql.SQLException;
 
@@ -76,6 +77,23 @@ class GlobalExceptionHandlerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).isEqualTo("Validation failed");
+    }
+
+    @Test
+    void handleMethodArgumentConversionNotSupportedException_returns400WithBindingMessage() {
+        MethodArgumentConversionNotSupportedException exception =
+                new MethodArgumentConversionNotSupportedException(
+                        null,
+                        String.class,
+                        "documentType",
+                        null,
+                        null);
+
+        ResponseEntity<String> response =
+                handler.handleMethodArgumentConversionNotSupportedException(exception);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isEqualTo("Invalid multipart request: could not bind documentType.");
     }
 
     @Test

@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentConversionNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
@@ -70,6 +71,14 @@ public class GlobalExceptionHandler {
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .orElse("Validation failed");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
+    }
+
+    @ExceptionHandler(MethodArgumentConversionNotSupportedException.class)
+    public ResponseEntity<String> handleMethodArgumentConversionNotSupportedException(
+            MethodArgumentConversionNotSupportedException ex) {
+        String parameter = ex.getName() != null ? ex.getName() : "request parameter";
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("Invalid multipart request: could not bind " + parameter + ".");
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

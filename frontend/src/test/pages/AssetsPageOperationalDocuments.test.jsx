@@ -86,24 +86,6 @@ const assetA = {
   status: 'ACTIVE',
 };
 
-async function readFormDataPart(part) {
-  if (part == null) {
-    return null;
-  }
-  if (typeof part === 'string') {
-    return part;
-  }
-  if (typeof part.text === 'function') {
-    return part.text();
-  }
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsText(part);
-  });
-}
-
 async function selectAsset(user, assetId) {
   const assetSelect = await screen.findByLabelText('Asset');
   await waitFor(() => {
@@ -314,8 +296,9 @@ describe('AssetsPage operational document owner selection', () => {
     });
 
     const formData = operationalDocumentApi.upload.mock.calls[0][1];
-    expect(JSON.parse(await readFormDataPart(formData.get('ownerType')))).toBe('INSPECTION');
-    expect(JSON.parse(await readFormDataPart(formData.get('ownerId')))).toBe(100);
+    expect(formData.get('documentType')).toBe('MANUAL');
+    expect(formData.get('ownerType')).toBe('INSPECTION');
+    expect(formData.get('ownerId')).toBe('100');
     expect(formData.get('file')).toBeInstanceOf(File);
   });
 
@@ -341,8 +324,39 @@ describe('AssetsPage operational document owner selection', () => {
     });
 
     const formData = operationalDocumentApi.upload.mock.calls[0][1];
+    expect(formData.get('documentType')).toBe('MANUAL');
     expect(formData.get('ownerType')).toBeNull();
     expect(formData.get('ownerId')).toBeNull();
+    expect(formData.get('file')).toBeInstanceOf(File);
+  });
+
+  it('shows upload error on 400 without logging out', async () => {
+    const user = userEvent.setup();
+    operationalDocumentApi.upload.mockRejectedValue({
+      status: 400,
+      message: 'Invalid multipart request: could not bind documentType.',
+    });
+
+    render(
+      <MemoryRouter>
+        <AssetsPage />
+      </MemoryRouter>
+    );
+
+    await selectAsset(user, 5);
+    await user.selectOptions(screen.getByLabelText('Document Type'), 'MANUAL');
+
+    const file = new File(['%PDF-1.4'], 'manual.pdf', { type: 'application/pdf' });
+    uploadDocumentFile(file);
+    submitDocumentUpload();
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Invalid multipart request: could not bind documentType.'
+      );
+    });
+    expect(mockLogout).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalledWith('/login', expect.anything());
   });
 
   it('shows delete confirmation and removes document after confirm', async () => {

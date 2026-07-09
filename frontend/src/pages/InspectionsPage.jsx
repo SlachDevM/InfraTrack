@@ -9,7 +9,6 @@ import userApi from '../services/userApi';
 import inspectionTemplateApi from '../services/inspectionTemplateApi';
 import inspectionTemplateQuestionApi from '../services/inspectionTemplateQuestionApi';
 import NotificationButton from '../components/NotificationButton';
-import PaginationControls from '../components/PaginationControls';
 import AssignInspectionForm from '../components/inspections/AssignInspectionForm';
 import CompleteInspectionForm from '../components/inspections/CompleteInspectionForm';
 import InspectionList from '../components/inspections/InspectionList';
@@ -458,15 +457,15 @@ export default function InspectionsPage() {
           </section>
         )}
 
-        <InspectionList inspections={inspections} />
-        {listLoading && <ListLoadingIndicator />}
-        <PaginationControls
+        <InspectionList
+          inspections={inspections}
           page={inspectionsPage}
           totalPages={inspectionsTotalPages}
-          loading={listLoading}
+          listLoading={listLoading}
           onPrevious={() => loadInspections(inspectionsPage - 1)}
           onNext={() => loadInspections(inspectionsPage + 1)}
         />
+        {listLoading && <ListLoadingIndicator />}
       </main>
     </div>
   );
