@@ -57,6 +57,20 @@ This folder records **why** important technical and product constraints exist. A
 | [ADR Index](ADR-INDEX.md) | Navigation and evolution policy (Living Document) |
 | [Workflow Sequence Diagrams](../02-system-blueprint/workflow-sequence-diagrams.md) | Visual workflow context |
 
+## Engineering hardening (V2.6 — ENG-EX-3)
+
+Production audit follow-up sprint closing M6 engineering debt without business rule changes:
+
+| Area | Change |
+|------|--------|
+| OpenAPI | `info.version` sourced from Spring Boot `BuildProperties` (same as actuator build metadata) |
+| Maintenance activities | Paginated list API aligned with inspections/issues; batch `CompletionReview` lookup removes N+1 |
+| Reporting exports | XLSX generation uses streaming `SXSSFWorkbook` for bounded memory |
+| Database | `V36__maintenance_activity_list_indexes.sql` — `completed_at` and `(asset_id, completed_at)` |
+| Deployment | Reverse proxy must replace (not append) client `X-Forwarded-For` — see [security.md](../05-deployment/security.md) |
+
+No Android changes. Authorization and workflow rules unchanged.
+
 ## Historical documents
 
 Superseded records (when marked) remain for audit trail. Do not delete Accepted ADRs/BDRs — create successors per [ADR Index — Evolution](ADR-INDEX.md#evolution).

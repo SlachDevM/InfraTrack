@@ -153,19 +153,27 @@ export function useWorkOrdersPage() {
         canCreate
           ? operationalDecisionApi.listEligibleForWorkOrderCreation(DEFAULT_PAGE, MAX_PAGE_SIZE)
           : Promise.resolve(null),
-        canComplete ? maintenanceActivityApi.list() : Promise.resolve([]),
+        canComplete
+          ? maintenanceActivityApi.list(DEFAULT_PAGE, MAX_PAGE_SIZE)
+          : Promise.resolve(null),
         canAssign
           ? workOrderApi.listEligibleForAssignment(DEFAULT_PAGE, MAX_PAGE_SIZE)
           : Promise.resolve(null),
-        canReview ? maintenanceActivityApi.listEligibleForCompletionReview() : Promise.resolve([]),
+        canReview
+          ? maintenanceActivityApi.listEligibleForCompletionReview(DEFAULT_PAGE, MAX_PAGE_SIZE)
+          : Promise.resolve(null),
       ]);
       setWorkOrders(unwrapPageContent(workOrderPage));
       setWorkOrdersPage(getPageNumber(workOrderPage, page));
       setWorkOrdersTotalPages(getTotalPages(workOrderPage));
       setDecisions(decisionData ? unwrapPageContent(decisionData) : []);
       setAssignableWorkOrders(assignablePage ? unwrapPageContent(assignablePage) : []);
-      setMaintenanceActivities(maintenanceActivityData);
-      setReviewableMaintenanceActivities(reviewableActivityData);
+      setMaintenanceActivities(
+        maintenanceActivityData ? unwrapPageContent(maintenanceActivityData) : []
+      );
+      setReviewableMaintenanceActivities(
+        reviewableActivityData ? unwrapPageContent(reviewableActivityData) : []
+      );
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to load work orders.'));
     } finally {

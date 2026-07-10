@@ -336,7 +336,7 @@ Managers see department-scoped data. Field employees see assigned work only. Adm
 
 | Area | Examples | Mutates data? |
 |------|----------|---------------|
-| Lists and details | Assets, inspections, issues, work orders | No |
+| Lists and details | Assets, inspections, issues, work orders, maintenance activities | No |
 | Mobile bundles | `/api/mobile/*` read paths | No |
 | Operations Intelligence | KPIs, trends, recent activity | No |
 | Dashboard preferences | GET preferences | No (PUT writes preferences only) |
@@ -447,9 +447,41 @@ Responses follow Spring Data `Page` JSON:
 - Preserve **server sort order** — do not re-sort pages client-side unless the API documents client-side sorting.
 - Request reasonable `size` values; avoid `size=100` on every call if `20` suffices.
 - Use `totalPages` for navigation UI; handle empty `content` on the last page.
-- Some endpoints return a **plain JSON array** without pagination — check OpenAPI per path.
+- Some endpoints return a **plain JSON array** without pagination — check OpenAPI per path. Operational list endpoints under `/api/` (assets, inspections, issues, work orders, maintenance activities, operational documents) use Spring Data `Page` JSON.
 
 Non-paginated mobile list endpoints return bounded assignment lists for the current user.
+
+### Maintenance activities list
+
+`GET /api/maintenance-activities`
+
+**Compatibility (ENG-EX-3):** This endpoint previously returned an unpaginated JSON array (`List<MaintenanceActivityResponse>`). It now returns a standard Spring Data `Page` wrapper. Clients must read records from `content`. There is **no** backward compatibility for consumers that parsed the root response as an array. The official React web client was updated in the same sprint.
+
+| Query parameter | Convention |
+|-----------------|------------|
+| `page` | Zero-based index (default `0`) |
+| `size` | Page size (default `20`, maximum `100`) |
+| `eligibleForCompletionReview` | When `true`, returns only maintenance activities eligible for manager completion review (UC-010) |
+
+**Response:** `Page<MaintenanceActivityResponse>` — items in `content`; pagination metadata (`totalElements`, `totalPages`, `number`, `size`, `first`, `last`, `empty`, etc.) matches other paginated operational endpoints.
+
+**Sort:** Server orders by `completedAt` descending.
+
+**Authorization and scope** (unchanged):
+
+| Role | List access |
+|------|-------------|
+| Administrator | All maintenance activities |
+| Manager | Activities for assets in the manager's department (including delegated authority) |
+| Operational Coordinator | Activities for assets in the coordinator's department |
+| Field Employee | Activities for work orders assigned to the employee or performed by them |
+| Contractor | Same assignment rule as Field Employee |
+
+When `eligibleForCompletionReview=true`, only managers receive results; activities are further limited to completed work orders without an existing completion review, scoped by department and delegation.
+
+**Consumers:** The React Work Orders page calls this endpoint with `page=0` and `size=100` to populate the completion-review selector and to join review status with the work-order table. Android and `POST /api/mobile/sync` do **not** call this list endpoint — mobile uses work-order bundles and `POST /api/work-orders/{id}/maintenance-activity` for writes.
+
+See also [Maintenance activity read authorization](../05-deployment/security.md#maintenance-activity-read-authorization).
 
 ---
 

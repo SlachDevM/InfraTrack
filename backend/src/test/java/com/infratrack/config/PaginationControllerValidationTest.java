@@ -11,6 +11,9 @@ import com.infratrack.inspection.dto.InspectionSummaryResponse;
 import com.infratrack.issue.IssueController;
 import com.infratrack.issue.IssueService;
 import com.infratrack.issue.dto.IssueResponse;
+import com.infratrack.maintenanceactivity.MaintenanceActivityListController;
+import com.infratrack.maintenanceactivity.MaintenanceActivityService;
+import com.infratrack.maintenanceactivity.dto.MaintenanceActivityResponse;
 import com.infratrack.operationaldocument.OperationalDocumentController;
 import com.infratrack.operationaldocument.OperationalDocumentService;
 import com.infratrack.operationaldocument.dto.OperationalDocumentSummaryResponse;
@@ -37,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -61,6 +65,9 @@ class PaginationControllerValidationTest {
     @Mock
     private OperationalDocumentService operationalDocumentService;
 
+    @Mock
+    private MaintenanceActivityService maintenanceActivityService;
+
     @InjectMocks
     private AssetController assetController;
 
@@ -75,6 +82,9 @@ class PaginationControllerValidationTest {
 
     @InjectMocks
     private OperationalDocumentController operationalDocumentController;
+
+    @InjectMocks
+    private MaintenanceActivityListController maintenanceActivityListController;
 
     static Stream<PaginatedListEndpoint> paginatedEndpoints() {
         return Stream.of(
@@ -97,6 +107,14 @@ class PaginationControllerValidationTest {
                 new PaginatedListEndpoint("Operational Documents", (page, size) -> {
                     OperationalDocumentController controller = new OperationalDocumentController(null);
                     controller.listDocuments(1L, page, size, null, null, null);
+                }),
+                new PaginatedListEndpoint("Maintenance Activities", (page, size) -> {
+                    MaintenanceActivityListController controller = new MaintenanceActivityListController(null);
+                    controller.listMaintenanceActivities(
+                            page,
+                            size,
+                            null,
+                            new JwtAuthenticationToken(1L, "test@example.com", true));
                 })
         );
     }
@@ -182,6 +200,34 @@ class PaginationControllerValidationTest {
 
         assertThat(response.getStatusCode().value()).isEqualTo(200);
         verify(operationalDocumentService).listDocuments(eq(1L), any(Pageable.class), eq(99L));
+    }
+
+    @Test
+    void maintenanceActivityListController_shouldReturnPaginatedResponse() {
+        Page<MaintenanceActivityResponse> page = new PageImpl<>(List.of(), Pageable.ofSize(20), 0);
+        when(maintenanceActivityService.listPage(eq(99L), any(Pageable.class))).thenReturn(page);
+
+        ResponseEntity<Page<MaintenanceActivityResponse>> response =
+                maintenanceActivityListController.listMaintenanceActivities(
+                        0, 20, null, new JwtAuthenticationToken(99L, "test@example.com", true));
+
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getContent()).isEmpty();
+        verify(maintenanceActivityService).listPage(eq(99L), any(Pageable.class));
+    }
+
+    @Test
+    void maintenanceActivityListController_shouldRouteEligibleForCompletionReview() {
+        Page<MaintenanceActivityResponse> page = new PageImpl<>(List.of(), Pageable.ofSize(20), 0);
+        when(maintenanceActivityService.listEligibleForCompletionReviewPage(eq(30L), any(Pageable.class)))
+                .thenReturn(page);
+
+        maintenanceActivityListController.listMaintenanceActivities(
+                0, 20, true, new JwtAuthenticationToken(30L, "manager@example.com", true));
+
+        verify(maintenanceActivityService).listEligibleForCompletionReviewPage(eq(30L), any(Pageable.class));
+        verify(maintenanceActivityService, never()).listPage(any(), any());
     }
 
     private record PaginatedListEndpoint(String name, PaginatedListInvoker invoker) {

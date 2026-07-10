@@ -1,5 +1,7 @@
 package com.infratrack.maintenanceactivity;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -31,7 +33,7 @@ public interface MaintenanceActivityRepository extends JpaRepository<Maintenance
             @Param("end") LocalDateTime end);
 
     @EntityGraph(attributePaths = {"asset", "asset.department", "workOrder"})
-    List<MaintenanceActivity> findAllByOrderByCompletedAtDesc();
+    Page<MaintenanceActivity> findAllByOrderByCompletedAtDesc(Pageable pageable);
 
     @EntityGraph(attributePaths = {"asset", "asset.department", "workOrder"})
     @Query("""
@@ -49,13 +51,16 @@ public interface MaintenanceActivityRepository extends JpaRepository<Maintenance
             )
             ORDER BY ma.completedAt DESC
             """)
-    List<MaintenanceActivity> findAllVisibleToManager(
+    Page<MaintenanceActivity> findAllVisibleToManager(
             @Param("managerId") Long managerId,
             @Param("managerDepartmentId") Long managerDepartmentId,
-            @Param("at") LocalDateTime at);
+            @Param("at") LocalDateTime at,
+            Pageable pageable);
 
     @EntityGraph(attributePaths = {"asset", "asset.department", "workOrder"})
-    List<MaintenanceActivity> findAllByAsset_Department_IdOrderByCompletedAtDesc(Long departmentId);
+    Page<MaintenanceActivity> findAllByAsset_Department_IdOrderByCompletedAtDesc(
+            Long departmentId,
+            Pageable pageable);
 
     @EntityGraph(attributePaths = {"asset", "asset.department", "workOrder"})
     @Query("""
@@ -64,7 +69,7 @@ public interface MaintenanceActivityRepository extends JpaRepository<Maintenance
                OR ma.performedByUserId = :userId
             ORDER BY ma.completedAt DESC
             """)
-    List<MaintenanceActivity> findAllVisibleToAssignee(@Param("userId") Long userId);
+    Page<MaintenanceActivity> findAllVisibleToAssignee(@Param("userId") Long userId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"asset", "asset.department", "workOrder"})
     @Query("""
@@ -86,10 +91,11 @@ public interface MaintenanceActivityRepository extends JpaRepository<Maintenance
               )
             ORDER BY ma.completedAt DESC
             """)
-    List<MaintenanceActivity> findEligibleForCompletionReview(
+    Page<MaintenanceActivity> findEligibleForCompletionReview(
             @Param("managerId") Long managerId,
             @Param("managerDepartmentId") Long managerDepartmentId,
-            @Param("at") LocalDateTime at);
+            @Param("at") LocalDateTime at,
+            Pageable pageable);
 
     @EntityGraph(attributePaths = {"workOrder", "asset"})
     List<MaintenanceActivity> findAllByAsset_IdOrderByCompletedAtDesc(Long assetId);

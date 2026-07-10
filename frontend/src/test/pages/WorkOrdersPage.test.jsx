@@ -94,8 +94,8 @@ describe('WorkOrdersPage', () => {
     workOrderApi.list.mockResolvedValue(pageResponse([]));
     workOrderApi.listEligibleForAssignment.mockResolvedValue(pageResponse([]));
     operationalDecisionApi.listEligibleForWorkOrderCreation.mockResolvedValue(pageResponse([]));
-    maintenanceActivityApi.list.mockResolvedValue([]);
-    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue([]);
+    maintenanceActivityApi.list.mockResolvedValue(pageResponse([]));
+    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue(pageResponse([]));
     workOrderApi.listEligibleWorkers.mockResolvedValue([]);
   });
 
@@ -246,12 +246,12 @@ describe('WorkOrdersPage completion review', () => {
     vi.clearAllMocks();
     mockAuth.user = { userId: 30, role: 'MANAGER' };
     workOrderApi.list.mockResolvedValue(pageResponse([]));
-    maintenanceActivityApi.list.mockResolvedValue([]);
-    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue([]);
+    maintenanceActivityApi.list.mockResolvedValue(pageResponse([]));
+    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue(pageResponse([]));
   });
 
   it('shows only eligible maintenance activities from backend in review selector', async () => {
-    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue([
+    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue(pageResponse([
       {
         id: 500,
         workOrderId: 100,
@@ -259,7 +259,7 @@ describe('WorkOrdersPage completion review', () => {
         workOrderStatus: 'COMPLETED',
         completionReviewDecision: null,
       },
-    ]);
+    ]));
 
     render(
       <MemoryRouter>
@@ -272,14 +272,17 @@ describe('WorkOrdersPage completion review', () => {
         name: /#500 — WO #100 — Central Playground/i,
       })
     ).toBeInTheDocument();
-    expect(maintenanceActivityApi.listEligibleForCompletionReview).toHaveBeenCalled();
+    expect(maintenanceActivityApi.listEligibleForCompletionReview).toHaveBeenCalledWith(
+      DEFAULT_PAGE,
+      MAX_PAGE_SIZE
+    );
     expect(
       screen.queryByRole('option', { name: /Other Department Asset/i })
     ).not.toBeInTheDocument();
   });
 
   it('hides already reviewed maintenance activities from backend response', async () => {
-    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue([
+    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue(pageResponse([
       {
         id: 500,
         workOrderId: 100,
@@ -287,7 +290,7 @@ describe('WorkOrdersPage completion review', () => {
         workOrderStatus: 'COMPLETED',
         completionReviewDecision: null,
       },
-    ]);
+    ]));
 
     render(
       <MemoryRouter>
@@ -303,7 +306,7 @@ describe('WorkOrdersPage completion review', () => {
 
   it('displays forbidden message when completion review is rejected', async () => {
     const user = userEvent.setup();
-    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue([
+    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue(pageResponse([
       {
         id: 500,
         workOrderId: 100,
@@ -311,7 +314,7 @@ describe('WorkOrdersPage completion review', () => {
         workOrderStatus: 'COMPLETED',
         completionReviewDecision: null,
       },
-    ]);
+    ]));
     maintenanceActivityApi.recordCompletionReview.mockRejectedValue({ status: 403 });
 
     render(
@@ -335,7 +338,7 @@ describe('WorkOrdersPage completion review', () => {
 
   it('displays rework success message when REWORK_REQUIRED is recorded', async () => {
     const user = userEvent.setup();
-    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue([
+    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue(pageResponse([
       {
         id: 500,
         workOrderId: 100,
@@ -343,7 +346,7 @@ describe('WorkOrdersPage completion review', () => {
         workOrderStatus: 'COMPLETED',
         completionReviewDecision: null,
       },
-    ]);
+    ]));
     maintenanceActivityApi.recordCompletionReview.mockResolvedValue({
       decision: 'REWORK_REQUIRED',
       reworkIssueId: 8001,
@@ -384,7 +387,7 @@ describe('WorkOrdersPage completion review', () => {
 
   it('shows rework fields when REWORK_REQUIRED is selected and hides them for APPROVED', async () => {
     const user = userEvent.setup();
-    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue([
+    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue(pageResponse([
       {
         id: 500,
         workOrderId: 100,
@@ -392,7 +395,7 @@ describe('WorkOrdersPage completion review', () => {
         workOrderStatus: 'COMPLETED',
         completionReviewDecision: null,
       },
-    ]);
+    ]));
 
     render(
       <MemoryRouter>
@@ -419,7 +422,7 @@ describe('WorkOrdersPage completion review', () => {
 
   it('displays standard success message when APPROVED is recorded', async () => {
     const user = userEvent.setup();
-    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue([
+    maintenanceActivityApi.listEligibleForCompletionReview.mockResolvedValue(pageResponse([
       {
         id: 500,
         workOrderId: 100,
@@ -427,7 +430,7 @@ describe('WorkOrdersPage completion review', () => {
         workOrderStatus: 'COMPLETED',
         completionReviewDecision: null,
       },
-    ]);
+    ]));
     maintenanceActivityApi.recordCompletionReview.mockResolvedValue({
       decision: 'APPROVED',
       reworkIssueId: null,

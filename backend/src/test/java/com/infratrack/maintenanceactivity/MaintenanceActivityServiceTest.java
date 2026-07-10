@@ -18,7 +18,9 @@ import com.infratrack.inspection.InspectionPriority;
 import com.infratrack.inspection.PhysicalCondition;
 import com.infratrack.issue.Issue;
 import com.infratrack.issue.IssueSeverity;
+import com.infratrack.completionreview.CompletionReview;
 import com.infratrack.completionreview.CompletionReviewAuthorizationService;
+import com.infratrack.completionreview.CompletionReviewDecision;
 import com.infratrack.completionreview.CompletionReviewRepository;
 import com.infratrack.maintenanceactivity.dto.CompleteMaintenanceActivityRequest;
 import com.infratrack.notification.OperationalEventNotificationService;
@@ -44,6 +46,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
@@ -507,39 +513,79 @@ class MaintenanceActivityServiceTest {
         return user;
     }
 
+    private static final Pageable DEFAULT_PAGEABLE = PageRequest.of(0, 20);
+
+    private static Page<MaintenanceActivity> pageOf(MaintenanceActivity... activities) {
+        return new PageImpl<>(java.util.List.of(activities), DEFAULT_PAGEABLE, activities.length);
+    }
+
     @Test
-    void listForUser_shouldReturnAllActivitiesForAdministrator() {
+    void listPage_shouldReturnAllActivitiesForAdministrator() {
         User administrator = user(1L, UserRole.ADMINISTRATOR);
         MaintenanceActivity activity = completedMaintenanceActivity(5000L, 1000L);
 
         when(userService.getById(1L)).thenReturn(administrator);
-        when(maintenanceActivityRepository.findAllByOrderByCompletedAtDesc())
-                .thenReturn(java.util.List.of(activity));
+        when(maintenanceActivityRepository.findAllByOrderByCompletedAtDesc(DEFAULT_PAGEABLE))
+                .thenReturn(pageOf(activity));
+        when(completionReviewRepository.findByMaintenanceActivityIdIn(any()))
+                .thenReturn(java.util.List.of());
 
-        var responses = maintenanceActivityService.listForUser(1L);
+        var responses = maintenanceActivityService.listPage(1L, DEFAULT_PAGEABLE);
 
-        assertThat(responses).hasSize(1);
-        verify(maintenanceActivityRepository).findAllByOrderByCompletedAtDesc();
-        verify(maintenanceActivityRepository, never()).findAllVisibleToManager(any(), any(), any());
+        assertThat(responses.getContent()).hasSize(1);
+        verify(maintenanceActivityRepository).findAllByOrderByCompletedAtDesc(DEFAULT_PAGEABLE);
+        verify(maintenanceActivityRepository, never()).findAllVisibleToManager(any(), any(), any(), any());
+        verify(completionReviewRepository).findByMaintenanceActivityIdIn(any());
+        verify(completionReviewRepository, never()).findByMaintenanceActivityId(any());
     }
 
     @Test
-    void listForUser_shouldReturnDepartmentActivitiesForManager() {
+    void listPage_shouldBatchLoadCompletionReviewDecisions() {
+        User administrator = user(1L, UserRole.ADMINISTRATOR);
+        MaintenanceActivity activity = completedMaintenanceActivity(5000L, 1000L);
+        CompletionReview review = new CompletionReview(
+                activity,
+                activity.getAsset(),
+                CompletionReviewDecision.APPROVED,
+                "Looks good",
+                30L,
+                LocalDateTime.of(2026, 7, 2, 11, 0));
+
+        when(userService.getById(1L)).thenReturn(administrator);
+        when(maintenanceActivityRepository.findAllByOrderByCompletedAtDesc(DEFAULT_PAGEABLE))
+                .thenReturn(pageOf(activity));
+        when(completionReviewRepository.findByMaintenanceActivityIdIn(any()))
+                .thenReturn(java.util.List.of(review));
+
+        var responses = maintenanceActivityService.listPage(1L, DEFAULT_PAGEABLE);
+
+        assertThat(responses.getContent()).hasSize(1);
+        assertThat(responses.getContent().get(0).getCompletionReviewDecision())
+                .isEqualTo(CompletionReviewDecision.APPROVED);
+        verify(completionReviewRepository).findByMaintenanceActivityIdIn(any());
+        verify(completionReviewRepository, never()).findByMaintenanceActivityId(any());
+    }
+
+    @Test
+    void listPage_shouldReturnDepartmentActivitiesForManager() {
         User manager = managerInDepartment(30L, 1L);
         MaintenanceActivity activity = completedMaintenanceActivity(5000L, 1000L);
 
         when(userService.getById(30L)).thenReturn(manager);
-        when(maintenanceActivityRepository.findAllVisibleToManager(eq(30L), eq(1L), any(LocalDateTime.class)))
-                .thenReturn(java.util.List.of(activity));
+        when(maintenanceActivityRepository.findAllVisibleToManager(
+                eq(30L), eq(1L), any(LocalDateTime.class), eq(DEFAULT_PAGEABLE)))
+                .thenReturn(pageOf(activity));
+        when(completionReviewRepository.findByMaintenanceActivityIdIn(any()))
+                .thenReturn(java.util.List.of());
 
-        var responses = maintenanceActivityService.listForUser(30L);
+        var responses = maintenanceActivityService.listPage(30L, DEFAULT_PAGEABLE);
 
-        assertThat(responses).hasSize(1);
-        verify(maintenanceActivityRepository, never()).findAllByOrderByCompletedAtDesc();
+        assertThat(responses.getContent()).hasSize(1);
+        verify(maintenanceActivityRepository, never()).findAllByOrderByCompletedAtDesc(any());
     }
 
     @Test
-    void listForUser_shouldReturnDepartmentActivitiesForOperationalCoordinator() {
+    void listPage_shouldReturnDepartmentActivitiesForOperationalCoordinator() {
         User coordinator = managerInDepartment(40L, 1L);
         coordinator = user(40L, UserRole.OPERATIONAL_COORDINATOR);
         Department department = new Department("Department 1");
@@ -548,16 +594,19 @@ class MaintenanceActivityServiceTest {
         MaintenanceActivity activity = completedMaintenanceActivity(5000L, 1000L);
 
         when(userService.getById(40L)).thenReturn(coordinator);
-        when(maintenanceActivityRepository.findAllByAsset_Department_IdOrderByCompletedAtDesc(1L))
-                .thenReturn(java.util.List.of(activity));
+        when(maintenanceActivityRepository.findAllByAsset_Department_IdOrderByCompletedAtDesc(
+                eq(1L), eq(DEFAULT_PAGEABLE)))
+                .thenReturn(pageOf(activity));
+        when(completionReviewRepository.findByMaintenanceActivityIdIn(any()))
+                .thenReturn(java.util.List.of());
 
-        var responses = maintenanceActivityService.listForUser(40L);
+        var responses = maintenanceActivityService.listPage(40L, DEFAULT_PAGEABLE);
 
-        assertThat(responses).hasSize(1);
+        assertThat(responses.getContent()).hasSize(1);
     }
 
     @Test
-    void listForUser_shouldReturnAssignedActivitiesForFieldEmployee() {
+    void listPage_shouldReturnAssignedActivitiesForFieldEmployee() {
         User fieldEmployee = managerInDepartment(20L, 1L);
         fieldEmployee = user(20L, UserRole.FIELD_EMPLOYEE);
         Department department = new Department("Department 1");
@@ -566,13 +615,15 @@ class MaintenanceActivityServiceTest {
         MaintenanceActivity activity = completedMaintenanceActivity(5000L, 1000L);
 
         when(userService.getById(20L)).thenReturn(fieldEmployee);
-        when(maintenanceActivityRepository.findAllVisibleToAssignee(20L))
-                .thenReturn(java.util.List.of(activity));
+        when(maintenanceActivityRepository.findAllVisibleToAssignee(eq(20L), eq(DEFAULT_PAGEABLE)))
+                .thenReturn(pageOf(activity));
+        when(completionReviewRepository.findByMaintenanceActivityIdIn(any()))
+                .thenReturn(java.util.List.of());
 
-        var responses = maintenanceActivityService.listForUser(20L);
+        var responses = maintenanceActivityService.listPage(20L, DEFAULT_PAGEABLE);
 
-        assertThat(responses).hasSize(1);
-        verify(maintenanceActivityRepository, never()).findAllByOrderByCompletedAtDesc();
+        assertThat(responses.getContent()).hasSize(1);
+        verify(maintenanceActivityRepository, never()).findAllByOrderByCompletedAtDesc(any());
     }
 
     @Test
@@ -618,31 +669,32 @@ class MaintenanceActivityServiceTest {
     }
 
     @Test
-    void listEligibleForCompletionReview_shouldReturnActivitiesForManagerDepartment() {
+    void listEligibleForCompletionReviewPage_shouldReturnActivitiesForManagerDepartment() {
         User manager = managerInDepartment(30L, 1L);
         MaintenanceActivity eligibleActivity = completedMaintenanceActivity(5000L, 1000L);
 
         when(completionReviewAuthorizationService.requireManager(30L)).thenReturn(manager);
         when(maintenanceActivityRepository.findEligibleForCompletionReview(
-                eq(30L), eq(1L), any(LocalDateTime.class)))
-                .thenReturn(java.util.List.of(eligibleActivity));
+                eq(30L), eq(1L), any(LocalDateTime.class), eq(DEFAULT_PAGEABLE)))
+                .thenReturn(pageOf(eligibleActivity));
 
-        var responses = maintenanceActivityService.listEligibleForCompletionReview(30L);
+        var responses = maintenanceActivityService.listEligibleForCompletionReviewPage(30L, DEFAULT_PAGEABLE);
 
-        assertThat(responses).hasSize(1);
-        assertThat(responses.get(0).getId()).isEqualTo(5000L);
-        assertThat(responses.get(0).getCompletionReviewDecision()).isNull();
+        assertThat(responses.getContent()).hasSize(1);
+        assertThat(responses.getContent().get(0).getId()).isEqualTo(5000L);
+        assertThat(responses.getContent().get(0).getCompletionReviewDecision()).isNull();
     }
 
     @Test
-    void listEligibleForCompletionReview_shouldRejectNonManager() {
+    void listEligibleForCompletionReviewPage_shouldRejectNonManager() {
         when(completionReviewAuthorizationService.requireManager(30L))
                 .thenThrow(new ForbiddenOperationException("Only managers can record completion reviews"));
 
-        assertThatThrownBy(() -> maintenanceActivityService.listEligibleForCompletionReview(30L))
+        assertThatThrownBy(() -> maintenanceActivityService.listEligibleForCompletionReviewPage(30L, DEFAULT_PAGEABLE))
                 .isInstanceOf(ForbiddenOperationException.class);
 
-        verify(maintenanceActivityRepository, never()).findEligibleForCompletionReview(any(), any(), any());
+        verify(maintenanceActivityRepository, never())
+                .findEligibleForCompletionReview(any(), any(), any(), any());
     }
 
     private User managerInDepartment(Long id, Long departmentId) {

@@ -219,6 +219,7 @@ The KPI API is designed for reuse by the React web client, future Android applic
 - **Sprint M6.5-STAB-2 (validated):** Full mobile sync integration tests — PostgreSQL/Testcontainers end-to-end coverage of `POST /api/mobile/sync` (first sync envelope, mixed pending operations, invalid token/full sync, idempotency replay, conflict batching, role scoping). No production code changes.
 - **Sprint M6.5-STAB-3 (validated):** Backend query performance and scalability audit — reviewed sync, reporting, operational documents, and preventive/decision query paths. Safe composite indexes added for mobile sync scoping and asset-context lookups (`V35__sync_and_asset_query_indexes.sql`). `@EntityGraph` aligned on work-order assigned-user queries. No API, behaviour, Android, or React changes.
 - **Sprint M6.5-STAB-3-FIX (validated):** Backend performance hardening — bulk `buildAssetContextsForSync` repository access, SQL open-issues filter, configurable reporting export row guard (`reporting.export.max-rows`), field-employee operational document SQL pagination, XLSX auto-size threshold, and inclusive issue export date alignment. No API, behaviour, Android, or React changes.
+- **Sprint ENG-EX-3 (validated):** Final engineering hardening before M6.6 — OpenAPI version from `BuildProperties`, maintenance activity pagination and N+1 elimination, XLSX streaming exports (`SXSSFWorkbook`), maintenance activity list indexes (`V36`), reverse-proxy documentation. No business rule, Android, or authorization changes.
 
 **Planned within this version family (not yet delivered):**
 
@@ -237,6 +238,31 @@ The KPI API is designed for reuse by the React web client, future Android applic
 **Business value:** Trace consumption against work orders and assets.
 
 **Major capabilities:** Stock items, issue to work order, low-stock awareness (scope to be defined).
+
+**Deferred engineering backlog (planned — not in ENG-EX-3):**
+
+### Authentication
+
+- Forgot password workflow
+- Password reset email flow
+- Password reset token lifecycle
+
+### Frontend security
+
+- Content Security Policy deployment hardening
+- Review migration from `localStorage` JWT toward httpOnly refresh-token architecture
+
+### Infrastructure
+
+- Reverse proxy hardening review
+- Trusted proxy documentation expansion
+- Review use of `X-Real-IP` vs `X-Forwarded-For`
+
+### Dependency upgrades
+
+- Spring Boot 4.1.x
+- Apache PDFBox 3.x
+- React Router v7 migration
 
 ---
 

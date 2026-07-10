@@ -407,13 +407,28 @@ This is an **infrastructure misconfiguration**, not an application vulnerability
 
 ### Example reverse proxy headers (Nginx)
 
-The proxy should set forwarding headers from the real client connection. Illustrative configuration only — adapt to your environment:
+The proxy is the **trust boundary** for client IP. It must **replace** the client IP header with the address from the real TCP connection — not blindly forward a client-supplied value.
+
+**Recommended:** set `X-Forwarded-For` from the connecting client only:
 
 ```nginx
-proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+# Replace (do not append) when this proxy is the first trusted hop
+proxy_set_header X-Forwarded-For $remote_addr;
 proxy_set_header X-Forwarded-Proto $scheme;
 proxy_set_header Host              $host;
 ```
+
+Use `$proxy_add_x_forwarded_for` **only** when this Nginx instance sits behind another **trusted** upstream proxy that has already set `X-Forwarded-For` correctly. In that chained layout, each trusted hop appends the observed client address; the backend must still receive traffic only from trusted proxies.
+
+**Alternative:** some deployments prefer a single authoritative header:
+
+```nginx
+proxy_set_header X-Real-IP         $remote_addr;
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_set_header Host              $host;
+```
+
+InfraTrack reads `X-Forwarded-For` first (left-most address), then falls back to `request.getRemoteAddr()`. It does **not** read `X-Real-IP` today. If you standardise on `X-Real-IP`, configure Nginx to **replace** (not append) that value from `$remote_addr`, and ensure no untrusted client can reach the API without passing through the proxy.
 
 Do not forward client-supplied `X-Forwarded-For` unchanged from the public Internet to the backend without the proxy overwriting or validating the value.
 
@@ -461,7 +476,7 @@ Authorization runs in `AssetAuthorizationService.requireCanViewAsset` **before**
 
 ## Maintenance activity read authorization
 
-`GET /api/maintenance-activities` returns maintenance activities scoped to the caller's authorized work order / asset context.
+`GET /api/maintenance-activities` returns a paginated list of maintenance activities (`page`, `size`) scoped to the caller's authorized work order / asset context.
 
 | Role | List access |
 |------|-------------|
@@ -471,7 +486,7 @@ Authorization runs in `AssetAuthorizationService.requireCanViewAsset` **before**
 | Field Employee | Activities for work orders assigned to the employee or performed by them |
 | Contractor | Same assignment rule as Field Employee |
 
-The `eligibleForCompletionReview=true` query parameter continues to return only manager-eligible activities for completion review (UC-010), already scoped by department and delegation.
+The `eligibleForCompletionReview=true` query parameter returns a paginated subset of manager-eligible activities for completion review (UC-010), scoped by department and delegation. Query parameters: `page` (zero-based, default `0`), `size` (default `20`, maximum `100`). Response is `Page<MaintenanceActivityResponse>` with records in `content` (ENG-EX-3; not a root-level JSON array).
 
 Authorization uses `MaintenanceActivityAuthorizationService` for single-record checks. Cross-department access returns HTTP `403`. Unknown activities return HTTP `404`.
 

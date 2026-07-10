@@ -5,7 +5,8 @@ import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.streaming.SXSSFSheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -14,6 +15,7 @@ import java.util.List;
 public final class XlsxExportWriter {
 
     private static final int EXCEL_SHEET_NAME_MAX_LENGTH = 31;
+    private static final int STREAMING_ROW_WINDOW_SIZE = 100;
 
     static final int AUTO_SIZE_MAX_ROWS = 5_000;
     static final int DEFAULT_COLUMN_WIDTH = 15 * 256;
@@ -22,8 +24,9 @@ public final class XlsxExportWriter {
     }
 
     public static byte[] write(String sheetName, List<String> headers, List<List<String>> rows) {
-        try (XSSFWorkbook workbook = new XSSFWorkbook();
+        try (SXSSFWorkbook workbook = new SXSSFWorkbook(STREAMING_ROW_WINDOW_SIZE);
              ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            workbook.setCompressTempFiles(true);
             Sheet sheet = workbook.createSheet(sanitizeSheetName(sheetName));
 
             CellStyle headerStyle = workbook.createCellStyle();
@@ -52,6 +55,11 @@ public final class XlsxExportWriter {
 
             sheet.createFreezePane(0, 1);
             if (rows.size() <= AUTO_SIZE_MAX_ROWS) {
+                if (sheet instanceof SXSSFSheet streamingSheet) {
+                    for (int columnIndex = 0; columnIndex < headers.size(); columnIndex++) {
+                        streamingSheet.trackColumnForAutoSizing(columnIndex);
+                    }
+                }
                 for (int columnIndex = 0; columnIndex < headers.size(); columnIndex++) {
                     sheet.autoSizeColumn(columnIndex);
                 }

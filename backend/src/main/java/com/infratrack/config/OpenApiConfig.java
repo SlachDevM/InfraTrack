@@ -7,6 +7,7 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -15,7 +16,8 @@ public class OpenApiConfig {
 
     @Bean
     public OpenAPI infratrackOpenApi(
-            @Value("${spring.application.name:InfraTrack}") String applicationName) {
+            @Value("${spring.application.name:InfraTrack}") String applicationName,
+            BuildProperties buildProperties) {
         return new OpenAPI()
                 .info(new Info()
                         .title(applicationName + " API")
@@ -25,7 +27,7 @@ public class OpenApiConfig {
                                 Paginated collections accept optional page and size query parameters (defaults: page=0, size=20, max size=100).
                                 Business errors are returned as plain-text response bodies with appropriate HTTP status codes.
                                 """)
-                        .version("2.0.1")
+                        .version(buildProperties.getVersion())
                         .contact(new Contact().name("InfraTrack"))
                         .license(new License().name("Proprietary")))
                 .components(new Components().addSecuritySchemes("bearerAuth",

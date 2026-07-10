@@ -294,6 +294,7 @@ Main capabilities:
 - `delta.dashboard`, `delta.assets`, and `delta.referenceData` on every successful sync
 - Work order progress conflict detection (M6.4)
 - Sync performance hardening and API consistency stabilization (M6.5-STAB)
+- Final engineering hardening (ENG-EX-3): OpenAPI/build version alignment, maintenance activity pagination, batch completion-review lookup, streaming XLSX exports, list indexes
 
 **Active development:** M6.6 — see [v2-roadmap.md](v2-roadmap.md).
 

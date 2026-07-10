@@ -248,7 +248,7 @@ Authorization: Bearer <token>
 
 See [Authentication Flow](#authentication-flow) below for activation and lifecycle details.
 
-**Pagination:** Paginated endpoints accept optional `page` (zero-based, default `0`) and `size` (default `20`, maximum `100`) query parameters. Responses use Spring Data `Page` JSON (`content`, `totalElements`, `totalPages`, etc.). Non-paginated list endpoints return a plain JSON array.
+**Pagination:** Paginated endpoints accept optional `page` (zero-based, default `0`) and `size` (default `20`, maximum `100`) query parameters. Responses use Spring Data `Page` JSON (`content`, `totalElements`, `totalPages`, etc.). Operational list endpoints — including `GET /api/maintenance-activities` — return a `Page` wrapper. A few other list endpoints (for example bounded mobile assignment lists) return a plain JSON array; check OpenAPI per path.
 
 **Versioning:** REST paths are stable under `/api/...`. The OpenAPI `info.version` matches the Maven/npm artifact version (`2.0.1`); product capability is documented separately in [Platform Version History](docs/06-release-notes/platform-version-history.md) (currently **V2.6.x** baseline). Breaking changes require a new major version; additive DTO fields may be introduced without a path change.
 

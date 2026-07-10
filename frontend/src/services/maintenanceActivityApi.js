@@ -1,4 +1,5 @@
 import apiClient from './apiClient';
+import { DEFAULT_PAGE, DEFAULT_SIZE, paginatedQuery } from '../utils/pagination';
 
 const ENDPOINTS = {
   LIST: '/api/maintenance-activities',
@@ -6,9 +7,12 @@ const ENDPOINTS = {
 };
 
 export const maintenanceActivityApi = {
-  list: () => apiClient.get(ENDPOINTS.LIST),
-  listEligibleForCompletionReview: () =>
-    apiClient.get(`${ENDPOINTS.LIST}?eligibleForCompletionReview=true`),
+  list: (page = DEFAULT_PAGE, size = DEFAULT_SIZE) =>
+    apiClient.get(`${ENDPOINTS.LIST}?${paginatedQuery(page, size)}`),
+  listEligibleForCompletionReview: (page = DEFAULT_PAGE, size = DEFAULT_SIZE) =>
+    apiClient.get(
+      `${ENDPOINTS.LIST}?${paginatedQuery(page, size)}&eligibleForCompletionReview=true`
+    ),
   recordCompletionReview: (id, request) => apiClient.post(ENDPOINTS.COMPLETION_REVIEW(id), request),
 };
 
