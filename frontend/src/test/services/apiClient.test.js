@@ -73,7 +73,9 @@ describe('ApiClient unauthorized handling', () => {
       text: async () => 'Invalid multipart request: could not bind documentType.',
     });
 
-    await expect(apiClient.postMultipart('/api/assets/1/documents', formData)).rejects.toMatchObject({
+    await expect(
+      apiClient.postMultipart('/api/assets/1/documents', formData)
+    ).rejects.toMatchObject({
       status: 400,
     });
 
@@ -96,7 +98,9 @@ describe('ApiClient unauthorized handling', () => {
       text: async () => 'Unauthorized',
     });
 
-    await expect(apiClient.postMultipart('/api/assets/1/documents', formData)).rejects.toMatchObject({
+    await expect(
+      apiClient.postMultipart('/api/assets/1/documents', formData)
+    ).rejects.toMatchObject({
       status: 401,
       type: 'UNAUTHORIZED',
     });
