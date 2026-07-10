@@ -80,7 +80,9 @@ describe('InspectionList', () => {
     expect(pagination).not.toBeNull();
     expect(ruleSection).not.toBeNull();
 
-    const orderedSections = [...listSection.querySelectorAll('.pagination-controls, .rule-evaluation-reports-section')];
+    const orderedSections = [
+      ...listSection.querySelectorAll('.pagination-controls, .rule-evaluation-reports-section'),
+    ];
     expect(orderedSections[0]).toBe(pagination);
     expect(orderedSections[1]).toBe(ruleSection);
   });
